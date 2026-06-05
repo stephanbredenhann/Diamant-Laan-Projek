@@ -36,6 +36,9 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
             <p>{{ selectedIds().size }} blokke</p>
             <p class="total">Totaal: R{{ selectedIds().size * 500 }}</p>
             @if (selectedIds().size > 0) {
+              <button class="btn btn-outline btn-sm" (click)="clearSelection()">
+                Maak Keuses Skoon ({{ selectedIds().size }})
+              </button>
               <button class="btn btn-primary" (click)="checkout()">
                 Gaan na Betaling
               </button>
@@ -74,6 +77,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
     .msg.error { color: #ef4444; }
     .empty { font-size: 0.75rem; color: var(--color-text-muted); }
     .owned-chip { display: inline-block; background: var(--color-primary-light); color: var(--color-primary); font-size: 0.6875rem; padding: 0.125rem 0.375rem; border-radius: 4px; margin: 2px; }
+    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; margin-bottom: 0.5rem; }
     @media (max-width: 768px) {
       .map-layout { flex-direction: column; }
       .sidebar { width: 100%; }
@@ -143,6 +147,11 @@ export class MapComponent implements OnInit {
     this.selectedIds.set(selected);
     this.message = '';
     this.isError = false;
+  }
+
+  clearSelection() {
+    this.selectedIds.set(new Set());
+    this.message = '';
   }
 
   checkout() {
