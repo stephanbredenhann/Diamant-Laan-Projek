@@ -18,4 +18,13 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <Target Name="BuildAngular" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="npm install" WorkingDirectory="$(SolutionDir)src/DiamantLaan.Web" />
+    <Exec Command="npm run build" WorkingDirectory="$(SolutionDir)src/DiamantLaan.Web" />
+    <ItemGroup>
+      <DistFiles Include="$(SolutionDir)src/DiamantLaan.Web/dist/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DistFiles)" DestinationFolder="$(TargetDir)wwwroot\%(RecursiveDir)" />
+  </Target>
+
 </Project>
