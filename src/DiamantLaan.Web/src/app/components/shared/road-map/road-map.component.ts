@@ -104,16 +104,21 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   }
 
   private setupDragSelect() {
+    const getContainerPoint = (e: MouseEvent): L.Point => {
+      const rect = this.map.getContainer().getBoundingClientRect();
+      return L.point(e.clientX - rect.left, e.clientY - rect.top);
+    };
+
     this.map.getContainer().addEventListener('mousedown', (e: MouseEvent) => {
       if (!this.selectMode) return;
-      this.dragStartPoint = L.point(e.clientX, e.clientY);
+      this.dragStartPoint = getContainerPoint(e);
       this.isDragging = false;
     });
 
     this.map.getContainer().addEventListener('mousemove', (e: MouseEvent) => {
       if (!this.selectMode || !this.dragStartPoint) return;
 
-      const current = L.point(e.clientX, e.clientY);
+      const current = getContainerPoint(e);
       const dist = this.dragStartPoint.distanceTo(current);
 
       if (dist > DRAG_THRESHOLD && !this.isDragging) {
