@@ -13,43 +13,51 @@ export interface SegmentDef {
   cellH: number;
 }
 
-// Road: 6m wide = 6 rows. Squares numbered 1-4500 sequentially.
-// SVG positions are viewBox coordinates (500x620 roughly)
+// Road: 700m long, 6m wide = 4200 blocks numbered 1-4200.
+// Cell size: 6×6 SVG units per block (1px gap between cells).
+// SVG viewBox: 0 0 1700 2640
+//
+// Road shape (top → bottom):
+//   Seg1  – 130m vertical  (top-right,  x=1640)
+//   Seg2  – 100m horizontal (turn left, y=800)
+//   Seg3  – 170m horizontal (continue left, y=800)
+//   Seg4  –  10m kink       (corner, y=836)
+//   Seg5  – 290m vertical  (bottom-left, x=20, y=872)
 
 export const SEGMENTS: SegmentDef[] = [
   {
     name: 'Reguit 130m',
     startId: 1, endId: 780,
     length: 130,
-    x: 400, y: 50, width: 30, height: 260,
-    rows: 6, cols: 130, cellW: 5, cellH: 2,
+    x: 1640, y: 20, width: 36, height: 780,
+    rows: 130, cols: 6, cellW: 6, cellH: 6,
   },
   {
     name: 'Draai Links 100m',
     startId: 781, endId: 1380,
     length: 100,
-    x: 350, y: 300, width: 60, height: 60,
-    rows: 6, cols: 100, cellW: 2, cellH: 2,
+    x: 1040, y: 800, width: 600, height: 36,
+    rows: 6, cols: 100, cellW: 6, cellH: 6,
   },
   {
     name: 'Reguit 170m',
     startId: 1381, endId: 2400,
     length: 170,
-    x: 50, y: 340, width: 340, height: 30,
-    rows: 6, cols: 170, cellW: 2, cellH: 5,
+    x: 20, y: 800, width: 1020, height: 36,
+    rows: 6, cols: 170, cellW: 6, cellH: 6,
   },
   {
     name: 'Draai Regs',
     startId: 2401, endId: 2460,
     length: 10,
-    x: 385, y: 310, width: 35, height: 35,
-    rows: 6, cols: 10, cellW: 2, cellH: 2,
+    x: 20, y: 836, width: 60, height: 36,
+    rows: 6, cols: 10, cellW: 6, cellH: 6,
   },
   {
     name: 'Reguit 290m',
     startId: 2461, endId: 4200,
     length: 290,
-    x: 420, y: 30, width: 30, height: 580,
-    rows: 6, cols: 290, cellW: 5, cellH: 2,
+    x: 20, y: 872, width: 36, height: 1740,
+    rows: 290, cols: 6, cellW: 6, cellH: 6,
   },
 ];

@@ -1,60 +1,34 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-
 import { Router } from '@angular/router';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
 import { Square, SquareStatus } from '../../models/square';
-import { SEGMENTS, SegmentDef } from './map-segments';
-
-const STATUS_COLORS: Record<number, string> = {
-  0: '#d1d5db', 1: '#fbbf24', 2: '#3b82f6', 3: '#22c55e'
-};
+import { SEGMENTS } from './map-segments';
+import { RoadMapComponent } from '../shared/road-map/road-map.component';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [],
+  imports: [RoadMapComponent],
   template: `
     <div class="container map-page">
       <div class="map-header">
         <h2>Diamant Laan — Kies jou blokke</h2>
         <div class="legend">
-          <span><span class="dot" style="background:#d1d5db"></span> Nog nie begin nie</span>
+          <span><span class="dot" style="background:#d1d5db"></span> Beskikbaar</span>
+          <span><span class="dot" style="background:#fb923c"></span> Verkoop</span>
           <span><span class="dot" style="background:#fbbf24"></span> Voorberei</span>
           <span><span class="dot" style="background:#3b82f6"></span> Besig om te teer</span>
           <span><span class="dot" style="background:#22c55e"></span> Klaar geteer</span>
         </div>
       </div>
       <div class="map-layout">
-        <div class="svg-container">
-          <svg viewBox="0 0 500 620" class="road-map-svg">
-            @for (seg of segments; track seg.name) {
-              @for (row of range(seg.rows); track row) {
-                @for (col of range(seg.cols); track col) {
-                  @let sqId = seg.startId + col * seg.rows + row;
-                  @if (sqId <= seg.endId) {
-                    @let sx = seg.x + col * seg.cellW;
-                    @let sy = seg.y + row * seg.cellH;
-                    <rect
-                      [attr.x]="sx" [attr.y]="sy"
-                      [attr.width]="seg.cellW - 0.5" [attr.height]="seg.cellH - 0.5"
-                      [attr.fill]="getColor(sqId)"
-                      [attr.stroke]="selectedIds().has(sqId) ? '#f97316' : 'rgba(0,0,0,0.08)'"
-                      [attr.stroke-width]="selectedIds().has(sqId) ? 2 : 0.5"
-                      [attr.rx]="1"
-                      style="cursor:pointer"
-                      (click)="toggleSquare(sqId)"
-                      (mouseenter)="hoveredId = sqId"
-                      (mouseleave)="hoveredId = null">
-                      <title>Blok #{{ sqId }}</title>
-                    </rect>
-                  }
-                }
-              }
-            }
-          </svg>
-        </div>
+        <app-road-map
+          [squares]="squares"
+          [selectedIds]="selectedIdsArray()"
+          (squareClicked)="toggleSquare($event)"
+        />
         <div class="sidebar">
           <div class="sidebar-inner">
             <h3>Gekies</h3>
@@ -88,9 +62,8 @@ const STATUS_COLORS: Record<number, string> = {
     .map-header h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
     .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
-    .map-layout { display: flex; gap: 1rem; }
-    .svg-container { flex: 1; min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; background: #fafafa; }
-    .road-map-svg { width: 100%; height: auto; display: block; }
+    .map-layout { display: flex; gap: 1rem; align-items: flex-start; }
+    .map-layout app-road-map { flex: 1; min-width: 0; }
     .sidebar { width: 240px; flex-shrink: 0; }
     .sidebar-inner { border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem; position: sticky; top: 1rem; }
     .sidebar-inner h3 { margin-bottom: 0.25rem; }
@@ -118,7 +91,6 @@ export class MapComponent implements OnInit {
   mySquareIds = signal<number[]>([]);
   message = '';
   isError = false;
-  hoveredId: number | null = null;
 
   ngOnInit() {
     this.road.getSquares().subscribe(data => this.squares = data);
@@ -127,9 +99,8 @@ export class MapComponent implements OnInit {
     }
   }
 
-  getColor(squareId: number): string {
-    const sq = this.squares.find(s => s.id === squareId);
-    return sq ? STATUS_COLORS[sq.status] : STATUS_COLORS[0];
+  selectedIdsArray(): number[] {
+    return Array.from(this.selectedIds());
   }
 
   toggleSquare(sqId: number) {
@@ -138,8 +109,10 @@ export class MapComponent implements OnInit {
       return;
     }
     const sq = this.squares.find(s => s.id === sqId);
-    if (sq && sq.status !== SquareStatus.NogNieBeginNie) return;
-    if (sqId > this.segments[this.segments.length-1].endId) return;
+    if (!sq) return;
+    if (sq.isSold) return;
+    if (sq.status !== SquareStatus.NogNieBeginNie) return;
+    if (sqId > this.segments[this.segments.length - 1].endId) return;
 
     const selected = new Set(this.selectedIds());
     if (selected.has(sqId)) {
@@ -149,6 +122,7 @@ export class MapComponent implements OnInit {
     }
     this.selectedIds.set(selected);
     this.message = '';
+    this.isError = false;
   }
 
   checkout() {
@@ -166,9 +140,5 @@ export class MapComponent implements OnInit {
         this.isError = true;
       }
     });
-  }
-
-  range(n: number): number[] {
-    return Array.from({ length: n }, (_, i) => i);
   }
 }

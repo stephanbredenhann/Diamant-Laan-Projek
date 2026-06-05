@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService } from '../../services/admin.service';
+import { RoadService } from '../../services/road.service';
 
 @Component({
   selector: 'app-home',
@@ -10,17 +10,28 @@ import { AdminService } from '../../services/admin.service';
   template: `
     <div class="hero">
       <div class="hero-map">
-        <svg viewBox="0 0 400 280" class="road-svg">
-          <!-- Segment 1: straight vertical 130m -->
-          <rect x="185" y="20" width="30" height="80" rx="4" fill="var(--color-primary)" opacity="0.8"/>
-          <!-- Curve 1: left turn 100m -->
-          <path d="M185 100 Q185 140 140 145" stroke="var(--color-primary)" stroke-width="30" fill="none" stroke-linecap="round" opacity="0.8"/>
-          <!-- Segment 3: straight horizontal 170m -->
-          <rect x="30" y="133" width="105" height="24" rx="4" fill="var(--color-primary)" opacity="0.8"/>
-          <!-- Curve 2: right turn -->
-          <path d="M135 133 Q180 133 185 170" stroke="var(--color-primary)" stroke-width="28" fill="none" stroke-linecap="round" opacity="0.8"/>
-          <!-- Segment 5: straight vertical 290m -->
-          <rect x="172" y="40" width="24" height="110" rx="4" fill="var(--color-primary)" opacity="0.8"/>
+        <!--
+          Decorative road silhouette matching the real Diamant Laan layout.
+          ViewBox proportions match the full road map (portrait shape).
+          Road width shown at 20px for visual impact; actual road is 6m wide.
+
+          Road path (top → bottom):
+            Seg1 – 130m vertical  (top-right)
+            Seg2+3 – 270m horizontal (left turn)
+            Seg4 – kink / corner
+            Seg5 – 290m vertical  (bottom-left)
+        -->
+        <svg viewBox="0 0 300 440" class="road-svg">
+          <!-- Seg1: short vertical at top-right -->
+          <rect x="264" y="10" width="20" height="110" rx="5" fill="var(--color-primary)" opacity="0.85"/>
+          <!-- Corner join – rounds the elbow -->
+          <rect x="244" y="110" width="40" height="20" rx="5" fill="var(--color-primary)" opacity="0.85"/>
+          <!-- Horizontal section (Seg2 + Seg3) -->
+          <rect x="16" y="110" width="228" height="20" rx="5" fill="var(--color-primary)" opacity="0.85"/>
+          <!-- Kink / corner at bottom-left -->
+          <rect x="16" y="130" width="20" height="10" rx="3" fill="var(--color-primary)" opacity="0.85"/>
+          <!-- Seg5: long vertical at bottom-left -->
+          <rect x="16" y="140" width="20" height="280" rx="5" fill="var(--color-primary)" opacity="0.85"/>
         </svg>
       </div>
     </div>
@@ -49,7 +60,7 @@ import { AdminService } from '../../services/admin.service';
       background: var(--color-primary-light);
     }
     .hero-map {
-      max-width: 600px;
+      max-width: 220px;
       margin: 0 auto;
       padding: 2rem 1rem 0;
     }
@@ -95,12 +106,12 @@ import { AdminService } from '../../services/admin.service';
   `]
 })
 export class HomeComponent implements OnInit {
-  private admin = inject(AdminService);
+  private road = inject(RoadService);
   progress = 0;
   totalRaised = 0;
 
   ngOnInit() {
-    this.admin.getStats().subscribe(stats => {
+    this.road.getStats().subscribe(stats => {
       this.progress = stats.progress;
       this.totalRaised = stats.totalRaised;
     });

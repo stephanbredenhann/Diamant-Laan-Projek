@@ -8,6 +8,7 @@ export enum SquareStatus {
 export interface Square {
   id: number;
   status: SquareStatus;
+  isSold?: boolean;
 }
 
 export const STATUS_LABELS: Record<SquareStatus, string> = {

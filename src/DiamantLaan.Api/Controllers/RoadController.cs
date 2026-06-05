@@ -1,7 +1,6 @@
-using System.Security.Claims;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models.Dtos;
-using Microsoft.AspNetCore.Authorization;
+using DiamantLaan.Api.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,9 +19,20 @@ public class RoadController : ControllerBase
     {
         var squares = await _db.Squares
             .OrderBy(s => s.Id)
-            .Select(s => new SquareDto { Id = s.Id, Status = s.Status })
+            .Select(s => new SquareDto { Id = s.Id, Status = s.Status, IsSold = s.OwnerId != null })
             .ToListAsync();
 
         return Ok(squares);
+    }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats()
+    {
+        var total = await _db.Squares.CountAsync();
+        var klaarCount = await _db.Squares.CountAsync(s => s.Status == SquareStatus.KlaarGeteer);
+        var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
+        var totalRaised = await _db.Purchases.SumAsync(p => (double)p.Amount);
+
+        return Ok(new { progress, totalRaised });
     }
 }

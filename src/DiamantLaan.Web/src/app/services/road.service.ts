@@ -9,4 +9,8 @@ export class RoadService {
   getSquares() {
     return this.http.get<Square[]>('/api/road/squares');
   }
+
+  getStats() {
+    return this.http.get<{ progress: number; totalRaised: number }>('/api/road/stats');
+  }
 }

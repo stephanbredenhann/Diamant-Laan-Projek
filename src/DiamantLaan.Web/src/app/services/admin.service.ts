@@ -7,7 +7,10 @@ export class AdminService {
   constructor(private http: HttpClient) {}
 
   updateStatus(squareIds: number[], status: SquareStatus) {
-    return this.http.put<any>('/api/admin/squares/status', { squareIds, status });
+    return this.http.put<any>('/api/admin/squares/status', {
+      squareIds,
+      status: Number(status)
+    });
   }
 
   getPurchases() {

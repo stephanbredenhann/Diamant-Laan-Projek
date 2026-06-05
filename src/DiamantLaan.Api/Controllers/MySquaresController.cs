@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DiamantLaan.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/my-squares")]
 [Authorize]
 public class MySquaresController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class MySquaresController : ControllerBase
         var squares = await _db.Squares
             .Where(s => s.OwnerId == userId)
             .OrderBy(s => s.Id)
-            .Select(s => new SquareDto { Id = s.Id, Status = s.Status })
+            .Select(s => new SquareDto { Id = s.Id, Status = s.Status, IsSold = true })
             .ToListAsync();
 
         return Ok(squares);

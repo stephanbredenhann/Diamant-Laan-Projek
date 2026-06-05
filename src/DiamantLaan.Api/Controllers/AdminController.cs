@@ -75,7 +75,7 @@ public class AdminController : ControllerBase
         var klaarCount = perStatus.FirstOrDefault(x => x.Status == SquareStatus.KlaarGeteer)?.Count ?? 0;
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
 
-        var totalRaised = await _db.Purchases.SumAsync(p => p.Amount);
+        var totalRaised = await _db.Purchases.SumAsync(p => (double)p.Amount);
 
         return Ok(new
         {

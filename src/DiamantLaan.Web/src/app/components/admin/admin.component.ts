@@ -4,14 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
-
+import { RoadMapComponent } from '../shared/road-map/road-map.component';
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RoadMapComponent],
   template: `
     <div class="container">
       <h2>Admin Paneel</h2>
@@ -20,18 +20,11 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
         <div class="stat"><strong>Ingesamel:</strong> R{{ stats.totalRaised | number:'1.0-0' }}</div>
       </div>
       <div class="controls">
-        <select [(ngModel)]="filterStatus">
-          <option value="">Alle statusse</option>
-          <option value="0">Nog nie begin nie</option>
-          <option value="1">Voorberei</option>
-          <option value="2">Besig om te teer</option>
-          <option value="3">Klaar geteer</option>
-        </select>
         @if (selectedIds().size > 0) {
           <select [(ngModel)]="targetStatus" (change)="updateStatus()">
-            <option value="">Stel in as...</option>
+            <option [ngValue]="null">Stel in as...</option>
             @for (s of STATUS_OPTIONS; track s) {
-              <option [value]="s">{{ STATUS_LABELS[s] }}</option>
+              <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
             }
           </select>
         }
@@ -42,17 +35,18 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
       @if (message) {
         <p class="msg" [class.error]="isError">{{ message }}</p>
       }
-      <div class="square-grid">
-        @for (sq of filteredSquares(); track sq.id) {
-          <div
-            class="sq"
-            [class.selected]="selectedIds().has(sq.id)"
-            [style.background]="colorMap[sq.status]"
-            [title]="'#' + sq.id + ' \u2014 ' + STATUS_LABELS[sq.status]"
-            (click)="toggle(sq)"
-          ></div>
-        }
+      <div class="legend">
+        <span><span class="dot" style="background:#d1d5db"></span> Beskikbaar</span>
+        <span><span class="dot" style="background:#fb923c"></span> Verkoop</span>
+        <span><span class="dot" style="background:#fbbf24"></span> Voorberei</span>
+        <span><span class="dot" style="background:#3b82f6"></span> Besig om te teer</span>
+        <span><span class="dot" style="background:#22c55e"></span> Klaar geteer</span>
       </div>
+      <app-road-map
+        [squares]="squares"
+        [selectedIds]="selectedIdsArray()"
+        (squareClicked)="toggleById($event)"
+      />
     </div>
   `,
   styles: [`
@@ -64,25 +58,8 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
     .msg { font-size: 0.8125rem; margin-bottom: 0.5rem; color: var(--color-success); }
     .msg.error { color: #ef4444; }
-    .square-grid {
-      display: grid;
-      grid-template-columns: repeat(50, minmax(0, 1fr));
-      gap: 1px;
-      border: 1px solid var(--color-border);
-      background: #e5e7eb;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-    .sq {
-      aspect-ratio: 1;
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-    .sq:hover { transform: scale(1.3); z-index: 1; }
-    .sq.selected { outline: 2px solid #f97316; outline-offset: -1px; }
-    @media (max-width: 480px) {
-      .square-grid { grid-template-columns: repeat(25, minmax(0, 1fr)); }
-    }
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; margin-bottom: 1rem; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
   `]
 })
 export class AdminComponent implements OnInit {
@@ -92,11 +69,9 @@ export class AdminComponent implements OnInit {
   squares: Square[] = [];
   stats = { progress: 0, totalRaised: 0 };
   selectedIds = signal<Set<number>>(new Set());
-  filterStatus = '';
   targetStatus: SquareStatus | null = null;
   message = '';
   isError = false;
-  colorMap: Record<number, string> = { 0: '#d1d5db', 1: '#fbbf24', 2: '#3b82f6', 3: '#22c55e' };
   STATUS_LABELS = STATUS_LABELS;
   STATUS_OPTIONS = STATUS_OPTIONS;
 
@@ -104,9 +79,14 @@ export class AdminComponent implements OnInit {
     this.refresh();
   }
 
-  filteredSquares() {
-    if (this.filterStatus === '') return this.squares;
-    return this.squares.filter(s => s.status === parseInt(this.filterStatus));
+  selectedIdsArray(): number[] {
+    return Array.from(this.selectedIds());
+  }
+
+  toggleById(sqId: number) {
+    const sq = this.squares.find(s => s.id === sqId);
+    if (!sq) return;
+    this.toggle(sq);
   }
 
   toggle(sq: Square) {
@@ -124,6 +104,7 @@ export class AdminComponent implements OnInit {
     this.admin.updateStatus(ids, this.targetStatus).subscribe({
       next: () => {
         this.message = `${ids.length} blokke opgedateer.`;
+        this.targetStatus = null;
         this.refresh();
         this.clearSelection();
       },
@@ -135,7 +116,13 @@ export class AdminComponent implements OnInit {
   }
 
   private refresh() {
-    this.admin.getStats().subscribe(s => this.stats = s);
+    this.admin.getStats().subscribe({
+      next: s => this.stats = s,
+      error: () => {
+        this.message = 'Kon nie statistieke laai nie.';
+        this.isError = true;
+      }
+    });
     this.road.getSquares().subscribe(s => this.squares = s);
   }
 }
