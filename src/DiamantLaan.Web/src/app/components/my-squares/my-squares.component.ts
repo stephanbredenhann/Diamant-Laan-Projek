@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { PurchaseService } from '../../services/purchase.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
@@ -6,7 +7,7 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
 @Component({
   selector: 'app-my-squares',
   standalone: true,
-  imports: [StatusBadgeComponent],
+  imports: [CommonModule, StatusBadgeComponent],
   template: `
     <div class="container">
       <h2>My Blokke</h2>

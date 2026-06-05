@@ -40,7 +40,8 @@ public class AuthController : ControllerBase
 
         await _userManager.AddToRoleAsync(user, "Buyer");
 
-        var token = GenerateJwtToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user, roles);
         return Ok(new { token, user.Email, user.FirstName, user.LastName });
     }
 
@@ -51,12 +52,12 @@ public class AuthController : ControllerBase
         if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
             return Unauthorized(new { message = "Ongeldige e-pos of wagwoord." });
 
-        var token = GenerateJwtToken(user);
         var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user, roles);
         return Ok(new { token, user.Email, user.FirstName, user.LastName, roles });
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(User user, IList<string> roles)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -68,6 +69,11 @@ public class AuthController : ControllerBase
             new(ClaimTypes.GivenName, user.FirstName),
             new(ClaimTypes.Surname, user.LastName)
         };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],

@@ -1,16 +1,17 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
-import { StatusBadgeComponent } from '../shared/status-badge/status-badge.component';
+
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [FormsModule, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="container">
       <h2>Admin Paneel</h2>

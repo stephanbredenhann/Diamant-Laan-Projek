@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+
+import { Router } from '@angular/router';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<number, string> = {
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [],
   template: `
     <div class="container map-page">
       <div class="map-header">
