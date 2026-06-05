@@ -72,4 +72,14 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<User>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var db = services.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    await AppDbContext.SeedAsync(userManager, roleManager, db);
+}
+
 app.Run();

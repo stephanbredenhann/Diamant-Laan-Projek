@@ -1,4 +1,6 @@
 using DiamantLaan.Api.Models;
+using DiamantLaan.Api.Models.Enums;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,5 +41,39 @@ public class AppDbContext : IdentityDbContext<User>
             .HasOne(p => p.User)
             .WithMany(u => u.Purchases)
             .HasForeignKey(p => p.UserId);
+    }
+
+    public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db)
+    {
+        if (!await roleManager.RoleExistsAsync("Admin"))
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        if (!await roleManager.RoleExistsAsync("Buyer"))
+            await roleManager.CreateAsync(new IdentityRole("Buyer"));
+
+        var adminEmail = "admin@diamantlaan.co.za";
+        if (await userManager.FindByEmailAsync(adminEmail) == null)
+        {
+            var admin = new User
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                FirstName = "Admin",
+                LastName = "Diamant",
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(admin, "Admin123!");
+            await userManager.AddToRoleAsync(admin, "Admin");
+        }
+
+        if (!db.Squares.Any())
+        {
+            var squares = new List<Square>();
+            for (int i = 1; i <= 4500; i++)
+            {
+                squares.Add(new Square { Id = i, Status = SquareStatus.NogNieBeginNie });
+            }
+            db.Squares.AddRange(squares);
+            await db.SaveChangesAsync();
+        }
     }
 }
