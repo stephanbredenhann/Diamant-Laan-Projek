@@ -67,7 +67,8 @@
               "buildTarget": "DiamantLaan.Web:build:production"
             },
             "development": {
-              "buildTarget": "DiamantLaan.Web:build:development"
+              "buildTarget": "DiamantLaan.Web:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
