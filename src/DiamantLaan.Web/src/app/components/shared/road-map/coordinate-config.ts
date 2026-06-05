@@ -114,11 +114,7 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
     const θ = bearingAtDistance(wps, cumDists, polyDist);
     const perpθ = (θ + 90) % 360;
 
-    // Offset perpendicular for road width (centered on path, ±2.5 m)
-    const perpOffset = widthIdx - (ROAD_WIDTH - 1) / 2;
-    const sqCenter = perpOffset === 0
-      ? centerOnPath
-      : offset(centerOnPath, perpOffset >= 0 ? perpθ : (perpθ + 180) % 360, Math.abs(perpOffset));
+    const sqCenter = centerOnPath;
 
     // 4 corners of a 1 m × 1 m square around sqCenter
     const half = 0.5;

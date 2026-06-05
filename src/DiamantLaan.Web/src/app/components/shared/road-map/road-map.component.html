@@ -1,1 +1,6 @@
-<div class="map-container"></div>
+<div class="map-wrapper">
+  <button class="select-toggle" [class.active]="selectMode" (click)="toggleSelectMode()">
+    {{ selectMode ? 'Sleep om te beweeg' : 'Sleep om te kies' }}
+  </button>
+  <div class="map-container"></div>
+</div>

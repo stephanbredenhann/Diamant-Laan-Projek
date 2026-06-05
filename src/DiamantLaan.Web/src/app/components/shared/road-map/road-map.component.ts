@@ -24,9 +24,10 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   @Input() squares: Square[] = [];
   @Input() selectedIds: number[] = [];
   @Input() statusFilter: number | null = null;
-  @Input() dragSelect = true;
   @Output() squareClicked = new EventEmitter<number>();
   @Output() squaresRangeSelected = new EventEmitter<number[]>();
+
+  selectMode = false;
 
   private el = inject(ElementRef);
   private map!: L.Map;
@@ -46,6 +47,28 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     if (changes['squares'] || changes['selectedIds'] || changes['statusFilter']) {
       this.refreshLayer();
     }
+  }
+
+  toggleSelectMode() {
+    this.selectMode = !this.selectMode;
+    if (!this.map) return;
+
+    if (this.selectMode) {
+      this.map.dragging.disable();
+    } else {
+      this.map.dragging.enable();
+      this.cancelSelection();
+    }
+  }
+
+  private cancelSelection() {
+    if (this.selectBox) {
+      this.map.removeLayer(this.selectBox);
+      this.selectBox = null;
+    }
+    this.isDragging = false;
+    this.dragStartPoint = null;
+    this.map.getContainer().style.cursor = '';
   }
 
   private initMap() {
@@ -75,22 +98,20 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       maxNativeZoom: 19,
     }).addTo(this.map);
 
-    if (this.dragSelect) {
-      this.setupDragSelect();
-    }
-
+    this.setupDragSelect();
     this.initialized = true;
     this.refreshLayer();
   }
 
   private setupDragSelect() {
     this.map.getContainer().addEventListener('mousedown', (e: MouseEvent) => {
+      if (!this.selectMode) return;
       this.dragStartPoint = L.point(e.clientX, e.clientY);
       this.isDragging = false;
     });
 
     this.map.getContainer().addEventListener('mousemove', (e: MouseEvent) => {
-      if (!this.dragStartPoint) return;
+      if (!this.selectMode || !this.dragStartPoint) return;
 
       const current = L.point(e.clientX, e.clientY);
       const dist = this.dragStartPoint.distanceTo(current);
@@ -98,7 +119,6 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       if (dist > DRAG_THRESHOLD && !this.isDragging) {
         this.isDragging = true;
         this.map.getContainer().style.cursor = 'crosshair';
-        this.map.dragging.disable();
       }
 
       if (this.isDragging) {
@@ -107,6 +127,8 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     });
 
     const finishDrag = () => {
+      if (!this.selectMode) return;
+
       if (this.selectBox) {
         const bounds = this.selectBox.getBounds();
         this.map.removeLayer(this.selectBox);
@@ -128,7 +150,6 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       this.isDragging = false;
       this.dragStartPoint = null;
       this.map.getContainer().style.cursor = '';
-      this.map.dragging.enable();
     };
 
     this.map.getContainer().addEventListener('mouseup', finishDrag);
