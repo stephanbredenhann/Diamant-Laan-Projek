@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
+  pendingSquareIds: number[] = [];
+
   constructor(private http: HttpClient) {}
 
   createPurchase(squareIds: number[]) {

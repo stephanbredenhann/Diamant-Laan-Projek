@@ -5,13 +5,13 @@ import { WAYPOINTS } from '../../map/map-segments';
 import { generateSquareGeoJson } from './coordinate-config';
 
 const STATUS_COLORS: Record<number, string> = {
-  [SquareStatus.NogNieBeginNie]: '#d1d5db',
-  [SquareStatus.Voorberei]:      '#fbbf24',
-  [SquareStatus.BesigOmTeTeer]:  '#3b82f6',
-  [SquareStatus.KlaarGeteer]:    '#22c55e',
+  [SquareStatus.NogNieBeginNie]: '#D4C4A8',
+  [SquareStatus.Voorberei]:      '#B5651D',
+  [SquareStatus.BesigOmTeTeer]:  '#8B7355',
+  [SquareStatus.KlaarGeteer]:    '#6B7B3C',
 };
-const SOLD_COLOR = '#fb923c';
-const SELECTED_COLOR = '#f97316';
+const SOLD_COLOR = '#C67B5C';
+const SELECTED_COLOR = '#3D2B1F';
 const DRAG_THRESHOLD = 5;
 
 @Component({
@@ -101,6 +101,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     this.setupDragSelect();
     this.initialized = true;
     this.refreshLayer();
+    setTimeout(() => this.map.invalidateSize(), 100);
   }
 
   private setupDragSelect() {
@@ -173,10 +174,10 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     const bounds = L.latLngBounds(p1, p2);
 
     this.selectBox = L.rectangle(bounds, {
-      color: '#f97316',
+      color: '#C67B5C',
       weight: 1,
       fillOpacity: 0.1,
-      fillColor: '#f97316',
+      fillColor: '#C67B5C',
       interactive: false,
     }).addTo(this.map);
   }

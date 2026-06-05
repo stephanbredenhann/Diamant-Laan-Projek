@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
 import { StatusBadgeComponent } from '../shared/status-badge/status-badge.component';
@@ -7,19 +8,35 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
 @Component({
   selector: 'app-my-squares',
   standalone: true,
-  imports: [CommonModule, StatusBadgeComponent],
+  imports: [CommonModule, RouterLink, StatusBadgeComponent],
   template: `
     <div class="container">
-      <h2>My Blokke</h2>
+      <div class="page-header">
+        <h2>My Blokke</h2>
+        @if (squares.length > 0) {
+          <p class="summary">{{ squares.length }} blokke gekoop — <strong>R{{ squares.length * 500 | number:'1.0-0' }}</strong> totaal</p>
+        }
+      </div>
       @if (squares.length === 0) {
-        <p class="empty">Jy het nog geen blokke gekoop nie.</p>
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <h3>Nog geen blokke gekoop nie</h3>
+          <p>Gaan na die kaart om jou eerste vierkante meter te borg.</p>
+          <a routerLink="/kaart" class="btn btn-primary">Sien Kaart & Koop</a>
+        </div>
       } @else {
-        <p>{{ squares.length }} blokke gekoop — R{{ squares.length * 500 | number:'1.0-0' }} totaal</p>
         <div class="grid">
           @for (sq of squares; track sq.id) {
             <div class="sq-card">
-              <strong>#{{ sq.id }}</strong>
-              <app-status-badge [status]="sq.status"></app-status-badge>
+              <div class="sq-info">
+                <span class="sq-id">Blok #{{ sq.id }}</span>
+                <app-status-badge [status]="sq.status"></app-status-badge>
+              </div>
+              <div class="sq-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="getProgressPercent(sq.status)"></div>
+                </div>
+              </div>
             </div>
           }
         </div>
@@ -27,22 +44,78 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1rem; max-width: 800px; }
-    h2 { margin-bottom: 0.5rem; }
-    .empty { color: var(--color-text-muted); }
+    .container { padding: 2.5rem 1.5rem 4rem; max-width: 900px; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--color-text);
+      margin-bottom: 0.375rem;
+    }
+    .summary {
+      font-size: 0.9375rem;
+      color: var(--color-muted);
+    }
+    .summary strong { color: var(--color-terracotta); }
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--color-surface);
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius);
+      color: var(--color-muted);
+    }
+    .empty-state svg { stroke: var(--color-sand); margin-bottom: 1rem; }
+    .empty-state h3 {
+      font-family: var(--font-heading);
+      font-size: 1.125rem;
+      color: var(--color-text);
+      margin-bottom: 0.375rem;
+    }
+    .empty-state p { font-size: 0.875rem; margin-bottom: 1.25rem; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 0.5rem;
-      margin-top: 1rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
     }
     .sq-card {
+      background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
-      padding: 0.75rem;
+      padding: 1rem 1.25rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .sq-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .sq-info {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 0.625rem;
+    }
+    .sq-id {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--color-text);
+    }
+    .sq-progress { margin-top: 0.25rem; }
+    .progress-bar {
+      height: 4px;
+      background: var(--color-sand-light);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-olive);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
     }
   `]
 })
@@ -52,5 +125,15 @@ export class MySquaresComponent implements OnInit {
 
   ngOnInit() {
     this.purchase.getMySquares().subscribe(s => this.squares = s);
+  }
+
+  getProgressPercent(status: SquareStatus): number {
+    const map: Record<SquareStatus, number> = {
+      [SquareStatus.NogNieBeginNie]: 0,
+      [SquareStatus.Voorberei]: 33,
+      [SquareStatus.BesigOmTeTeer]: 66,
+      [SquareStatus.KlaarGeteer]: 100,
+    };
+    return map[status] ?? 0;
   }
 }

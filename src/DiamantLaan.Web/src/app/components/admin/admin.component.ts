@@ -14,10 +14,22 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
   imports: [CommonModule, FormsModule, RoadMapComponent],
   template: `
     <div class="container">
-      <h2>Admin Paneel</h2>
-      <div class="stats-bar">
-        <div class="stat"><strong>Progress:</strong> {{ stats.progress }}%</div>
-        <div class="stat"><strong>Ingesamel:</strong> R{{ stats.totalRaised | number:'1.0-0' }}</div>
+      <div class="page-header">
+        <h2>Admin Paneel</h2>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.progress }}<small>%</small></div>
+          <div class="stat-label">Gefinansier</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">R{{ stats.totalRaised | number:'1.0-0' }}</div>
+          <div class="stat-label">Ingesamel</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ selectedIds().size }}</div>
+          <div class="stat-label">Gekies</div>
+        </div>
       </div>
       <div class="controls">
         @if (selectedIds().size > 0) {
@@ -33,14 +45,14 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
         </button>
       </div>
       @if (message) {
-        <p class="msg" [class.error]="isError">{{ message }}</p>
+        <div class="msg" [class.error]="isError">{{ message }}</div>
       }
       <div class="legend">
-        <span><span class="dot" style="background:#d1d5db"></span> Beskikbaar</span>
-        <span><span class="dot" style="background:#fb923c"></span> Verkoop</span>
-        <span><span class="dot" style="background:#fbbf24"></span> Voorberei</span>
-        <span><span class="dot" style="background:#3b82f6"></span> Besig om te teer</span>
-        <span><span class="dot" style="background:#22c55e"></span> Klaar geteer</span>
+        <span><span class="dot free"></span> Beskikbaar</span>
+        <span><span class="dot sold"></span> Verkoop</span>
+        <span><span class="dot prep"></span> Voorberei</span>
+        <span><span class="dot busy"></span> Besig om te teer</span>
+        <span><span class="dot done"></span> Klaar geteer</span>
       </div>
       <app-road-map
         [squares]="squares"
@@ -51,16 +63,79 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1rem; }
-    h2 { margin-bottom: 0.5rem; }
-    .stats-bar { display: flex; gap: 2rem; margin-bottom: 1rem; font-size: 0.875rem; }
-    .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .controls select { width: auto; min-width: 180px; }
-    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
-    .msg { font-size: 0.8125rem; margin-bottom: 0.5rem; color: var(--color-success); }
-    .msg.error { color: #ef4444; }
-    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; margin-bottom: 1rem; }
-    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+    .container { padding: 2rem 1.5rem 4rem; }
+    .page-header { margin-bottom: 1.5rem; }
+    .page-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--color-text);
+    }
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-value {
+      font-family: var(--font-heading);
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+    .stat-value small {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-muted);
+    }
+    .stat-label {
+      font-family: var(--font-heading);
+      font-size: 0.6875rem;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-top: 0.125rem;
+    }
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .controls select {
+      width: auto;
+      min-width: 200px;
+    }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .msg {
+      font-size: 0.8125rem;
+      padding: 0.625rem 1rem;
+      border-radius: var(--radius-sm);
+      background: #E8ECD8;
+      color: #5A6A32;
+      margin-bottom: 1rem;
+    }
+    .msg.error {
+      background: #FEF2F2;
+      color: #DC2626;
+    }
+    .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); margin-bottom: 0.75rem; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+    .dot.free { background: #D4C4A8; }
+    .dot.sold { background: #C67B5C; }
+    .dot.prep { background: #B5651D; }
+    .dot.busy { background: #8B7355; }
+    .dot.done { background: #6B7B3C; }
+    @media (max-width: 640px) {
+      .stats-row { flex-direction: column; }
+    }
   `]
 })
 export class AdminComponent implements OnInit {

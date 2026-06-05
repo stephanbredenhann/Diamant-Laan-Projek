@@ -10,20 +10,23 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <div class="container">
       <div class="auth-card">
-        <h2>Meld Aan</h2>
+        <div class="auth-header">
+          <h2>Meld Aan</h2>
+          <p>Welkom terug! Meld aan om jou blokke te bestuur.</p>
+        </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
             <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email">
+            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           <div class="form-group">
             <label>Wagwoord</label>
-            <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password">
+            <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord">
           </div>
           @if (error) {
-            <p class="error">{{ error }}</p>
+            <div class="error-alert">{{ error }}</div>
           }
-          <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
             {{ loading ? 'Besig...' : 'Meld Aan' }}
           </button>
         </form>
@@ -33,16 +36,50 @@ import { AuthService } from '../../services/auth.service';
   `,
   styles: [`
     .auth-card {
-      max-width: 400px;
-      margin: 3rem auto;
-      padding: 2rem;
+      max-width: 460px;
+      margin: 3rem auto 4rem;
+      background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      box-shadow: var(--shadow);
     }
-    .auth-card h2 { margin-bottom: 1.5rem; }
-    .auth-link { margin-top: 1rem; font-size: 0.875rem; text-align: center; }
-    .error { color: #ef4444; font-size: 0.8125rem; margin-bottom: 0.75rem; }
-    button { width: 100%; margin-top: 0.5rem; }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .auth-header h2 {
+      font-size: 1.5rem;
+      color: var(--color-text);
+      margin-bottom: 0.375rem;
+    }
+    .auth-header p {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+    }
+    .btn-block { width: 100%; margin-top: 0.5rem; }
+    .auth-link {
+      margin-top: 1.25rem;
+      font-size: 0.875rem;
+      text-align: center;
+      color: var(--color-muted);
+    }
+    .auth-link a {
+      color: var(--color-terracotta);
+      font-weight: 600;
+    }
+    .error-alert {
+      background: #FEF2F2;
+      color: #DC2626;
+      font-size: 0.8125rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      border: 1px solid #FECACA;
+    }
+    @media (max-width: 480px) {
+      .auth-card { margin: 1.5rem auto 2rem; padding: 1.5rem 1.25rem; }
+    }
   `]
 })
 export class LoginComponent {

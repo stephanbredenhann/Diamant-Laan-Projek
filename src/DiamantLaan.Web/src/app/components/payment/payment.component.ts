@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { PurchaseService } from '../../services/purchase.service';
 
 @Component({
   selector: 'app-payment',
@@ -7,33 +8,173 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   template: `
     <div class="container">
-      <div class="payment-card">
-        <h2>Betaling</h2>
-        <div class="placeholder-box">
-          <p class="big-text">Stripe / PayFast hier</p>
-          <p class="small-text">Betaling word in die toekoms geintegreer.</p>
-        </div>
-        <div class="actions">
-          <a routerLink="/my-blokke" class="btn btn-primary">Gaan na My Blokke</a>
-          <a routerLink="/kaart" class="btn btn-outline">Koop Nog Blokke</a>
-        </div>
+      <div class="gateway-card">
+        @if (!submitted) {
+          <h2>Betaling</h2>
+          <p class="summary">
+            {{ squareIds.length }} blokke gekies —
+            <strong>R{{ squareIds.length * 500 }}</strong>
+          </p>
+
+          <div class="gateway-box">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <p class="gateway-text">Stripe / PayFast hier</p>
+            <p class="gateway-hint">Betaling word in die toekoms geintegreer.</p>
+          </div>
+
+          @if (error) {
+            <div class="error-alert">{{ error }}</div>
+          }
+
+          <div class="actions">
+            <a routerLink="/kaart" class="btn btn-outline">Terug</a>
+            <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
+              {{ loading ? 'Besig...' : 'Volgende' }}
+              @if (!loading) { <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> }
+            </button>
+          </div>
+        } @else {
+          <div class="success-card">
+            <div class="success-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h2>Betaling Suksesvol!</h2>
+            <p class="success-detail">
+              {{ successCount }} blokke gekoop vir <strong>R{{ successCount * 500 }}</strong>
+            </p>
+            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">
+              Gaan na My Blokke
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+        }
       </div>
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1rem; }
-    .payment-card { max-width: 500px; margin: 2rem auto; text-align: center; }
-    h2 { margin-bottom: 1.5rem; }
-    .placeholder-box {
+    .container { padding: 2rem 1.5rem; }
+    .gateway-card {
+      max-width: 460px;
+      margin: 2rem auto;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      box-shadow: var(--shadow);
+    }
+    h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--color-text);
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+    .summary {
+      text-align: center;
+      font-size: 0.9375rem;
+      color: var(--color-muted);
+      margin-bottom: 1.75rem;
+    }
+    .summary strong { color: var(--color-terracotta); }
+    .gateway-box {
       border: 2px dashed var(--color-border);
       border-radius: var(--radius);
-      padding: 3rem 1rem;
-      margin-bottom: 1.5rem;
-      background: var(--color-surface);
+      padding: 2rem 1.5rem;
+      margin-bottom: 1.75rem;
+      background: var(--color-cream);
+      text-align: center;
     }
-    .big-text { font-size: 1.25rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.5rem; }
-    .small-text { font-size: 0.8125rem; color: var(--color-text-muted); }
-    .actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .gateway-box svg {
+      stroke: var(--color-muted);
+      margin-bottom: 0.75rem;
+    }
+    .gateway-text {
+      font-family: var(--font-heading);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--color-muted);
+      margin-bottom: 0.25rem;
+    }
+    .gateway-hint {
+      font-size: 0.8125rem;
+      color: var(--color-muted-light);
+    }
+    .error-alert {
+      background: #FEF2F2;
+      color: #DC2626;
+      font-size: 0.8125rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      border: 1px solid #FECACA;
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .actions .btn { flex: 1; }
+
+    .success-card { text-align: center; }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #E8ECD8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .success-icon svg { stroke: var(--color-olive); }
+    .success-detail {
+      font-size: 0.9375rem;
+      color: var(--color-muted);
+      margin-bottom: 2rem;
+    }
+    .success-detail strong { color: var(--color-terracotta); }
+    .btn-wide { min-width: 220px; }
+
+    @media (max-width: 480px) {
+      .gateway-card { padding: 1.5rem 1.25rem; }
+      .actions { flex-direction: column; }
+    }
   `]
 })
-export class PaymentComponent {}
+export class PaymentComponent implements OnInit {
+  private router = inject(Router);
+  private purchase = inject(PurchaseService);
+
+  squareIds: number[] = [];
+  loading = false;
+  error = '';
+  submitted = false;
+  successCount = 0;
+
+  ngOnInit() {
+    const ids = this.purchase.pendingSquareIds;
+    if (ids && Array.isArray(ids) && ids.length > 0) {
+      this.squareIds = ids;
+    } else {
+      this.router.navigate(['/kaart']);
+    }
+  }
+
+  submitPayment() {
+    if (this.squareIds.length === 0) return;
+    this.error = '';
+    this.loading = true;
+    this.purchase.createPurchase(this.squareIds).subscribe({
+      next: (res) => {
+        this.successCount = res.squareCount;
+        this.submitted = true;
+        this.loading = false;
+        this.purchase.pendingSquareIds = [];
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Betaling het misluk.';
+        this.loading = false;
+      }
+    });
+  }
+}

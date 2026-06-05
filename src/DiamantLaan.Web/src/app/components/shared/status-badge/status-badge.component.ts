@@ -8,5 +8,5 @@ import { SquareStatus, STATUS_LABELS } from '../../../models/square';
 })
 export class StatusBadgeComponent {
   @Input({ required: true }) status!: SquareStatus;
-  get label(): string { return STATUS_LABELS[this.status]; }
+  get label(): string { return STATUS_LABELS[this.status] };
 }
