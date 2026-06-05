@@ -28,6 +28,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
           [squares]="squares"
           [selectedIds]="selectedIdsArray()"
           (squareClicked)="toggleSquare($event)"
+          (squaresRangeSelected)="selectRange($event)"
         />
         <div class="sidebar">
           <div class="sidebar-inner">
@@ -119,6 +120,25 @@ export class MapComponent implements OnInit {
       selected.delete(sqId);
     } else {
       selected.add(sqId);
+    }
+    this.selectedIds.set(selected);
+    this.message = '';
+    this.isError = false;
+  }
+
+  selectRange(ids: number[]) {
+    if (!this.auth.currentUser()) {
+      this.router.navigate(['/meld-aan']);
+      return;
+    }
+    const selected = new Set(this.selectedIds());
+    for (const id of ids) {
+      const sq = this.squares.find(s => s.id === id);
+      if (!sq) continue;
+      if (sq.isSold) continue;
+      if (sq.status !== SquareStatus.NogNieBeginNie) continue;
+      if (id > this.segments[this.segments.length - 1].endId) continue;
+      selected.add(id);
     }
     this.selectedIds.set(selected);
     this.message = '';

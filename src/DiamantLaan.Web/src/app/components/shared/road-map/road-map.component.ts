@@ -12,6 +12,7 @@ const STATUS_COLORS: Record<number, string> = {
 };
 const SOLD_COLOR = '#fb923c';
 const SELECTED_COLOR = '#f97316';
+const DRAG_THRESHOLD = 5;
 
 @Component({
   selector: 'app-road-map',
@@ -23,12 +24,18 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   @Input() squares: Square[] = [];
   @Input() selectedIds: number[] = [];
   @Input() statusFilter: number | null = null;
+  @Input() dragSelect = true;
   @Output() squareClicked = new EventEmitter<number>();
+  @Output() squaresRangeSelected = new EventEmitter<number[]>();
 
   private el = inject(ElementRef);
   private map!: L.Map;
   private geoLayer!: L.GeoJSON;
   private initialized = false;
+
+  private isDragging = false;
+  private dragStartPoint: L.Point | null = null;
+  private selectBox: L.Rectangle | null = null;
 
   ngAfterViewInit() {
     this.initMap();
@@ -56,7 +63,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       center: [midLat, midLng],
       zoom: 18,
       minZoom: 16,
-      maxZoom: 20,
+      maxZoom: 22,
       zoomControl: true,
       attributionControl: true,
       renderer: L.canvas(),
@@ -64,11 +71,88 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 20,
+      maxZoom: 22,
+      maxNativeZoom: 19,
     }).addTo(this.map);
+
+    if (this.dragSelect) {
+      this.setupDragSelect();
+    }
 
     this.initialized = true;
     this.refreshLayer();
+  }
+
+  private setupDragSelect() {
+    this.map.getContainer().addEventListener('mousedown', (e: MouseEvent) => {
+      this.dragStartPoint = L.point(e.clientX, e.clientY);
+      this.isDragging = false;
+    });
+
+    this.map.getContainer().addEventListener('mousemove', (e: MouseEvent) => {
+      if (!this.dragStartPoint) return;
+
+      const current = L.point(e.clientX, e.clientY);
+      const dist = this.dragStartPoint.distanceTo(current);
+
+      if (dist > DRAG_THRESHOLD && !this.isDragging) {
+        this.isDragging = true;
+        this.map.getContainer().style.cursor = 'crosshair';
+        this.map.dragging.disable();
+      }
+
+      if (this.isDragging) {
+        this.updateSelectBox(current);
+      }
+    });
+
+    const finishDrag = () => {
+      if (this.selectBox) {
+        const bounds = this.selectBox.getBounds();
+        this.map.removeLayer(this.selectBox);
+        this.selectBox = null;
+
+        const ids: number[] = [];
+        this.geoLayer.eachLayer((layer: any) => {
+          if (layer.getBounds && bounds.intersects(layer.getBounds())) {
+            const id = layer.feature?.properties?.id;
+            if (id != null) ids.push(id);
+          }
+        });
+
+        if (ids.length > 0) {
+          this.squaresRangeSelected.emit(ids);
+        }
+      }
+
+      this.isDragging = false;
+      this.dragStartPoint = null;
+      this.map.getContainer().style.cursor = '';
+      this.map.dragging.enable();
+    };
+
+    this.map.getContainer().addEventListener('mouseup', finishDrag);
+    this.map.getContainer().addEventListener('mouseleave', finishDrag);
+  }
+
+  private updateSelectBox(current: L.Point) {
+    if (!this.dragStartPoint) return;
+
+    if (this.selectBox) {
+      this.map.removeLayer(this.selectBox);
+    }
+
+    const p1 = this.map.containerPointToLatLng(this.dragStartPoint);
+    const p2 = this.map.containerPointToLatLng(current);
+    const bounds = L.latLngBounds(p1, p2);
+
+    this.selectBox = L.rectangle(bounds, {
+      color: '#f97316',
+      weight: 1,
+      fillOpacity: 0.1,
+      fillColor: '#f97316',
+      interactive: false,
+    }).addTo(this.map);
   }
 
   private refreshLayer() {
@@ -112,6 +196,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     });
 
     this.geoLayer.on('click', (e: L.LeafletMouseEvent) => {
+      if (this.isDragging) return;
       const layer = (e as any).layer;
       const id = layer?.feature?.properties?.id as number;
       if (id != null) {
@@ -120,6 +205,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     });
 
     this.geoLayer.on('mouseover', (e: L.LeafletMouseEvent) => {
+      if (this.isDragging) return;
       const layer = (e as any).layer;
       const props = layer?.feature?.properties;
       const id = props?.id as number;

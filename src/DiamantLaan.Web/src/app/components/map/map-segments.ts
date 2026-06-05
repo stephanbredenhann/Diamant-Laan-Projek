@@ -68,21 +68,21 @@ export interface Waypoint {
   lng: number;
 }
 
-// 12 unique waypoints defining the real-world road path.
+// 13 waypoints defining the real-world road path.
 // The road runs ~700m start→end. Squares 1–4200 are distributed
 // evenly along this polyline, 6 squares wide.
-// (Note: user's original "point 4" was a duplicate of "point 2" — skipped.)
 export const WAYPOINTS: Waypoint[] = [
-  { label: 'Start',           lat: -29.806075, lng: 24.419353 },
-  { label: 'Waypoint 1',      lat: -29.805764, lng: 24.419708 },
-  { label: 'Waypoint 2',      lat: -29.805344, lng: 24.420086 },
-  { label: 'Waypoint 3',      lat: -29.805108, lng: 24.420269 },
-  { label: 'Waypoint 5',      lat: -29.804342, lng: 24.420447 },
-  { label: 'Waypoint 6',      lat: -29.804194, lng: 24.420419 },
-  { label: 'Waypoint 7',      lat: -29.803889, lng: 24.420161 },
-  { label: 'Waypoint 8',      lat: -29.803522, lng: 24.419742 },
-  { label: 'Waypoint 9',      lat: -29.803072, lng: 24.419269 },
-  { label: 'Waypoint 10',     lat: -29.802264, lng: 24.420228 },
-  { label: 'Waypoint 11',     lat: -29.801950, lng: 24.420606 },
-  { label: 'End',             lat: -29.801347, lng: 24.421422 },
+  { label: 'Start', lat: -29.806075, lng: 24.419353 },
+  { label: 'P1',    lat: -29.805764, lng: 24.419708 },
+  { label: 'P2',    lat: -29.805344, lng: 24.420086 },
+  { label: 'P3',    lat: -29.805108, lng: 24.420269 },
+  { label: 'P4',    lat: -29.804664, lng: 24.420419 },
+  { label: 'P5',    lat: -29.804342, lng: 24.420447 },
+  { label: 'P6',    lat: -29.804194, lng: 24.420419 },
+  { label: 'P7',    lat: -29.803889, lng: 24.420161 },
+  { label: 'P8',    lat: -29.803522, lng: 24.419742 },
+  { label: 'P9',    lat: -29.803072, lng: 24.419269 },
+  { label: 'P10',   lat: -29.802264, lng: 24.420228 },
+  { label: 'P11',   lat: -29.801950, lng: 24.420606 },
+  { label: 'End',   lat: -29.801347, lng: 24.421422 },
 ];

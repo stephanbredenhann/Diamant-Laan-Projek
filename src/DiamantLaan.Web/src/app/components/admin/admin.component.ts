@@ -46,6 +46,7 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
         [squares]="squares"
         [selectedIds]="selectedIdsArray()"
         (squareClicked)="toggleById($event)"
+        (squaresRangeSelected)="selectRange($event)"
       />
     </div>
   `,
@@ -96,6 +97,12 @@ export class AdminComponent implements OnInit {
   }
 
   clearSelection() { this.selectedIds.set(new Set()); this.message = ''; }
+
+  selectRange(ids: number[]) {
+    const selected = new Set(this.selectedIds());
+    for (const id of ids) selected.add(id);
+    this.selectedIds.set(selected);
+  }
 
   updateStatus() {
     this.message = ''; this.isError = false;
