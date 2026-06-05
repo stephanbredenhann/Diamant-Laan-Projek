@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, SimpleChanges, ElementRef, inject } from '@angular/core';
+import * as L from 'leaflet';
 import { Square, SquareStatus, STATUS_LABELS } from '../../../models/square';
-import { SEGMENTS } from '../../map/map-segments';
+import { WAYPOINTS } from '../../map/map-segments';
+import { generateSquareGeoJson } from './coordinate-config';
 
 const STATUS_COLORS: Record<number, string> = {
   [SquareStatus.NogNieBeginNie]: '#d1d5db',
@@ -9,170 +11,139 @@ const STATUS_COLORS: Record<number, string> = {
   [SquareStatus.KlaarGeteer]:    '#22c55e',
 };
 const SOLD_COLOR = '#fb923c';
-
-// SVG coordinate space (6px cells, 1px gap between blocks)
-const SVG_W = 1700;
-const SVG_H = 2640;
+const SELECTED_COLOR = '#f97316';
 
 @Component({
   selector: 'app-road-map',
   standalone: true,
-  template: `
-    <div class="map-outer">
-      <!-- Zoom toolbar – always visible above the scroll area -->
-      <div class="zoom-bar">
-        <button class="zoom-btn" (click)="zoomOut()" [disabled]="zoom() <= 0.5" title="Zoom uit">−</button>
-        <span class="zoom-label">{{ zoomLabel() }}</span>
-        <button class="zoom-btn" (click)="zoomIn()"  [disabled]="zoom() >= 4"   title="Zoom in">+</button>
-        <button class="zoom-btn zoom-reset" (click)="zoomReset()" title="Herstel zoom">⟳</button>
-        <span class="zoom-hint">Sleep / scroll om te beweeg</span>
-      </div>
-
-      <!-- Scrollable viewport -->
-      <div class="map-scroll">
-        <svg
-          [attr.viewBox]="viewBox"
-          [style.width.px]="svgW * zoom()"
-          [style.height.px]="svgH * zoom()"
-          class="road-map-svg">
-
-          <!-- Light road-bed background strip so gaps are visible -->
-          <rect x="0" y="0" [attr.width]="svgW" [attr.height]="svgH" fill="#f3f4f6"/>
-
-          @for (seg of segments; track seg.name) {
-            @for (row of range(seg.rows); track row) {
-              @for (col of range(seg.cols); track col) {
-                @let sqId = seg.startId + col * seg.rows + row;
-                @if (sqId <= seg.endId) {
-                  @let sx = seg.x + col * seg.cellW;
-                  @let sy = seg.y + row * seg.cellH;
-                  <rect
-                    [attr.x]="sx + 0.5"
-                    [attr.y]="sy + 0.5"
-                    [attr.width]="seg.cellW - 1"
-                    [attr.height]="seg.cellH - 1"
-                    [attr.fill]="getColor(sqId)"
-                    [attr.opacity]="getOpacity(sqId)"
-                    [attr.stroke]="isSelected(sqId) ? '#f97316' : 'none'"
-                    [attr.stroke-width]="isSelected(sqId) ? 2 : 0"
-                    rx="1"
-                    style="cursor:pointer"
-                    (click)="onSquareClick(sqId)">
-                    <title>{{ getTooltip(sqId) }}</title>
-                  </rect>
-                }
-              }
-            }
-          }
-        </svg>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .map-outer {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ── Zoom toolbar ────────────────────────────────────── */
-    .zoom-bar {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.375rem 0.75rem;
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      flex-shrink: 0;
-    }
-    .zoom-btn {
-      width: 30px;
-      height: 30px;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      background: #fff;
-      font-size: 1.125rem;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0;
-      font-family: inherit;
-      transition: background 0.12s, border-color 0.12s;
-    }
-    .zoom-btn:hover:not(:disabled) {
-      background: var(--color-primary-light);
-      border-color: var(--color-primary);
-    }
-    .zoom-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .zoom-reset { font-size: 0.875rem; }
-    .zoom-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      min-width: 42px;
-      text-align: center;
-      color: var(--color-text-muted);
-    }
-    .zoom-hint {
-      font-size: 0.6875rem;
-      color: var(--color-text-muted);
-      margin-left: 0.25rem;
-    }
-
-    /* ── Scroll container ────────────────────────────────── */
-    .map-scroll {
-      overflow: auto;
-      max-height: 70vh;
-      background: #f3f4f6;
-    }
-    .road-map-svg { display: block; }
-  `]
+  templateUrl: './road-map.component.html',
+  styleUrls: ['./road-map.component.scss'],
 })
-export class RoadMapComponent {
+export class RoadMapComponent implements AfterViewInit, OnChanges {
   @Input() squares: Square[] = [];
   @Input() selectedIds: number[] = [];
-  /** When set, squares with a different status are dimmed (admin filter). */
   @Input() statusFilter: number | null = null;
   @Output() squareClicked = new EventEmitter<number>();
 
-  segments = SEGMENTS;
-  svgW = SVG_W;
-  svgH = SVG_H;
-  viewBox = `0 0 ${SVG_W} ${SVG_H}`;
+  private el = inject(ElementRef);
+  private map!: L.Map;
+  private geoLayer!: L.GeoJSON;
+  private initialized = false;
 
-  zoom = signal<number>(1);
-  zoomLabel = computed(() => Math.round(this.zoom() * 100) + '%');
-
-  zoomIn()    { this.zoom.update(z => Math.min(4,   +(z + 0.25).toFixed(2))); }
-  zoomOut()   { this.zoom.update(z => Math.max(0.5, +(z - 0.25).toFixed(2))); }
-  zoomReset() { this.zoom.set(1); }
-
-  onSquareClick(sqId: number) { this.squareClicked.emit(sqId); }
-  isSelected(sqId: number)    { return this.selectedIds.includes(sqId); }
-
-  getColor(squareId: number): string {
-    const sq = this.squares.find(s => s.id === squareId);
-    if (!sq) return STATUS_COLORS[SquareStatus.NogNieBeginNie];
-    if (sq.status === SquareStatus.NogNieBeginNie && sq.isSold) return SOLD_COLOR;
-    return STATUS_COLORS[sq.status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
+  ngAfterViewInit() {
+    this.initMap();
   }
 
-  getOpacity(squareId: number): number {
-    if (this.statusFilter === null) return 1;
-    const sq = this.squares.find(s => s.id === squareId);
-    if (!sq) return 0.25;
-    return sq.status === this.statusFilter ? 1 : 0.25;
-  }
-
-  getTooltip(squareId: number): string {
-    const sq = this.squares.find(s => s.id === squareId);
-    if (!sq) return `Blok #${squareId}`;
-    if (sq.status === SquareStatus.NogNieBeginNie && sq.isSold) {
-      return `Blok #${squareId} — Verkoop`;
+  ngOnChanges(changes: SimpleChanges) {
+    if (!this.initialized) return;
+    if (changes['squares'] || changes['selectedIds'] || changes['statusFilter']) {
+      this.refreshLayer();
     }
-    return `Blok #${squareId} — ${STATUS_LABELS[sq.status]}`;
   }
 
-  range(n: number): number[] { return Array.from({ length: n }, (_, i) => i); }
+  private initMap() {
+    if (this.initialized) return;
+    const container: HTMLElement = this.el.nativeElement.querySelector('.map-container');
+    if (!container) return;
+
+    const wps = WAYPOINTS;
+    const lats = wps.map(w => w.lat);
+    const lngs = wps.map(w => w.lng);
+    const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+    const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+    this.map = L.map(container, {
+      center: [midLat, midLng],
+      zoom: 18,
+      minZoom: 16,
+      maxZoom: 20,
+      zoomControl: true,
+      attributionControl: true,
+      renderer: L.canvas(),
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 20,
+    }).addTo(this.map);
+
+    this.initialized = true;
+    this.refreshLayer();
+  }
+
+  private refreshLayer() {
+    if (!this.initialized) return;
+    if (this.geoLayer) {
+      this.map.removeLayer(this.geoLayer);
+    }
+
+    this.geoLayer = generateSquareGeoJson(this.squares);
+
+    this.geoLayer.setStyle((feature) => {
+      const props = feature?.properties;
+      const id = props?.['id'] as number;
+      const status = (props?.['status'] as number) ?? SquareStatus.NogNieBeginNie;
+      const isSold = props?.['isSold'] as boolean;
+
+      let fillColor = STATUS_COLORS[status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
+      let fillOpacity = 0.85;
+      let strokeColor = '#fff';
+      let strokeWeight = 0.5;
+
+      if (status === SquareStatus.NogNieBeginNie && isSold) {
+        fillColor = SOLD_COLOR;
+      }
+
+      if (this.selectedIds.includes(id)) {
+        strokeColor = SELECTED_COLOR;
+        strokeWeight = 2;
+      }
+
+      if (this.statusFilter !== null && status !== this.statusFilter) {
+        fillOpacity = 0.15;
+      }
+
+      return {
+        fillColor,
+        fillOpacity,
+        color: strokeColor,
+        weight: strokeWeight,
+      };
+    });
+
+    this.geoLayer.on('click', (e: L.LeafletMouseEvent) => {
+      const layer = (e as any).layer;
+      const id = layer?.feature?.properties?.id as number;
+      if (id != null) {
+        this.squareClicked.emit(id);
+      }
+    });
+
+    this.geoLayer.on('mouseover', (e: L.LeafletMouseEvent) => {
+      const layer = (e as any).layer;
+      const props = layer?.feature?.properties;
+      const id = props?.id as number;
+      const status = props?.status as number;
+      const isSold = props?.isSold as boolean;
+      if (id == null) return;
+
+      let label: string;
+      if (status === SquareStatus.NogNieBeginNie && isSold) {
+        label = 'Verkoop';
+      } else {
+        label = STATUS_LABELS[status as SquareStatus] ?? 'Onbekend';
+      }
+      layer.bindTooltip(`Blok #${id} \u2014 ${label}`, {
+        direction: 'top',
+        offset: [0, -4],
+      }).openTooltip();
+    });
+
+    this.geoLayer.on('mouseout', (e: L.LeafletMouseEvent) => {
+      const layer = (e as any).layer;
+      layer.closeTooltip();
+    });
+
+    this.geoLayer.addTo(this.map);
+  }
 }

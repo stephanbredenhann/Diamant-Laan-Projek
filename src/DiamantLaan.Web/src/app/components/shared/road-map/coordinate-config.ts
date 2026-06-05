@@ -155,5 +155,5 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
   return L.geoJSON({
     type: 'FeatureCollection',
     features,
-  });
+  } as GeoJSON.GeoJsonObject);
 }
