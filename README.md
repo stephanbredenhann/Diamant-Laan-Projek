@@ -1,6 +1,6 @@
 # Community Road Paving Project
 
-A crowdfunding platform that lets residents collectively fund the paving of a private road by purchasing individual 1m² sections. Buyers track paving progress in real time on an interactive map, while administrators manage construction status updates and project statistics.
+A crowdfunding platform that lets residents collectively fund the paving of a private road by purchasing individual 1m² sections. Buyers track paving progress in real time on an interactive map, while administrators manage construction status updates and project statistics. The project currently serves as a demo only.
 
 ## Tech Stack
 
