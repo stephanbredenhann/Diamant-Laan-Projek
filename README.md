@@ -102,14 +102,7 @@ az webapp config appsettings set --name <app-name> -g <group-name> \
     "AdminUser__Password=<admin-password>" \
     "ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db"
 
-# Publish and deploy
-rm -rf src/DiamantLaan.Api/{bin,obj,wwwroot}
-dotnet publish src/DiamantLaan.Api/DiamantLaan.Api.csproj -c Release -o publish
-cd publish && zip -r ../deploy.zip . -x "web.config" && cd ..
-az webapp deploy --name <app-name> -g <group-name> --src-path deploy.zip --type zip
-```
 
-See the deployment guide in the [Obsidian vault](StephanBredenhann/azure/Deploying%20Diamant%20Laan%20to%20Azure.md) for detailed instructions.
 
 ## License
 
