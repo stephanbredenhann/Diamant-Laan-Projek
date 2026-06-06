@@ -8,6 +8,9 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -79,7 +82,9 @@ using (var scope = app.Services.CreateScope())
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var db = services.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
-    await AppDbContext.SeedAsync(userManager, roleManager, db);
+    var adminEmail = app.Configuration["AdminUser:Email"]!;
+    var adminPassword = app.Configuration["AdminUser:Password"]!;
+    await AppDbContext.SeedAsync(userManager, roleManager, db, adminEmail, adminPassword);
 }
 
 app.Run();

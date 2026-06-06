@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>e8541e83-4ebb-4b9d-bce2-39f699014081</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,12 +20,12 @@
   </ItemGroup>
 
   <Target Name="BuildAngular" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <Exec Command="npm install" WorkingDirectory="$(SolutionDir)src/DiamantLaan.Web" />
-    <Exec Command="npm run build" WorkingDirectory="$(SolutionDir)src/DiamantLaan.Web" />
+    <Exec Command="npm install" WorkingDirectory="$(ProjectDir)../DiamantLaan.Web" />
+    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)../DiamantLaan.Web" />
     <ItemGroup>
-      <DistFiles Include="$(SolutionDir)src/DiamantLaan.Web/dist/**/*" />
+      <DistFiles Include="$(ProjectDir)../DiamantLaan.Web/dist/diamant-laan.web/browser/**/*" />
     </ItemGroup>
-    <Copy SourceFiles="@(DistFiles)" DestinationFolder="$(TargetDir)wwwroot\%(RecursiveDir)" />
+    <Copy SourceFiles="@(DistFiles)" DestinationFolder="$(ProjectDir)wwwroot\%(RecursiveDir)" />
   </Target>
 
 </Project>

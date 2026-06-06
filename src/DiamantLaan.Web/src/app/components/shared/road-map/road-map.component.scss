@@ -14,7 +14,7 @@
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 800;
   padding: 6px 16px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -49,4 +49,8 @@
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--color-cream);
+}
+
+:host ::ng-deep .leaflet-control-zoom {
+  z-index: 800;
 }

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { RoadService } from '../../services/road.service';
 
 @Component({
@@ -11,14 +12,16 @@ import { RoadService } from '../../services/road.service';
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-text">
-          <h1>Help ons teer<br>Diamant Laan</h1>
+          <h1>Dra by: Ons teer<br>Diamant Laan</h1>
           <p class="hero-sub">Koop 'n vierkante meter vir <strong>R500</strong> en volg jou stukkie pad se vordering; stap vir stap.</p>
           <div class="hero-actions">
             <a routerLink="/kaart" class="btn btn-primary btn-lg">
               Sien Kaart & Koop
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </a>
-            <a routerLink="/registreer" class="btn btn-outline">Registreer Gratis</a>
+            @if (!auth.currentUser()) {
+              <a routerLink="/registreer" class="btn btn-outline">Registreer Gratis</a>
+            }
           </div>
         </div>
         <div class="hero-image">
@@ -263,6 +266,7 @@ import { RoadService } from '../../services/road.service';
 })
 export class HomeComponent implements OnInit {
   private road = inject(RoadService);
+  auth = inject(AuthService);
   progress = 0;
   totalRaised = 0;
 

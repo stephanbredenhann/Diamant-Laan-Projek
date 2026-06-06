@@ -6,3 +6,7 @@ obj/
 *.suo
 *.db
 .opencode/
+publish/
+wwwroot/
+dist/
+node_modules/

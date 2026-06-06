@@ -43,14 +43,13 @@ public class AppDbContext : IdentityDbContext<User>
             .HasForeignKey(p => p.UserId);
     }
 
-    public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db)
+    public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)
     {
         if (!await roleManager.RoleExistsAsync("Admin"))
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         if (!await roleManager.RoleExistsAsync("Buyer"))
             await roleManager.CreateAsync(new IdentityRole("Buyer"));
 
-        var adminEmail = "admin@diamantlaan.co.za";
         if (await userManager.FindByEmailAsync(adminEmail) == null)
         {
             var admin = new User
@@ -61,7 +60,7 @@ public class AppDbContext : IdentityDbContext<User>
                 LastName = "Diamant",
                 EmailConfirmed = true
             };
-            await userManager.CreateAsync(admin, "Admin123!");
+            await userManager.CreateAsync(admin, adminPassword);
             await userManager.AddToRoleAsync(admin, "Admin");
         }
 
