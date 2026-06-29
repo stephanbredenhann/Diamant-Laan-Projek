@@ -1,147 +1,97 @@
 import * as L from 'leaflet';
+import * as turf from '@turf/turf';
+import type { Feature, LineString, Point } from 'geojson';
 import { Square } from '../../../models/square';
-import { WAYPOINTS, Waypoint } from '../../map/map-segments';
+import { WAYPOINTS } from '../../map/map-segments';
 
-const EARTH_RADIUS_M = 6371000;
-const TO_RAD = Math.PI / 180;
-const TO_DEG = 180 / Math.PI;
 const ROAD_LENGTH_M = 700;
 const ROAD_WIDTH = 6;
+const TOTAL_SQUARES = 4200;
 
-/** Bearing in degrees from (lat1,lng1) to (lat2,lng2). Result 0–360 (0 = North). */
-function bearing(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const dLng = (lng2 - lng1) * TO_RAD;
-  const φ1 = lat1 * TO_RAD;
-  const φ2 = lat2 * TO_RAD;
-  const y = Math.sin(dLng) * Math.cos(φ2);
-  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLng);
-  return (Math.atan2(y, x) * TO_DEG + 360) % 360;
+function buildRoadLineString(): Feature<LineString> {
+  const coords = WAYPOINTS.map(wp => [wp.lng, wp.lat] as [number, number]);
+  return turf.lineString(coords);
 }
 
-/** Haversine distance in meters between two points. */
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const φ1 = lat1 * TO_RAD;
-  const φ2 = lat2 * TO_RAD;
-  const Δφ = (lat2 - lat1) * TO_RAD;
-  const Δλ = (lng2 - lng1) * TO_RAD;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  return 2 * EARTH_RADIUS_M * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+/** Bearing (degrees) along the road at a given distance in meters. */
+function bearingAtDistance(
+  road: Feature<LineString>,
+  distanceAlongM: number,
+  totalDist: number,
+): number {
+  const delta = 0.5;
+  const d1 = Math.max(0, distanceAlongM - delta);
+  const d2 = Math.min(totalDist, distanceAlongM + delta);
+  const p1 = turf.along(road, d1, { units: 'meters' });
+  const p2 = turf.along(road, d2, { units: 'meters' });
+  return turf.bearing(p1, p2);
 }
 
-/** Destination point given start (lat,lng), bearing (deg), distance (meters). */
-function destination(lat: number, lng: number, brng: number, dist: number): L.LatLng {
-  const δ = dist / EARTH_RADIUS_M;
-  const θ = brng * TO_RAD;
-  const φ1 = lat * TO_RAD;
-  const λ1 = lng * TO_RAD;
-  const sinφ1 = Math.sin(φ1);
-  const cosφ1 = Math.cos(φ1);
-  const sinδ = Math.sin(δ);
-  const cosδ = Math.cos(δ);
-  const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ);
-  const φ2 = Math.asin(sinφ2);
-  const y = Math.sin(θ) * sinδ * cosφ1;
-  const x = cosδ - sinφ1 * sinφ2;
-  const λ2 = λ1 + Math.atan2(y, x);
-  return L.latLng(φ2 * TO_DEG, λ2 * TO_DEG);
+/** Offset a path point perpendicular to the road bearing by `meters` (negative = left). */
+function offsetPerpendicular(
+  point: Feature<Point>,
+  bearingDeg: number,
+  meters: number,
+): [number, number] {
+  const perpBearing = meters >= 0 ? (bearingDeg + 90) % 360 : (bearingDeg + 270) % 360;
+  const dest = turf.destination(point, Math.abs(meters), perpBearing, { units: 'meters' });
+  return dest.geometry.coordinates as [number, number];
 }
 
-/** Offset a point by `dist` meters along `brng` degrees. */
-function offset(pt: L.LatLng, brng: number, dist: number): L.LatLng {
-  return destination(pt.lat, pt.lng, brng, dist);
-}
-
-/** Build cumulative distances (meters) along the waypoint polyline. */
-function buildCumulativeDistances(wps: Waypoint[]): number[] {
-  const dists = [0];
-  for (let i = 1; i < wps.length; i++) {
-    const d = haversineDistance(wps[i - 1].lat, wps[i - 1].lng, wps[i].lat, wps[i].lng);
-    dists.push(dists[i - 1] + d);
-  }
-  return dists;
-}
-
-/** Interpolate lat/lng at a given distance (meters) along the polyline. */
-function interpolateAlongPath(wps: Waypoint[], cumDists: number[], distance: number): L.LatLng {
-  if (distance <= 0) return L.latLng(wps[0].lat, wps[0].lng);
-  for (let i = 1; i < cumDists.length; i++) {
-    if (distance <= cumDists[i]) {
-      const segStart = cumDists[i - 1];
-      const segLen = cumDists[i] - segStart;
-      if (segLen < 0.0001) return L.latLng(wps[i].lat, wps[i].lng);
-      const t = (distance - segStart) / segLen;
-      const lat = wps[i - 1].lat + t * (wps[i].lat - wps[i - 1].lat);
-      const lng = wps[i - 1].lng + t * (wps[i].lng - wps[i - 1].lng);
-      return L.latLng(lat, lng);
-    }
-  }
-  const last = wps[wps.length - 1];
-  return L.latLng(last.lat, last.lng);
-}
-
-/** Get bearing at a given distance along the polyline. */
-function bearingAtDistance(wps: Waypoint[], cumDists: number[], distance: number): number {
-  if (distance <= 0) return bearing(wps[0].lat, wps[0].lng, wps[1].lat, wps[1].lng);
-  for (let i = 1; i < cumDists.length; i++) {
-    if (distance <= cumDists[i]) {
-      return bearing(wps[i - 1].lat, wps[i - 1].lng, wps[i].lat, wps[i].lng);
-    }
-  }
-  const n = wps.length;
-  return bearing(wps[n - 2].lat, wps[n - 2].lng, wps[n - 1].lat, wps[n - 1].lng);
+/** Corner of a trapezoid cell at a given distance along the road and perpendicular offset. */
+function cornerAt(
+  road: Feature<LineString>,
+  distanceAlongM: number,
+  bearingDeg: number,
+  perpOffsetM: number,
+): [number, number] {
+  const onPath = turf.along(road, distanceAlongM, { units: 'meters' });
+  return offsetPerpendicular(onPath, bearingDeg, perpOffsetM);
 }
 
 /**
  * Generate a Leaflet GeoJSON layer with all 4200 squares positioned
  * along the real-world road path defined by WAYPOINTS.
- * Squares 1–4200 are distributed evenly (by road meter ID) along the
- * polyline, 6 squares wide.
+ *
+ * Each cell is a trapezoid: back and front edges use bearings at their
+ * respective road-meter boundaries so adjacent cells share identical edges.
  */
 export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
-  const wps = WAYPOINTS;
-  const cumDists = buildCumulativeDistances(wps);
-  const totalDist = cumDists[cumDists.length - 1];
+  const road = buildRoadLineString();
+  const totalDist = turf.length(road, { units: 'meters' });
+  const squareById = new Map(squares.map(s => [s.id, s]));
   const features: GeoJSON.Feature[] = [];
 
-  for (let sqId = 1; sqId <= 4200; sqId++) {
-    const roadPos = Math.floor((sqId - 1) / ROAD_WIDTH); // 0–699
-    const widthIdx = (sqId - 1) % ROAD_WIDTH;            // 0–5
+  for (let sqId = 1; sqId <= TOTAL_SQUARES; sqId++) {
+    const roadPos = Math.floor((sqId - 1) / ROAD_WIDTH);
+    const widthIdx = (sqId - 1) % ROAD_WIDTH;
 
-    // Map road position (0..699) to polyline distance (0..totalDist)
-    const polyDist = (roadPos / (ROAD_LENGTH_M - 1)) * totalDist;
+    const backDist = (roadPos / ROAD_LENGTH_M) * totalDist;
+    const frontDist = ((roadPos + 1) / ROAD_LENGTH_M) * totalDist;
 
-    const centerOnPath = interpolateAlongPath(wps, cumDists, polyDist);
-    const θ = bearingAtDistance(wps, cumDists, polyDist);
-    const perpθ = (θ + 90) % 360;
+    const backBearing = bearingAtDistance(road, backDist, totalDist);
+    const frontBearing = bearingAtDistance(road, frontDist, totalDist);
 
-    // Offset perpendicular for road width (centered on path, ±2.5 m)
-    const perpOffset = widthIdx - (ROAD_WIDTH - 1) / 2;
-    const sqCenter = perpOffset === 0
-      ? centerOnPath
-      : offset(centerOnPath, perpOffset >= 0 ? perpθ : (perpθ + 180) % 360, Math.abs(perpOffset));
+    const perpLeft = widthIdx - 3;
+    const perpRight = widthIdx - 2;
 
-    // 4 corners of a 1 m × 1 m square around sqCenter
-    const half = 0.5;
-    const fwd = offset(sqCenter, θ, half);
-    const bck = offset(sqCenter, (θ + 180) % 360, half);
+    const backLeft = cornerAt(road, backDist, backBearing, perpLeft);
+    const backRight = cornerAt(road, backDist, backBearing, perpRight);
+    const frontLeft = cornerAt(road, frontDist, frontBearing, perpLeft);
+    const frontRight = cornerAt(road, frontDist, frontBearing, perpRight);
 
-    const tl = offset(bck, (perpθ + 180) % 360, half);
-    const tr = offset(fwd, (perpθ + 180) % 360, half);
-    const br = offset(fwd, perpθ, half);
-    const bl = offset(bck, perpθ, half);
-
-    const sq = squares.find(s => s.id === sqId);
+    const sq = squareById.get(sqId);
 
     features.push({
       type: 'Feature',
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [tl.lng, tl.lat],
-          [tr.lng, tr.lat],
-          [br.lng, br.lat],
-          [bl.lng, bl.lat],
-          [tl.lng, tl.lat],
+          backLeft,
+          frontLeft,
+          frontRight,
+          backRight,
+          backLeft,
         ]],
       },
       properties: {
@@ -156,4 +106,33 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
     type: 'FeatureCollection',
     features,
   } as GeoJSON.GeoJsonObject);
+}
+
+const centroidCache = new Map<number, { lat: number; lng: number }>();
+
+/** Approximate GPS centroid for a block (indicative only). */
+export function getSquareCentroid(squareId: number): { lat: number; lng: number } | null {
+  if (squareId < 1 || squareId > TOTAL_SQUARES) return null;
+
+  const cached = centroidCache.get(squareId);
+  if (cached) return cached;
+
+  const road = buildRoadLineString();
+  const totalDist = turf.length(road, { units: 'meters' });
+
+  const roadPos = Math.floor((squareId - 1) / ROAD_WIDTH);
+  const widthIdx = (squareId - 1) % ROAD_WIDTH;
+
+  const backDist = (roadPos / ROAD_LENGTH_M) * totalDist;
+  const frontDist = ((roadPos + 1) / ROAD_LENGTH_M) * totalDist;
+  const midDist = (backDist + frontDist) / 2;
+
+  const bearing = bearingAtDistance(road, midDist, totalDist);
+  const perpCenter = widthIdx - 2.5;
+  const onPath = turf.along(road, midDist, { units: 'meters' });
+  const [lng, lat] = offsetPerpendicular(onPath, bearing, perpCenter);
+
+  const result = { lat, lng };
+  centroidCache.set(squareId, result);
+  return result;
 }

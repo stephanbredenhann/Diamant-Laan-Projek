@@ -33,6 +33,16 @@ import { AuthService } from '../../services/auth.service';
             <label>Wagwoord</label>
             <input type="password" [(ngModel)]="password" name="password" required autocomplete="new-password" minlength="6" placeholder="Kies 'n wagwoord">
           </div>
+          <div class="form-group">
+            <label>Foon Nommer</label>
+            <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="082 123 4567">
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
+              Inwoner van Orania?
+            </label>
+          </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>
           }
@@ -92,6 +102,15 @@ import { AuthService } from '../../services/auth.service';
       margin-bottom: 1rem;
       border: 1px solid #FECACA;
     }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--color-text);
+      cursor: pointer;
+    }
+    .checkbox-group input { width: auto; }
     @media (max-width: 480px) {
       .auth-card { margin: 1.5rem auto 2rem; padding: 1.5rem 1.25rem; }
       .form-row { flex-direction: column; gap: 0; }
@@ -105,13 +124,15 @@ export class RegisterComponent {
   lastName = '';
   email = '';
   password = '';
+  phoneNumber = '';
+  isOraniaResident = false;
   error = '';
   loading = false;
 
   submit() {
     this.error = '';
     this.loading = true;
-    this.auth.register(this.firstName, this.lastName, this.email, this.password).subscribe({
+    this.auth.register(this.firstName, this.lastName, this.email, this.password, this.phoneNumber, this.isOraniaResident).subscribe({
       next: () => this.router.navigate(['/kaart']),
       error: (err) => { this.error = err.error?.message || 'Registrasie het misluk.'; this.loading = false; }
     });

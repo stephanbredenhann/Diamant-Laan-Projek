@@ -1,16 +1,17 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
-import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
+import { Square, STATUS_LABELS } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [RoadMapComponent, RouterLink],
+  imports: [RoadMapComponent, RouterLink, DecimalPipe],
   template: `
     <div class="map-page">
       <div class="map-header">
@@ -22,6 +23,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
             <span><span class="dot prep"></span> Voorberei</span>
             <span><span class="dot busy"></span> Besig om te teer</span>
             <span><span class="dot done"></span> Klaar geteer</span>
+            <span><span class="dot selected"></span> Gekies</span>
           </div>
         </div>
       </div>
@@ -42,10 +44,22 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
               </div>
               <div class="selection-total">
                 <span class="label">Totaal</span>
-                <span class="amount">R{{ selectedIds().size * 500 }}</span>
+                <span class="amount">R{{ totalAmount() | number:'1.0-0' }}</span>
               </div>
             </div>
             @if (selectedIds().size > 0) {
+              <div class="amount-input">
+                <label for="amountPerBlock">Bedrag per blok (min R500)</label>
+                <input
+                  id="amountPerBlock"
+                  type="number"
+                  min="500"
+                  step="50"
+                  [value]="amountPerBlock()"
+                  (input)="onAmountChange($event)"
+                />
+                <p class="amount-hint">Betaal meer as R500 per blok indien jy wil.</p>
+              </div>
               <button class="btn btn-outline btn-full btn-sm" (click)="clearSelection()">
                 Maak Keuses Skoon ({{ selectedIds().size }})
               </button>
@@ -97,6 +111,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
     .dot.prep { background: #B5651D; }
     .dot.busy { background: #8B7355; }
     .dot.done { background: #6B7B3C; }
+    .dot.selected { background: #F5A623; border: 2px solid #3D2B1F; box-sizing: border-box; }
     .map-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
     .map-layout app-road-map { flex: 1; min-width: 0; }
     .sidebar { width: 260px; flex-shrink: 0; }
@@ -156,6 +171,28 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    .amount-input {
+      margin-bottom: 1rem;
+    }
+    .amount-input label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.375rem;
+    }
+    .amount-input input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+    }
+    .amount-hint {
+      font-size: 0.6875rem;
+      color: var(--color-muted);
+      margin-top: 0.375rem;
+    }
     .btn-full { width: 100%; margin-bottom: 0.5rem; }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .msg {
@@ -207,9 +244,12 @@ export class MapComponent implements OnInit {
   segments = SEGMENTS;
   squares: Square[] = [];
   selectedIds = signal<Set<number>>(new Set());
+  amountPerBlock = signal(500);
   mySquareIds = signal<number[]>([]);
   message = '';
   isError = false;
+
+  totalAmount = computed(() => this.selectedIds().size * this.amountPerBlock());
 
   ngOnInit() {
     this.road.getSquares().subscribe(data => this.squares = data);
@@ -230,7 +270,6 @@ export class MapComponent implements OnInit {
     const sq = this.squares.find(s => s.id === sqId);
     if (!sq) return;
     if (sq.isSold) return;
-    if (sq.status !== SquareStatus.NogNieBeginNie) return;
     if (sqId > this.segments[this.segments.length - 1].endId) return;
 
     const selected = new Set(this.selectedIds());
@@ -254,7 +293,6 @@ export class MapComponent implements OnInit {
       const sq = this.squares.find(s => s.id === id);
       if (!sq) continue;
       if (sq.isSold) continue;
-      if (sq.status !== SquareStatus.NogNieBeginNie) continue;
       if (id > this.segments[this.segments.length - 1].endId) continue;
       selected.add(id);
     }
@@ -268,10 +306,20 @@ export class MapComponent implements OnInit {
     this.message = '';
   }
 
+  onAmountChange(event: Event) {
+    const val = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(val) || val < 500) {
+      this.amountPerBlock.set(500);
+    } else {
+      this.amountPerBlock.set(val);
+    }
+  }
+
   checkout() {
     if (this.selectedIds().size === 0) return;
     const ids = Array.from(this.selectedIds());
     this.purchase.pendingSquareIds = ids;
+    this.purchase.pendingAmountPerBlock = this.amountPerBlock();
     this.router.navigate(['/betaal']);
   }
 }

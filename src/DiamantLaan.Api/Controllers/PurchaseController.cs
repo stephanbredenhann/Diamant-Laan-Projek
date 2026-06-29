@@ -2,7 +2,6 @@ using System.Security.Claims;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
-using DiamantLaan.Api.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,10 +32,14 @@ public class PurchaseController : ControllerBase
         if (squares.Any(s => s.OwnerId != null))
             return BadRequest(new { message = "Sommige blokke is reeds verkoop." });
 
-        if (squares.Any(s => s.Status != SquareStatus.NogNieBeginNie))
-            return BadRequest(new { message = "Kan slegs blokke koop wat nog nie begin is nie." });
+        if (squares.Any(s => s.Id < 1 || s.Id > 4200))
+            return BadRequest(new { message = "Ongeldige blokke gekies." });
 
-        decimal amount = squares.Count * 500m;
+        var minimumAmount = squares.Count * 500m;
+        decimal amount = dto.Amount ?? minimumAmount;
+
+        if (amount < minimumAmount)
+            return BadRequest(new { message = $"Minimum bedrag is R{minimumAmount:0} (R500 per blok)." });
 
         var purchase = new Purchase
         {

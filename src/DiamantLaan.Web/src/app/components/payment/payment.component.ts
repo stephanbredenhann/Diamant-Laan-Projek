@@ -1,11 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DecimalPipe],
   template: `
     <div class="container">
       <div class="gateway-card">
@@ -13,7 +14,10 @@ import { PurchaseService } from '../../services/purchase.service';
           <h2>Betaling</h2>
           <p class="summary">
             {{ squareIds.length }} blokke gekies —
-            <strong>R{{ squareIds.length * 500 }}</strong>
+            <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
+            @if (amountPerBlock > 500) {
+              <span class="per-block">(R{{ amountPerBlock | number:'1.0-0' }} per blok)</span>
+            }
           </p>
 
           <div class="gateway-box">
@@ -40,7 +44,7 @@ import { PurchaseService } from '../../services/purchase.service';
             </div>
             <h2>Betaling Suksesvol!</h2>
             <p class="success-detail">
-              {{ successCount }} blokke gekoop vir <strong>R{{ successCount * 500 }}</strong>
+              {{ successCount }} blokke gekoop vir <strong>R{{ successAmount | number:'1.0-0' }}</strong>
             </p>
             <a routerLink="/my-blokke" class="btn btn-primary btn-wide">
               Gaan na My Blokke
@@ -76,6 +80,7 @@ import { PurchaseService } from '../../services/purchase.service';
       margin-bottom: 1.75rem;
     }
     .summary strong { color: var(--color-terracotta); }
+    .per-block { display: block; font-size: 0.8125rem; margin-top: 0.25rem; }
     .gateway-box {
       border: 2px dashed var(--color-border);
       border-radius: var(--radius);
@@ -146,15 +151,20 @@ export class PaymentComponent implements OnInit {
   private purchase = inject(PurchaseService);
 
   squareIds: number[] = [];
+  amountPerBlock = 500;
+  totalAmount = 0;
   loading = false;
   error = '';
   submitted = false;
   successCount = 0;
+  successAmount = 0;
 
   ngOnInit() {
     const ids = this.purchase.pendingSquareIds;
     if (ids && Array.isArray(ids) && ids.length > 0) {
       this.squareIds = ids;
+      this.amountPerBlock = this.purchase.pendingAmountPerBlock || 500;
+      this.totalAmount = this.squareIds.length * this.amountPerBlock;
     } else {
       this.router.navigate(['/kaart']);
     }
@@ -164,12 +174,14 @@ export class PaymentComponent implements OnInit {
     if (this.squareIds.length === 0) return;
     this.error = '';
     this.loading = true;
-    this.purchase.createPurchase(this.squareIds).subscribe({
+    this.purchase.createPurchase(this.squareIds, this.totalAmount).subscribe({
       next: (res) => {
         this.successCount = res.squareCount;
+        this.successAmount = res.amount;
         this.submitted = true;
         this.loading = false;
         this.purchase.pendingSquareIds = [];
+        this.purchase.pendingAmountPerBlock = 500;
       },
       error: (err) => {
         this.error = err.error?.message || 'Betaling het misluk.';

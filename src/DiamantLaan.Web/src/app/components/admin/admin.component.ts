@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
@@ -11,11 +12,17 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RoadMapComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RoadMapComponent],
   template: `
     <div class="container">
       <div class="page-header">
         <h2>Admin Paneel</h2>
+      </div>
+      <div class="admin-tabs">
+        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Kaart</a>
+        <a routerLink="/admin/stats" routerLinkActive="active">Statistieke</a>
+        <a routerLink="/admin/gebruikers" routerLinkActive="active">Gebruikers</a>
+        <a routerLink="/admin/telefoon-aankoop" routerLinkActive="active">Telefoniese Aankoop</a>
       </div>
       <div class="stats-row">
         <div class="stat-card">
@@ -125,6 +132,20 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     .msg.error {
       background: #FEF2F2;
       color: #DC2626;
+    }
+    .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .admin-tabs a {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--color-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .admin-tabs a.active {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      font-weight: 600;
     }
     .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); margin-bottom: 0.75rem; }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }

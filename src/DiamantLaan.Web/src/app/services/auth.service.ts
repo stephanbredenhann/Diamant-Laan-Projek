@@ -11,9 +11,10 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  register(firstName: string, lastName: string, email: string, password: string) {
-    return this.http.post<AuthResponse>(`${this.base}/register`, { firstName, lastName, email, password })
-      .pipe(tap(res => this.setSession(res)));
+  register(firstName: string, lastName: string, email: string, password: string, phoneNumber: string, isOraniaResident: boolean) {
+    return this.http.post<AuthResponse>(`${this.base}/register`, {
+      firstName, lastName, email, password, phoneNumber, isOraniaResident
+    }).pipe(tap(res => this.setSession(res)));
   }
 
   login(email: string, password: string) {

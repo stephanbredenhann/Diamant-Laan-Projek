@@ -11,14 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiamantLaan.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260605111857_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260629112530_AddProofOfPaymentPath")]
+    partial class AddProofOfPaymentPath
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.27");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.28");
 
             modelBuilder.Entity("DiamantLaan.Api.Models.Purchase", b =>
                 {
@@ -27,6 +27,9 @@ namespace DiamantLaan.Api.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProofOfPaymentPath")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("PurchaseDate")
@@ -99,6 +102,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsOraniaResident")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("LastName")
                         .IsRequired()

@@ -7,5 +7,6 @@ public class Purchase
     public User User { get; set; } = null!;
     public DateTime PurchaseDate { get; set; } = DateTime.UtcNow;
     public decimal Amount { get; set; }
+    public string? ProofOfPaymentPath { get; set; }
     public ICollection<PurchaseSquare> PurchaseSquares { get; set; } = new List<PurchaseSquare>();
 }

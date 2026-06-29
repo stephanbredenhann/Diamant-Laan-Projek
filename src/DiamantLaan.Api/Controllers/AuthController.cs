@@ -30,7 +30,9 @@ public class AuthController : ControllerBase
             UserName = dto.Email,
             Email = dto.Email,
             FirstName = dto.FirstName,
-            LastName = dto.LastName
+            LastName = dto.LastName,
+            PhoneNumber = dto.PhoneNumber,
+            IsOraniaResident = dto.IsOraniaResident
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
@@ -42,7 +44,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwtToken(user, roles);
-        return Ok(new { token, user.Email, user.FirstName, user.LastName });
+        return Ok(new { token, user.Email, user.FirstName, user.LastName, user.PhoneNumber, user.IsOraniaResident });
     }
 
     [HttpPost("login")]
@@ -54,7 +56,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwtToken(user, roles);
-        return Ok(new { token, user.Email, user.FirstName, user.LastName, roles });
+        return Ok(new { token, user.Email, user.FirstName, user.LastName, user.PhoneNumber, user.IsOraniaResident, roles });
     }
 
     private string GenerateJwtToken(User user, IList<string> roles)
@@ -67,7 +69,9 @@ public class AuthController : ControllerBase
             new(ClaimTypes.NameIdentifier, user.Id),
             new(ClaimTypes.Email, user.Email!),
             new(ClaimTypes.GivenName, user.FirstName),
-            new(ClaimTypes.Surname, user.LastName)
+            new(ClaimTypes.Surname, user.LastName),
+            new("PhoneNumber", user.PhoneNumber ?? ""),
+            new("IsOraniaResident", user.IsOraniaResident.ToString())
         };
 
         foreach (var role in roles)

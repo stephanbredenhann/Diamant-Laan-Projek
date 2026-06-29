@@ -11,7 +11,8 @@ const STATUS_COLORS: Record<number, string> = {
   [SquareStatus.KlaarGeteer]:    '#6B7B3C',
 };
 const SOLD_COLOR = '#C67B5C';
-const SELECTED_COLOR = '#3D2B1F';
+const SELECTED_FILL = '#F5A623';
+const SELECTED_STROKE = '#3D2B1F';
 const DRAG_THRESHOLD = 5;
 
 @Component({
@@ -206,8 +207,10 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       }
 
       if (this.selectedIds.includes(id)) {
-        strokeColor = SELECTED_COLOR;
-        strokeWeight = 2;
+        fillColor = SELECTED_FILL;
+        fillOpacity = 0.95;
+        strokeColor = SELECTED_STROKE;
+        strokeWeight = 3;
       }
 
       if (this.statusFilter !== null && status !== this.statusFilter) {

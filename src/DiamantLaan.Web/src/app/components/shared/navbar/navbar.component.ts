@@ -24,7 +24,8 @@ import { AuthService } from '../../../services/auth.service';
           @if (auth.currentUser(); as user) {
             <a routerLink="/my-blokke" (click)="menuOpen.set(false)">My Blokke</a>
             @if (auth.isAdmin()) {
-              <a routerLink="/admin" (click)="menuOpen.set(false)">Admin</a>
+              <a routerLink="/admin" (click)="menuOpen.set(false)">Admin Kaart</a>
+              <a routerLink="/admin/stats" (click)="menuOpen.set(false)">Admin Statistieke</a>
             }
             <span class="navbar-user desktop-only">{{ user.firstName }}</span>
             <button class="btn-logout" (click)="logout()">Teken Uit</button>

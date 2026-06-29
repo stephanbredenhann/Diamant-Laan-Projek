@@ -68,21 +68,40 @@ export interface Waypoint {
   lng: number;
 }
 
-// 13 waypoints defining the real-world road path.
-// The road runs ~700m start→end. Squares 1–4200 are distributed
+// OSM centerline path: Diamantlaan reversed from the southern end to the
+// Oewerlaan junction, then Oewerlaan forward. Squares 1–4200 are distributed
 // evenly along this polyline, 6 squares wide.
 export const WAYPOINTS: Waypoint[] = [
-  { label: 'Start', lat: -29.806075, lng: 24.419353 },
-  { label: 'P1',    lat: -29.805764, lng: 24.419708 },
-  { label: 'P2',    lat: -29.805344, lng: 24.420086 },
-  { label: 'P3',    lat: -29.805108, lng: 24.420269 },
-  { label: 'P4',    lat: -29.804664, lng: 24.420419 },
-  { label: 'P5',    lat: -29.804342, lng: 24.420447 },
-  { label: 'P6',    lat: -29.804194, lng: 24.420419 },
-  { label: 'P7',    lat: -29.803889, lng: 24.420161 },
-  { label: 'P8',    lat: -29.803522, lng: 24.419742 },
-  { label: 'P9',    lat: -29.803072, lng: 24.419269 },
-  { label: 'P10',   lat: -29.802264, lng: 24.420228 },
-  { label: 'P11',   lat: -29.801950, lng: 24.420606 },
-  { label: 'End',   lat: -29.801347, lng: 24.421422 },
+  { label: 'Start', lat: -29.8060799, lng: 24.4194275 },
+  { label: 'P1',    lat: -29.8058501, lng: 24.4196822 },
+  { label: 'P2',    lat: -29.8058438, lng: 24.4196905 },
+  { label: 'P3',    lat: -29.8057848, lng: 24.4197628 },
+  { label: 'P4',    lat: -29.8057228, lng: 24.4198289 },
+  { label: 'P5',    lat: -29.8056394, lng: 24.4199102 },
+  { label: 'P6',    lat: -29.8055977, lng: 24.4199509 },
+  { label: 'P7',    lat: -29.8055126, lng: 24.4200271 },
+  { label: 'P8',    lat: -29.8054354, lng: 24.4200958 },
+  { label: 'P9',    lat: -29.8053039, lng: 24.4202015 },
+  { label: 'P10',   lat: -29.8051686, lng: 24.4202899 },
+  { label: 'P11',   lat: -29.8050757, lng: 24.4203354 },
+  { label: 'P12',   lat: -29.8049681, lng: 24.4203721 },
+  { label: 'P13',   lat: -29.8048359, lng: 24.4204042 },
+  { label: 'P14',   lat: -29.8047113, lng: 24.4204366 },
+  { label: 'P15',   lat: -29.8045338, lng: 24.4204718 },
+  { label: 'P16',   lat: -29.8044447, lng: 24.4204832 },
+  { label: 'P17',   lat: -29.8043648, lng: 24.4204834 },
+  { label: 'P18',   lat: -29.8042545, lng: 24.4204654 },
+  { label: 'P19',   lat: -29.8041791, lng: 24.4204284 },
+  { label: 'P20',   lat: -29.8041134, lng: 24.4203866 },
+  { label: 'P21',   lat: -29.8040645, lng: 24.420342 },
+  { label: 'P22',   lat: -29.8039421, lng: 24.4202108 },
+  { label: 'P23',   lat: -29.8037095, lng: 24.4199572 },
+  { label: 'P24',   lat: -29.8035271, lng: 24.4197628 },
+  { label: 'Junction', lat: -29.8030819, lng: 24.4192824 },
+  { label: 'P26',   lat: -29.8029313, lng: 24.4194661 },
+  { label: 'P27',   lat: -29.802612, lng: 24.4198781 },
+  { label: 'P28',   lat: -29.802174, lng: 24.4204106 },
+  { label: 'P29',   lat: -29.8014412, lng: 24.421374 },
+  { label: 'P30',   lat: -29.8013743, lng: 24.4214596 },
+  { label: 'End',   lat: -29.8013537, lng: 24.4214846 },
 ];

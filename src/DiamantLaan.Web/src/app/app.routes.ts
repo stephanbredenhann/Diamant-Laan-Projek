@@ -10,5 +10,8 @@ export const routes: Routes = [
   { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard] },
   { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [authGuard] },
   { path: 'admin', loadComponent: () => import('./components/admin/admin.component').then(m => m.AdminComponent), canActivate: [authGuard, adminGuard] },
+  { path: 'admin/stats', loadComponent: () => import('./components/admin-stats/admin-stats.component').then(m => m.AdminStatsComponent), canActivate: [authGuard, adminGuard] },
+  { path: 'admin/gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent), canActivate: [authGuard, adminGuard] },
+  { path: 'admin/telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent), canActivate: [authGuard, adminGuard] },
   { path: '**', redirectTo: '' }
 ];

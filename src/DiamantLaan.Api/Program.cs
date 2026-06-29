@@ -8,8 +8,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -81,10 +84,17 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<User>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var db = services.GetRequiredService<AppDbContext>();
-    await db.Database.EnsureCreatedAsync();
-    var adminEmail = app.Configuration["AdminUser:Email"]!;
-    var adminPassword = app.Configuration["AdminUser:Password"]!;
-    await AppDbContext.SeedAsync(userManager, roleManager, db, adminEmail, adminPassword);
+    await db.Database.MigrateAsync();
+    var adminEmail = app.Configuration["AdminUser:Email"];
+    var adminPassword = app.Configuration["AdminUser:Password"];
+    if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
+    {
+        await AppDbContext.SeedAsync(userManager, roleManager, db, adminEmail, adminPassword);
+    }
+    else
+    {
+        app.Logger.LogWarning("AdminUser:Email or AdminUser:Password is not configured. Skipping admin user seeding.");
+    }
 }
 
 app.Run();

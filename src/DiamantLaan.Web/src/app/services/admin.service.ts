@@ -20,4 +20,16 @@ export class AdminService {
   getStats() {
     return this.http.get<any>('/api/admin/stats');
   }
+
+  getRegisteredNoPurchase() {
+    return this.http.get<any[]>('/api/admin/registered-no-purchase');
+  }
+
+  makeAdmin(email: string) {
+    return this.http.post<any>('/api/admin/users/make-admin', { email });
+  }
+
+  manualPurchase(formData: FormData) {
+    return this.http.post<any>('/api/admin/manual-purchase', formData);
+  }
 }

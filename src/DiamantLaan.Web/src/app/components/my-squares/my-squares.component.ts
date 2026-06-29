@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
 import { StatusBadgeComponent } from '../shared/status-badge/status-badge.component';
+import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 
 @Component({
   selector: 'app-my-squares',
@@ -37,6 +38,11 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
                   <div class="progress-fill" [style.width.%]="getProgressPercent(sq.status)"></div>
                 </div>
               </div>
+              @if (getCoords(sq.id); as coords) {
+                <p class="sq-coords">
+                  Koördinate (benaderd): {{ coords.lat | number:'1.4-4' }}°, {{ coords.lng | number:'1.4-4' }}°
+                </p>
+              }
             </div>
           }
         </div>
@@ -114,6 +120,12 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
       border-radius: 2px;
       transition: width 0.4s ease;
     }
+    .sq-coords {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-top: 0.5rem;
+      font-family: monospace;
+    }
     @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -135,5 +147,9 @@ export class MySquaresComponent implements OnInit {
       [SquareStatus.KlaarGeteer]: 100,
     };
     return map[status] ?? 0;
+  }
+
+  getCoords(id: number) {
+    return getSquareCentroid(id);
   }
 }
