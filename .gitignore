@@ -5,6 +5,9 @@ obj/
 *.user
 *.suo
 *.db
+*.db-shm
+*.db-wal
+App_Data/
 .opencode/
 publish/
 wwwroot/
