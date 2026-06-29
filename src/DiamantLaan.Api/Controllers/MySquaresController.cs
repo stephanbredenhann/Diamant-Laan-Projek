@@ -35,4 +35,17 @@ public class MySquaresController : ControllerBase
 
         return Ok(squares);
     }
+
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetMySummary()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var blockCount = await _db.Squares.CountAsync(s => s.OwnerId == userId);
+        var totalSpent = await _db.Purchases
+            .Where(p => p.UserId == userId)
+            .SumAsync(p => (double)p.Amount);
+
+        return Ok(new { blockCount, totalSpent });
+    }
 }

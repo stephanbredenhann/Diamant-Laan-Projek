@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
@@ -65,6 +65,20 @@ type OraniaChartMode = 'spend' | 'count';
       @if (loading) {
         <p class="muted">Laai statistieke...</p>
       } @else {
+        <div class="export-bar">
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            (click)="downloadPdf()"
+            [disabled]="exportingPdf">
+            {{ exportingPdf ? 'Genereer PDF...' : 'Laai af as PDF' }}
+          </button>
+          @if (pdfError) {
+            <p class="error-msg">{{ pdfError }}</p>
+          }
+        </div>
+
+        <div #statsExport class="stats-export">
         @if (loadError) {
           <p class="error-msg">{{ loadError }}</p>
         }
@@ -214,9 +228,9 @@ type OraniaChartMode = 'spend' | 'count';
         <div class="table-card">
           <div class="table-header">
             <h3>Kopers</h3>
-            <div class="table-actions">
+            <div class="table-actions pdf-hide">
               <input type="text" [(ngModel)]="search" (input)="applyFilters()" placeholder="Soek naam of e-pos...">
-              <button class="btn btn-outline btn-sm" (click)="downloadCsv()">Laai Af as CSV</button>
+              <button class="btn btn-outline btn-sm" (click)="downloadCsv()">Laai af as CSV</button>
             </div>
           </div>
           <div class="table-scroll">
@@ -271,7 +285,7 @@ type OraniaChartMode = 'spend' | 'count';
         <div class="table-card">
           <div class="table-header">
             <h3>Geregistreer Sonder Aankoop</h3>
-            <div class="table-actions">
+            <div class="table-actions pdf-hide">
               <input type="text" [(ngModel)]="nonPurchaserSearch" (input)="applyNonPurchaserFilters()" placeholder="Soek naam of e-pos...">
               <button class="btn btn-outline btn-sm" (click)="downloadNonPurchaserCsv()">Laai af as CSV</button>
             </div>
@@ -307,11 +321,22 @@ type OraniaChartMode = 'spend' | 'count';
             </table>
           </div>
         </div>
+        </div>
       }
     </div>
   `,
   styles: [`
     .admin-content { }
+    .export-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .export-bar .error-msg { margin-bottom: 0; flex: 1 1 100%; }
+    .stats-export.exporting .pdf-hide { display: none !important; }
+    .stats-export.exporting .table-scroll { overflow: visible; }
     .muted { color: var(--color-muted); }
     .error-msg {
       color: #b33;
@@ -542,6 +567,8 @@ type OraniaChartMode = 'spend' | 'count';
 export class AdminStatsComponent implements OnInit {
   private admin = inject(AdminService);
 
+  @ViewChild('statsExport') statsExport!: ElementRef<HTMLElement>;
+
   stats: Stats = {
     totalSquares: 4200,
     soldSquares: 0,
@@ -567,6 +594,8 @@ export class AdminStatsComponent implements OnInit {
   loading = true;
   loadError = '';
   nonPurchaserError = '';
+  exportingPdf = false;
+  pdfError = '';
 
   dailyChartMode: DailyChartMode = 'daily';
   squaresChartMode: DailyChartMode = 'daily';
@@ -719,6 +748,82 @@ export class AdminStatsComponent implements OnInit {
   sortIcon(key: keyof Buyer): string {
     if (this.sortKey !== key) return '⇅';
     return this.sortDesc ? '▼' : '▲';
+  }
+
+  async downloadPdf() {
+    if (this.exportingPdf || !this.statsExport) return;
+
+    this.exportingPdf = true;
+    this.pdfError = '';
+
+    const element = this.statsExport.nativeElement;
+    element.classList.add('exporting');
+
+    try {
+      await document.fonts.ready;
+      await new Promise<void>(resolve => setTimeout(resolve, 150));
+
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        scrollY: -window.scrollY,
+        windowWidth: element.scrollWidth,
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const margin = 10;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = pageHeight - margin * 2;
+      const pageCanvasHeight = Math.floor((contentHeight * canvas.width) / contentWidth);
+
+      let renderedHeight = 0;
+      let page = 0;
+
+      while (renderedHeight < canvas.height) {
+        if (page > 0) pdf.addPage();
+
+        const sliceHeight = Math.min(pageCanvasHeight, canvas.height - renderedHeight);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+
+        const ctx = pageCanvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas context unavailable');
+
+        ctx.drawImage(
+          canvas,
+          0, renderedHeight, canvas.width, sliceHeight,
+          0, 0, canvas.width, sliceHeight
+        );
+
+        const sliceImgHeight = (sliceHeight * contentWidth) / canvas.width;
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'),
+          'PNG',
+          margin,
+          margin,
+          contentWidth,
+          sliceImgHeight
+        );
+
+        renderedHeight += sliceHeight;
+        page++;
+      }
+
+      const date = new Date().toISOString().slice(0, 10);
+      pdf.save(`diamant-laan-statistieke-${date}.pdf`);
+    } catch {
+      this.pdfError = 'Kon nie PDF genereer nie. Probeer asseblief weer.';
+    } finally {
+      element.classList.remove('exporting');
+      this.exportingPdf = false;
+    }
   }
 
   applyFilters() {

@@ -17,7 +17,7 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
       <div class="page-header">
         <h2>My Blokke</h2>
         @if (squares.length > 0) {
-          <p class="summary">{{ squares.length }} blokke gekoop — <strong>R{{ squares.length * 500 | number:'1.0-0' }}</strong> totaal</p>
+          <p class="summary">{{ squares.length }} blokke gekoop — <strong>R{{ totalSpent | number:'1.0-0' }}</strong> totaal</p>
           <div class="header-actions">
             <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien DEMO Sertifikaat</a>
             <app-share-button
@@ -184,6 +184,7 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 export class MySquaresComponent implements OnInit {
   private purchase = inject(PurchaseService);
   squares: { id: number; status: SquareStatus; imageCount?: number }[] = [];
+  totalSpent = 0;
   lightboxOpen = false;
   lightboxSquareId: number | null = null;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -198,6 +199,10 @@ export class MySquaresComponent implements OnInit {
       status: sq.status as SquareStatus,
       imageCount: sq.imageCount
     })));
+    this.purchase.getMySummary().subscribe({
+      next: summary => this.totalSpent = summary.totalSpent,
+      error: () => this.totalSpent = this.squares.length * 500
+    });
   }
 
   openImages(sq: { id: number; imageCount?: number }) {

@@ -49,4 +49,8 @@ export class PurchaseService {
   getMySquares() {
     return this.http.get<{ id: number; status: number; imageCount?: number }[]>('/api/my-squares');
   }
+
+  getMySummary() {
+    return this.http.get<{ blockCount: number; totalSpent: number }>('/api/my-squares/summary');
+  }
 }
