@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Models.Enums;
+using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,12 +19,14 @@ public class AdminController : ControllerBase
     private readonly AppDbContext _db;
     private readonly UserManager<User> _userManager;
     private readonly IWebHostEnvironment _env;
+    private readonly AuditLogService _audit;
 
-    public AdminController(AppDbContext db, UserManager<User> userManager, IWebHostEnvironment env)
+    public AdminController(AppDbContext db, UserManager<User> userManager, IWebHostEnvironment env, AuditLogService audit)
     {
         _db = db;
         _userManager = userManager;
         _env = env;
+        _audit = audit;
     }
 
     [HttpPut("squares/status")]
@@ -37,10 +41,8 @@ public class AdminController : ControllerBase
 
         foreach (var square in squares)
         {
-            // Cannot downgrade from KlaarGeteer
             if (square.Status == SquareStatus.KlaarGeteer && dto.Status != SquareStatus.KlaarGeteer)
                 return BadRequest(new { message = $"Blok #{square.Id} is reeds klaar geteer." });
-            // Cannot skip statuses
             if ((int)dto.Status > (int)square.Status + 1)
                 return BadRequest(new { message = $"Kan nie blok #{square.Id} van {square.Status} na {dto.Status} skuif nie." });
 
@@ -48,6 +50,8 @@ public class AdminController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
+        await _audit.LogAsync(User, "BulkStatusUpdate", $"Updated {squares.Count} squares to {dto.Status}");
+
         return Ok(new { updated = squares.Count });
     }
 
@@ -81,8 +85,11 @@ public class AdminController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        var total = await _db.Squares.CountAsync();
-        var perStatus = await _db.Squares
+        const int saleableSquares = 4200;
+        var saleableQuery = _db.Squares.Where(s => s.Id >= 1 && s.Id <= saleableSquares);
+
+        var total = await saleableQuery.CountAsync();
+        var perStatus = await saleableQuery
             .GroupBy(s => s.Status)
             .Select(g => new { Status = (int)g.Key, Count = g.Count() })
             .ToListAsync();
@@ -90,7 +97,7 @@ public class AdminController : ControllerBase
         var klaarCount = perStatus.FirstOrDefault(x => x.Status == (int)SquareStatus.KlaarGeteer)?.Count ?? 0;
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
 
-        var soldCount = await _db.Squares.CountAsync(s => s.OwnerId != null);
+        var soldCount = await saleableQuery.CountAsync(s => s.OwnerId != null);
         var totalRaised = await _db.Purchases.SumAsync(p => (double)p.Amount);
 
         var dailySales = await _db.Purchases
@@ -148,8 +155,13 @@ public class AdminController : ControllerBase
             .Distinct()
             .ToListAsync();
 
+        var adminUserIds = await _db.UserRoles
+            .Where(ur => _db.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin"))
+            .Select(ur => ur.UserId)
+            .ToListAsync();
+
         var users = await _db.Users
-            .Where(u => !usersWithPurchases.Contains(u.Id))
+            .Where(u => !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
             .OrderBy(u => u.Email)
             .Select(u => new
             {
@@ -176,7 +188,9 @@ public class AdminController : ControllerBase
 
         var result = await _userManager.AddToRoleAsync(user, "Admin");
         if (!result.Succeeded)
-            return BadRequest(result.Errors.Select(e => e.Description));
+            return BadRequest(new { message = "Kon nie admin maak nie." });
+
+        await _audit.LogAsync(User, "MakeAdmin", $"Promoted {dto.Email} to Admin");
 
         return Ok(new { message = $"{dto.Email} is nou 'n admin." });
     }
@@ -185,89 +199,102 @@ public class AdminController : ControllerBase
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<IActionResult> ManualPurchase([FromForm] ManualPurchaseDto dto, IFormFile? proofOfPayment)
     {
-        if (proofOfPayment != null && !proofOfPayment.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { message = "Bewys van betaling moet 'n PDF wees." });
+        if (proofOfPayment != null && !FileUploadService.IsPdf(proofOfPayment))
+            return BadRequest(new { message = "Bewys van betaling moet 'n geldige PDF wees." });
 
-        var squares = await _db.Squares
-            .Where(s => dto.SquareIds.Contains(s.Id))
-            .ToListAsync();
-
-        if (squares.Count != dto.SquareIds.Count)
-            return BadRequest(new { message = "Sommige blokke bestaan nie." });
-
-        if (squares.Any(s => s.OwnerId != null))
-            return BadRequest(new { message = "Sommige blokke is reeds verkoop." });
-
-        if (squares.Any(s => s.Id < 1 || s.Id > 4200))
-            return BadRequest(new { message = "Ongeldige blokke gekies." });
-
-        var minimumAmount = squares.Count * 500m;
-        if (dto.AmountPaid < minimumAmount)
-            return BadRequest(new { message = $"Minimum bedrag is R{minimumAmount:0}." });
-
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            user = new User
+            var squares = await _db.Squares
+                .Where(s => dto.SquareIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (squares.Count != dto.SquareIds.Count)
+                return BadRequest(new { message = "Sommige blokke bestaan nie." });
+
+            if (squares.Any(s => s.OwnerId != null))
+                return BadRequest(new { message = "Sommige blokke is reeds verkoop." });
+
+            if (squares.Any(s => s.Id < 1 || s.Id > 4200))
+                return BadRequest(new { message = "Ongeldige blokke gekies." });
+
+            var minimumAmount = squares.Count * 500m;
+            if (dto.AmountPaid < minimumAmount)
+                return BadRequest(new { message = $"Minimum bedrag is R{minimumAmount:0}." });
+
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null)
             {
-                UserName = dto.Email,
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                PhoneNumber = dto.PhoneNumber,
-                IsOraniaResident = dto.IsOraniaResident,
-                EmailConfirmed = true
+                user = new User
+                {
+                    UserName = dto.Email,
+                    Email = dto.Email,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    PhoneNumber = dto.PhoneNumber,
+                    IsOraniaResident = dto.IsOraniaResident,
+                    EmailConfirmed = true
+                };
+                var tempPassword = Guid.NewGuid().ToString("N") + "Aa1!";
+                var createResult = await _userManager.CreateAsync(user, tempPassword);
+                if (!createResult.Succeeded)
+                    return BadRequest(new { message = "Kon nie gebruiker skep nie." });
+                await _userManager.AddToRoleAsync(user, "Buyer");
+            }
+            else
+            {
+                user.FirstName = dto.FirstName;
+                user.LastName = dto.LastName;
+                user.PhoneNumber = dto.PhoneNumber;
+                user.IsOraniaResident = dto.IsOraniaResident;
+                await _userManager.UpdateAsync(user);
+            }
+
+            var purchase = new Purchase
+            {
+                UserId = user.Id,
+                Amount = dto.AmountPaid,
+                PaymentStatus = PaymentStatus.Confirmed
             };
-            var tempPassword = Guid.NewGuid().ToString("N") + "Aa1!";
-            var createResult = await _userManager.CreateAsync(user, tempPassword);
-            if (!createResult.Succeeded)
-                return BadRequest(createResult.Errors.Select(e => e.Description));
-            await _userManager.AddToRoleAsync(user, "Buyer");
-        }
-        else
-        {
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
-            user.PhoneNumber = dto.PhoneNumber;
-            user.IsOraniaResident = dto.IsOraniaResident;
-            await _userManager.UpdateAsync(user);
-        }
 
-        var purchase = new Purchase
-        {
-            UserId = user.Id,
-            Amount = dto.AmountPaid
-        };
+            foreach (var square in squares)
+            {
+                square.OwnerId = user.Id;
+                purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = square.Id });
+            }
 
-        foreach (var square in squares)
-        {
-            square.OwnerId = user.Id;
-            purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = square.Id });
-        }
-
-        _db.Purchases.Add(purchase);
-        await _db.SaveChangesAsync();
-
-        if (proofOfPayment != null)
-        {
-            var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "proofs");
-            Directory.CreateDirectory(uploadsDir);
-            var fileName = $"{purchase.Id}.pdf";
-            var filePath = Path.Combine(uploadsDir, fileName);
-            await using var stream = new FileStream(filePath, FileMode.Create);
-            await proofOfPayment.CopyToAsync(stream);
-            purchase.ProofOfPaymentPath = $"/uploads/proofs/{fileName}";
+            _db.Purchases.Add(purchase);
             await _db.SaveChangesAsync();
-        }
 
-        return Ok(new
+            if (proofOfPayment != null)
+            {
+                var uploadsDir = FileUploadService.GetPrivateUploadsPath(_env);
+                var fileName = $"{purchase.Id}.pdf";
+                var filePath = Path.Combine(uploadsDir, fileName);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await proofOfPayment.CopyToAsync(stream);
+                purchase.ProofOfPaymentPath = $"proofs/{fileName}";
+                await _db.SaveChangesAsync();
+            }
+
+            await transaction.CommitAsync();
+            await _audit.LogAsync(User, "ManualPurchase", $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
+
+            return Ok(new
+            {
+                purchaseId = purchase.Id,
+                amount = purchase.Amount,
+                squareCount = squares.Count,
+                userId = user.Id,
+                paymentStatus = purchase.PaymentStatus.ToString(),
+                hasProof = purchase.ProofOfPaymentPath != null
+            });
+        }
+        catch (DbUpdateConcurrencyException)
         {
-            purchaseId = purchase.Id,
-            amount = purchase.Amount,
-            squareCount = squares.Count,
-            userId = user.Id,
-            proofOfPaymentPath = purchase.ProofOfPaymentPath
-        });
+            await transaction.RollbackAsync();
+            return Conflict(new { message = "Sommige blokke is intussen deur iemand anders gekoop." });
+        }
     }
 
     [HttpGet("purchases/{id}/proof")]
@@ -277,10 +304,221 @@ public class AdminController : ControllerBase
         if (purchase == null || string.IsNullOrEmpty(purchase.ProofOfPaymentPath))
             return NotFound();
 
-        var filePath = Path.Combine(_env.WebRootPath, purchase.ProofOfPaymentPath.TrimStart('/'));
-        if (!System.IO.File.Exists(filePath))
+        var filePath = FileUploadService.ResolveProofFilePath(_env, purchase.ProofOfPaymentPath);
+        if (filePath == null || !System.IO.File.Exists(filePath))
             return NotFound();
 
         return PhysicalFile(filePath, "application/pdf", $"bewys-{id}.pdf");
+    }
+
+    [HttpGet("squares/images")]
+    public async Task<IActionResult> GetProgressImages()
+    {
+        var images = await _db.ProgressImages
+            .Include(pi => pi.ProgressImageSquares)
+            .OrderByDescending(pi => pi.CreatedAt)
+            .ToListAsync();
+
+        return Ok(images.Select(pi => new AdminProgressImageDto
+        {
+            Id = pi.Id,
+            Status = (int)pi.Status,
+            Caption = pi.Caption,
+            CreatedAt = pi.CreatedAt,
+            SquareIds = pi.ProgressImageSquares.Select(pis => pis.SquareId).OrderBy(id => id).ToList()
+        }));
+    }
+
+    [HttpGet("squares/images/conflicts")]
+    public async Task<IActionResult> GetImageConflicts([FromQuery] List<int> squareIds, [FromQuery] SquareStatus status)
+    {
+        if (squareIds == null || squareIds.Count == 0)
+            return BadRequest(new { message = "Geen blokke gekies nie." });
+
+        var distinctIds = squareIds.Distinct().ToList();
+        var conflictingSquareIds = await GetConflictingSquareIdsAsync(distinctIds, status);
+
+        return Ok(new
+        {
+            conflictingSquareIds,
+            totalSelected = distinctIds.Count
+        });
+    }
+
+    [HttpPost("squares/images")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> UploadProgressImage([FromForm] ProgressImageUploadDto dto, IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+            return BadRequest(new { message = "Geen beeld opgelaai nie." });
+
+        if (!FileUploadService.IsImage(image))
+            return BadRequest(new { message = "Beeld moet 'n geldige JPEG, PNG of WebP wees." });
+
+        var squareIds = dto.SquareIds.Distinct().ToList();
+        var conflictingIds = await GetConflictingSquareIdsAsync(squareIds, dto.Status);
+        var replacedCount = 0;
+        var skippedCount = 0;
+
+        if (dto.ReplaceExisting)
+        {
+            replacedCount = await RemoveExistingImageLinksAsync(squareIds, dto.Status);
+        }
+        else
+        {
+            skippedCount = conflictingIds.Count;
+            squareIds = squareIds.Except(conflictingIds).ToList();
+            if (squareIds.Count == 0)
+                return BadRequest(new { message = "Alle gekose blokke het reeds 'n foto vir hierdie status." });
+        }
+
+        var squares = await _db.Squares
+            .Where(s => squareIds.Contains(s.Id))
+            .ToListAsync();
+
+        if (squares.Count != squareIds.Count)
+            return BadRequest(new { message = "Sommige blokke bestaan nie." });
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var extension = FileUploadService.GetImageExtension(image.ContentType);
+
+        var progressImage = new ProgressImage
+        {
+            Status = dto.Status,
+            Caption = string.IsNullOrWhiteSpace(dto.Caption) ? null : dto.Caption.Trim(),
+            UploadedByUserId = userId
+        };
+
+        foreach (var square in squares)
+        {
+            progressImage.ProgressImageSquares.Add(new ProgressImageSquare { SquareId = square.Id });
+        }
+
+        _db.ProgressImages.Add(progressImage);
+        await _db.SaveChangesAsync();
+
+        var uploadsDir = FileUploadService.GetProgressUploadsPath(_env);
+        var fileName = $"{progressImage.Id}{extension}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await image.CopyToAsync(stream);
+        }
+
+        progressImage.FilePath = $"progress/{fileName}";
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(User, "UploadProgressImage", $"Image #{progressImage.Id} for {squares.Count} squares at status {dto.Status}");
+
+        return Ok(new
+        {
+            id = progressImage.Id,
+            status = (int)progressImage.Status,
+            squareCount = squares.Count,
+            caption = progressImage.Caption,
+            replacedCount,
+            skippedCount
+        });
+    }
+
+    [HttpPut("squares/images/{id}")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> ReplaceProgressImage(int id, IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+            return BadRequest(new { message = "Geen beeld opgelaai nie." });
+
+        if (!FileUploadService.IsImage(image))
+            return BadRequest(new { message = "Beeld moet 'n geldige JPEG, PNG of WebP wees." });
+
+        var progressImage = await _db.ProgressImages.FindAsync(id);
+        if (progressImage == null)
+            return NotFound();
+
+        var oldPath = FileUploadService.ResolveProgressFilePath(_env, progressImage.FilePath);
+        if (oldPath != null && System.IO.File.Exists(oldPath))
+            System.IO.File.Delete(oldPath);
+
+        var extension = FileUploadService.GetImageExtension(image.ContentType);
+        var uploadsDir = FileUploadService.GetProgressUploadsPath(_env);
+        var fileName = $"{progressImage.Id}{extension}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await image.CopyToAsync(stream);
+        }
+
+        progressImage.FilePath = $"progress/{fileName}";
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(User, "ReplaceProgressImage", $"Replaced image #{id}");
+
+        return Ok(new { id = progressImage.Id, message = "Beeld vervang." });
+    }
+
+    [HttpDelete("squares/images/{id}")]
+    public async Task<IActionResult> DeleteProgressImage(int id)
+    {
+        var progressImage = await _db.ProgressImages
+            .Include(pi => pi.ProgressImageSquares)
+            .FirstOrDefaultAsync(pi => pi.Id == id);
+
+        if (progressImage == null)
+            return NotFound();
+
+        await DeleteProgressImageRecordAsync(progressImage);
+
+        await _audit.LogAsync(User, "DeleteProgressImage", $"Deleted image #{id}");
+
+        return Ok(new { message = "Beeld verwyder." });
+    }
+
+    private async Task<List<int>> GetConflictingSquareIdsAsync(List<int> squareIds, SquareStatus status)
+    {
+        return await _db.ProgressImageSquares
+            .Where(pis => squareIds.Contains(pis.SquareId) && pis.ProgressImage.Status == status)
+            .Select(pis => pis.SquareId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    private async Task<int> RemoveExistingImageLinksAsync(List<int> squareIds, SquareStatus status)
+    {
+        var links = await _db.ProgressImageSquares
+            .Include(pis => pis.ProgressImage)
+            .Where(pis => squareIds.Contains(pis.SquareId) && pis.ProgressImage.Status == status)
+            .ToListAsync();
+
+        if (links.Count == 0)
+            return 0;
+
+        var affectedSquareIds = links.Select(l => l.SquareId).Distinct().ToList();
+        var affectedImageIds = links.Select(l => l.ProgressImageId).Distinct().ToList();
+
+        _db.ProgressImageSquares.RemoveRange(links);
+        await _db.SaveChangesAsync();
+
+        foreach (var imageId in affectedImageIds)
+        {
+            var hasLinks = await _db.ProgressImageSquares.AnyAsync(pis => pis.ProgressImageId == imageId);
+            if (!hasLinks)
+            {
+                var orphan = await _db.ProgressImages.FindAsync(imageId);
+                if (orphan != null)
+                    await DeleteProgressImageRecordAsync(orphan);
+            }
+        }
+
+        return affectedSquareIds.Count;
+    }
+
+    private Task DeleteProgressImageRecordAsync(ProgressImage progressImage)
+    {
+        var filePath = FileUploadService.ResolveProgressFilePath(_env, progressImage.FilePath);
+        if (filePath != null && System.IO.File.Exists(filePath))
+            System.IO.File.Delete(filePath);
+
+        _db.ProgressImages.Remove(progressImage);
+        return _db.SaveChangesAsync();
     }
 }

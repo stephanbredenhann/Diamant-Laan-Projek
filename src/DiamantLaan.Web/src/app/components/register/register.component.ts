@@ -12,12 +12,12 @@ import { AuthService } from '../../services/auth.service';
       <div class="auth-card">
         <div class="auth-header">
           <h2>Registreer</h2>
-          <p>Sluit aan by die gemeenskap en help teer Diamant Laan.</p>
+          <p>Sluit aan by die gemeenskap en help om die Diamant Laan te teer.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
-              <label>Naam</label>
+              <label>Voornaam</label>
               <input type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam">
             </div>
             <div class="form-group">
@@ -34,7 +34,7 @@ import { AuthService } from '../../services/auth.service';
             <input type="password" [(ngModel)]="password" name="password" required autocomplete="new-password" minlength="6" placeholder="Kies 'n wagwoord">
           </div>
           <div class="form-group">
-            <label>Foon Nommer</label>
+            <label>Foonnommer</label>
             <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="082 123 4567">
           </div>
           <div class="form-group checkbox-group">
@@ -55,53 +55,11 @@ import { AuthService } from '../../services/auth.service';
     </div>
   `,
   styles: [`
-    .auth-card {
-      max-width: 460px;
-      margin: 3rem auto 4rem;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 2.5rem 2rem;
-      box-shadow: var(--shadow);
-    }
-    .auth-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .auth-header h2 {
-      font-size: 1.5rem;
-      color: var(--color-text);
-      margin-bottom: 0.375rem;
-    }
-    .auth-header p {
-      font-size: 0.875rem;
-      color: var(--color-muted);
-    }
     .form-row {
       display: flex;
       gap: 1rem;
     }
     .form-row .form-group { flex: 1; }
-    .btn-block { width: 100%; margin-top: 0.5rem; }
-    .auth-link {
-      margin-top: 1.25rem;
-      font-size: 0.875rem;
-      text-align: center;
-      color: var(--color-muted);
-    }
-    .auth-link a {
-      color: var(--color-terracotta);
-      font-weight: 600;
-    }
-    .error-alert {
-      background: #FEF2F2;
-      color: #DC2626;
-      font-size: 0.8125rem;
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-sm);
-      margin-bottom: 1rem;
-      border: 1px solid #FECACA;
-    }
     .checkbox-group label {
       display: flex;
       align-items: center;
@@ -109,6 +67,8 @@ import { AuthService } from '../../services/auth.service';
       font-size: 0.875rem;
       color: var(--color-text);
       cursor: pointer;
+      text-transform: none;
+      letter-spacing: normal;
     }
     .checkbox-group input { width: auto; }
     @media (max-width: 480px) {

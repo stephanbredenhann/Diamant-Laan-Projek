@@ -13,6 +13,10 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Square> Squares => Set<Square>();
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<PurchaseSquare> PurchaseSquares => Set<PurchaseSquare>();
+    public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ProgressImage> ProgressImages => Set<ProgressImage>();
+    public DbSet<ProgressImageSquare> ProgressImageSquares => Set<ProgressImageSquare>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -31,6 +35,25 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(s => s.PurchaseSquares)
             .HasForeignKey(ps => ps.SquareId);
 
+        builder.Entity<ProgressImageSquare>()
+            .HasKey(pis => new { pis.ProgressImageId, pis.SquareId });
+
+        builder.Entity<ProgressImageSquare>()
+            .HasOne(pis => pis.ProgressImage)
+            .WithMany(pi => pi.ProgressImageSquares)
+            .HasForeignKey(pis => pis.ProgressImageId);
+
+        builder.Entity<ProgressImageSquare>()
+            .HasOne(pis => pis.Square)
+            .WithMany()
+            .HasForeignKey(pis => pis.SquareId);
+
+        builder.Entity<ProgressImage>()
+            .HasOne(pi => pi.UploadedBy)
+            .WithMany()
+            .HasForeignKey(pi => pi.UploadedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<Square>()
             .HasOne(s => s.Owner)
             .WithMany(u => u.Squares)
@@ -41,6 +64,16 @@ public class AppDbContext : IdentityDbContext<User>
             .HasOne(p => p.User)
             .WithMany(u => u.Purchases)
             .HasForeignKey(p => p.UserId);
+
+        builder.Entity<RefreshToken>()
+            .HasOne(rt => rt.User)
+            .WithMany()
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Square>()
+            .Property(s => s.RowVersion)
+            .IsRowVersion();
     }
 
     public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)

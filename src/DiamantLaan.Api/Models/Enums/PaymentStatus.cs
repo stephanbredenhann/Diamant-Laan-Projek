@@ -1,0 +1,7 @@
+namespace DiamantLaan.Api.Models.Enums;
+
+public enum PaymentStatus
+{
+    Pending = 0,
+    Confirmed = 1
+}

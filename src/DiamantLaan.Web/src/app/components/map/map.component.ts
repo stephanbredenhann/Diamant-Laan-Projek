@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
-import { Square, STATUS_LABELS } from '../../models/square';
+import { Square, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 
@@ -17,13 +17,30 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
       <div class="map-header">
         <div class="container">
           <h2>Diamant Laan — Kies jou blokke</h2>
+          <div class="view-toggle">
+            <button
+              type="button"
+              [class.active]="viewMode() === 'status'"
+              (click)="viewMode.set('status')"
+            >Vordering</button>
+            <button
+              type="button"
+              [class.active]="viewMode() === 'availability'"
+              (click)="viewMode.set('availability')"
+            >Beskikbaarheid</button>
+          </div>
           <div class="legend">
-            <span><span class="dot free"></span> Beskikbaar</span>
-            <span><span class="dot sold"></span> Verkoop</span>
-            <span><span class="dot prep"></span> Voorberei</span>
-            <span><span class="dot busy"></span> Besig om te teer</span>
-            <span><span class="dot done"></span> Klaar geteer</span>
-            <span><span class="dot selected"></span> Gekies</span>
+            @if (viewMode() === 'status') {
+              <span><span class="dot free"></span> Nog nie begin nie</span>
+              <span><span class="dot prep"></span> Voorberei</span>
+              <span><span class="dot busy"></span> Besig om te teer</span>
+              <span><span class="dot done"></span> Klaar geteer</span>
+              <span><span class="dot selected"></span> Gekies</span>
+            } @else {
+              <span><span class="dot free"></span> Beskikbaar</span>
+              <span><span class="dot sold"></span> Verkoop</span>
+              <span><span class="dot selected"></span> Gekies</span>
+            }
           </div>
         </div>
       </div>
@@ -31,6 +48,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
         <app-road-map
           [squares]="squares"
           [selectedIds]="selectedIdsArray()"
+          [viewMode]="viewMode()"
           (squareClicked)="toggleSquare($event)"
           (squaresRangeSelected)="selectRange($event)"
         />
@@ -68,9 +86,6 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
             }
-            @if (message) {
-              <div class="msg" [class.error]="isError">{{ message }}</div>
-            }
             @if (!auth.currentUser()) {
               <div class="login-nudge">
                 <p><a routerLink="/meld-aan">Meld aan</a> om blokke te kies</p>
@@ -103,6 +118,31 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
       font-size: 1.25rem;
       color: var(--color-text);
       margin-bottom: 0.5rem;
+    }
+    .view-toggle {
+      display: inline-flex;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 0.625rem;
+    }
+    .view-toggle button {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0;
+      background: var(--color-surface);
+      color: var(--color-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .view-toggle button + button {
+      border-left: 1px solid var(--color-border);
+    }
+    .view-toggle button.active {
+      background: var(--color-terracotta);
+      color: #fff;
     }
     .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
@@ -246,20 +286,16 @@ export class MapComponent implements OnInit {
   selectedIds = signal<Set<number>>(new Set());
   amountPerBlock = signal(500);
   mySquareIds = signal<number[]>([]);
-  message = '';
-  isError = false;
+  viewMode = signal<MapViewMode>('status');
 
   totalAmount = computed(() => this.selectedIds().size * this.amountPerBlock());
+  selectedIdsArray = computed(() => Array.from(this.selectedIds()));
 
   ngOnInit() {
     this.road.getSquares().subscribe(data => this.squares = data);
     if (this.auth.currentUser()) {
       this.purchase.getMySquares().subscribe(s => this.mySquareIds.set(s.map(x => x.id)));
     }
-  }
-
-  selectedIdsArray(): number[] {
-    return Array.from(this.selectedIds());
   }
 
   toggleSquare(sqId: number) {
@@ -279,8 +315,6 @@ export class MapComponent implements OnInit {
       selected.add(sqId);
     }
     this.selectedIds.set(selected);
-    this.message = '';
-    this.isError = false;
   }
 
   selectRange(ids: number[]) {
@@ -297,13 +331,10 @@ export class MapComponent implements OnInit {
       selected.add(id);
     }
     this.selectedIds.set(selected);
-    this.message = '';
-    this.isError = false;
   }
 
   clearSelection() {
     this.selectedIds.set(new Set());
-    this.message = '';
   }
 
   onAmountChange(event: Event) {

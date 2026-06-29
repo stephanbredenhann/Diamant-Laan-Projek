@@ -1,16 +1,23 @@
 import * as L from 'leaflet';
 import * as turf from '@turf/turf';
-import type { Feature, LineString, Point } from 'geojson';
+import type { Feature, LineString, Point, Polygon } from 'geojson';
 import { Square } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
 
 const ROAD_LENGTH_M = 700;
 const ROAD_WIDTH = 6;
 const TOTAL_SQUARES = 4200;
+const MAP_BOUNDS_PADDING_KM = 0.5;
+
+let cachedRoad: Feature<LineString> | null = null;
+let cachedBaseFeatures: GeoJSON.Feature<Polygon>[] | null = null;
+let cachedMapBounds: L.LatLngBounds | null = null;
 
 function buildRoadLineString(): Feature<LineString> {
+  if (cachedRoad) return cachedRoad;
   const coords = WAYPOINTS.map(wp => [wp.lng, wp.lat] as [number, number]);
-  return turf.lineString(coords);
+  cachedRoad = turf.lineString(coords);
+  return cachedRoad;
 }
 
 /** Bearing (degrees) along the road at a given distance in meters. */
@@ -49,18 +56,13 @@ function cornerAt(
   return offsetPerpendicular(onPath, bearingDeg, perpOffsetM);
 }
 
-/**
- * Generate a Leaflet GeoJSON layer with all 4200 squares positioned
- * along the real-world road path defined by WAYPOINTS.
- *
- * Each cell is a trapezoid: back and front edges use bearings at their
- * respective road-meter boundaries so adjacent cells share identical edges.
- */
-export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
+/** Static polygon geometry for all squares (computed once). */
+function getBaseFeatures(): GeoJSON.Feature<Polygon>[] {
+  if (cachedBaseFeatures) return cachedBaseFeatures;
+
   const road = buildRoadLineString();
   const totalDist = turf.length(road, { units: 'meters' });
-  const squareById = new Map(squares.map(s => [s.id, s]));
-  const features: GeoJSON.Feature[] = [];
+  const features: GeoJSON.Feature<Polygon>[] = [];
 
   for (let sqId = 1; sqId <= TOTAL_SQUARES; sqId++) {
     const roadPos = Math.floor((sqId - 1) / ROAD_WIDTH);
@@ -80,8 +82,6 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
     const frontLeft = cornerAt(road, frontDist, frontBearing, perpLeft);
     const frontRight = cornerAt(road, frontDist, frontBearing, perpRight);
 
-    const sq = squareById.get(sqId);
-
     features.push({
       type: 'Feature',
       geometry: {
@@ -94,13 +94,58 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
           backLeft,
         ]],
       },
+      properties: { id: sqId },
+    });
+  }
+
+  cachedBaseFeatures = features;
+  return cachedBaseFeatures;
+}
+
+/**
+ * Leaflet max bounds padded ~1km around the road/square corridor.
+ */
+export function getMapBounds(): L.LatLngBounds {
+  if (cachedMapBounds) return cachedMapBounds;
+
+  const road = buildRoadLineString();
+  const buffered = turf.buffer(road, MAP_BOUNDS_PADDING_KM, { units: 'kilometers' });
+  if (!buffered) {
+    const bbox = turf.bbox(road);
+    cachedMapBounds = L.latLngBounds([bbox[1], bbox[0]], [bbox[3], bbox[2]]);
+    return cachedMapBounds;
+  }
+  const bbox = turf.bbox(buffered);
+  cachedMapBounds = L.latLngBounds(
+    [bbox[1], bbox[0]],
+    [bbox[3], bbox[2]],
+  );
+  return cachedMapBounds;
+}
+
+/**
+ * Generate a Leaflet GeoJSON layer with all 4200 squares positioned
+ * along the real-world road path defined by WAYPOINTS.
+ *
+ * Geometry is cached; only status/sold properties are merged per request.
+ */
+export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
+  const squareById = new Map(squares.map(s => [s.id, s]));
+  const baseFeatures = getBaseFeatures();
+
+  const features = baseFeatures.map(feature => {
+    const id = feature.properties?.['id'] as number;
+    const sq = squareById.get(id);
+
+    return {
+      ...feature,
       properties: {
-        id: sqId,
+        id,
         status: sq?.status ?? 0,
         isSold: sq?.isSold ?? false,
       },
-    });
-  }
+    };
+  });
 
   return L.geoJSON({
     type: 'FeatureCollection',

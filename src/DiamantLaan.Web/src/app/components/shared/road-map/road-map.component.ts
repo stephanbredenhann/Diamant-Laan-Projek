@@ -1,16 +1,11 @@
 import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, SimpleChanges, ElementRef, inject } from '@angular/core';
 import * as L from 'leaflet';
-import { Square, SquareStatus, STATUS_LABELS } from '../../../models/square';
+import { Square, SquareStatus, STATUS_LABELS, STATUS_COLORS, MapViewMode } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
-import { generateSquareGeoJson } from './coordinate-config';
+import { generateSquareGeoJson, getMapBounds } from './coordinate-config';
 
-const STATUS_COLORS: Record<number, string> = {
-  [SquareStatus.NogNieBeginNie]: '#D4C4A8',
-  [SquareStatus.Voorberei]:      '#B5651D',
-  [SquareStatus.BesigOmTeTeer]:  '#8B7355',
-  [SquareStatus.KlaarGeteer]:    '#6B7B3C',
-};
 const SOLD_COLOR = '#C67B5C';
+const AVAILABLE_COLOR = '#D4C4A8';
 const SELECTED_FILL = '#F5A623';
 const SELECTED_STROKE = '#3D2B1F';
 const DRAG_THRESHOLD = 5;
@@ -25,6 +20,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   @Input() squares: Square[] = [];
   @Input() selectedIds: number[] = [];
   @Input() statusFilter: number | null = null;
+  @Input() viewMode: MapViewMode = 'status';
   @Output() squareClicked = new EventEmitter<number>();
   @Output() squaresRangeSelected = new EventEmitter<number[]>();
 
@@ -34,10 +30,12 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   private map!: L.Map;
   private geoLayer!: L.GeoJSON;
   private initialized = false;
+  private selectedIdSet = new Set<number>();
 
   private isDragging = false;
   private dragStartPoint: L.Point | null = null;
   private selectBox: L.Rectangle | null = null;
+  private activeTooltipLayer: L.Layer | null = null;
 
   ngAfterViewInit() {
     this.initMap();
@@ -45,8 +43,15 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (!this.initialized) return;
-    if (changes['squares'] || changes['selectedIds'] || changes['statusFilter']) {
-      this.refreshLayer();
+
+    if (changes['squares']) {
+      this.rebuildLayer();
+      return;
+    }
+
+    if (changes['selectedIds'] || changes['statusFilter'] || changes['viewMode']) {
+      this.syncSelectedIdSet();
+      this.applyStyles();
     }
   }
 
@@ -56,8 +61,11 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
     if (this.selectMode) {
       this.map.dragging.disable();
+      // Prevent the browser from scrolling the page while box-selecting on touch.
+      this.map.getContainer().style.touchAction = 'none';
     } else {
       this.map.dragging.enable();
+      this.map.getContainer().style.touchAction = '';
       this.cancelSelection();
     }
   }
@@ -85,9 +93,11 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
     this.map = L.map(container, {
       center: [midLat, midLng],
-      zoom: 18,
+      zoom: 20,
       minZoom: 16,
       maxZoom: 22,
+      maxBounds: getMapBounds(),
+      maxBoundsViscosity: 1.0,
       zoomControl: true,
       attributionControl: true,
       renderer: L.canvas(),
@@ -101,23 +111,30 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
     this.setupDragSelect();
     this.initialized = true;
-    this.refreshLayer();
+    this.syncSelectedIdSet();
+    this.rebuildLayer();
     setTimeout(() => this.map.invalidateSize(), 100);
   }
 
+  private syncSelectedIdSet() {
+    this.selectedIdSet = new Set(this.selectedIds);
+  }
+
   private setupDragSelect() {
-    const getContainerPoint = (e: MouseEvent): L.Point => {
-      const rect = this.map.getContainer().getBoundingClientRect();
+    const container = this.map.getContainer();
+
+    const getContainerPoint = (e: PointerEvent): L.Point => {
+      const rect = container.getBoundingClientRect();
       return L.point(e.clientX - rect.left, e.clientY - rect.top);
     };
 
-    this.map.getContainer().addEventListener('mousedown', (e: MouseEvent) => {
+    container.addEventListener('pointerdown', (e: PointerEvent) => {
       if (!this.selectMode) return;
       this.dragStartPoint = getContainerPoint(e);
       this.isDragging = false;
     });
 
-    this.map.getContainer().addEventListener('mousemove', (e: MouseEvent) => {
+    container.addEventListener('pointermove', (e: PointerEvent) => {
       if (!this.selectMode || !this.dragStartPoint) return;
 
       const current = getContainerPoint(e);
@@ -125,10 +142,14 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
       if (dist > DRAG_THRESHOLD && !this.isDragging) {
         this.isDragging = true;
-        this.map.getContainer().style.cursor = 'crosshair';
+        container.style.cursor = 'crosshair';
+        // Keep receiving move/up events even if the pointer leaves the container.
+        container.setPointerCapture?.(e.pointerId);
       }
 
       if (this.isDragging) {
+        // Stop the browser from scrolling/panning the page while box-selecting on touch.
+        e.preventDefault();
         this.updateSelectBox(current);
       }
     });
@@ -142,10 +163,11 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
         this.selectBox = null;
 
         const ids: number[] = [];
-        this.geoLayer.eachLayer((layer: any) => {
-          if (layer.getBounds && bounds.intersects(layer.getBounds())) {
-            const id = layer.feature?.properties?.id;
-            if (id != null) ids.push(id);
+        this.geoLayer.eachLayer((layer: L.Layer) => {
+          const geoLayer = layer as L.Layer & { getBounds?: () => L.LatLngBounds; feature?: GeoJSON.Feature };
+          if (geoLayer.getBounds && bounds.intersects(geoLayer.getBounds())) {
+            const id = geoLayer.feature?.properties?.['id'];
+            if (id != null) ids.push(id as number);
           }
         });
 
@@ -156,11 +178,11 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
       this.isDragging = false;
       this.dragStartPoint = null;
-      this.map.getContainer().style.cursor = '';
+      container.style.cursor = '';
     };
 
-    this.map.getContainer().addEventListener('mouseup', finishDrag);
-    this.map.getContainer().addEventListener('mouseleave', finishDrag);
+    container.addEventListener('pointerup', finishDrag);
+    container.addEventListener('pointercancel', finishDrag);
   }
 
   private updateSelectBox(current: L.Point) {
@@ -183,13 +205,22 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     }).addTo(this.map);
   }
 
-  private refreshLayer() {
+  private rebuildLayer() {
     if (!this.initialized) return;
+
     if (this.geoLayer) {
       this.map.removeLayer(this.geoLayer);
     }
+    this.activeTooltipLayer = null;
 
     this.geoLayer = generateSquareGeoJson(this.squares);
+    this.bindSquareInteractions();
+    this.applyStyles();
+    this.geoLayer.addTo(this.map);
+  }
+
+  private applyStyles() {
+    if (!this.geoLayer) return;
 
     this.geoLayer.setStyle((feature) => {
       const props = feature?.properties;
@@ -197,16 +228,21 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       const status = (props?.['status'] as number) ?? SquareStatus.NogNieBeginNie;
       const isSold = props?.['isSold'] as boolean;
 
-      let fillColor = STATUS_COLORS[status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
+      let fillColor: string;
       let fillOpacity = 0.85;
       let strokeColor = '#fff';
       let strokeWeight = 0.5;
 
-      if (status === SquareStatus.NogNieBeginNie && isSold) {
-        fillColor = SOLD_COLOR;
+      if (this.viewMode === 'availability') {
+        fillColor = isSold ? SOLD_COLOR : AVAILABLE_COLOR;
+      } else {
+        fillColor = STATUS_COLORS[status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
+        if (status === SquareStatus.NogNieBeginNie && isSold) {
+          fillColor = SOLD_COLOR;
+        }
       }
 
-      if (this.selectedIds.includes(id)) {
+      if (this.selectedIdSet.has(id)) {
         fillColor = SELECTED_FILL;
         fillOpacity = 0.95;
         strokeColor = SELECTED_STROKE;
@@ -224,42 +260,59 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
         weight: strokeWeight,
       };
     });
+  }
 
-    this.geoLayer.on('click', (e: L.LeafletMouseEvent) => {
-      if (this.isDragging) return;
-      const layer = (e as any).layer;
-      const id = layer?.feature?.properties?.id as number;
-      if (id != null) {
-        this.squareClicked.emit(id);
-      }
-    });
-
-    this.geoLayer.on('mouseover', (e: L.LeafletMouseEvent) => {
-      if (this.isDragging) return;
-      const layer = (e as any).layer;
-      const props = layer?.feature?.properties;
-      const id = props?.id as number;
-      const status = props?.status as number;
-      const isSold = props?.isSold as boolean;
+  private bindSquareInteractions() {
+    this.geoLayer.eachLayer((layer: L.Layer) => {
+      const props = (layer as L.Layer & { feature?: GeoJSON.Feature }).feature?.properties;
+      const id = props?.['id'] as number | undefined;
       if (id == null) return;
 
-      let label: string;
-      if (status === SquareStatus.NogNieBeginNie && isSold) {
-        label = 'Verkoop';
-      } else {
-        label = STATUS_LABELS[status as SquareStatus] ?? 'Onbekend';
-      }
-      layer.bindTooltip(`Blok #${id} \u2014 ${label}`, {
-        direction: 'top',
-        offset: [0, -4],
-      }).openTooltip();
-    });
+      layer.bindTooltip(
+        this.buildTooltipHtml(id, props?.['status'] as number | undefined, props?.['isSold'] === true),
+        {
+          sticky: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'block-info-tooltip',
+        },
+      );
+      this.disableAutomaticTooltipEvents(layer);
 
-    this.geoLayer.on('mouseout', (e: L.LeafletMouseEvent) => {
-      const layer = (e as any).layer;
-      layer.closeTooltip();
-    });
+      layer.on('click', () => {
+        if (this.isDragging) {
+          layer.closeTooltip();
+          return;
+        }
 
-    this.geoLayer.addTo(this.map);
+        if (this.activeTooltipLayer && this.activeTooltipLayer !== layer) {
+          this.activeTooltipLayer.closeTooltip();
+        }
+
+        layer.openTooltip();
+        this.activeTooltipLayer = layer;
+        this.squareClicked.emit(id);
+      });
+    });
+  }
+
+  private disableAutomaticTooltipEvents(layer: L.Layer) {
+    (layer as L.Layer & { _initTooltipInteractions?: (remove?: boolean) => void })._initTooltipInteractions?.(true);
+  }
+
+  private buildTooltipHtml(id: number, status: number | undefined, isSold: boolean): string {
+    const statusValue = status ?? SquareStatus.NogNieBeginNie;
+    const statusLabel = statusValue === SquareStatus.NogNieBeginNie && isSold
+      ? 'Verkoop'
+      : STATUS_LABELS[statusValue as SquareStatus] ?? 'Onbekend';
+    const availability = isSold ? 'Verkoop' : 'Beskikbaar';
+
+    return `
+      <div class="block-bubble">
+        <div class="block-bubble-id">Blok #${id}</div>
+        <div class="block-bubble-row"><span>Status:</span> ${statusLabel}</div>
+        <div class="block-bubble-row"><span>Beskikbaarheid:</span> ${availability}</div>
+      </div>
+    `;
   }
 }

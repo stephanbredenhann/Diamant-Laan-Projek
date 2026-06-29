@@ -2,20 +2,30 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
-import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
+import { SquareStatus } from '../../models/square';
 import { StatusBadgeComponent } from '../shared/status-badge/status-badge.component';
+import { ImageLightboxComponent } from '../shared/image-lightbox/image-lightbox.component';
+import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 
 @Component({
   selector: 'app-my-squares',
   standalone: true,
-  imports: [CommonModule, RouterLink, StatusBadgeComponent],
+  imports: [CommonModule, RouterLink, StatusBadgeComponent, ImageLightboxComponent, ShareButtonComponent],
   template: `
     <div class="container">
       <div class="page-header">
         <h2>My Blokke</h2>
         @if (squares.length > 0) {
           <p class="summary">{{ squares.length }} blokke gekoop — <strong>R{{ squares.length * 500 | number:'1.0-0' }}</strong> totaal</p>
+          <div class="header-actions">
+            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien DEMO Sertifikaat</a>
+            <app-share-button
+              label="Deel my bydrae"
+              [url]="siteUrl"
+              [text]="shareText"
+            />
+          </div>
         }
       </div>
       @if (squares.length === 0) {
@@ -28,10 +38,21 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
       } @else {
         <div class="grid">
           @for (sq of squares; track sq.id) {
-            <div class="sq-card">
+            <div
+              class="sq-card"
+              [class.has-images]="sq.imageCount && sq.imageCount > 0"
+              (click)="openImages(sq)"
+            >
               <div class="sq-info">
                 <span class="sq-id">Blok #{{ sq.id }}</span>
-                <app-status-badge [status]="sq.status"></app-status-badge>
+                <div class="sq-badges">
+                  @if (sq.imageCount && sq.imageCount > 0) {
+                    <span class="image-indicator" title="Vorderingsfoto beskikbaar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </span>
+                  }
+                  <app-status-badge [status]="sq.status"></app-status-badge>
+                </div>
               </div>
               <div class="sq-progress">
                 <div class="progress-bar">
@@ -40,7 +61,7 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
               </div>
               @if (getCoords(sq.id); as coords) {
                 <p class="sq-coords">
-                  Koördinate (benaderd): {{ coords.lat | number:'1.4-4' }}°, {{ coords.lng | number:'1.4-4' }}°
+                  Koördinate: {{ coords.lat | number:'1.6-6' }}°, {{ coords.lng | number:'1.6-6' }}°
                 </p>
               }
             </div>
@@ -48,6 +69,12 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
         </div>
       }
     </div>
+
+    <app-image-lightbox
+      [open]="lightboxOpen"
+      [squareId]="lightboxSquareId"
+      (closed)="closeLightbox()"
+    />
   `,
   styles: [`
     .container { padding: 2.5rem 1.5rem 4rem; max-width: 900px; }
@@ -63,6 +90,14 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
       color: var(--color-muted);
     }
     .summary strong { color: var(--color-terracotta); }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+    .cert-link { display: inline-flex; }
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
@@ -101,6 +136,21 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
       align-items: center;
       margin-bottom: 0.625rem;
     }
+    .sq-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .image-indicator {
+      display: flex;
+      color: var(--color-terracotta);
+    }
+    .sq-card.has-images {
+      cursor: pointer;
+    }
+    .sq-card.has-images:hover {
+      border-color: var(--color-terracotta);
+    }
     .sq-id {
       font-family: var(--font-heading);
       font-weight: 600;
@@ -133,10 +183,32 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 })
 export class MySquaresComponent implements OnInit {
   private purchase = inject(PurchaseService);
-  squares: { id: number; status: SquareStatus }[] = [];
+  squares: { id: number; status: SquareStatus; imageCount?: number }[] = [];
+  lightboxOpen = false;
+  lightboxSquareId: number | null = null;
+  siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  get shareText(): string {
+    return `Ek het ${this.squares.length} blokke geborg op Diamant Laan!`;
+  }
 
   ngOnInit() {
-    this.purchase.getMySquares().subscribe(s => this.squares = s);
+    this.purchase.getMySquares().subscribe(s => this.squares = s.map(sq => ({
+      id: sq.id,
+      status: sq.status as SquareStatus,
+      imageCount: sq.imageCount
+    })));
+  }
+
+  openImages(sq: { id: number; imageCount?: number }) {
+    if (!sq.imageCount || sq.imageCount <= 0) return;
+    this.lightboxSquareId = sq.id;
+    this.lightboxOpen = true;
+  }
+
+  closeLightbox() {
+    this.lightboxOpen = false;
+    this.lightboxSquareId = null;
   }
 
   getProgressPercent(status: SquareStatus): number {

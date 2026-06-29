@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { AuthResponse } from '../models/user';
 
 @Injectable({ providedIn: 'root' })
@@ -14,15 +14,23 @@ export class AuthService {
   register(firstName: string, lastName: string, email: string, password: string, phoneNumber: string, isOraniaResident: boolean) {
     return this.http.post<AuthResponse>(`${this.base}/register`, {
       firstName, lastName, email, password, phoneNumber, isOraniaResident
-    }).pipe(tap(res => this.setSession(res)));
+    }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
   }
 
   login(email: string, password: string) {
-    return this.http.post<AuthResponse>(`${this.base}/login`, { email, password })
+    return this.http.post<AuthResponse>(`${this.base}/login`, { email, password }, { withCredentials: true })
       .pipe(tap(res => this.setSession(res)));
   }
 
-  logout() {
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/refresh`, {}, { withCredentials: true })
+      .pipe(tap(res => this.setSession(res)));
+  }
+
+  logout(callApi = true) {
+    if (callApi) {
+      this.http.post(`${this.base}/logout`, {}, { withCredentials: true }).subscribe({ error: () => {} });
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     this.currentUser.set(null);
@@ -46,9 +54,8 @@ export class AuthService {
 
   private loadUser(): AuthResponse | null {
     const stored = localStorage.getItem('user');
-    if (stored) {
-      try { return JSON.parse(stored); } catch { return null; }
-    }
-    return null;
+    const token = localStorage.getItem('token');
+    if (!stored || !token) return null;
+    try { return JSON.parse(stored); } catch { return null; }
   }
 }

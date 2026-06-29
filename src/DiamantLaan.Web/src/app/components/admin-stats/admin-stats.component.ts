@@ -1,13 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, registerables } from 'chart.js';
 import { AdminService } from '../../services/admin.service';
 
 Chart.register(...registerables);
-import { STATUS_LABELS, SquareStatus } from '../../models/square';
+import { STATUS_LABELS, SquareStatus, STATUS_COLORS } from '../../models/square';
 
 interface Buyer {
   userId: string;
@@ -54,32 +53,22 @@ interface Stats {
   outsiderSpend: number;
 }
 
-const STATUS_COLORS: Record<number, string> = {
-  [SquareStatus.NogNieBeginNie]: '#D4C4A8',
-  [SquareStatus.Voorberei]: '#B5651D',
-  [SquareStatus.BesigOmTeTeer]: '#8B7355',
-  [SquareStatus.KlaarGeteer]: '#6B7B3C',
-};
+type DailyChartMode = 'daily' | 'cumulative';
+type OraniaChartMode = 'spend' | 'count';
 
 @Component({
   selector: 'app-admin-stats',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, BaseChartDirective],
   template: `
-    <div class="container">
-      <div class="page-header">
-        <h2>Admin Paneel</h2>
-      </div>
-      <div class="admin-tabs">
-        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Kaart</a>
-        <a routerLink="/admin/stats" routerLinkActive="active">Statistieke</a>
-        <a routerLink="/admin/gebruikers" routerLinkActive="active">Gebruikers</a>
-        <a routerLink="/admin/telefoon-aankoop" routerLinkActive="active">Telefoniese Aankoop</a>
-      </div>
-
+    <div class="admin-content">
       @if (loading) {
         <p class="muted">Laai statistieke...</p>
       } @else {
+        @if (loadError) {
+          <p class="error-msg">{{ loadError }}</p>
+        }
+
         <div class="stats-grid">
           <div class="stat-card wide">
             <div class="stat-label">Inkomste Vordering</div>
@@ -92,8 +81,14 @@ const STATUS_COLORS: Record<number, string> = {
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">{{ stats.soldSquares | number:'1.0-0' }}</div>
+            <div class="stat-value">
+              {{ stats.soldSquares | number:'1.0-0' }}<small> / {{ stats.totalSquares | number:'1.0-0' }}</small>
+            </div>
             <div class="stat-label">Blokke Verkoop</div>
+            <div class="mini-progress">
+              <div class="mini-progress-fill" [style.width.%]="salesPercent"></div>
+            </div>
+            <div class="stat-sub">{{ salesPercent | number:'1.0-1' }}% verkoop · {{ availableSquares | number:'1.0-0' }} beskikbaar</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ stats.progress }}<small>%</small></div>
@@ -103,17 +98,75 @@ const STATUS_COLORS: Record<number, string> = {
             <div class="stat-value">R{{ stats.averageSpendPerBlock | number:'1.0-0' }}</div>
             <div class="stat-label">Gemiddelde Donasie per Blok</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ conversionRate | number:'1.0-1' }}<small>%</small></div>
+            <div class="stat-label">Omskakelingskoers</div>
+            <div class="mini-progress">
+              <div class="mini-progress-fill" [style.width.%]="conversionRate"></div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ projectedCompletionLabel }}</div>
+            <div class="stat-label">Geskatte Uitverkoop</div>
+          </div>
         </div>
 
-        <div class="charts-row">
+        <div class="charts-timeseries">
           <div class="chart-card">
-            <h3>Daglikse Verkope</h3>
+            <div class="chart-header">
+              <h3>Daglikse Verkope</h3>
+              <div class="chart-toggle">
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="dailyChartMode === 'daily'"
+                  (click)="setDailyChartMode('daily')">
+                  Daagliks
+                </button>
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="dailyChartMode === 'cumulative'"
+                  (click)="setDailyChartMode('cumulative')">
+                  Kumulatief
+                </button>
+              </div>
+            </div>
             <canvas baseChart
               [data]="dailyChartData"
               [options]="lineChartOptions"
               [type]="'line'">
             </canvas>
           </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Blokke Verkoop</h3>
+              <div class="chart-toggle">
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="squaresChartMode === 'daily'"
+                  (click)="setSquaresChartMode('daily')">
+                  Daagliks
+                </button>
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="squaresChartMode === 'cumulative'"
+                  (click)="setSquaresChartMode('cumulative')">
+                  Kumulatief
+                </button>
+              </div>
+            </div>
+            <canvas baseChart
+              [data]="squaresChartData"
+              [options]="squaresChartOptions"
+              [type]="'line'">
+            </canvas>
+          </div>
+        </div>
+
+        <div class="charts-row">
           <div class="chart-card">
             <h3>Status Verdeling</h3>
             <canvas baseChart
@@ -131,7 +184,25 @@ const STATUS_COLORS: Record<number, string> = {
             </canvas>
           </div>
           <div class="chart-card">
-            <h3>Donasies vanaf Inwoners/Uitwoners</h3>
+            <div class="chart-header">
+              <h3>Inwoners vs Uitwoners</h3>
+              <div class="chart-toggle">
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="oraniaChartMode === 'spend'"
+                  (click)="setOraniaChartMode('spend')">
+                  Bedrag
+                </button>
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="oraniaChartMode === 'count'"
+                  (click)="setOraniaChartMode('count')">
+                  Kopers
+                </button>
+              </div>
+            </div>
             <canvas baseChart
               [data]="oraniaChartData"
               [options]="donutChartOptions"
@@ -152,13 +223,27 @@ const STATUS_COLORS: Record<number, string> = {
             <table>
               <thead>
                 <tr>
-                  <th (click)="sortBy('name')">Naam</th>
-                  <th (click)="sortBy('email')">E-pos</th>
-                  <th (click)="sortBy('phoneNumber')">Foon Nommer</th>
-                  <th (click)="sortBy('isOraniaResident')">Inwoner</th>
-                  <th (click)="sortBy('squares')" class="numeric">Blokke</th>
-                  <th (click)="sortBy('totalSpent')" class="numeric">Totaal Bestee</th>
-                  <th (click)="sortBy('spendPerBlock')" class="numeric">Bestee per Blok</th>
+                  <th (click)="sortBy('name')" [class.sorted]="sortKey === 'name'">
+                    Naam <span class="sort-icon">{{ sortIcon('name') }}</span>
+                  </th>
+                  <th (click)="sortBy('email')" [class.sorted]="sortKey === 'email'">
+                    E-pos <span class="sort-icon">{{ sortIcon('email') }}</span>
+                  </th>
+                  <th (click)="sortBy('phoneNumber')" [class.sorted]="sortKey === 'phoneNumber'">
+                    Foonnommer <span class="sort-icon">{{ sortIcon('phoneNumber') }}</span>
+                  </th>
+                  <th (click)="sortBy('isOraniaResident')" [class.sorted]="sortKey === 'isOraniaResident'">
+                    Inwoner <span class="sort-icon">{{ sortIcon('isOraniaResident') }}</span>
+                  </th>
+                  <th (click)="sortBy('squares')" class="numeric" [class.sorted]="sortKey === 'squares'">
+                    Blokke <span class="sort-icon">{{ sortIcon('squares') }}</span>
+                  </th>
+                  <th (click)="sortBy('totalSpent')" class="numeric" [class.sorted]="sortKey === 'totalSpent'">
+                    Totaal Bestee <span class="sort-icon">{{ sortIcon('totalSpent') }}</span>
+                  </th>
+                  <th (click)="sortBy('spendPerBlock')" class="numeric" [class.sorted]="sortKey === 'spendPerBlock'">
+                    Bestee per Blok <span class="sort-icon">{{ sortIcon('spendPerBlock') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -188,16 +273,19 @@ const STATUS_COLORS: Record<number, string> = {
             <h3>Geregistreer Sonder Aankoop</h3>
             <div class="table-actions">
               <input type="text" [(ngModel)]="nonPurchaserSearch" (input)="applyNonPurchaserFilters()" placeholder="Soek naam of e-pos...">
-              <button class="btn btn-outline btn-sm" (click)="downloadNonPurchaserCsv()">Voer uit as CSV</button>
+              <button class="btn btn-outline btn-sm" (click)="downloadNonPurchaserCsv()">Laai af as CSV</button>
             </div>
           </div>
+          @if (nonPurchaserError) {
+            <p class="error-msg">{{ nonPurchaserError }}</p>
+          }
           <div class="table-scroll">
             <table>
               <thead>
                 <tr>
                   <th>Naam</th>
                   <th>E-pos</th>
-                  <th>Foon Nommer</th>
+                  <th>Foonnommer</th>
                   <th>Inwoner</th>
                 </tr>
               </thead>
@@ -210,7 +298,7 @@ const STATUS_COLORS: Record<number, string> = {
                     <td>{{ u.isOraniaResident ? 'Ja' : 'Nee' }}</td>
                   </tr>
                 }
-                @if (filteredNonPurchasers.length === 0) {
+                @if (filteredNonPurchasers.length === 0 && !nonPurchaserError) {
                   <tr>
                     <td colspan="4" class="empty">Geen geregistreerde gebruikers sonder aankoop nie.</td>
                   </tr>
@@ -223,32 +311,21 @@ const STATUS_COLORS: Record<number, string> = {
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1.5rem 4rem; }
-    .page-header { margin-bottom: 0.75rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-    }
-    .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-    .admin-tabs a {
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-sm);
-      color: var(--color-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-    }
-    .admin-tabs a.active {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      color: var(--color-text);
-      font-weight: 600;
-    }
+    .admin-content { }
     .muted { color: var(--color-muted); }
+    .error-msg {
+      color: #b33;
+      font-size: 0.8125rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: #fdf0f0;
+      border: 1px solid #f0c0c0;
+      border-radius: var(--radius-sm);
+    }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -259,7 +336,12 @@ const STATUS_COLORS: Record<number, string> = {
       padding: 1rem 1.25rem;
       box-shadow: var(--shadow-sm);
     }
-    .stat-card.wide { display: flex; flex-direction: column; justify-content: center; }
+    .stat-card.wide {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .stat-value {
       font-family: var(--font-heading);
       font-size: 1.375rem;
@@ -278,6 +360,29 @@ const STATUS_COLORS: Record<number, string> = {
       text-transform: uppercase;
       letter-spacing: 0.8px;
       margin-bottom: 0.5rem;
+    }
+    .stat-label small {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-top: 0.375rem;
+    }
+    .mini-progress {
+      width: 100%;
+      height: 6px;
+      background: var(--color-cream);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    .mini-progress-fill {
+      height: 100%;
+      background: var(--color-olive);
+      transition: width 0.4s ease;
     }
     .progress-bar {
       width: 100%;
@@ -299,9 +404,15 @@ const STATUS_COLORS: Record<number, string> = {
       color: var(--color-muted);
     }
 
+    .charts-timeseries {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
     .charts-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -312,11 +423,44 @@ const STATUS_COLORS: Record<number, string> = {
       padding: 1rem;
       box-shadow: var(--shadow-sm);
     }
-    .chart-card h3 {
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .chart-card h3,
+    .chart-header h3 {
       font-family: var(--font-heading);
       font-size: 0.9375rem;
       color: var(--color-text);
-      margin-bottom: 0.75rem;
+      margin: 0;
+    }
+    .chart-toggle {
+      display: flex;
+      gap: 0.25rem;
+    }
+    .toggle-btn {
+      padding: 0.25rem 0.625rem;
+      font-size: 0.6875rem;
+      font-family: var(--font-heading);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-cream);
+      color: var(--color-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle-btn.active {
+      background: var(--color-terracotta);
+      border-color: var(--color-terracotta);
+      color: #fff;
+    }
+    .toggle-btn:hover:not(.active) {
+      border-color: var(--color-terracotta);
+      color: var(--color-text);
     }
 
     .table-card {
@@ -325,6 +469,7 @@ const STATUS_COLORS: Record<number, string> = {
       border-radius: var(--radius);
       padding: 1rem;
       box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
     }
     .table-header {
       display: flex;
@@ -366,11 +511,19 @@ const STATUS_COLORS: Record<number, string> = {
     th {
       font-family: var(--font-heading);
       font-weight: 600;
-      color: var(--color-text);
+      color: var(--color-muted);
       cursor: pointer;
       white-space: nowrap;
+      user-select: none;
     }
+    th.sorted { color: var(--color-text); }
     th:hover { color: var(--color-terracotta); }
+    .sort-icon {
+      font-size: 0.625rem;
+      margin-left: 0.125rem;
+      opacity: 0.4;
+    }
+    th.sorted .sort-icon { opacity: 1; color: var(--color-terracotta); }
     td { color: var(--color-muted); }
     .numeric { text-align: right; }
     .empty {
@@ -381,8 +534,6 @@ const STATUS_COLORS: Record<number, string> = {
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
 
     @media (max-width: 992px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .charts-row { grid-template-columns: 1fr; }
       .table-actions { width: 100%; }
       .table-actions input { flex: 1; }
     }
@@ -392,7 +543,7 @@ export class AdminStatsComponent implements OnInit {
   private admin = inject(AdminService);
 
   stats: Stats = {
-    totalSquares: 0,
+    totalSquares: 4200,
     soldSquares: 0,
     progress: 0,
     totalRaised: 0,
@@ -414,8 +565,15 @@ export class AdminStatsComponent implements OnInit {
   sortKey: keyof Buyer = 'totalSpent';
   sortDesc = true;
   loading = true;
+  loadError = '';
+  nonPurchaserError = '';
+
+  dailyChartMode: DailyChartMode = 'daily';
+  squaresChartMode: DailyChartMode = 'daily';
+  oraniaChartMode: OraniaChartMode = 'spend';
 
   dailyChartData: any;
+  squaresChartData: any;
   statusChartData: any;
   overMinimumChartData: any;
   oraniaChartData: any;
@@ -425,7 +583,22 @@ export class AdminStatsComponent implements OnInit {
     plugins: { legend: { display: false } },
     scales: {
       x: { ticks: { maxRotation: 45, minRotation: 30 } },
-      y: { beginAtZero: true }
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Rand (R)', font: { size: 11 } }
+      }
+    }
+  };
+
+  squaresChartOptions: any = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { maxRotation: 45, minRotation: 30 } },
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Blokke', font: { size: 11 } }
+      }
     }
   };
 
@@ -436,6 +609,8 @@ export class AdminStatsComponent implements OnInit {
     }
   };
 
+  private pendingRequests = 3;
+
   get revenuePercent(): number {
     const pct = this.stats.sponsorBaseline > 0
       ? (this.stats.totalRaised / this.stats.sponsorBaseline) * 100
@@ -443,13 +618,51 @@ export class AdminStatsComponent implements OnInit {
     return Math.min(100, Math.max(0, pct));
   }
 
+  get salesPercent(): number {
+    if (this.stats.totalSquares <= 0) return 0;
+    return Math.min(100, Math.max(0, (this.stats.soldSquares / this.stats.totalSquares) * 100));
+  }
+
+  get availableSquares(): number {
+    return Math.max(0, this.stats.totalSquares - this.stats.soldSquares);
+  }
+
+  get conversionRate(): number {
+    const total = this.buyers.length + this.nonPurchasers.length;
+    if (total === 0) return 0;
+    return (this.buyers.length / total) * 100;
+  }
+
+  get projectedCompletionLabel(): string {
+    const remaining = this.availableSquares;
+    if (remaining <= 0) return 'Uitverkoop';
+
+    const sales = this.stats.dailySales;
+    if (sales.length === 0) return 'Nog onbekend';
+
+    const totalSquaresSold = sales.reduce((sum, d) => sum + d.squares, 0);
+    const avgPerDay = totalSquaresSold / sales.length;
+
+    if (avgPerDay <= 0) return 'Nog onbekend';
+
+    const daysRemaining = Math.ceil(remaining / avgPerDay);
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysRemaining);
+
+    return `~${daysRemaining} dae (${targetDate.toLocaleDateString('af-ZA')})`;
+  }
+
   ngOnInit() {
     this.admin.getStats().subscribe({
       next: (s) => {
         this.stats = s;
         this.buildCharts();
+        this.finishRequest();
       },
-      error: () => { this.loading = false; }
+      error: () => {
+        this.loadError = 'Kon nie statistieke laai nie.';
+        this.finishRequest();
+      }
     });
 
     this.admin.getPurchases().subscribe({
@@ -459,17 +672,53 @@ export class AdminStatsComponent implements OnInit {
           spendPerBlock: buyer.squares > 0 ? buyer.totalSpent / buyer.squares : 0
         }));
         this.applyFilters();
-        this.loading = false;
+        this.buildOraniaChart();
+        this.finishRequest();
       },
-      error: () => { this.loading = false; }
+      error: () => {
+        this.loadError = 'Kon nie kopers laai nie.';
+        this.finishRequest();
+      }
     });
 
     this.admin.getRegisteredNoPurchase().subscribe({
       next: (users) => {
         this.nonPurchasers = users;
         this.applyNonPurchaserFilters();
+        this.finishRequest();
+      },
+      error: () => {
+        this.nonPurchaserError = 'Kon nie geregistreerde gebruikers sonder aankoop laai nie.';
+        this.finishRequest();
       }
     });
+  }
+
+  private finishRequest() {
+    this.pendingRequests--;
+    if (this.pendingRequests <= 0) {
+      this.loading = false;
+    }
+  }
+
+  setDailyChartMode(mode: DailyChartMode) {
+    this.dailyChartMode = mode;
+    this.buildDailyChart();
+  }
+
+  setSquaresChartMode(mode: DailyChartMode) {
+    this.squaresChartMode = mode;
+    this.buildSquaresChart();
+  }
+
+  setOraniaChartMode(mode: OraniaChartMode) {
+    this.oraniaChartMode = mode;
+    this.buildOraniaChart();
+  }
+
+  sortIcon(key: keyof Buyer): string {
+    if (this.sortKey !== key) return '⇅';
+    return this.sortDesc ? '▼' : '▲';
   }
 
   applyFilters() {
@@ -512,7 +761,7 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadCsv() {
-    const headers = ['Naam', 'E-pos', 'Foon Nommer', 'Inwoner van Orania', 'Blokke', 'Totaal Bestee', 'Bestee per Blok'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Blokke', 'Totaal Bestee', 'Bestee per Blok'];
     const rows = this.filteredBuyers.map(b => [
       b.name,
       b.email,
@@ -536,7 +785,7 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadNonPurchaserCsv() {
-    const headers = ['Naam', 'E-pos', 'Foon Nommer', 'Inwoner van Orania'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania'];
     const rows = this.filteredNonPurchasers.map(u => [
       u.name,
       u.email,
@@ -564,14 +813,30 @@ export class AdminStatsComponent implements OnInit {
   }
 
   private buildCharts() {
+    this.buildDailyChart();
+    this.buildSquaresChart();
+    this.buildStatusChart();
+    this.buildOverMinimumChart();
+    this.buildOraniaChart();
+  }
+
+  private buildDailyChart() {
     const dailyLabels = this.stats.dailySales.map(d => new Date(d.date).toLocaleDateString('af-ZA'));
     const dailyAmounts = this.stats.dailySales.map(d => d.amount);
+
+    let revenueData: number[];
+    if (this.dailyChartMode === 'cumulative') {
+      let running = 0;
+      revenueData = dailyAmounts.map(a => { running += a; return running; });
+    } else {
+      revenueData = dailyAmounts;
+    }
 
     this.dailyChartData = {
       labels: dailyLabels,
       datasets: [{
-        label: 'Verkope (R)',
-        data: dailyAmounts,
+        label: this.dailyChartMode === 'cumulative' ? 'Kumulatiewe Verkope (R)' : 'Verkope (R)',
+        data: revenueData,
         borderColor: '#C67B5C',
         backgroundColor: 'rgba(198, 123, 92, 0.2)',
         fill: true,
@@ -579,7 +844,35 @@ export class AdminStatsComponent implements OnInit {
         pointRadius: 3
       }]
     };
+  }
 
+  private buildSquaresChart() {
+    const dailyLabels = this.stats.dailySales.map(d => new Date(d.date).toLocaleDateString('af-ZA'));
+    const dailySquares = this.stats.dailySales.map(d => d.squares);
+
+    let squaresData: number[];
+    if (this.squaresChartMode === 'cumulative') {
+      let running = 0;
+      squaresData = dailySquares.map(s => { running += s; return running; });
+    } else {
+      squaresData = dailySquares;
+    }
+
+    this.squaresChartData = {
+      labels: dailyLabels,
+      datasets: [{
+        label: this.squaresChartMode === 'cumulative' ? 'Kumulatiewe Blokke' : 'Blokke Verkoop',
+        data: squaresData,
+        borderColor: '#6B7B3C',
+        backgroundColor: 'rgba(107, 123, 60, 0.2)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3
+      }]
+    };
+  }
+
+  private buildStatusChart() {
     const statusLabels = [0, 1, 2, 3].map(s => STATUS_LABELS[s as SquareStatus]);
     const statusCounts = [0, 1, 2, 3].map(s => this.stats.perStatus.find(x => x.status === s)?.count ?? 0);
     const statusColors = [0, 1, 2, 3].map(s => STATUS_COLORS[s]);
@@ -592,7 +885,9 @@ export class AdminStatsComponent implements OnInit {
         borderWidth: 1
       }]
     };
+  }
 
+  private buildOverMinimumChart() {
     this.overMinimumChartData = {
       labels: ['Bo R500 per blok', 'Presies R500 per blok'],
       datasets: [{
@@ -601,14 +896,29 @@ export class AdminStatsComponent implements OnInit {
         borderWidth: 1
       }]
     };
+  }
 
-    this.oraniaChartData = {
-      labels: ['Inwoners', 'Uitwoners'],
-      datasets: [{
-        data: [this.stats.oraniaSpend, this.stats.outsiderSpend],
-        backgroundColor: ['#B5651D', '#C67B5C'],
-        borderWidth: 1
-      }]
-    };
+  private buildOraniaChart() {
+    if (this.oraniaChartMode === 'spend') {
+      this.oraniaChartData = {
+        labels: ['Inwoners', 'Uitwoners'],
+        datasets: [{
+          data: [this.stats.oraniaSpend, this.stats.outsiderSpend],
+          backgroundColor: ['#B5651D', '#C67B5C'],
+          borderWidth: 1
+        }]
+      };
+    } else {
+      const residentCount = this.buyers.filter(b => b.isOraniaResident).length;
+      const outsiderCount = this.buyers.filter(b => !b.isOraniaResident).length;
+      this.oraniaChartData = {
+        labels: ['Inwoners', 'Uitwoners'],
+        datasets: [{
+          data: [residentCount, outsiderCount],
+          backgroundColor: ['#B5651D', '#C67B5C'],
+          borderWidth: 1
+        }]
+      };
+    }
   }
 }

@@ -1,29 +1,25 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
+const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
+  SquareStatus.NogNieBeginNie,
+  SquareStatus.Voorberei,
+  SquareStatus.BesigOmTeTeer,
+  SquareStatus.KlaarGeteer
+];
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RoadMapComponent],
+  imports: [CommonModule, FormsModule, RoadMapComponent],
   template: `
-    <div class="container">
-      <div class="page-header">
-        <h2>Admin Paneel</h2>
-      </div>
-      <div class="admin-tabs">
-        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Kaart</a>
-        <a routerLink="/admin/stats" routerLinkActive="active">Statistieke</a>
-        <a routerLink="/admin/gebruikers" routerLinkActive="active">Gebruikers</a>
-        <a routerLink="/admin/telefoon-aankoop" routerLinkActive="active">Telefoniese Aankoop</a>
-      </div>
+    <div class="admin-content">
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-value">{{ stats.progress }}<small>%</small></div>
@@ -50,6 +46,56 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
         <button class="btn btn-outline btn-sm" (click)="clearSelection()">
           Maak Keuses Skoon ({{ selectedIds().size }})
         </button>
+        @if (selectedIds().size > 0) {
+          <div class="upload-panel">
+            <h4>Voeg foto by</h4>
+            @if (imageConflictPrompt) {
+              <div class="conflict-prompt">
+                <p>
+                  {{ imageConflictPrompt.conflictingCount }} van {{ imageConflictPrompt.totalSelected }}
+                  gekose blokke het reeds 'n foto vir {{ STATUS_LABELS[imageStatus] }}.
+                </p>
+                <div class="conflict-actions">
+                  <button class="btn btn-primary btn-sm" type="button" [disabled]="uploadingImage" (click)="confirmUpload(true)">
+                    Vervang bestaande
+                  </button>
+                  <button class="btn btn-outline btn-sm" type="button" [disabled]="uploadingImage" (click)="confirmUpload(false)">
+                    Net nuwe blokke
+                  </button>
+                  <button class="btn btn-outline btn-sm" type="button" [disabled]="uploadingImage" (click)="cancelConflictPrompt()">
+                    Kanselleer
+                  </button>
+                </div>
+              </div>
+            }
+            <div class="upload-fields">
+              <div class="field">
+                <label for="imageStatus">Status</label>
+                <select id="imageStatus" [(ngModel)]="imageStatus">
+                  @for (s of IMAGE_STATUS_OPTIONS; track s) {
+                    <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="field">
+                <label for="imageFile">Foto</label>
+                <input #imageFileInput id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)">
+              </div>
+              <div class="field">
+                <label for="imageCaption">Byskrif (opsioneel)</label>
+                <input id="imageCaption" type="text" [(ngModel)]="imageCaption" placeholder="Bv. Teerwerk begin">
+              </div>
+              <button
+                class="btn btn-primary btn-sm"
+                type="button"
+                [disabled]="!selectedImageFile || uploadingImage || !!imageConflictPrompt"
+                (click)="startUpload()"
+              >
+                {{ uploadingImage ? 'Laai op...' : 'Laai foto op' }}
+              </button>
+            </div>
+          </div>
+        }
       </div>
       @if (message) {
         <div class="msg" [class.error]="isError">{{ message }}</div>
@@ -70,13 +116,7 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1.5rem 4rem; }
-    .page-header { margin-bottom: 1.5rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-    }
+    .admin-content { }
     .stats-row {
       display: flex;
       gap: 1rem;
@@ -133,20 +173,6 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
       background: #FEF2F2;
       color: #DC2626;
     }
-    .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
-    .admin-tabs a {
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-sm);
-      color: var(--color-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-    }
-    .admin-tabs a.active {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      color: var(--color-text);
-      font-weight: 600;
-    }
     .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); margin-bottom: 0.75rem; }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
     .dot.free { background: #D4C4A8; }
@@ -154,12 +180,69 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     .dot.prep { background: #B5651D; }
     .dot.busy { background: #8B7355; }
     .dot.done { background: #6B7B3C; }
+    .upload-panel {
+      width: 100%;
+      background: var(--color-cream);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin-top: 0.5rem;
+    }
+    .upload-panel h4 {
+      font-family: var(--font-heading);
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      color: var(--color-text);
+    }
+    .conflict-prompt {
+      background: #F5F0E1;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .conflict-prompt p {
+      font-size: 0.8125rem;
+      margin-bottom: 0.625rem;
+      color: var(--color-text);
+    }
+    .conflict-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .upload-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .upload-fields .field {
+      flex: 1;
+      min-width: 140px;
+    }
+    .upload-fields label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--color-text);
+    }
+    .upload-fields input, .upload-fields select {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+    }
     @media (max-width: 640px) {
       .stats-row { flex-direction: column; }
     }
   `]
 })
 export class AdminComponent implements OnInit {
+  @ViewChild('imageFileInput') imageFileInput?: ElementRef<HTMLInputElement>;
+
   private admin = inject(AdminService);
   private road = inject(RoadService);
 
@@ -169,8 +252,14 @@ export class AdminComponent implements OnInit {
   targetStatus: SquareStatus | null = null;
   message = '';
   isError = false;
+  imageStatus: SquareStatus = SquareStatus.Voorberei;
+  imageCaption = '';
+  selectedImageFile: File | null = null;
+  uploadingImage = false;
+  imageConflictPrompt: { conflictingCount: number; totalSelected: number } | null = null;
   STATUS_LABELS = STATUS_LABELS;
   STATUS_OPTIONS = STATUS_OPTIONS;
+  IMAGE_STATUS_OPTIONS = IMAGE_STATUS_OPTIONS;
 
   ngOnInit() {
     this.refresh();
@@ -190,14 +279,116 @@ export class AdminComponent implements OnInit {
     const selected = new Set(this.selectedIds());
     selected.has(sq.id) ? selected.delete(sq.id) : selected.add(sq.id);
     this.selectedIds.set(selected);
+    this.updateDefaultImageStatus();
   }
 
-  clearSelection() { this.selectedIds.set(new Set()); this.message = ''; }
+  private updateDefaultImageStatus() {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+    const first = this.squares.find(s => s.id === ids[0]);
+    if (first) this.imageStatus = first.status;
+  }
+
+  clearSelection() {
+    this.selectedIds.set(new Set());
+    this.message = '';
+    this.imageConflictPrompt = null;
+  }
 
   selectRange(ids: number[]) {
     const selected = new Set(this.selectedIds());
     for (const id of ids) selected.add(id);
     this.selectedIds.set(selected);
+    this.updateDefaultImageStatus();
+  }
+
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.selectedImageFile = input.files?.[0] ?? null;
+    this.imageConflictPrompt = null;
+  }
+
+  startUpload() {
+    if (!this.selectedImageFile || this.selectedIds().size === 0) return;
+    this.message = '';
+    this.isError = false;
+    this.imageConflictPrompt = null;
+
+    const ids = Array.from(this.selectedIds());
+    this.admin.checkImageConflicts(ids, this.imageStatus).subscribe({
+      next: (result) => {
+        if (result.conflictingSquareIds.length > 0) {
+          this.imageConflictPrompt = {
+            conflictingCount: result.conflictingSquareIds.length,
+            totalSelected: result.totalSelected
+          };
+        } else {
+          this.performUpload(false);
+        }
+      },
+      error: (err) => {
+        this.message = err.error?.message || 'Kon nie konflikte kontroleer nie.';
+        this.isError = true;
+      }
+    });
+  }
+
+  confirmUpload(replaceExisting: boolean) {
+    this.performUpload(replaceExisting);
+  }
+
+  cancelConflictPrompt() {
+    this.imageConflictPrompt = null;
+  }
+
+  private performUpload(replaceExisting: boolean) {
+    if (!this.selectedImageFile || this.selectedIds().size === 0) return;
+
+    this.uploadingImage = true;
+    this.message = '';
+    this.isError = false;
+    this.imageConflictPrompt = null;
+
+    const formData = new FormData();
+    for (const id of this.selectedIds()) {
+      formData.append('squareIds', String(id));
+    }
+    formData.append('status', String(this.imageStatus));
+    formData.append('image', this.selectedImageFile);
+    if (this.imageCaption.trim()) {
+      formData.append('caption', this.imageCaption.trim());
+    }
+
+    this.admin.uploadProgressImage(formData, replaceExisting).subscribe({
+      next: (res) => {
+        this.message = this.buildUploadSuccessMessage(res);
+        this.uploadingImage = false;
+        this.resetImageForm();
+      },
+      error: (err) => {
+        this.message = err.error?.message || 'Foto-oplaai het misluk.';
+        this.isError = true;
+        this.uploadingImage = false;
+      }
+    });
+  }
+
+  private buildUploadSuccessMessage(res: { squareCount: number; replacedCount?: number; skippedCount?: number }) {
+    let msg = `Foto opgelaai vir ${res.squareCount} blokke.`;
+    if (res.skippedCount && res.skippedCount > 0) {
+      msg = `Foto opgelaai vir ${res.squareCount} blokke (${res.skippedCount} het reeds 'n foto en is oorgeslaan).`;
+    } else if (res.replacedCount && res.replacedCount > 0) {
+      msg = `Foto opgelaai vir ${res.squareCount} blokke (${res.replacedCount} bestaande foto's vervang).`;
+    }
+    return msg;
+  }
+
+  private resetImageForm() {
+    this.selectedImageFile = null;
+    this.imageCaption = '';
+    if (this.imageFileInput?.nativeElement) {
+      this.imageFileInput.nativeElement.value = '';
+    }
   }
 
   updateStatus() {

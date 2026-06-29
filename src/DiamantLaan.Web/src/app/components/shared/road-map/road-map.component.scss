@@ -51,6 +51,64 @@
   background: var(--color-cream);
 }
 
-:host ::ng-deep .leaflet-control-zoom {
-  z-index: 800;
+:host ::ng-deep .leaflet-control-container .leaflet-top,
+:host ::ng-deep .leaflet-control-container .leaflet-bottom {
+  z-index: 600;
+}
+
+:host ::ng-deep .block-info-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+:host ::ng-deep .block-info-tooltip::before {
+  display: none !important;
+}
+
+:host ::ng-deep .block-bubble {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 140px;
+  box-shadow: 0 4px 16px rgba(61, 43, 31, 0.18);
+  position: relative;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--color-text);
+  text-align: center;
+}
+
+:host ::ng-deep .block-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid var(--color-border);
+}
+
+:host ::ng-deep .block-bubble-id {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+:host ::ng-deep .block-bubble-row {
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+:host ::ng-deep .block-bubble-row span {
+  font-weight: 600;
+  color: var(--color-text);
 }

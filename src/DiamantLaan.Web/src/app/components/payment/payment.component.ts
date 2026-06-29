@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
+import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, ShareButtonComponent],
   template: `
     <div class="container">
       <div class="gateway-card">
@@ -23,7 +24,7 @@ import { PurchaseService } from '../../services/purchase.service';
           <div class="gateway-box">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
             <p class="gateway-text">Stripe / PayFast hier</p>
-            <p class="gateway-hint">Betaling word in die toekoms geintegreer.</p>
+            <p class="gateway-hint">Betaling word in die toekoms geïntegreer.</p>
           </div>
 
           @if (error) {
@@ -46,6 +47,12 @@ import { PurchaseService } from '../../services/purchase.service';
             <p class="success-detail">
               {{ successCount }} blokke gekoop vir <strong>R{{ successAmount | number:'1.0-0' }}</strong>
             </p>
+            <app-share-button
+              class="success-share"
+              label="Deel my bydrae"
+              [url]="siteUrl"
+              [text]="shareText"
+            />
             <a routerLink="/my-blokke" class="btn btn-primary btn-wide">
               Gaan na My Blokke
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -138,6 +145,7 @@ import { PurchaseService } from '../../services/purchase.service';
       margin-bottom: 2rem;
     }
     .success-detail strong { color: var(--color-terracotta); }
+    .success-share { display: block; margin-bottom: 1.25rem; }
     .btn-wide { min-width: 220px; }
 
     @media (max-width: 480px) {
@@ -158,6 +166,11 @@ export class PaymentComponent implements OnInit {
   submitted = false;
   successCount = 0;
   successAmount = 0;
+  siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  get shareText(): string {
+    return `Ek het ${this.successCount} blokke geborg op Diamant Laan!`;
+  }
 
   ngOnInit() {
     const ids = this.purchase.pendingSquareIds;

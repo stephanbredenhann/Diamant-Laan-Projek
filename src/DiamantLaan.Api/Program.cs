@@ -1,8 +1,11 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
+using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -14,12 +17,24 @@ if (!string.IsNullOrWhiteSpace(port))
     builder.WebHost.UseUrls($"http://*:{port}");
 }
 
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured. Set it via user secrets or environment variables.");
+
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException("Jwt:Key must be at least 32 bytes for HS256.");
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diamantlaan.db";
+if (Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") != null && connectionString.Contains("diamantlaan.db") && !connectionString.Contains("/home/"))
+{
+    connectionString = "Data Source=/home/site/diamantlaan.db";
+}
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(connectionString));
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
@@ -28,11 +43,13 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 6;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -53,16 +70,50 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddScoped<AuditLogService>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
         policy.WithOrigins("http://localhost:4200")
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
 
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-XSS-Protection"] = "0";
+    await next();
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -71,12 +122,15 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevCors");
 }
 
+app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
+
+app.Map("/error", () => Results.Json(new { message = "Interne bedienerfout." }, statusCode: 500));
 
 using (var scope = app.Services.CreateScope())
 {

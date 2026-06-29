@@ -8,10 +8,19 @@ export const routes: Routes = [
   { path: 'registreer', loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent) },
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard] },
+  { path: 'my-blokke/sertifikaat', loadComponent: () => import('./components/certificate/certificate.component').then(m => m.CertificateComponent), canActivate: [authGuard] },
   { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [authGuard] },
-  { path: 'admin', loadComponent: () => import('./components/admin/admin.component').then(m => m.AdminComponent), canActivate: [authGuard, adminGuard] },
-  { path: 'admin/stats', loadComponent: () => import('./components/admin-stats/admin-stats.component').then(m => m.AdminStatsComponent), canActivate: [authGuard, adminGuard] },
-  { path: 'admin/gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent), canActivate: [authGuard, adminGuard] },
-  { path: 'admin/telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent), canActivate: [authGuard, adminGuard] },
+  {
+    path: 'admin',
+    loadComponent: () => import('./components/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
+    canActivate: [authGuard, adminGuard],
+    children: [
+      { path: '', loadComponent: () => import('./components/admin/admin.component').then(m => m.AdminComponent) },
+      { path: 'fotos', loadComponent: () => import('./components/admin-images/admin-images.component').then(m => m.AdminImagesComponent) },
+      { path: 'stats', loadComponent: () => import('./components/admin-stats/admin-stats.component').then(m => m.AdminStatsComponent) },
+      { path: 'gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent) },
+      { path: 'telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent) },
+    ]
+  },
   { path: '**', redirectTo: '' }
 ];

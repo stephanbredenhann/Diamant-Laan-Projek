@@ -24,13 +24,12 @@ import { AuthService } from '../../../services/auth.service';
           @if (auth.currentUser(); as user) {
             <a routerLink="/my-blokke" (click)="menuOpen.set(false)">My Blokke</a>
             @if (auth.isAdmin()) {
-              <a routerLink="/admin" (click)="menuOpen.set(false)">Admin Kaart</a>
-              <a routerLink="/admin/stats" (click)="menuOpen.set(false)">Admin Statistieke</a>
+              <a routerLink="/admin" (click)="menuOpen.set(false)">Admin Portaal</a>
             }
             <span class="navbar-user desktop-only">{{ user.firstName }}</span>
             <button class="btn-logout" (click)="logout()">Teken Uit</button>
           } @else {
-            <a routerLink="/meld-aan" class="btn-nav" (click)="menuOpen.set(false)">Meld Aan</a>
+            <a routerLink="/meld-aan" class="btn-nav" (click)="menuOpen.set(false)">Meld aan</a>
           }
         </div>
       </div>

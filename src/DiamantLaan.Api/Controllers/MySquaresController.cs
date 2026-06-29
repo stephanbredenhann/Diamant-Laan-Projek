@@ -24,7 +24,13 @@ public class MySquaresController : ControllerBase
         var squares = await _db.Squares
             .Where(s => s.OwnerId == userId)
             .OrderBy(s => s.Id)
-            .Select(s => new SquareDto { Id = s.Id, Status = s.Status, IsSold = true })
+            .Select(s => new SquareDto
+            {
+                Id = s.Id,
+                Status = s.Status,
+                IsSold = true,
+                ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
+            })
             .ToListAsync();
 
         return Ok(squares);

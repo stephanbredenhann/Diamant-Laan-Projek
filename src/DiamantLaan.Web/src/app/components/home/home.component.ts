@@ -3,11 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { RoadService } from '../../services/road.service';
+import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ShareButtonComponent],
   template: `
     <section class="hero">
       <div class="container hero-grid">
@@ -22,6 +23,11 @@ import { RoadService } from '../../services/road.service';
             @if (!auth.currentUser()) {
               <a routerLink="/registreer" class="btn btn-outline">Registreer Gratis</a>
             }
+            <app-share-button
+              label="Deel hierdie projek"
+              [url]="siteUrl"
+              text="Dra by aan Diamant Laan — help ons om die pad te teer!"
+            />
           </div>
         </div>
         <div class="hero-image">
@@ -78,7 +84,7 @@ import { RoadService } from '../../services/road.service';
           <h2>Wees deel van die verandering</h2>
           <p>Diamant Laan is meer as net 'n pad — dis die hart van ons gemeenskap. Saam maak ons dit moontlik.</p>
           <a routerLink="/kaart" class="btn btn-primary btn-lg">
-            Begin Kies
+            Begin nou
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -269,6 +275,7 @@ export class HomeComponent implements OnInit {
   auth = inject(AuthService);
   progress = 0;
   totalRaised = 0;
+  siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   ngOnInit() {
     this.road.getStats().subscribe(stats => {

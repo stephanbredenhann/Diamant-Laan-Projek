@@ -1,24 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
+import { AlertComponent } from '../shared/alert/alert.component';
 
 @Component({
   selector: 'app-admin-manual-purchase',
   standalone: true,
-  imports: [FormsModule, RouterLink, RouterLinkActive],
+  imports: [FormsModule, AlertComponent],
   template: `
-    <div class="container">
-      <div class="page-header">
-        <h2>Admin Paneel</h2>
-      </div>
-      <div class="admin-tabs">
-        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Kaart</a>
-        <a routerLink="/admin/stats" routerLinkActive="active">Statistieke</a>
-        <a routerLink="/admin/gebruikers" routerLinkActive="active">Gebruikers</a>
-        <a routerLink="/admin/telefoon-aankoop" routerLinkActive="active">Telefoniese Aankoop</a>
-      </div>
-
+    <div class="admin-content">
       <div class="form-card">
         <h3>Telefoniese Aankoop</h3>
         <p class="hint">Voltooi 'n aankoop namens iemand (bv. telefoniese bestelling).</p>
@@ -39,13 +29,13 @@ import { AdminService } from '../../services/admin.service';
             <input id="email" type="email" [(ngModel)]="email" name="email" required>
           </div>
           <div class="field">
-            <label for="phone">Foon Nommer</label>
+            <label for="phone">Foonnommer</label>
             <input id="phone" [(ngModel)]="phoneNumber" name="phoneNumber">
           </div>
           <div class="field checkbox">
             <label>
               <input type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
-              Inwoner van Orania
+              Inwoner van Orania?
             </label>
           </div>
           <div class="field">
@@ -61,9 +51,7 @@ import { AdminService } from '../../services/admin.service';
             <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
           </div>
 
-          @if (message) {
-            <div class="msg" [class.error]="isError">{{ message }}</div>
-          }
+          <app-alert [message]="message" [type]="isError ? 'error' : 'success'"></app-alert>
 
           <button type="submit" class="btn btn-primary" [disabled]="loading">
             {{ loading ? 'Besig...' : 'Voltooi Aankoop' }}
@@ -73,27 +61,7 @@ import { AdminService } from '../../services/admin.service';
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1.5rem 4rem; max-width: 640px; }
-    .page-header { margin-bottom: 0.75rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-    }
-    .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .admin-tabs a {
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-sm);
-      color: var(--color-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-    }
-    .admin-tabs a.active {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      color: var(--color-text);
-      font-weight: 600;
-    }
+    .admin-content { max-width: 640px; }
     .form-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -128,6 +96,21 @@ import { AdminService } from '../../services/admin.service';
       align-items: center;
       gap: 0.5rem;
       font-weight: 500;
+    }
+    .field.checkbox input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      padding: 0;
+      margin: 0;
+      border: none;
+      box-shadow: none;
+      flex: none;
+      accent-color: var(--color-terracotta);
+    }
+    .field.checkbox input[type="checkbox"]:focus {
+      box-shadow: none;
+      outline: 2px solid var(--color-terracotta);
+      outline-offset: 2px;
     }
     .field input[type="text"],
     .field input[type="email"],

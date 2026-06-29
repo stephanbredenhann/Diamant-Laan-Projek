@@ -17,6 +17,77 @@ namespace DiamantLaan.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.28");
 
+            modelBuilder.Entity("DiamantLaan.Api.Models.AdminAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdminUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AdminAuditLogs");
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.ProgressImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Caption")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UploadedByUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("ProgressImages");
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.ProgressImageSquare", b =>
+                {
+                    b.Property<int>("ProgressImageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SquareId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProgressImageId", "SquareId");
+
+                    b.HasIndex("SquareId");
+
+                    b.ToTable("ProgressImageSquares");
+                });
+
             modelBuilder.Entity("DiamantLaan.Api.Models.Purchase", b =>
                 {
                     b.Property<int>("Id")
@@ -25,6 +96,9 @@ namespace DiamantLaan.Api.Migrations
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ProofOfPaymentPath")
                         .HasColumnType("TEXT");
@@ -58,6 +132,36 @@ namespace DiamantLaan.Api.Migrations
                     b.ToTable("PurchaseSquares");
                 });
 
+            modelBuilder.Entity("DiamantLaan.Api.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("DiamantLaan.Api.Models.Square", b =>
                 {
                     b.Property<int>("Id")
@@ -66,6 +170,12 @@ namespace DiamantLaan.Api.Migrations
 
                     b.Property<string>("OwnerId")
                         .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -280,6 +390,36 @@ namespace DiamantLaan.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DiamantLaan.Api.Models.ProgressImage", b =>
+                {
+                    b.HasOne("DiamantLaan.Api.Models.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("UploadedBy");
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.ProgressImageSquare", b =>
+                {
+                    b.HasOne("DiamantLaan.Api.Models.ProgressImage", "ProgressImage")
+                        .WithMany("ProgressImageSquares")
+                        .HasForeignKey("ProgressImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DiamantLaan.Api.Models.Square", "Square")
+                        .WithMany()
+                        .HasForeignKey("SquareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProgressImage");
+
+                    b.Navigation("Square");
+                });
+
             modelBuilder.Entity("DiamantLaan.Api.Models.Purchase", b =>
                 {
                     b.HasOne("DiamantLaan.Api.Models.User", "User")
@@ -308,6 +448,17 @@ namespace DiamantLaan.Api.Migrations
                     b.Navigation("Purchase");
 
                     b.Navigation("Square");
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.RefreshToken", b =>
+                {
+                    b.HasOne("DiamantLaan.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DiamantLaan.Api.Models.Square", b =>
@@ -369,6 +520,11 @@ namespace DiamantLaan.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.ProgressImage", b =>
+                {
+                    b.Navigation("ProgressImageSquares");
                 });
 
             modelBuilder.Entity("DiamantLaan.Api.Models.Purchase", b =>

@@ -1,26 +1,52 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+const PENDING_IDS_KEY = 'pendingSquareIds';
+const PENDING_AMOUNT_KEY = 'pendingAmountPerBlock';
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
-  pendingSquareIds: number[] = [];
-  pendingAmountPerBlock = 500;
-
   constructor(private http: HttpClient) {}
 
+  get pendingSquareIds(): number[] {
+    const raw = sessionStorage.getItem(PENDING_IDS_KEY);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+
+  set pendingSquareIds(ids: number[]) {
+    if (ids.length === 0) {
+      sessionStorage.removeItem(PENDING_IDS_KEY);
+    } else {
+      sessionStorage.setItem(PENDING_IDS_KEY, JSON.stringify(ids));
+    }
+  }
+
+  get pendingAmountPerBlock(): number {
+    const raw = sessionStorage.getItem(PENDING_AMOUNT_KEY);
+    return raw ? Number(raw) : 500;
+  }
+
+  set pendingAmountPerBlock(amount: number) {
+    sessionStorage.setItem(PENDING_AMOUNT_KEY, String(amount || 500));
+  }
+
   createPurchase(squareIds: number[], amount?: number) {
-    const body: { squareIds: number[]; amount?: number } = { squareIds };
-    if (amount != null) body.amount = amount;
-    return this.http.post<{ purchaseId: number; amount: number; squareCount: number }>(
+    const body = {
+      squareIds,
+      amount,
+      confirmPayment: true
+    };
+    return this.http.post<{ purchaseId: number; amount: number; squareCount: number; paymentStatus: string }>(
       '/api/purchase', body
     );
   }
 
   getPurchase(id: number) {
-    return this.http.get<any>(`/api/purchase/${id}`);
+    return this.http.get<{ id: number; amount: number; purchaseDate: string; paymentStatus: string; squares: number[] }>(`/api/purchase/${id}`);
   }
 
   getMySquares() {
-    return this.http.get<any[]>('/api/my-squares');
+    return this.http.get<{ id: number; status: number; imageCount?: number }[]>('/api/my-squares');
   }
 }
