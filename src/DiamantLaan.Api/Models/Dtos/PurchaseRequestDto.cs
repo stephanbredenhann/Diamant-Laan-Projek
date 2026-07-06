@@ -8,4 +8,7 @@ public class PurchaseRequestDto
     public List<int> SquareIds { get; set; } = new();
 
     public decimal? Amount { get; set; }
+
+    /// <summary>Ignored — real payment confirmation happens via PayFast ITN.</summary>
+    public bool ConfirmPayment { get; set; } = true;
 }
