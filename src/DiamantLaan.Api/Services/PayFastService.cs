@@ -162,9 +162,12 @@ public class PayFastService : IPayFastService
             throw new InvalidOperationException("PayFast MerchantId and MerchantKey must be configured.");
 
         baseUrl = baseUrl.TrimEnd('/') + "/";
+        var frontendBaseUrl = (!string.IsNullOrWhiteSpace(_settings.FrontendBaseUrl)
+            ? _settings.FrontendBaseUrl.TrimEnd('/') + "/"
+            : baseUrl);
 
-        var returnUrl = $"{baseUrl}betalings/terug?purchaseId={purchase.Id}";
-        var cancelUrl = $"{baseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
+        var returnUrl = $"{frontendBaseUrl}betalings/terug?purchaseId={purchase.Id}";
+        var cancelUrl = $"{frontendBaseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
         var notifyUrl = !string.IsNullOrWhiteSpace(_settings.NotifyUrl)
             ? _settings.NotifyUrl
             : $"{baseUrl}api/payment/itn";

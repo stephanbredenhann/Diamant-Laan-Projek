@@ -1,8 +1,11 @@
 using System.Text;
 using DiamantLaan.Api.Data;
+using DiamantLaan.Api.Models;
+using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Models.Enums;
 using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,12 +19,14 @@ public class PaymentController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IPayFastService _payFastService;
     private readonly ILogger<PaymentController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public PaymentController(AppDbContext db, IPayFastService payFastService, ILogger<PaymentController> logger)
+    public PaymentController(AppDbContext db, IPayFastService payFastService, ILogger<PaymentController> logger, IWebHostEnvironment environment)
     {
         _db = db;
         _payFastService = payFastService;
         _logger = logger;
+        _environment = environment;
     }
 
     [AllowAnonymous]
@@ -63,6 +68,38 @@ public class PaymentController : ControllerBase
             return Ok("OK");
         }
 
+        await ConfirmPurchaseAsync(purchase, result.PayFastPaymentId!, result.PaymentStatus!);
+        return Ok("OK");
+    }
+
+    /// <summary>
+    /// Development-only endpoint to simulate a PayFast ITN callback.
+    /// Not available in production environments.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("simulate-itn")]
+    public async Task<IActionResult> SimulateItn([FromBody] SimulateItnDto dto)
+    {
+        if (!_environment.IsDevelopment())
+            return NotFound();
+
+        var purchase = await _db.Purchases
+            .Include(p => p.PurchaseSquares)
+            .FirstOrDefaultAsync(p => p.Id == dto.PurchaseId);
+
+        if (purchase == null)
+            return NotFound(new { message = "Aankoop nie gevind nie." });
+
+        if (purchase.PaymentStatus != PaymentStatus.Pending)
+            return BadRequest(new { message = "Aankoop is nie meer hangend nie." });
+
+        await ConfirmPurchaseAsync(purchase, dto.PaymentId ?? $"sandbox-{purchase.Id}", dto.Status);
+
+        return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
+    }
+
+    private async Task ConfirmPurchaseAsync(Purchase purchase, string payFastPaymentId, string paymentStatus)
+    {
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -70,14 +107,14 @@ public class PaymentController : ControllerBase
 
             if (purchase.PaymentStatus != PaymentStatus.Pending)
             {
-                _logger.LogInformation("PayFast ITN for non-pending purchase {PurchaseId} after verification", purchaseId);
+                _logger.LogInformation("PayFast ITN for non-pending purchase {PurchaseId}", purchase.Id);
                 await transaction.RollbackAsync();
-                return Ok("OK");
+                return;
             }
 
             purchase.PaymentStatus = PaymentStatus.Confirmed;
-            purchase.PayFastPaymentId = result.PayFastPaymentId;
-            purchase.PayFastPaymentStatus = result.PaymentStatus;
+            purchase.PayFastPaymentId = payFastPaymentId;
+            purchase.PayFastPaymentStatus = paymentStatus;
             purchase.ConfirmedAt = DateTime.UtcNow;
 
             var userId = purchase.UserId;
@@ -90,22 +127,18 @@ public class PaymentController : ControllerBase
 
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
-            _logger.LogInformation("Purchase {PurchaseId} confirmed by PayFast ITN", purchaseId);
+            _logger.LogInformation("Purchase {PurchaseId} confirmed", purchase.Id);
         }
         catch (DbUpdateConcurrencyException ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogWarning(ex, "Concurrency conflict confirming purchase {PurchaseId}", purchaseId);
-            return Ok("OK");
+            _logger.LogWarning(ex, "Concurrency conflict confirming purchase {PurchaseId}", purchase.Id);
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error confirming purchase {PurchaseId} from ITN", purchaseId);
-            return Ok("OK");
+            _logger.LogError(ex, "Error confirming purchase {PurchaseId}", purchase.Id);
         }
-
-        return Ok("OK");
     }
 
     private static string? ExtractMerchantPaymentId(string rawBody) => ExtractValue(rawBody, "m_payment_id");
