@@ -2,63 +2,40 @@ import { Component, OnInit, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
-import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, ShareButtonComponent],
+  imports: [RouterLink, DecimalPipe],
   template: `
     <div class="container">
       <div class="gateway-card">
-        @if (!submitted) {
-          <h2>Betaling</h2>
-          <p class="summary">
-            {{ squareIds.length }} blokke gekies —
-            <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
-            @if (amountPerBlock > 500) {
-              <span class="per-block">(R{{ amountPerBlock | number:'1.0-0' }} per blok)</span>
-            }
-          </p>
-
-          <div class="gateway-box">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            <p class="gateway-text">Stripe / PayFast hier</p>
-            <p class="gateway-hint">Betaling word in die toekoms geïntegreer.</p>
-          </div>
-
-          @if (error) {
-            <div class="error-alert">{{ error }}</div>
+        <h2>Betaling</h2>
+        <p class="summary">
+          {{ squareIds.length }} blokke gekies —
+          <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
+          @if (amountPerBlock > 500) {
+            <span class="per-block">(R{{ amountPerBlock | number:'1.0-0' }} per blok)</span>
           }
+        </p>
 
-          <div class="actions">
-            <a routerLink="/kaart" class="btn btn-outline">Terug</a>
-            <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
-              {{ loading ? 'Besig...' : 'Volgende' }}
-              @if (!loading) { <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> }
-            </button>
-          </div>
-        } @else {
-          <div class="success-card">
-            <div class="success-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
-            <h2>Betaling Suksesvol!</h2>
-            <p class="success-detail">
-              {{ successCount }} blokke gekoop vir <strong>R{{ successAmount | number:'1.0-0' }}</strong>
-            </p>
-            <app-share-button
-              class="success-share"
-              label="Deel my bydrae"
-              [url]="siteUrl"
-              [text]="shareText"
-            />
-            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">
-              Gaan na My Blokke
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
-          </div>
+        <div class="gateway-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <p class="gateway-text">PayFast</p>
+          <p class="gateway-hint">Jy sal veilig na PayFast gestuur word om die betaling te voltooi.</p>
+        </div>
+
+        @if (error) {
+          <div class="error-alert">{{ error }}</div>
         }
+
+        <div class="actions">
+          <a routerLink="/kaart" class="btn btn-outline">Terug</a>
+          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
+            {{ loading ? 'Besig...' : 'Volgende' }}
+            @if (!loading) { <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> }
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -127,27 +104,6 @@ import { ShareButtonComponent } from '../shared/share-button/share-button.compon
     }
     .actions .btn { flex: 1; }
 
-    .success-card { text-align: center; }
-    .success-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: #E8ECD8;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.25rem;
-    }
-    .success-icon svg { stroke: var(--color-olive); }
-    .success-detail {
-      font-size: 0.9375rem;
-      color: var(--color-muted);
-      margin-bottom: 2rem;
-    }
-    .success-detail strong { color: var(--color-terracotta); }
-    .success-share { display: block; margin-bottom: 1.25rem; }
-    .btn-wide { min-width: 220px; }
-
     @media (max-width: 480px) {
       .gateway-card { padding: 1.5rem 1.25rem; }
       .actions { flex-direction: column; }
@@ -163,14 +119,7 @@ export class PaymentComponent implements OnInit {
   totalAmount = 0;
   loading = false;
   error = '';
-  submitted = false;
-  successCount = 0;
-  successAmount = 0;
-  siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
-
-  get shareText(): string {
-    return `Ek het ${this.successCount} blokke geborg op Diamant Laan!`;
-  }
+  private createdPurchaseId?: number;
 
   ngOnInit() {
     const ids = this.purchase.pendingSquareIds;
@@ -187,19 +136,54 @@ export class PaymentComponent implements OnInit {
     if (this.squareIds.length === 0) return;
     this.error = '';
     this.loading = true;
+
+    // If we already created the purchase, retry just the PayFast form
+    if (this.createdPurchaseId) {
+      this.requestPayFastForm(this.createdPurchaseId);
+      return;
+    }
+
     this.purchase.createPurchase(this.squareIds, this.totalAmount).subscribe({
       next: (res) => {
-        this.successCount = res.squareCount;
-        this.successAmount = res.amount;
-        this.submitted = true;
-        this.loading = false;
-        this.purchase.pendingSquareIds = [];
-        this.purchase.pendingAmountPerBlock = 500;
+        this.createdPurchaseId = res.purchaseId;
+        this.requestPayFastForm(res.purchaseId);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Betaling het misluk.';
+        this.error = err.error?.message || 'Aankoop het misluk.';
         this.loading = false;
       }
     });
+  }
+
+  private requestPayFastForm(purchaseId: number) {
+    this.purchase.getPayFastForm(purchaseId).subscribe({
+      next: (form) => {
+        this.loading = false;
+        this.postToPayFast(form);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
+        this.loading = false;
+      }
+    });
+  }
+
+  private postToPayFast(form: { actionUrl: string; fields: Record<string, string> }) {
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = form.actionUrl;
+    f.style.display = 'none';
+
+    for (const [key, value] of Object.entries(form.fields)) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value;
+      f.appendChild(input);
+    }
+
+    document.body.appendChild(f);
+    f.submit();
+    document.body.removeChild(f);
   }
 }

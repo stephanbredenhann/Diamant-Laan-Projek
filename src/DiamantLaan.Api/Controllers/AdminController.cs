@@ -254,7 +254,8 @@ public class AdminController : ControllerBase
             {
                 UserId = user.Id,
                 Amount = dto.AmountPaid,
-                PaymentStatus = PaymentStatus.Confirmed
+                PaymentStatus = PaymentStatus.Confirmed,
+                ConfirmedAt = DateTime.UtcNow
             };
 
             foreach (var square in squares)

@@ -9,6 +9,6 @@ public class PurchaseRequestDto
 
     public decimal? Amount { get; set; }
 
-    /// <summary>Dummy gateway sets this true on continue; real gateway will confirm via webhook later.</summary>
+    /// <summary>Ignored — real payment confirmation happens via PayFast ITN.</summary>
     public bool ConfirmPayment { get; set; } = true;
 }

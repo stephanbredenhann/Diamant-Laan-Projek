@@ -19,6 +19,15 @@ public class PendingReservationCleanupService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        try
+        {
+            await ReleaseExpiredReservationsAsync(stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Initial pending reservation cleanup failed");
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -42,28 +51,50 @@ public class PendingReservationCleanupService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var cutoff = DateTime.UtcNow.Subtract(_expiry);
-        var expired = await db.Purchases
-            .Include(p => p.PurchaseSquares)
-            .Where(p => p.PaymentStatus == PaymentStatus.Pending && p.PurchaseDate < cutoff)
-            .ToListAsync(cancellationToken);
-
-        foreach (var purchase in expired)
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            foreach (var ps in purchase.PurchaseSquares)
+            var cutoff = DateTime.UtcNow.Subtract(_expiry);
+            var expired = await db.Purchases
+                .Include(p => p.PurchaseSquares)
+                .Where(p => p.PaymentStatus == PaymentStatus.Pending && p.PurchaseDate < cutoff)
+                .ToListAsync(cancellationToken);
+
+            if (expired.Count == 0)
             {
-                var square = await db.Squares.FindAsync(new object[] { ps.SquareId }, cancellationToken);
-                if (square != null && square.OwnerId == purchase.UserId)
-                    square.OwnerId = null;
+                await transaction.CommitAsync(cancellationToken);
+                return;
             }
-            purchase.PaymentStatus = PaymentStatus.Cancelled;
-            purchase.CancelledAt = DateTime.UtcNow;
-        }
 
-        if (expired.Count > 0)
-        {
+            var squareIds = expired
+                .SelectMany(p => p.PurchaseSquares)
+                .Select(ps => ps.SquareId)
+                .Distinct()
+                .ToList();
+
+            var squares = await db.Squares
+                .Where(s => squareIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+            foreach (var purchase in expired)
+            {
+                foreach (var ps in purchase.PurchaseSquares)
+                {
+                    if (squares.TryGetValue(ps.SquareId, out var square) && square.OwnerId == purchase.UserId)
+                        square.OwnerId = null;
+                }
+                purchase.PaymentStatus = PaymentStatus.Cancelled;
+                purchase.CancelledAt = DateTime.UtcNow;
+            }
+
             await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             _logger.LogInformation("Released {Count} expired pending reservations", expired.Count);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
         }
     }
 }

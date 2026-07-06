@@ -74,6 +74,14 @@ builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 
+var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSettings>()
+    ?? new PayFastSettings();
+
+builder.Services.AddSingleton(payFastSettings);
+builder.Services.AddHttpClient<IPayFastService, PayFastService>();
+
+builder.Services.AddHostedService<PendingReservationCleanupService>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -98,6 +106,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+var appPayFastSettings = app.Services.GetRequiredService<PayFastSettings>();
+if (string.IsNullOrWhiteSpace(appPayFastSettings.MerchantId) ||
+    string.IsNullOrWhiteSpace(appPayFastSettings.MerchantKey))
+{
+    app.Logger.LogWarning("PayFast MerchantId and/or MerchantKey are not configured. Payments will fail until they are set via user secrets or environment variables.");
+}
 
 if (!app.Environment.IsDevelopment())
 {
