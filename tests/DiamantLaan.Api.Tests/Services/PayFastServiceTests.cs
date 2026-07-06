@@ -247,5 +247,6 @@ public class PayFastServiceTests
         Assert.Equal("42", request.Fields["m_payment_id"]);
         Assert.Equal("200.00", request.Fields["amount"]);
         Assert.True(request.Fields.ContainsKey("signature"));
+        Assert.Matches("^[a-f0-9]{32}$", request.Fields["signature"]);
     }
 }

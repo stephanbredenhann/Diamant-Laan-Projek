@@ -26,6 +26,12 @@ public class PayFastService : IPayFastService
     private readonly PayFastSettings _settings;
     private readonly HttpClient _httpClient;
 
+    /// <summary>
+    /// Creates a <see cref="PayFastService"/> with only a passphrase.
+    /// Suitable for signature-generation tests only.
+    /// Do <b>not</b> use this constructor for <see cref="CreatePaymentRequest"/>;
+    /// use the <see cref="PayFastSettings"/> + <see cref="HttpClient"/> constructor instead.
+    /// </summary>
     public PayFastService(string passphrase)
     {
         _passphrase = passphrase;
@@ -148,6 +154,11 @@ public class PayFastService : IPayFastService
 
     public PayFastPaymentRequestDto CreatePaymentRequest(Purchase purchase, User user, string baseUrl)
     {
+        if (string.IsNullOrWhiteSpace(_settings.MerchantId) || string.IsNullOrWhiteSpace(_settings.MerchantKey))
+            throw new InvalidOperationException("PayFast MerchantId and MerchantKey must be configured.");
+
+        baseUrl = baseUrl.TrimEnd('/') + "/";
+
         var returnUrl = $"{baseUrl}betalings/terug?purchaseId={purchase.Id}";
         var cancelUrl = $"{baseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
         var notifyUrl = _settings.NotifyUrl ?? $"{baseUrl}api/payment/itn";
@@ -163,7 +174,7 @@ public class PayFastService : IPayFastService
             ["name_last"] = user.LastName,
             ["email_address"] = user.Email ?? string.Empty,
             ["m_payment_id"] = purchase.Id.ToString(),
-            ["amount"] = purchase.Amount.ToString("0.00"),
+            ["amount"] = purchase.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
             ["item_name"] = $"Diamant Laan - Aankoop #{purchase.Id}"
         };
 
