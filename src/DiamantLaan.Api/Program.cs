@@ -73,6 +73,18 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
 
+var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSettings>()
+    ?? new PayFastSettings();
+
+builder.Services.AddSingleton(payFastSettings);
+builder.Services.AddHttpClient<IPayFastService, PayFastService>((sp, client) =>
+{
+    var settings = sp.GetRequiredService<PayFastSettings>();
+    client.BaseAddress = new Uri(settings.Sandbox
+        ? "https://sandbox.payfast.co.za/"
+        : "https://www.payfast.co.za/");
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
