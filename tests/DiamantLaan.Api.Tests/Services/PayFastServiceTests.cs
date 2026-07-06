@@ -1,3 +1,4 @@
+using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Services;
 using Xunit;
 
@@ -221,5 +222,30 @@ public class PayFastServiceTests
         var sigWithoutAmount = PayFastService.CreateSignature(dataWithoutAmount, "secret");
 
         Assert.NotEqual(sigWithoutAmount, sigWithZero);
+    }
+
+    [Fact]
+    public void CreatePaymentRequest_IncludesSignedFields()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            MerchantKey = "46f0cd694581a",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true
+        };
+
+        var service = new PayFastService(settings, new HttpClient());
+
+        var purchase = new Purchase { Id = 42, Amount = 200.00m, UserId = "user-1" };
+        var user = new User { FirstName = "Test User", LastName = "Doe", Email = "test+user@example.com" };
+
+        var request = service.CreatePaymentRequest(purchase, user, "https://www.example.com/");
+
+        Assert.Equal("https://sandbox.payfast.co.za/eng/process", request.ActionUrl);
+        Assert.Equal("10000100", request.Fields["merchant_id"]);
+        Assert.Equal("42", request.Fields["m_payment_id"]);
+        Assert.Equal("200.00", request.Fields["amount"]);
+        Assert.True(request.Fields.ContainsKey("signature"));
     }
 }

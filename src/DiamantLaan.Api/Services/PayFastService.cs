@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using DiamantLaan.Api.Models;
+using DiamantLaan.Api.Models.Dtos;
 
 namespace DiamantLaan.Api.Services;
 
@@ -21,10 +23,22 @@ public class PayFastService : IPayFastService
     ];
 
     private readonly string _passphrase;
+    private readonly PayFastSettings _settings;
+    private readonly HttpClient _httpClient;
 
     public PayFastService(string passphrase)
     {
         _passphrase = passphrase;
+        _settings = new PayFastSettings { Passphrase = passphrase };
+        _httpClient = new HttpClient();
+    }
+
+    // DI constructor
+    public PayFastService(PayFastSettings settings, HttpClient httpClient)
+    {
+        _settings = settings;
+        _httpClient = httpClient;
+        _passphrase = settings.Passphrase;
     }
 
     /// <inheritdoc cref="IPayFastService.CreateSignature"/>
@@ -130,6 +144,38 @@ public class PayFastService : IPayFastService
             }
         }
         return sb.ToString();
+    }
+
+    public PayFastPaymentRequestDto CreatePaymentRequest(Purchase purchase, User user, string baseUrl)
+    {
+        var returnUrl = $"{baseUrl}betalings/terug?purchaseId={purchase.Id}";
+        var cancelUrl = $"{baseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
+        var notifyUrl = _settings.NotifyUrl ?? $"{baseUrl}api/payment/itn";
+
+        var fields = new Dictionary<string, string>
+        {
+            ["merchant_id"] = _settings.MerchantId,
+            ["merchant_key"] = _settings.MerchantKey,
+            ["return_url"] = returnUrl,
+            ["cancel_url"] = cancelUrl,
+            ["notify_url"] = notifyUrl,
+            ["name_first"] = user.FirstName,
+            ["name_last"] = user.LastName,
+            ["email_address"] = user.Email ?? string.Empty,
+            ["m_payment_id"] = purchase.Id.ToString(),
+            ["amount"] = purchase.Amount.ToString("0.00"),
+            ["item_name"] = $"Diamant Laan - Aankoop #{purchase.Id}"
+        };
+
+        fields["signature"] = CreateSignature(fields);
+
+        return new PayFastPaymentRequestDto
+        {
+            ActionUrl = _settings.ProcessUrl ?? (_settings.Sandbox
+                ? "https://sandbox.payfast.co.za/eng/process"
+                : "https://www.payfast.co.za/eng/process"),
+            Fields = fields
+        };
     }
 
     private static string MD5Hash(string input)
