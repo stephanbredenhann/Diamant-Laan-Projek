@@ -8,7 +8,4 @@ public class PurchaseRequestDto
     public List<int> SquareIds { get; set; } = new();
 
     public decimal? Amount { get; set; }
-
-    /// <summary>Dummy gateway sets this true on continue; real gateway will confirm via webhook later.</summary>
-    public bool ConfirmPayment { get; set; } = true;
 }

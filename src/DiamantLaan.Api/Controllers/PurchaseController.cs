@@ -135,19 +135,25 @@ public class PurchaseController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-        var purchase = await _db.Purchases
-            .Include(p => p.PurchaseSquares)
-            .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-
-        if (purchase == null)
-            return NotFound();
-
-        if (purchase.PaymentStatus != PaymentStatus.Pending)
-            return BadRequest(new { message = "Aankoop kan nie gekanselleer word nie." });
-
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
+            var purchase = await _db.Purchases
+                .Include(p => p.PurchaseSquares)
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (purchase == null)
+            {
+                await transaction.RollbackAsync();
+                return NotFound();
+            }
+
+            if (purchase.PaymentStatus != PaymentStatus.Pending)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest(new { message = "Aankoop kan nie gekanselleer word nie." });
+            }
+
             foreach (var ps in purchase.PurchaseSquares)
             {
                 var square = await _db.Squares.FindAsync(ps.SquareId);
@@ -161,6 +167,11 @@ public class PurchaseController : ControllerBase
             await transaction.CommitAsync();
 
             return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync();
+            return Conflict(new { message = "Aankoopstatus het intussen verander. Probeer weer." });
         }
         catch (Exception)
         {

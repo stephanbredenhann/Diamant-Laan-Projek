@@ -1,4 +1,3 @@
-using System.IO;
 using System.Text;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models.Enums;
@@ -11,6 +10,7 @@ namespace DiamantLaan.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PaymentController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -31,9 +31,14 @@ public class PaymentController : ControllerBase
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var rawBody = await reader.ReadToEndAsync();
 
-        _logger.LogInformation("PayFast ITN received: {Body}", rawBody);
-
         var merchantPaymentId = ExtractMerchantPaymentId(rawBody);
+        var pfPaymentId = ExtractValue(rawBody, "pf_payment_id");
+        var paymentStatus = ExtractValue(rawBody, "payment_status");
+
+        _logger.LogInformation(
+            "PayFast ITN received for m_payment_id={MerchantPaymentId}, pf_payment_id={PfPaymentId}, payment_status={PaymentStatus}",
+            merchantPaymentId, pfPaymentId, paymentStatus);
+
         if (string.IsNullOrEmpty(merchantPaymentId) || !int.TryParse(merchantPaymentId, out var purchaseId))
         {
             _logger.LogWarning("PayFast ITN missing merchant payment id");
@@ -58,46 +63,60 @@ public class PaymentController : ControllerBase
             return Ok("OK");
         }
 
-        if (purchase.PaymentStatus == PaymentStatus.Confirmed)
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            _logger.LogInformation("PayFast ITN for already confirmed purchase {PurchaseId}", purchaseId);
-            return Ok("OK");
-        }
+            await _db.Entry(purchase).ReloadAsync();
 
-        if (purchase.PaymentStatus == PaymentStatus.Cancelled)
+            if (purchase.PaymentStatus != PaymentStatus.Pending)
+            {
+                _logger.LogInformation("PayFast ITN for non-pending purchase {PurchaseId} after verification", purchaseId);
+                await transaction.RollbackAsync();
+                return Ok("OK");
+            }
+
+            purchase.PaymentStatus = PaymentStatus.Confirmed;
+            purchase.PayFastPaymentId = result.PayFastPaymentId;
+            purchase.PayFastPaymentStatus = result.PaymentStatus;
+            purchase.ConfirmedAt = DateTime.UtcNow;
+
+            var userId = purchase.UserId;
+            foreach (var ps in purchase.PurchaseSquares)
+            {
+                var square = await _db.Squares.FindAsync(ps.SquareId);
+                if (square != null)
+                    square.OwnerId = userId;
+            }
+
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            _logger.LogInformation("Purchase {PurchaseId} confirmed by PayFast ITN", purchaseId);
+        }
+        catch (DbUpdateConcurrencyException ex)
         {
-            _logger.LogWarning("PayFast ITN for cancelled purchase {PurchaseId}", purchaseId);
-            return Ok("OK");
+            await transaction.RollbackAsync();
+            _logger.LogWarning(ex, "Concurrency conflict confirming purchase {PurchaseId}", purchaseId);
         }
-
-        purchase.PaymentStatus = PaymentStatus.Confirmed;
-        purchase.PayFastPaymentId = result.PayFastPaymentId;
-        purchase.PayFastPaymentStatus = result.PaymentStatus;
-        purchase.ConfirmedAt = DateTime.UtcNow;
-
-        var userId = purchase.UserId;
-        foreach (var ps in purchase.PurchaseSquares)
+        catch (Exception ex)
         {
-            var square = await _db.Squares.FindAsync(ps.SquareId);
-            if (square != null)
-                square.OwnerId = userId;
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error confirming purchase {PurchaseId} from ITN", purchaseId);
         }
-
-        await _db.SaveChangesAsync();
-        _logger.LogInformation("Purchase {PurchaseId} confirmed by PayFast ITN", purchaseId);
 
         return Ok("OK");
     }
 
-    private static string? ExtractMerchantPaymentId(string rawBody)
+    private static string? ExtractMerchantPaymentId(string rawBody) => ExtractValue(rawBody, "m_payment_id");
+
+    private static string? ExtractValue(string rawBody, string key)
     {
         foreach (var part in rawBody.Split('&'))
         {
             var idx = part.IndexOf('=');
             if (idx < 0) continue;
-            var key = part[..idx];
-            if (key.Equals("m_payment_id", StringComparison.OrdinalIgnoreCase))
-                return part[(idx + 1)..];
+            var partKey = part[..idx];
+            if (partKey.Equals(key, StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(part[(idx + 1)..]);
         }
         return null;
     }
