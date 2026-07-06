@@ -119,6 +119,7 @@ export class PaymentComponent implements OnInit {
   totalAmount = 0;
   loading = false;
   error = '';
+  private createdPurchaseId?: number;
 
   ngOnInit() {
     const ids = this.purchase.pendingSquareIds;
@@ -136,21 +137,32 @@ export class PaymentComponent implements OnInit {
     this.error = '';
     this.loading = true;
 
+    // If we already created the purchase, retry just the PayFast form
+    if (this.createdPurchaseId) {
+      this.requestPayFastForm(this.createdPurchaseId);
+      return;
+    }
+
     this.purchase.createPurchase(this.squareIds, this.totalAmount).subscribe({
       next: (res) => {
-        this.purchase.getPayFastForm(res.purchaseId).subscribe({
-          next: (form) => {
-            this.loading = false;
-            this.postToPayFast(form);
-          },
-          error: (err) => {
-            this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
-            this.loading = false;
-          }
-        });
+        this.createdPurchaseId = res.purchaseId;
+        this.requestPayFastForm(res.purchaseId);
       },
       error: (err) => {
         this.error = err.error?.message || 'Aankoop het misluk.';
+        this.loading = false;
+      }
+    });
+  }
+
+  private requestPayFastForm(purchaseId: number) {
+    this.purchase.getPayFastForm(purchaseId).subscribe({
+      next: (form) => {
+        this.loading = false;
+        this.postToPayFast(form);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
         this.loading = false;
       }
     });
