@@ -55,6 +55,10 @@ export class PurchaseService {
     return this.http.get<{ id: number; amount: number; purchaseDate: string; paymentStatus: string; squares: number[] }>(`/api/purchase/${id}`);
   }
 
+  simulateItn(purchaseId: number) {
+    return this.http.post<{ purchaseId: number; paymentStatus: string }>('/api/payment/simulate-itn', { purchaseId });
+  }
+
   getMySquares() {
     return this.http.get<{ id: number; status: number; imageCount?: number }[]>('/api/my-squares');
   }

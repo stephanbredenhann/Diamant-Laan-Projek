@@ -19,6 +19,11 @@ import { takeWhile } from 'rxjs/operators';
             @if (attempts > 1) {
               <p class="attempts">Kontroleer besig... (poging {{ attempts }}/{{ maxAttempts }})</p>
             }
+            @if (isLocalhost) {
+              <button class="btn btn-outline btn-wide" (click)="simulateItn()" [disabled]="simulating">
+                {{ simulating ? 'Besig...' : 'Simuleer PayFast bevestiging (slegs ontwikkeling)' }}
+              </button>
+            }
           }
           @case ('success') {
             <div class="success-icon">
@@ -119,21 +124,35 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
   state: 'pending' | 'success' | 'failed' | 'timeout' = 'pending';
   attempts = 0;
   maxAttempts = 30;
+  simulating = false;
+  isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
   private consecutiveErrors = 0;
   private sub?: Subscription;
+  private purchaseId = 0;
 
   ngOnInit() {
-    const purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
-    if (!purchaseId) {
+    this.purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
+    if (!this.purchaseId) {
       this.router.navigate(['/kaart']);
       return;
     }
 
     this.sub = interval(2000)
       .pipe(takeWhile(() => this.state === 'pending'))
-      .subscribe(() => this.checkStatus(purchaseId));
+      .subscribe(() => this.checkStatus(this.purchaseId));
 
-    this.checkStatus(purchaseId);
+    this.checkStatus(this.purchaseId);
+  }
+
+  simulateItn() {
+    this.simulating = true;
+    this.purchase.simulateItn(this.purchaseId).subscribe({
+      next: () => this.checkStatus(this.purchaseId),
+      error: () => {
+        this.simulating = false;
+        this.state = 'failed';
+      }
+    });
   }
 
   ngOnDestroy() {
