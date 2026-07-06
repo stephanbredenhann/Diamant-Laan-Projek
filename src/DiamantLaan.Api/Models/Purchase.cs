@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DiamantLaan.Api.Models.Enums;
 
 namespace DiamantLaan.Api.Models;
@@ -16,6 +17,9 @@ public class Purchase
     public string? PayFastPaymentStatus { get; set; }
     public DateTime? ConfirmedAt { get; set; }
     public DateTime? CancelledAt { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public ICollection<PurchaseSquare> PurchaseSquares { get; set; } = new List<PurchaseSquare>();
 }
