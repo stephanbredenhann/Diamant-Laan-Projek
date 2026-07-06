@@ -11,5 +11,11 @@ public class Purchase
     public decimal Amount { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
     public string? ProofOfPaymentPath { get; set; }
+
+    public string? PayFastPaymentId { get; set; }
+    public string? PayFastPaymentStatus { get; set; }
+    public DateTime? ConfirmedAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+
     public ICollection<PurchaseSquare> PurchaseSquares { get; set; } = new List<PurchaseSquare>();
 }

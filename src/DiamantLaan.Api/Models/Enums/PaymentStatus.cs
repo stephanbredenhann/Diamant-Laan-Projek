@@ -3,5 +3,7 @@ namespace DiamantLaan.Api.Models.Enums;
 public enum PaymentStatus
 {
     Pending = 0,
-    Confirmed = 1
+    Confirmed = 1,
+    Cancelled = 2,
+    Failed = 3
 }
