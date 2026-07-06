@@ -9,5 +9,4 @@ public class PayFastSettings
     public string? ProcessUrl { get; set; }
     public string? QueryUrl { get; set; }
     public string? NotifyUrl { get; set; }
-    public bool SkipIpCheck { get; set; }
 }

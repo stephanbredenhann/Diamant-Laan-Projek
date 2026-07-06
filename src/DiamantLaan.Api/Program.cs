@@ -110,6 +110,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+var appPayFastSettings = app.Services.GetRequiredService<PayFastSettings>();
+if (string.IsNullOrWhiteSpace(appPayFastSettings.MerchantId) ||
+    string.IsNullOrWhiteSpace(appPayFastSettings.MerchantKey))
+{
+    app.Logger.LogWarning("PayFast MerchantId and/or MerchantKey are not configured. Payments will fail until they are set via user secrets or environment variables.");
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/error");

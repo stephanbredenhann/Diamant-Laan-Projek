@@ -165,7 +165,9 @@ public class PayFastService : IPayFastService
 
         var returnUrl = $"{baseUrl}betalings/terug?purchaseId={purchase.Id}";
         var cancelUrl = $"{baseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
-        var notifyUrl = _settings.NotifyUrl ?? $"{baseUrl}api/payment/itn";
+        var notifyUrl = !string.IsNullOrWhiteSpace(_settings.NotifyUrl)
+            ? _settings.NotifyUrl
+            : $"{baseUrl}api/payment/itn";
 
         var fields = new Dictionary<string, string>
         {

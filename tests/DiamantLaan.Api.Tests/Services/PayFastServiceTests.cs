@@ -275,7 +275,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
 
         var handler = new TestHttpMessageHandler(_ => Task.FromResult(new HttpResponseMessage
@@ -304,7 +304,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
         var service = CreateServiceWithResponse(settings, "VALID");
         var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=200.00&merchant_id=10000100";
@@ -323,7 +323,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
         var service = CreateServiceWithResponse(settings, "VALID");
         var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=200.00&merchant_id=10000100&signature=wrong";
@@ -342,7 +342,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
         var service = CreateServiceWithResponse(settings, "VALID");
         var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=FAILED&amount_gross=200.00&merchant_id=10000100&signature=b03f5907529b67e15bc49a11ee5d6998";
@@ -362,7 +362,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
         var service = CreateServiceWithResponse(settings, "VALID");
         var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=500.00&merchant_id=10000100&signature=81f275685a244b98a3cd2da01765fe54";
@@ -382,7 +382,7 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             Passphrase = "jt7NOE43FZPn",
             Sandbox = true,
-            SkipIpCheck = true
+
         };
         var service = CreateServiceWithResponse(settings, "INVALID");
         var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&item_name=Order%2342&amount_gross=200.00&amount_fee=-4.60&amount_net=195.40&name_first=Test&name_last=User&email_address=test%40example.com&merchant_id=10000100&signature=4d0496272ebc6f4dd29353bbd71af08b";
