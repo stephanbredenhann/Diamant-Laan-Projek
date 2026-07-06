@@ -110,10 +110,7 @@ export class PaymentCancelComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        // Still clear the pending state so the user can try again
-        this.purchase.pendingSquareIds = [];
-        this.purchase.pendingAmountPerBlock = 500;
-        // Show a friendly error message
+        // Show a friendly error message but preserve pending state so retry works
         const status = err.status;
         if (status === 404) {
           this.error = 'Die aankoop kon nie gevind word nie. Dit is moontlik reeds verwerk.';

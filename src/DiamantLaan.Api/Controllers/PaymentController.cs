@@ -96,13 +96,13 @@ public class PaymentController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency conflict confirming purchase {PurchaseId}", purchaseId);
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return Ok("OK");
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error confirming purchase {PurchaseId} from ITN", purchaseId);
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return Ok("OK");
         }
 
         return Ok("OK");
