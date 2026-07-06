@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
+using Microsoft.Extensions.Logging;
 
 namespace DiamantLaan.Api.Services;
 
@@ -25,6 +26,7 @@ public class PayFastService : IPayFastService
     private readonly string _passphrase;
     private readonly PayFastSettings _settings;
     private readonly HttpClient _httpClient;
+    private readonly ILogger<PayFastService>? _logger;
 
     /// <summary>
     /// Creates a <see cref="PayFastService"/> with only a passphrase.
@@ -32,19 +34,21 @@ public class PayFastService : IPayFastService
     /// Do <b>not</b> use this constructor for <see cref="CreatePaymentRequest"/>;
     /// use the <see cref="PayFastSettings"/> + <see cref="HttpClient"/> constructor instead.
     /// </summary>
-    public PayFastService(string passphrase)
+    public PayFastService(string passphrase, ILogger<PayFastService>? logger = null)
     {
         _passphrase = passphrase;
         _settings = new PayFastSettings { Passphrase = passphrase };
         _httpClient = new HttpClient();
+        _logger = logger;
     }
 
     // DI constructor
-    public PayFastService(PayFastSettings settings, HttpClient httpClient)
+    public PayFastService(PayFastSettings settings, HttpClient httpClient, ILogger<PayFastService>? logger = null)
     {
         _settings = settings;
         _httpClient = httpClient;
         _passphrase = settings.Passphrase;
+        _logger = logger;
     }
 
     /// <inheritdoc cref="IPayFastService.CreateSignature"/>
@@ -193,30 +197,45 @@ public class PayFastService : IPayFastService
     {
         var pairs = ParseFormUrlEncoded(rawBody);
 
-        var signaturePair = pairs.FirstOrDefault(p => p.Key == "signature");
+        var signaturePair = pairs.FirstOrDefault(p => p.Key.Equals("signature", StringComparison.OrdinalIgnoreCase));
         if (string.IsNullOrEmpty(signaturePair.Value))
+        {
+            _logger?.LogWarning("PayFast ITN missing signature");
             return new ItnVerificationResult(false, null, null, null, null, "Missing signature");
+        }
 
         var payload = BuildSignatureString(pairs);
         var expectedSignature = CreateSignatureFromEncodedString(payload, _settings.Passphrase);
 
         if (!string.Equals(signaturePair.Value, expectedSignature, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger?.LogWarning("PayFast ITN signature mismatch");
             return new ItnVerificationResult(false, null, null, null, null, "Signature mismatch");
+        }
 
         var data = pairs.ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase);
 
         var paymentStatus = data.GetValueOrDefault("payment_status");
         if (paymentStatus != "COMPLETE")
+        {
+            _logger?.LogWarning("PayFast ITN payment not complete: {PaymentStatus}", paymentStatus);
             return new ItnVerificationResult(false, paymentStatus, null, null, null, "Payment not complete");
+        }
 
         var amountGrossValue = data.GetValueOrDefault("amount_gross");
         if (!decimal.TryParse(amountGrossValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amountGross))
+        {
+            _logger?.LogWarning("PayFast ITN invalid amount_gross");
             return new ItnVerificationResult(false, paymentStatus, null, null, null, "Invalid amount");
+        }
 
         if (Math.Abs(amountGross - expectedAmount) > 0.01m)
+        {
+            _logger?.LogWarning("PayFast ITN amount mismatch: expected {Expected}, got {Actual}", expectedAmount, amountGross);
             return new ItnVerificationResult(false, paymentStatus, null, null, amountGross, "Amount mismatch");
+        }
 
-        var validationString = BuildValidationString(pairs);
+        var validationString = BuildSignatureString(pairs);
         var queryUrl = _settings.QueryUrl ?? (_settings.Sandbox
             ? "https://sandbox.payfast.co.za/eng/query/validate"
             : "https://www.payfast.co.za/eng/query/validate");
@@ -225,7 +244,10 @@ public class PayFastService : IPayFastService
         var responseText = await response.Content.ReadAsStringAsync();
 
         if (responseText.Trim() != "VALID")
+        {
+            _logger?.LogWarning("PayFast ITN server confirmation failed: {ResponseText}", responseText);
             return new ItnVerificationResult(false, paymentStatus, null, null, amountGross, "Server confirmation failed");
+        }
 
         return new ItnVerificationResult(
             true,
@@ -254,7 +276,7 @@ public class PayFastService : IPayFastService
         var sb = new StringBuilder();
         foreach (var (key, value) in pairs)
         {
-            if (key == "signature")
+            if (key.Equals("signature", StringComparison.OrdinalIgnoreCase))
                 break;
             if (string.IsNullOrEmpty(value))
                 continue;
@@ -263,11 +285,6 @@ public class PayFastService : IPayFastService
         if (sb.Length > 0)
             sb.Length--;
         return sb.ToString();
-    }
-
-    private static string BuildValidationString(List<KeyValuePair<string, string>> pairs)
-    {
-        return BuildSignatureString(pairs);
     }
 
     private static string CreateSignatureFromEncodedString(string payload, string passphrase)

@@ -14,6 +14,15 @@ public class TestHttpMessageHandler : HttpMessageHandler
 
 public class PayFastServiceTests
 {
+    private static PayFastService CreateServiceWithResponse(PayFastSettings settings, string responseText)
+    {
+        var handler = new TestHttpMessageHandler(_ => Task.FromResult(new HttpResponseMessage
+        {
+            Content = new StringContent(responseText)
+        }));
+        return new PayFastService(settings, new HttpClient(handler));
+    }
+
     [Fact]
     public void CreateSignature_ReturnsExpectedHash()
     {
@@ -285,5 +294,102 @@ public class PayFastServiceTests
         Assert.Equal("COMPLETE", result.PaymentStatus);
         Assert.Equal("1089250", result.PayFastPaymentId);
         Assert.Equal("42", result.MerchantPaymentId);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_MissingSignature_ReturnsInvalid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+        var service = CreateServiceWithResponse(settings, "VALID");
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=200.00&merchant_id=10000100";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.False(result.IsValid);
+        Assert.Equal("Missing signature", result.Error);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_SignatureMismatch_ReturnsInvalid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+        var service = CreateServiceWithResponse(settings, "VALID");
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=200.00&merchant_id=10000100&signature=wrong";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.False(result.IsValid);
+        Assert.Equal("Signature mismatch", result.Error);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_PaymentNotComplete_ReturnsInvalid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+        var service = CreateServiceWithResponse(settings, "VALID");
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=FAILED&amount_gross=200.00&merchant_id=10000100&signature=b03f5907529b67e15bc49a11ee5d6998";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.False(result.IsValid);
+        Assert.Equal("Payment not complete", result.Error);
+        Assert.Equal("FAILED", result.PaymentStatus);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_AmountMismatch_ReturnsInvalid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+        var service = CreateServiceWithResponse(settings, "VALID");
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&amount_gross=500.00&merchant_id=10000100&signature=81f275685a244b98a3cd2da01765fe54";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.False(result.IsValid);
+        Assert.Equal("Amount mismatch", result.Error);
+        Assert.Equal(500.00m, result.AmountGross);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_ServerConfirmationInvalid_ReturnsInvalid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+        var service = CreateServiceWithResponse(settings, "INVALID");
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&item_name=Order%2342&amount_gross=200.00&amount_fee=-4.60&amount_net=195.40&name_first=Test&name_last=User&email_address=test%40example.com&merchant_id=10000100&signature=4d0496272ebc6f4dd29353bbd71af08b";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.False(result.IsValid);
+        Assert.Equal("Server confirmation failed", result.Error);
     }
 }
