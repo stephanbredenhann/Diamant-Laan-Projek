@@ -4,6 +4,11 @@ import { HttpClient } from '@angular/common/http';
 const PENDING_IDS_KEY = 'pendingSquareIds';
 const PENDING_AMOUNT_KEY = 'pendingAmountPerBlock';
 
+export interface PayFastForm {
+  actionUrl: string;
+  fields: Record<string, string>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
   constructor(private http: HttpClient) {}
@@ -32,14 +37,18 @@ export class PurchaseService {
   }
 
   createPurchase(squareIds: number[], amount?: number) {
-    const body = {
-      squareIds,
-      amount,
-      confirmPayment: true
-    };
+    const body = { squareIds, amount };
     return this.http.post<{ purchaseId: number; amount: number; squareCount: number; paymentStatus: string }>(
       '/api/purchase', body
     );
+  }
+
+  getPayFastForm(purchaseId: number) {
+    return this.http.post<PayFastForm>(`/api/purchase/${purchaseId}/pay`, {});
+  }
+
+  cancelPurchase(purchaseId: number) {
+    return this.http.post<{ purchaseId: number; paymentStatus: string }>(`/api/purchase/${purchaseId}/cancel`, {});
   }
 
   getPurchase(id: number) {
