@@ -77,13 +77,7 @@ var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSet
     ?? new PayFastSettings();
 
 builder.Services.AddSingleton(payFastSettings);
-builder.Services.AddHttpClient<IPayFastService, PayFastService>((sp, client) =>
-{
-    var settings = sp.GetRequiredService<PayFastSettings>();
-    client.BaseAddress = new Uri(settings.Sandbox
-        ? "https://sandbox.payfast.co.za/"
-        : "https://www.payfast.co.za/");
-});
+builder.Services.AddHttpClient<IPayFastService, PayFastService>();
 
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 

@@ -279,7 +279,7 @@ public class PayFastService : IPayFastService
         foreach (var (key, value) in pairs)
         {
             if (key.Equals("signature", StringComparison.OrdinalIgnoreCase))
-                break;
+                continue;
             if (string.IsNullOrEmpty(value))
                 continue;
             sb.Append(key).Append('=').Append(value).Append('&');
