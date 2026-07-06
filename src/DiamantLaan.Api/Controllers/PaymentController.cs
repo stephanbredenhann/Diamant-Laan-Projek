@@ -64,6 +64,12 @@ public class PaymentController : ControllerBase
             return Ok("OK");
         }
 
+        if (purchase.PaymentStatus == PaymentStatus.Cancelled)
+        {
+            _logger.LogWarning("PayFast ITN for cancelled purchase {PurchaseId}", purchaseId);
+            return Ok("OK");
+        }
+
         purchase.PaymentStatus = PaymentStatus.Confirmed;
         purchase.PayFastPaymentId = result.PayFastPaymentId;
         purchase.PayFastPaymentStatus = result.PaymentStatus;

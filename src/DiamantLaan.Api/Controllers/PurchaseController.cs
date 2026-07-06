@@ -145,17 +145,27 @@ public class PurchaseController : ControllerBase
         if (purchase.PaymentStatus != PaymentStatus.Pending)
             return BadRequest(new { message = "Aankoop kan nie gekanselleer word nie." });
 
-        foreach (var ps in purchase.PurchaseSquares)
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            var square = await _db.Squares.FindAsync(ps.SquareId);
-            if (square != null && square.OwnerId == userId)
-                square.OwnerId = null;
+            foreach (var ps in purchase.PurchaseSquares)
+            {
+                var square = await _db.Squares.FindAsync(ps.SquareId);
+                if (square != null && square.OwnerId == userId)
+                    square.OwnerId = null;
+            }
+
+            purchase.PaymentStatus = PaymentStatus.Cancelled;
+            purchase.CancelledAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
         }
-
-        purchase.PaymentStatus = PaymentStatus.Cancelled;
-        purchase.CancelledAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { message = "Kon nie aankoop kanselleer nie." });
+        }
     }
 }
