@@ -86,7 +86,7 @@ public class PayFastService : IPayFastService
         if (!string.IsNullOrEmpty(passphrase))
         {
             // Append passphrase URL-encoded, matching PayFast PHP SDK behaviour (urlencode(trim($passPhrase))).
-            sb.Append("&passphrase=").Append(UrlEncode(passphrase));
+            sb.Append("&passphrase=").Append(UrlEncode(passphrase.Trim()));
         }
 
         return MD5Hash(sb.ToString());
@@ -112,20 +112,21 @@ public class PayFastService : IPayFastService
     /// </remarks>
     public static string UrlEncode(string value)
     {
+        var bytes = Encoding.UTF8.GetBytes(value);
         var sb = new StringBuilder();
-        foreach (var ch in value)
+        foreach (var b in bytes)
         {
-            if (ch == ' ')
+            if (b == (byte)' ')
             {
                 sb.Append('+');
             }
-            else if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '-' || ch == '_' || ch == '.')
+            else if ((b >= '0' && b <= '9') || (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || b == '-' || b == '_' || b == '.')
             {
-                sb.Append(ch);
+                sb.Append((char)b);
             }
             else
             {
-                sb.Append('%').Append(((int)ch).ToString("X2"));
+                sb.Append('%').Append(b.ToString("X2"));
             }
         }
         return sb.ToString();

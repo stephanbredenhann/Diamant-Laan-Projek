@@ -163,4 +163,63 @@ public class PayFastServiceTests
 
         Assert.Equal(staticSig, instanceSig);
     }
+
+    [Fact]
+    public void CreateSignature_PassphraseWithWhitespace_IsTrimmedBeforeEncoding()
+    {
+        var data = new Dictionary<string, string>
+        {
+            ["merchant_id"] = "10000100",
+            ["merchant_key"] = "46f0cd694581a",
+            ["return_url"] = "https://www.example.com/return",
+            ["notify_url"] = "https://www.example.com/itn",
+            ["amount"] = "200.00",
+            ["item_name"] = "Test"
+        };
+
+        // Passphrase with leading and trailing whitespace should be trimmed
+        var sigTrimmed = PayFastService.CreateSignature(data, "  secret  ");
+        var sigClean = PayFastService.CreateSignature(data, "secret");
+
+        Assert.Equal(sigClean, sigTrimmed);
+    }
+
+    [Fact]
+    public void UrlEncode_NonAsciiCharacters_EncodedAsUtf8ByteSequence()
+    {
+        // é (U+00E9) → UTF-8: 0xC3 0xA9 → %C3%A9
+        Assert.Equal("%C3%A9", PayFastService.UrlEncode("é"));
+        // ñ (U+00F1) → UTF-8: 0xC3 0xB1 → %C3%B1
+        Assert.Equal("%C3%B1", PayFastService.UrlEncode("ñ"));
+    }
+
+    [Fact]
+    public void CreateSignature_FieldValueIsZero_IsIncluded()
+    {
+        var dataWithZero = new Dictionary<string, string>
+        {
+            ["merchant_id"] = "10000100",
+            ["merchant_key"] = "46f0cd694581a",
+            ["return_url"] = "https://www.example.com/return",
+            ["notify_url"] = "https://www.example.com/itn",
+            ["amount"] = "0",
+            ["item_name"] = "Test"
+        };
+
+        var dataWithoutAmount = new Dictionary<string, string>
+        {
+            ["merchant_id"] = "10000100",
+            ["merchant_key"] = "46f0cd694581a",
+            ["return_url"] = "https://www.example.com/return",
+            ["notify_url"] = "https://www.example.com/itn",
+            ["item_name"] = "Test"
+        };
+
+        // string.IsNullOrEmpty("0") returns false, so "amount=0" should be included
+        // and produce a different signature than when amount is absent
+        var sigWithZero = PayFastService.CreateSignature(dataWithZero, "secret");
+        var sigWithoutAmount = PayFastService.CreateSignature(dataWithoutAmount, "secret");
+
+        Assert.NotEqual(sigWithoutAmount, sigWithZero);
+    }
 }
