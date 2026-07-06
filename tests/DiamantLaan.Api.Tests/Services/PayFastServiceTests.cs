@@ -89,6 +89,29 @@ public class PayFastServiceTests
     }
 
     [Fact]
+    public void CreateSignature_PassphraseWithSpecialCharacters_IsUrlEncoded()
+    {
+        var data = new Dictionary<string, string>
+        {
+            ["merchant_id"] = "10000100",
+            ["merchant_key"] = "46f0cd694581a",
+            ["return_url"] = "https://www.example.com/return",
+            ["cancel_url"] = "https://www.example.com/cancel",
+            ["notify_url"] = "https://www.example.com/itn",
+            ["name_first"] = "Test User",
+            ["name_last"] = "Doe",
+            ["email_address"] = "test+user@example.com",
+            ["m_payment_id"] = "42",
+            ["amount"] = "200.00",
+            ["item_name"] = "Order#42"
+        };
+
+        var signature = PayFastService.CreateSignature(data, "my passphrase");
+
+        Assert.Equal("9cec51b520d25a4140fdf4934426afab", signature);
+    }
+
+    [Fact]
     public void CreateSignature_IgnoresFieldsNotInCanonicalOrder()
     {
         // Fields not in the PayFast canonical order list should be ignored

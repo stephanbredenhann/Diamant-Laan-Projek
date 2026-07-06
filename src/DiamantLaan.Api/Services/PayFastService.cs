@@ -85,6 +85,7 @@ public class PayFastService : IPayFastService
 
         if (!string.IsNullOrEmpty(passphrase))
         {
+            // Append passphrase URL-encoded, matching PayFast PHP SDK behaviour (urlencode(trim($passPhrase))).
             sb.Append("&passphrase=").Append(UrlEncode(passphrase));
         }
 
