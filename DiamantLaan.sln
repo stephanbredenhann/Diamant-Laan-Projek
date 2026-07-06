@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C3B40D33-625
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiamantLaan.Api", "src\DiamantLaan.Api\DiamantLaan.Api.csproj", "{7A8D88A6-7DAC-4FB7-A5F8-63D29ABDB580}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{99021905-B4D6-446C-85E1-7808E3A6A6D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiamantLaan.Api.Tests", "tests\DiamantLaan.Api.Tests\DiamantLaan.Api.Tests.csproj", "{EA0AD189-58D8-4B56-884C-5559A8578579}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,13 @@ Global
 		{7A8D88A6-7DAC-4FB7-A5F8-63D29ABDB580}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A8D88A6-7DAC-4FB7-A5F8-63D29ABDB580}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A8D88A6-7DAC-4FB7-A5F8-63D29ABDB580}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA0AD189-58D8-4B56-884C-5559A8578579}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA0AD189-58D8-4B56-884C-5559A8578579}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA0AD189-58D8-4B56-884C-5559A8578579}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA0AD189-58D8-4B56-884C-5559A8578579}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7A8D88A6-7DAC-4FB7-A5F8-63D29ABDB580} = {C3B40D33-6250-4C68-8AC1-7F71D3A52EEC}
+		{EA0AD189-58D8-4B56-884C-5559A8578579} = {99021905-B4D6-446C-85E1-7808E3A6A6D3}
 	EndGlobalSection
 EndGlobal
