@@ -85,6 +85,8 @@ builder.Services.AddHttpClient<IPayFastService, PayFastService>((sp, client) =>
         : "https://www.payfast.co.za/");
 });
 
+builder.Services.AddHostedService<PendingReservationCleanupService>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
