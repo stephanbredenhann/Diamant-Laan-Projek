@@ -1,8 +1,16 @@
+using System.Net;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Services;
 using Xunit;
 
 namespace DiamantLaan.Api.Tests.Services;
+
+public class TestHttpMessageHandler : HttpMessageHandler
+{
+    private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _responder;
+    public TestHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responder) => _responder = responder;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => _responder(request);
+}
 
 public class PayFastServiceTests
 {
@@ -248,5 +256,34 @@ public class PayFastServiceTests
         Assert.Equal("200.00", request.Fields["amount"]);
         Assert.True(request.Fields.ContainsKey("signature"));
         Assert.Matches("^[a-f0-9]{32}$", request.Fields["signature"]);
+    }
+
+    [Fact]
+    public async Task VerifyItnAsync_ValidComplete_ReturnsValid()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            SkipIpCheck = true
+        };
+
+        var handler = new TestHttpMessageHandler(_ => Task.FromResult(new HttpResponseMessage
+        {
+            Content = new StringContent("VALID")
+        }));
+        var client = new HttpClient(handler) { BaseAddress = new Uri("https://sandbox.payfast.co.za/") };
+
+        var service = new PayFastService(settings, client);
+
+        var rawBody = "m_payment_id=42&pf_payment_id=1089250&payment_status=COMPLETE&item_name=Order%2342&amount_gross=200.00&amount_fee=-4.60&amount_net=195.40&name_first=Test&name_last=User&email_address=test%40example.com&merchant_id=10000100&signature=4d0496272ebc6f4dd29353bbd71af08b";
+
+        var result = await service.VerifyItnAsync(rawBody, 200.00m);
+
+        Assert.True(result.IsValid);
+        Assert.Equal("COMPLETE", result.PaymentStatus);
+        Assert.Equal("1089250", result.PayFastPaymentId);
+        Assert.Equal("42", result.MerchantPaymentId);
     }
 }

@@ -189,6 +189,94 @@ public class PayFastService : IPayFastService
         };
     }
 
+    public async Task<ItnVerificationResult> VerifyItnAsync(string rawBody, decimal expectedAmount)
+    {
+        var pairs = ParseFormUrlEncoded(rawBody);
+
+        var signaturePair = pairs.FirstOrDefault(p => p.Key == "signature");
+        if (string.IsNullOrEmpty(signaturePair.Value))
+            return new ItnVerificationResult(false, null, null, null, null, "Missing signature");
+
+        var payload = BuildSignatureString(pairs);
+        var expectedSignature = CreateSignatureFromEncodedString(payload, _settings.Passphrase);
+
+        if (!string.Equals(signaturePair.Value, expectedSignature, StringComparison.OrdinalIgnoreCase))
+            return new ItnVerificationResult(false, null, null, null, null, "Signature mismatch");
+
+        var data = pairs.ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase);
+
+        var paymentStatus = data.GetValueOrDefault("payment_status");
+        if (paymentStatus != "COMPLETE")
+            return new ItnVerificationResult(false, paymentStatus, null, null, null, "Payment not complete");
+
+        var amountGrossValue = data.GetValueOrDefault("amount_gross");
+        if (!decimal.TryParse(amountGrossValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amountGross))
+            return new ItnVerificationResult(false, paymentStatus, null, null, null, "Invalid amount");
+
+        if (Math.Abs(amountGross - expectedAmount) > 0.01m)
+            return new ItnVerificationResult(false, paymentStatus, null, null, amountGross, "Amount mismatch");
+
+        var validationString = BuildValidationString(pairs);
+        var queryUrl = _settings.QueryUrl ?? (_settings.Sandbox
+            ? "https://sandbox.payfast.co.za/eng/query/validate"
+            : "https://www.payfast.co.za/eng/query/validate");
+
+        var response = await _httpClient.PostAsync(queryUrl, new StringContent(validationString, Encoding.UTF8, "application/x-www-form-urlencoded"));
+        var responseText = await response.Content.ReadAsStringAsync();
+
+        if (responseText.Trim() != "VALID")
+            return new ItnVerificationResult(false, paymentStatus, null, null, amountGross, "Server confirmation failed");
+
+        return new ItnVerificationResult(
+            true,
+            paymentStatus,
+            data.GetValueOrDefault("pf_payment_id"),
+            data.GetValueOrDefault("m_payment_id"),
+            amountGross,
+            null);
+    }
+
+    private static List<KeyValuePair<string, string>> ParseFormUrlEncoded(string rawBody)
+    {
+        var pairs = new List<KeyValuePair<string, string>>();
+        foreach (var part in rawBody.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var idx = part.IndexOf('=');
+            var key = idx >= 0 ? part[..idx] : part;
+            var value = idx >= 0 ? part[(idx + 1)..] : string.Empty;
+            pairs.Add(new KeyValuePair<string, string>(key, value));
+        }
+        return pairs;
+    }
+
+    private static string BuildSignatureString(List<KeyValuePair<string, string>> pairs)
+    {
+        var sb = new StringBuilder();
+        foreach (var (key, value) in pairs)
+        {
+            if (key == "signature")
+                break;
+            if (string.IsNullOrEmpty(value))
+                continue;
+            sb.Append(key).Append('=').Append(value).Append('&');
+        }
+        if (sb.Length > 0)
+            sb.Length--;
+        return sb.ToString();
+    }
+
+    private static string BuildValidationString(List<KeyValuePair<string, string>> pairs)
+    {
+        return BuildSignatureString(pairs);
+    }
+
+    private static string CreateSignatureFromEncodedString(string payload, string passphrase)
+    {
+        if (string.IsNullOrEmpty(passphrase))
+            return MD5Hash(payload);
+        return MD5Hash($"{payload}&passphrase={UrlEncode(passphrase.Trim())}");
+    }
+
     private static string MD5Hash(string input)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
