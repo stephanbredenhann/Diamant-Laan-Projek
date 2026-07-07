@@ -9,6 +9,7 @@ export const routes: Routes = [
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard] },
   { path: 'my-blokke/sertifikaat', loadComponent: () => import('./components/certificate/certificate.component').then(m => m.CertificateComponent), canActivate: [authGuard] },
+  { path: 'my-transaksies', loadComponent: () => import('./components/my-transactions/my-transactions.component').then(m => m.MyTransactionsComponent), canActivate: [authGuard] },
   { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [authGuard] },
   {
     path: 'admin',
@@ -19,7 +20,9 @@ export const routes: Routes = [
       { path: 'fotos', loadComponent: () => import('./components/admin-images/admin-images.component').then(m => m.AdminImagesComponent) },
       { path: 'stats', loadComponent: () => import('./components/admin-stats/admin-stats.component').then(m => m.AdminStatsComponent) },
       { path: 'gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent) },
+      { path: 'transaksies', loadComponent: () => import('./components/admin-transactions/admin-transactions.component').then(m => m.AdminTransactionsComponent) },
       { path: 'telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent) },
+      { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
     ]
   },
   { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [authGuard] },
