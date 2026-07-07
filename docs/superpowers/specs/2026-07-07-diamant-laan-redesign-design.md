@@ -260,6 +260,10 @@ Three-zone layout replacing the current `hero-content` split.
   <h1 class="hero-title">
     <span class="hero-title-black">Stads</span><span class="hero-title-orange">bou</span><span class="hero-title-black">fonds</span>
   </h1>
+  <div class="title-underline" aria-hidden="true">
+    <span class="title-underline--black"></span>
+    <span class="title-underline--orange"></span>
+  </div>
    <p class="hero-subtitle">
      <span class="hero-subtitle-muted">van</span> grondpad /
      <span class="hero-subtitle-muted">tot</span> <span class="hero-subtitle-accent">teerpad</span>
@@ -281,11 +285,24 @@ Key styling rules:
 .hero-title-black { color: var(--text-body); }
 .hero-title-orange { color: var(--ob-orange); }  /* "bou" */
 
+/* Dual underline bar below the title */
+.title-underline {
+  display: flex;
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  margin: 0.75rem 0 1rem;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.title-underline--black  { flex: 1.15; background: var(--text-body); }
+.title-underline--orange { flex: 1;    background: var(--ob-orange); }
+
 .hero-subtitle-accent { color: var(--ob-orange); }  /* "teerpad" */
 .hero-subtitle-muted { color: var(--text-body); }    /* "van", "tot" */
 ```
 
-**Remove** the old `title-underline` and `bouer-underline` decorative underline bars.
+**Keep** the dual `title-underline` bar below the main title (black + orange) as part of the existing Stadsboufonds wordmark design. **Remove** only the `bouer-underline` from the old bottom-center "bou saam" text (because that text is removed).
 
 #### 3.3.2 Right Logo
 
@@ -997,7 +1014,7 @@ If any combination fails, adjust the darker/lighter variant accordingly.
 - [ ] Remove `canvasRef` and `heroRef` `@ViewChild` declarations (keep `heroRef` if still needed for any reason).
 - [ ] Remove `<div class="hero-brackets">` SVG block and `brackets` array.
 - [ ] Remove `<div class="hero-bottom">` "bou saam" block.
-- [ ] Remove `<div class="title-underline">` and `<div class="bouer-underline">`.
+- [ ] Keep `<div class="title-underline">` (black + orange dual bar). Remove only `<div class="bouer-underline">`.
 - [ ] Add cloud layer `<div>` with three `<img>` elements.
 - [ ] Add cloud animation CSS (`@keyframes cloud-drift`, `.cloud--slow/medium/fast`).
 - [ ] Add `@media (prefers-reduced-motion)` rule for clouds.
@@ -1008,7 +1025,7 @@ If any combination fails, adjust the darker/lighter variant accordingly.
 - [ ] Build scroll-down cue (chevron + "Sien meer").
 - [ ] Add CTA `computed()` or getter logic for `/kaart` vs `/meld-aan`.
 - [ ] Remove `<section class="actions-band">` (and its `ShareButtonComponent` import if no longer used elsewhere).
-- [ ] Remove old hero CSS classes (`.hero-top`, `.hero-brand`, `.orania`, `.brand-title`, `.stads/.bou/.fonds`, `.title-underline`, `.hero-tagline`, `.hero-brackets`, `.bracket`, `.hero-bottom`, `.bottom-line`, `.stads-inline`, `.bouer-underline`).
+- [ ] Remove old hero CSS classes (`.hero-top`, `.hero-brand`, `.orania`, `.brand-title`, `.stads/.bou/.fonds`, `.hero-tagline`, `.hero-brackets`, `.bracket`, `.hero-bottom`, `.bottom-line`, `.stads-inline`, `.bouer-underline`). Keep `.title-underline`.
 
 ### Phase 4 — Navbar
 
