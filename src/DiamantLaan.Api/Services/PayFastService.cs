@@ -283,8 +283,7 @@ public class PayFastService : IPayFastService
         {
             if (key.Equals("signature", StringComparison.OrdinalIgnoreCase))
                 continue;
-            if (string.IsNullOrEmpty(value))
-                continue;
+            // PayFast's ITN signature includes empty fields as "key=" in the string.
             sb.Append(key).Append('=').Append(value).Append('&');
         }
         if (sb.Length > 0)

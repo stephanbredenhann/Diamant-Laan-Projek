@@ -392,4 +392,27 @@ public class PayFastServiceTests
         Assert.False(result.IsValid);
         Assert.Equal("Server confirmation failed", result.Error);
     }
+
+    [Fact]
+    public async Task VerifyItnAsync_WithEmptyFields_ReturnsValid()
+    {
+        // Real PayFast ITN payloads include empty optional fields as "key=" and the
+        // signature is computed over them. See issue: empty fields must not be skipped.
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+        };
+
+        var service = CreateServiceWithResponse(settings, "VALID");
+        var rawBody = "m_payment_id=12&pf_payment_id=3257838&payment_status=COMPLETE&item_name=Diamant+Laan+-+Aankoop+%2312&item_description=&amount_gross=500.00&amount_fee=-11.50&amount_net=488.50&custom_str1=&custom_str2=&custom_str3=&custom_str4=&custom_str5=&custom_int1=&custom_int2=&custom_int3=&custom_int4=&custom_int5=&name_first=Admin&name_last=Diamant&email_address=admin%40diamantlaan.co.za&merchant_id=10000100&signature=ab60487e69eaa0296a835f8225d96fe1";
+
+        var result = await service.VerifyItnAsync(rawBody, 500.00m);
+
+        Assert.True(result.IsValid);
+        Assert.Equal("COMPLETE", result.PaymentStatus);
+        Assert.Equal("3257838", result.PayFastPaymentId);
+        Assert.Equal("12", result.MerchantPaymentId);
+    }
 }
