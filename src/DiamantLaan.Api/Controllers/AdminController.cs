@@ -20,13 +20,36 @@ public class AdminController : ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly IWebHostEnvironment _env;
     private readonly AuditLogService _audit;
+    private readonly SiteSettingsService _siteSettings;
 
-    public AdminController(AppDbContext db, UserManager<User> userManager, IWebHostEnvironment env, AuditLogService audit)
+    public AdminController(
+        AppDbContext db,
+        UserManager<User> userManager,
+        IWebHostEnvironment env,
+        AuditLogService audit,
+        SiteSettingsService siteSettings)
     {
         _db = db;
         _userManager = userManager;
         _env = env;
         _audit = audit;
+        _siteSettings = siteSettings;
+    }
+
+    [HttpPut("settings/home-stats")]
+    public async Task<IActionResult> UpdateHomeStatsSettings([FromBody] UpdateHomeStatsSettingsDto dto)
+    {
+        if (dto == null)
+            return BadRequest(new { message = "Instellings mag nie leeg wees nie." });
+
+        var result = await _siteSettings.UpdateHomeStatsSettingsAsync(dto);
+
+        await _audit.LogAsync(
+            User,
+            "UpdateHomeStatsSettings",
+            $"ShowStatsSection={result.ShowStatsSection}, ShowTotalRaised={result.ShowTotalRaised}");
+
+        return Ok(result);
     }
 
     [HttpPut("squares/status")]

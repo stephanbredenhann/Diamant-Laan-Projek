@@ -32,15 +32,19 @@ public class SiteSettingsService
 
     public async Task<HomeStatsSettingsDto> UpdateHomeStatsSettingsAsync(UpdateHomeStatsSettingsDto dto)
     {
-        var settings = await _db.SiteSettings.FindAsync(1);
+        var settings = await _db.SiteSettings.FirstOrDefaultAsync();
         if (settings == null)
         {
             settings = new SiteSettings { Id = 1 };
             _db.SiteSettings.Add(settings);
         }
 
-        settings.ShowStatsSection = dto.ShowStatsSection;
-        settings.ShowTotalRaised = dto.ShowTotalRaised;
+        if (dto.ShowStatsSection.HasValue)
+            settings.ShowStatsSection = dto.ShowStatsSection.Value;
+
+        if (dto.ShowTotalRaised.HasValue)
+            settings.ShowTotalRaised = dto.ShowTotalRaised.Value;
+
         await _db.SaveChangesAsync();
 
         return new HomeStatsSettingsDto
