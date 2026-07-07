@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
@@ -40,18 +40,20 @@ import { AuthService } from '../../../services/auth.service';
           }
         </div>
       </div>
-      @if (menuOpen()) {
-        <div class="backdrop" (click)="menuOpen.set(false)"></div>
-      }
     </nav>
+    @if (menuOpen()) {
+      <div class="backdrop" (click)="menuOpen.set(false)"></div>
+    }
   `,
   styles: [`
     .navbar {
       background: var(--surface);
-      border-bottom: 1px solid #E5E7EB;
+      border-bottom: 1px solid var(--color-border);
       padding: 0;
       position: fixed;
       top: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
     }
     .navbar-inner {
@@ -126,23 +128,30 @@ import { AuthService } from '../../../services/auth.service';
       white-space: nowrap;
       padding: 0.5rem 0.75rem;
     }
-    .btn-nav {
+    .desktop-only {
+      display: inline;
+    }
+    .navbar-links > a.btn-nav {
       background: var(--ob-orange);
-      color: #FFFFFF !important;
-      padding: 0.45rem 1.1rem !important;
-      border-radius: var(--radius-sm) !important;
-      font-weight: 600 !important;
+      color: var(--text-body);
+      padding: 0.45rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
       transition: background 0.2s;
     }
-    .btn-nav:hover {
-      background: #D96E10 !important;
-      color: #FFFFFF !important;
+    .navbar-links > a.btn-nav:hover {
+      background: #D96E10;
+      color: var(--text-body);
+    }
+    .navbar-links > a.btn-nav.active {
+      color: var(--text-body);
+      background: var(--ob-orange);
     }
     .btn-logout {
-      font-family: var(--font-heading);
+      font-family: var(--font-body);
       background: transparent;
       color: var(--text-muted);
-      border: 1px solid #E5E7EB;
+      border: 1px solid var(--color-border);
       padding: 0.35rem 0.75rem;
       font-size: 0.75rem;
       font-weight: 600;
@@ -173,19 +182,19 @@ import { AuthService } from '../../../services/auth.service';
         align-items: stretch;
         gap: 0;
         padding: 0.5rem 0;
-        border-top: 1px solid #E5E7EB;
-        border-bottom: 1px solid #E5E7EB;
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
       }
       .navbar-links.open { display: flex; }
 
       .navbar-links a {
         padding: 0.75rem 1.5rem;
         font-size: 0.9375rem;
-        border-bottom: 1px solid #E5E7EB;
+        border-bottom: 1px solid var(--color-border);
       }
       .navbar-links a:hover { background: var(--bg-warm); }
 
-      .btn-nav {
+      .navbar-links > a.btn-nav {
         margin: 0.5rem 1.25rem;
         text-align: center;
         justify-content: center;
@@ -195,7 +204,7 @@ import { AuthService } from '../../../services/auth.service';
       .navbar-user {
         padding: 0.5rem 1.5rem;
         font-size: 0.875rem;
-        border-bottom: 1px solid #E5E7EB;
+        border-bottom: 1px solid var(--color-border);
       }
 
       .btn-logout {
@@ -211,7 +220,7 @@ import { AuthService } from '../../../services/auth.service';
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.2);
-        z-index: -1;
+        z-index: 99;
       }
     }
   `]
@@ -219,6 +228,11 @@ import { AuthService } from '../../../services/auth.service';
 export class NavbarComponent {
   auth = inject(AuthService);
   menuOpen = signal(false);
+
+  @HostListener('document:keydown.escape')
+  closeMenu() {
+    this.menuOpen.set(false);
+  }
 
   logout() {
     this.menuOpen.set(false);
