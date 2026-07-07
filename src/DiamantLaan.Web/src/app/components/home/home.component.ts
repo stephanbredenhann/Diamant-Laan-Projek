@@ -16,8 +16,6 @@ import { Subject, catchError, filter, of, switchMap, takeUntil, tap } from 'rxjs
 import { AuthService } from '../../services/auth.service';
 import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
-import { ShareButtonComponent } from '../shared/share-button/share-button.component';
-
 interface Particle {
   x: number;
   y: number;
@@ -31,12 +29,10 @@ interface Particle {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShareButtonComponent],
+  imports: [CommonModule, RouterLink],
   template: `
     <section class="hero" #heroSection>
       <img src="hero-bg.jpeg" alt="" class="hero-bg" aria-hidden="true" />
-      <canvas #particleCanvas class="particle-canvas" aria-hidden="true"></canvas>
-
       <div class="hero-content">
         <div class="hero-top">
           <div class="hero-brand">
@@ -53,55 +49,6 @@ interface Particle {
               <p><span class="accent">tot</span> teerpad</p>
             </div>
           </div>
-
-          <div class="hero-brackets" aria-hidden="true">
-            @for (b of brackets; track b.id) {
-              <svg
-                class="bracket"
-                [class.bracket-orange]="b.orange"
-                [style.top.%]="b.top"
-                [style.right.%]="b.right"
-                [style.width.px]="b.size"
-                [style.height.px]="b.size"
-                [style.transform]="'rotate(' + b.rotate + 'deg)'"
-                viewBox="0 0 40 40"
-                fill="none"
-              >
-                <path d="M0 0v40h8V8h32V0H0z" fill="currentColor" />
-              </svg>
-            }
-          </div>
-        </div>
-
-        <div class="hero-bottom">
-          <p class="bottom-line">
-            <span class="bou">bou</span> saam en word 'n
-            <span class="stads-inline">Stads</span><span class="bou">bouer</span>
-          </p>
-          <div class="bouer-underline" aria-hidden="true">
-            <span class="line-black"></span>
-            <span class="line-orange"></span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="actions-band">
-      <div class="container actions-inner">
-        <p class="actions-lead">Jy bou 'n stukkie pad in die stad.</p>
-        <div class="hero-actions">
-          <a routerLink="/kaart" class="btn btn-primary btn-lg">
-            Sien kaart &amp; kies jou blokkie
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          @if (!auth.currentUser()) {
-            <a routerLink="/registreer" class="btn btn-outline btn-lg">Word 'n Stadsbouer</a>
-          }
-          <app-share-button
-            label="Deel hierdie projek"
-            [url]="siteUrl"
-            text="Dra by aan Diamant Laan — help ons om die pad te teer!"
-          />
         </div>
       </div>
     </section>
@@ -161,20 +108,6 @@ interface Particle {
               <p>Kyk hoe jou blok vanuit 'n grondpad tot teerpad verander. Sien die impak wat jy maak.</p>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta-section">
-      <div class="container">
-        <div class="cta-card">
-          <img src="stadsboufonds-logo-white.png" alt="" class="cta-logo" aria-hidden="true" />
-          <h2>Bou saam aan die stad</h2>
-          <p>Die Oewer verdien 'n teerpad — dis die hart van ons toeriste gemeenskap. Jy maak dit saam met ons moontlik.</p>
-          <a routerLink="/kaart" class="btn btn-primary btn-lg">
-            Begin <span class="bou-cta">BOU</span>!
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
         </div>
       </div>
     </section>
@@ -648,7 +581,6 @@ interface Particle {
   `],
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('particleCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('heroSection') heroRef!: ElementRef<HTMLElement>;
   @ViewChildren('stepEl') stepElements!: QueryList<ElementRef<HTMLElement>>;
 
@@ -662,16 +594,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   progress = 0;
   totalRaised = 0;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
-
-  brackets = [
-    { id: 1, top: 4, right: 6, size: 44, orange: true, rotate: 0 },
-    { id: 2, top: 4, right: 22, size: 40, orange: false, rotate: 0 },
-    { id: 3, top: 4, right: 38, size: 44, orange: true, rotate: 0 },
-    { id: 4, top: 28, right: 6, size: 40, orange: false, rotate: 0 },
-    { id: 5, top: 28, right: 22, size: 44, orange: true, rotate: 0 },
-    { id: 6, top: 28, right: 38, size: 40, orange: false, rotate: 0 },
-    { id: 7, top: 52, right: 14, size: 36, orange: true, rotate: 0 },
-  ];
 
   private particles: Particle[] = [];
   private animationFrameId = 0;
@@ -743,6 +665,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initParticles() {
+    // Canvas element was removed during template cleanup — particle effect is disabled.
+    return;
+    /* dead code preserved for reference
     const canvas = this.canvasRef?.nativeElement;
     const hero = this.heroRef?.nativeElement;
     if (!canvas || !hero) return;
@@ -830,6 +755,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.animationFrameId = requestAnimationFrame(animate);
     });
+    */
   }
 
   private setupMouseTracking() {
