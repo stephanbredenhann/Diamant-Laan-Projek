@@ -316,7 +316,7 @@ Key styling rules:
 ```html
 <div class="hero-logo">
   <img
-    src="for redesign/Orania beweging/logo-removebg-preview.png"
+    src="ob-logo.png"
     alt="Orania Beweging"
     class="hero-ob-logo"
   />
@@ -515,7 +515,7 @@ If the share button is still desired, relocate it to a new position outside the 
 | Position | Label | Route / Action | Auth Required |
 |----------|-------|----------------|---------------|
 | Left (brand) | Home icon + "Tuis" | `/` | No |
-| Left | Kaart | `/kaart` | Yes |
+| Left | Kaart | `/kaart` | No (public; map page redirects unauthenticated users to login when they try to select a square) |
 | Left | My Blokke | `/my-blokke` | Yes |
 | Left | My Transaksies | `/my-transaksies` | Yes |
 | Right (admin) | Admin Portaal | `/admin` | Admin only |
@@ -1019,7 +1019,7 @@ If any combination fails, adjust the darker/lighter variant accordingly.
 - [ ] Convert `cloud-1.eps` → `public/clouds/cloud-1.png` (or `.svg`).
 - [ ] Convert `cloud-2.eps` → `public/clouds/cloud-2.png` (or `.svg`).
 - [ ] Convert `cloud-3.eps` → `public/clouds/cloud-3.png` (or `.svg`).
-- [ ] Verify OB logo (`logo-removebg-preview.png`) is accessible at its current path.
+- [ ] Copy OB logo (`logo-removebg-preview.png`) to `public/ob-logo.png` (MANDATORY — hero template references `ob-logo.png`).
 
 ### Phase 3 — Hero Section
 
@@ -1139,7 +1139,8 @@ After the redesign, remove the following from `HomeComponent`:
 | `src/DiamantLaan.Web/public/clouds/cloud-1.png` | New — converted from EPS |
 | `src/DiamantLaan.Web/public/clouds/cloud-2.png` | New — converted from EPS |
 | `src/DiamantLaan.Web/public/clouds/cloud-3.png` | New — converted from EPS |
-| `for redesign/Orania beweging/logo-removebg-preview.png` | No change — referenced from hero |
+| `for redesign/Orania beweging/logo-removebg-preview.png` | Source — copied to `public/ob-logo.png` (mandatory) |
+| `src/DiamantLaan.Web/public/ob-logo.png` | New — copied from source for reliable asset serving |
 | `src/DiamantLaan.Web/public/hero-bg.jpeg` | No change — kept as-is |
 
 ---
