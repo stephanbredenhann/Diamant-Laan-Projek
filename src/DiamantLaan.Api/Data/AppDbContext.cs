@@ -17,10 +17,18 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ProgressImage> ProgressImages => Set<ProgressImage>();
     public DbSet<ProgressImageSquare> ProgressImageSquares => Set<ProgressImageSquare>();
+    public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<SiteSettings>().HasData(new SiteSettings
+        {
+            Id = 1,
+            ShowStatsSection = true,
+            ShowTotalRaised = true
+        });
 
         builder.Entity<PurchaseSquare>()
             .HasKey(ps => new { ps.PurchaseId, ps.SquareId });
