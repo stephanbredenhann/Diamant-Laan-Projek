@@ -72,6 +72,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
+builder.Services.AddScoped<SiteSettingsService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 
 var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSettings>()
