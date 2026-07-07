@@ -153,7 +153,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .dot.busy { background: #8B7355; }
     .dot.done { background: #6B7B3C; }
     .dot.selected { background: #F5A623; border: 2px solid #3D2B1F; box-sizing: border-box; }
-    .map-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .map-layout { display: flex; gap: 1.25rem; align-items: flex-start; z-index: auto; }
     .map-layout app-road-map { flex: 1; min-width: 0; }
     .sidebar { width: 260px; flex-shrink: 0; }
     .sidebar-card {
@@ -186,6 +186,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .selection-count, .selection-total {
       flex: 1;
       background: var(--color-cream);
+      border: 2px solid var(--ob-orange);
       border-radius: var(--radius-sm);
       padding: 0.625rem 0.75rem;
       text-align: center;
@@ -203,7 +204,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
       font-family: var(--font-heading);
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--color-terracotta);
+      color: var(--ob-orange);
       line-height: 1.1;
     }
     .label {
@@ -260,17 +261,17 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .empty { font-size: 0.75rem; color: var(--color-muted); }
     .owned-chip {
       display: inline-block;
-      background: var(--color-cream);
-      color: var(--color-terracotta);
+      background: var(--ob-blue);
+      color: #FFFFFF;
       font-family: var(--font-heading);
       font-size: 0.6875rem;
       font-weight: 600;
-      padding: 0.125rem 0.5rem;
-      border-radius: 4px;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
       margin: 2px;
     }
     @media (max-width: 768px) {
-      .map-layout { flex-direction: column; }
+      .map-layout { flex-direction: column; z-index: 1; }
       .sidebar { width: 100%; }
       .sidebar-card { position: static; }
     }

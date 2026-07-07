@@ -45,9 +45,19 @@
   --color-muted:       var(--text-muted);
   --color-info:        var(--ob-orange);
   --radius:            var(--radius-md);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow: 0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+  --color-terracotta:      #C67B5C;
+  --color-terracotta-dark: #B05A40;
+  --color-olive:           #6B7B3C;
+  --color-olive-dark:      #5A6A32;
+  --color-cream:           #F5F0E1;
+  --color-sand:            #D4C4A8;
+  --color-sand-light:      #E8DCC8;
+  --color-brown:           #3D2B1F;
+  --color-warm-clay:       #B5651D;
+  --shadow-sm:   0 1px 3px rgba(61, 43, 31, 0.08);
+  --shadow:      0 4px 12px rgba(61, 43, 31, 0.1);
+  --shadow-lg:   0 8px 24px rgba(61, 43, 31, 0.12);
 }
 
 *, *::before, *::after {
