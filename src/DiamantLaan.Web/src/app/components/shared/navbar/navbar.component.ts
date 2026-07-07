@@ -50,10 +50,8 @@ import { AuthService } from '../../../services/auth.service';
       background: var(--surface);
       border-bottom: 1px solid var(--color-border);
       padding: 0;
-      position: fixed;
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
       z-index: 100;
     }
     .navbar-inner {

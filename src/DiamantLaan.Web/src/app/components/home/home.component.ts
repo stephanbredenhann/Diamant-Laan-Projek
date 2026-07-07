@@ -42,8 +42,7 @@ import { SettingsService } from '../../services/settings.service';
               <span class="title-underline--orange"></span>
             </div>
             <p class="hero-subtitle">
-              <span class="hero-subtitle-muted">van</span> grondpad /
-              <span class="hero-subtitle-muted">tot</span> <span class="hero-subtitle-accent">teerpad</span>
+              van grondpad tot <span class="hero-subtitle-accent">teerpad</span>
             </p>
           </div>
 
@@ -60,18 +59,18 @@ import { SettingsService } from '../../services/settings.service';
         <!-- Bottom-center pill CTA -->
         <div class="hero-cta">
           <a [routerLink]="ctaLink" class="pill-cta">Begin <span class="pill-cta-em">Bou</span>!</a>
-          <div class="scroll-cue" aria-hidden="true">
-            <svg class="scroll-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <a class="scroll-cue" (click)="scrollToStats($event)" aria-label="Sien meer, blaai af na statistieke">
+            <svg class="scroll-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9" />
             </svg>
             <span class="scroll-label">Sien meer</span>
-          </div>
+          </a>
         </div>
       </div>
     </section>
 
     @if (showStatsSection) {
-      <section class="stats-section">
+      <section id="stats-section" class="stats-section">
         <div class="container">
           <div class="stats-grid">
             <div class="stat-card">
@@ -231,7 +230,7 @@ import { SettingsService } from '../../services/settings.service';
     .hero-inner {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       width: 100%;
       gap: 2rem;
       flex: 1;
@@ -244,9 +243,9 @@ import { SettingsService } from '../../services/settings.service';
 
     .hero-label {
       font-family: var(--font-heading);
-      font-size: 0.8125rem;
+      font-size: 1rem;
       font-weight: 700;
-      letter-spacing: 0.28em;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
       color: var(--ob-orange);
       margin-bottom: 0.5rem;
@@ -291,13 +290,14 @@ import { SettingsService } from '../../services/settings.service';
       flex-shrink: 0;
       display: flex;
       align-items: center;
+      margin-top: 0.5rem;
     }
 
     .hero-ob-logo {
       height: auto;
-      max-height: 180px;
+      max-height: 140px;
       width: auto;
-      max-width: 240px;
+      max-width: 180px;
       object-fit: contain;
     }
 
@@ -349,7 +349,13 @@ import { SettingsService } from '../../services/settings.service';
       align-items: center;
       gap: 0.25rem;
       margin-top: 1.5rem;
-      color: var(--text-muted);
+      color: var(--ob-orange);
+      text-decoration: none;
+    }
+
+    .scroll-cue:hover {
+      color: #D96E10;
+      cursor: pointer;
     }
 
     .scroll-chevron {
@@ -545,13 +551,22 @@ import { SettingsService } from '../../services/settings.service';
       }
 
       .hero-ob-logo {
-        max-height: 120px;
-        max-width: 160px;
+        max-height: 100px;
+        max-width: 140px;
+      }
+
+      .hero-logo {
+        margin-top: 0;
+        order: -1;
       }
 
       .hero-text {
         text-align: left;
         width: 100%;
+      }
+
+      .hero-label {
+        font-size: 0.875rem;
       }
 
       .stats-grid {
@@ -610,6 +625,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get ctaLink(): string {
     return this.auth.currentUser() ? '/kaart' : '/meld-aan';
+  }
+
+  scrollToStats(event: Event) {
+    event.preventDefault();
+    const el = document.getElementById('stats-section');
+    el?.scrollIntoView({ behavior: 'smooth' });
   }
 
   ngOnInit() {
