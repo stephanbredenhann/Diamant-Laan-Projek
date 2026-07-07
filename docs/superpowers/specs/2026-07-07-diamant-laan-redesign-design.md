@@ -255,7 +255,7 @@ Three-zone layout replacing the current `hero-content` split.
 
 ```html
 <div class="hero-text">
-  <!-- "ORANIA" is a simple text label — NOT a bordered pill or badge. Plain text with uppercase + letter-spacing only. -->
+  <!-- "ORANIA" is a simple text label — NOT a bordered pill or badge. Plain text with uppercase + letter-spacing only, in OB orange. -->
   <p class="hero-label">ORANIA</p>
   <h1 class="hero-title">
     <span class="hero-title-black">Stads</span><span class="hero-title-orange">bou</span><span class="hero-title-black">fonds</span>
@@ -438,6 +438,16 @@ Balance the logo size to sit comfortably beside the text block. On desktop, the 
   width: 100%;
   gap: 2rem;
   flex: 1;
+}
+
+.hero-label {
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ob-orange);
+  margin-bottom: 0.5rem;
 }
 
 .hero-cta {
