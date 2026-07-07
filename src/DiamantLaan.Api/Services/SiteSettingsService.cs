@@ -32,6 +32,8 @@ public class SiteSettingsService
 
     public async Task<HomeStatsSettingsDto> UpdateHomeStatsSettingsAsync(UpdateHomeStatsSettingsDto dto)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+
         var settings = await _db.SiteSettings.FirstOrDefaultAsync();
         if (settings == null)
         {
