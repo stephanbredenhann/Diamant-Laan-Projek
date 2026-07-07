@@ -599,7 +599,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   showTotalRaised = true;
   progress = 0;
   totalRaised = 0;
-  siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   private intersectionObserver?: IntersectionObserver;
   private reducedMotion = false;
