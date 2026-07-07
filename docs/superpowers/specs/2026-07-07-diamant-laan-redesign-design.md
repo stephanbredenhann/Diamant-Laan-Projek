@@ -122,8 +122,8 @@ Frutiger is a commercial font. If a license is available, serve it locally via `
 | Element | Font | Weight | Size (desktop) | Notes |
 |---------|------|--------|----------------|-------|
 | Hero brand title ("Stadsboufonds") | Frutiger | 900 | `clamp(2.5rem, 7vw, 4.5rem)` | Unchanged from current |
-| Hero "ORANIA" label | Frutiger | 400 | `0.8125rem` | Uppercase, letter-spacing 0.28em |
-| Hero tagline ("van grondpad / tot teerpad") | Frutiger | 400 | `clamp(1.125rem, 2.8vw, 1.625rem)` | |
+| Hero "ORANIA" label | Frutiger | 700 | `0.8125rem` | Uppercase, letter-spacing 0.28em, OB orange |
+| Hero tagline ("van grondpad / tot teerpad") | Frutiger | 600 | `clamp(1.125rem, 2.8vw, 1.625rem)` | Increased weight for visibility |
 | Section headings | Frutiger | 800 | `1.75rem` | |
 | Step card headings | Frutiger | 700 | `1.25rem` | |
 | Body text | Montserrat | 400 | `1rem` | |
@@ -298,6 +298,13 @@ Key styling rules:
 .title-underline--black  { flex: 1.15; background: var(--text-body); }
 .title-underline--orange { flex: 1;    background: var(--ob-orange); }
 
+.hero-subtitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1.125rem, 2.8vw, 1.625rem);
+  font-weight: 600;
+  color: var(--text-body);
+}
+
 .hero-subtitle-accent { color: var(--ob-orange); }  /* "teerpad" */
 .hero-subtitle-muted { color: var(--text-body); }    /* "van", "tot" */
 ```
@@ -443,7 +450,7 @@ Balance the logo size to sit comfortably beside the text block. On desktop, the 
 .hero-label {
   font-family: var(--font-heading);
   font-size: 0.8125rem;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--ob-orange);
