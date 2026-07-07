@@ -96,12 +96,12 @@ button, .btn {
 
 .btn-primary {
   background: var(--ob-orange);
-  color: #FFFFFF;
+  color: var(--text-body);
   box-shadow: 0 4px 14px rgba(245, 130, 32, 0.25);
 }
 .btn-primary:hover {
   background: #D96E10;
-  color: #FFFFFF;
+  color: var(--text-body);
   box-shadow: 0 6px 20px rgba(245, 130, 32, 0.35);
 }
 
@@ -113,11 +113,9 @@ button, .btn {
   letter-spacing: 0.05em;
   padding: 0.875rem 2.5rem;
 }
-.btn-pill:hover {
-  background: #D96E10;
-  transform: translateY(-1px);
-}
+.btn-pill:hover,
 .btn-pill:focus-visible {
+  background: #D96E10;
   transform: translateY(-1px);
 }
 
