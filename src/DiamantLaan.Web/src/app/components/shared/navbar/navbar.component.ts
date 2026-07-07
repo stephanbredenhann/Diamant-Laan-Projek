@@ -1,16 +1,20 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive],
   template: `
     <nav class="navbar">
       <div class="container navbar-inner">
-        <a routerLink="/" class="navbar-brand">
-          <img src="stadsboufonds-logo-orange.png" alt="Orania Stadsboufonds" class="brand-logo" />
+        <a routerLink="/" class="nav-brand" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Tuis
         </a>
 
         <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-label]="menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop'">
@@ -22,12 +26,12 @@ import { AuthService } from '../../../services/auth.service';
         </button>
 
         <div class="navbar-links" [class.open]="menuOpen()">
-          <a routerLink="/kaart" (click)="menuOpen.set(false)">Kaart</a>
+          <a routerLink="/kaart" routerLinkActive="active" (click)="menuOpen.set(false)">Kaart</a>
           @if (auth.currentUser(); as user) {
-            <a routerLink="/my-blokke" (click)="menuOpen.set(false)">My Blokke</a>
-            <a routerLink="/my-transaksies" (click)="menuOpen.set(false)">My Transaksies</a>
+            <a routerLink="/my-blokke" routerLinkActive="active" (click)="menuOpen.set(false)">My Blokke</a>
+            <a routerLink="/my-transaksies" routerLinkActive="active" (click)="menuOpen.set(false)">My Transaksies</a>
             @if (auth.isAdmin()) {
-              <a routerLink="/admin" (click)="menuOpen.set(false)">Admin Portaal</a>
+              <a routerLink="/admin" routerLinkActive="active" (click)="menuOpen.set(false)">Admin Portaal</a>
             }
             <span class="navbar-user desktop-only">{{ user.firstName }}</span>
             <button class="btn-logout" (click)="logout()">Teken Uit</button>
@@ -43,12 +47,12 @@ import { AuthService } from '../../../services/auth.service';
   `,
   styles: [`
     .navbar {
-      background: var(--color-surface);
-      border-bottom: 2px solid var(--color-border);
+      background: var(--surface);
+      border-bottom: 1px solid #E5E7EB;
       padding: 0;
-      position: sticky;
+      position: fixed;
       top: 0;
-      z-index: 1000;
+      z-index: 100;
     }
     .navbar-inner {
       display: flex;
@@ -56,23 +60,34 @@ import { AuthService } from '../../../services/auth.service';
       align-items: center;
       padding: 0.5rem 0;
     }
-    .navbar-brand {
-      display: flex;
+
+    .nav-brand {
+      display: inline-flex;
       align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
       text-decoration: none;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: color 0.15s ease, background 0.15s ease;
       flex-shrink: 0;
     }
-    .brand-logo {
-      height: 32px;
-      width: auto;
-      display: block;
+    .nav-brand:hover {
+      color: var(--ob-blue);
+      background: rgba(3, 78, 162, 0.06);
+    }
+    .nav-brand.active {
+      color: var(--ob-blue);
     }
 
     .hamburger {
       display: none;
       background: none;
       border: none;
-      color: var(--color-text);
+      color: var(--text-body);
       cursor: pointer;
       padding: 0.25rem;
       margin: 0;
@@ -83,50 +98,62 @@ import { AuthService } from '../../../services/auth.service';
     .navbar-links {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.25rem;
     }
     .navbar-links a {
-      font-family: var(--font-heading);
-      color: var(--color-text-muted);
-      font-size: 0.8125rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
       font-weight: 600;
+      color: var(--text-muted);
       text-decoration: none;
-      transition: color 0.2s;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: color 0.15s ease, background 0.15s ease;
       white-space: nowrap;
     }
-    .navbar-links a:hover { color: var(--color-text); text-decoration: none; }
+    .navbar-links a:hover {
+      color: var(--ob-blue);
+      background: rgba(3, 78, 162, 0.06);
+      text-decoration: none;
+    }
+    .navbar-links a.active {
+      color: var(--ob-blue);
+    }
     .navbar-user {
       font-family: var(--font-body);
       font-size: 0.8125rem;
-      color: var(--color-muted);
+      color: var(--text-muted);
       white-space: nowrap;
+      padding: 0.5rem 0.75rem;
     }
     .btn-nav {
-      background: var(--color-orange);
-      color: #fff !important;
-      padding: 0.45rem 1.1rem;
+      background: var(--ob-orange);
+      color: #FFFFFF !important;
+      padding: 0.45rem 1.1rem !important;
+      border-radius: var(--radius-sm) !important;
       font-weight: 600 !important;
       transition: background 0.2s;
     }
     .btn-nav:hover {
-      background: var(--color-orange-dark);
-      color: #fff !important;
+      background: #D96E10 !important;
+      color: #FFFFFF !important;
     }
     .btn-logout {
       font-family: var(--font-heading);
       background: transparent;
-      color: var(--color-text-muted);
-      border: 2px solid var(--color-border);
+      color: var(--text-muted);
+      border: 1px solid #E5E7EB;
       padding: 0.35rem 0.75rem;
       font-size: 0.75rem;
       font-weight: 600;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
     .btn-logout:hover {
-      color: var(--color-text);
-      border-color: var(--color-text);
+      color: var(--ob-blue);
+      border-color: var(--ob-blue);
     }
 
     .backdrop { display: none; }
@@ -141,22 +168,22 @@ import { AuthService } from '../../../services/auth.service';
         top: 100%;
         left: 0;
         right: 0;
-        background: var(--color-surface);
+        background: var(--surface);
         flex-direction: column;
         align-items: stretch;
         gap: 0;
         padding: 0.5rem 0;
-        border-top: 2px solid var(--color-border);
-        border-bottom: 2px solid var(--color-border);
+        border-top: 1px solid #E5E7EB;
+        border-bottom: 1px solid #E5E7EB;
       }
       .navbar-links.open { display: flex; }
 
       .navbar-links a {
         padding: 0.75rem 1.5rem;
         font-size: 0.9375rem;
-        border-bottom: 1px solid var(--color-border);
+        border-bottom: 1px solid #E5E7EB;
       }
-      .navbar-links a:hover { background: var(--color-bg); }
+      .navbar-links a:hover { background: var(--bg-warm); }
 
       .btn-nav {
         margin: 0.5rem 1.25rem;
@@ -168,7 +195,7 @@ import { AuthService } from '../../../services/auth.service';
       .navbar-user {
         padding: 0.5rem 1.5rem;
         font-size: 0.875rem;
-        border-bottom: 1px solid var(--color-border);
+        border-bottom: 1px solid #E5E7EB;
       }
 
       .btn-logout {
