@@ -1,39 +1,53 @@
 :root {
-  --color-brown: #3D2B1F;
-  --color-terracotta: #C67B5C;
-  --color-terracotta-dark: #B05A40;
-  --color-olive: #6B7B3C;
-  --color-olive-dark: #5A6A32;
-  --color-sand: #D4C4A8;
-  --color-sand-light: #E8DCC8;
-  --color-cream: #F5F0E1;
-  --color-warm-clay: #B5651D;
-  --color-muted: #6D6968;
-  --color-muted-light: #8A8685;
-  --color-bg: #E3E3E3;
-  --color-surface: #FFFFFF;
-  --color-border: #C8C8C8;
-  --color-text: #000000;
-  --color-text-muted: #6D6968;
-  --color-success: #6B7B3C;
-  --color-warning: #B5651D;
-  --color-info: #EF7D00;
-  --color-gray: #E3E3E3;
-  --color-nie-begin: #D4C4A8;
-  --color-verkoop: #C67B5C;
-  --color-voorberei: #B5651D;
-  --color-besig-teer: #8B7355;
-  --color-klaar: #6B7B3C;
-  --color-orange: #EF7D00;
-  --color-orange-dark: #CC6A00;
-  --color-dark: #000000;
-  --font-heading: 'Montserrat', sans-serif;
-  --font-body: 'Questrial', 'Century Gothic', 'CenturyGothic', 'AppleGothic', sans-serif;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow-sm: 0 1px 3px rgba(61,43,31,0.08);
-  --shadow: 0 4px 12px rgba(61,43,31,0.1);
-  --shadow-lg: 0 8px 24px rgba(61,43,31,0.12);
+  /* === Orania Beweging Brand Colors === */
+  --ob-orange: #F58220;
+  --ob-blue:   #034EA2;
+  --ob-yellow: #FBCA0E;
+  --ob-lime:   #BED738;
+  --ob-black:  #000000;
+
+  /* === Semantic Mapping === */
+  --color-primary:    var(--ob-orange);
+  --color-primary-hover: #D96E10;
+  --color-accent:     var(--ob-blue);
+  --color-accent-hover: #023A7A;
+  --color-highlight:  var(--ob-yellow);
+
+  /* === Text === */
+  --text-body:  #1A1A1A;
+  --text-muted: #6B7280;
+
+  /* === Backgrounds === */
+  --bg-warm:  #FDFBF7;
+  --surface:  #FFFFFF;
+
+  /* === Borders & Radii === */
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+
+  /* === Shadows === */
+  --shadow-soft: 0 8px 30px rgba(3, 78, 162, 0.08);
+
+  /* === Typography === */
+  --font-heading: 'Frutiger', 'Arial', 'Helvetica Neue', sans-serif;
+  --font-body:    'Montserrat', sans-serif;
+
+  /* === Legacy compat (remove after full migration) === */
+  --color-orange:      var(--ob-orange);
+  --color-orange-dark: #D96E10;
+  --color-dark:        var(--ob-black);
+  --color-bg:          var(--bg-warm);
+  --color-surface:     var(--surface);
+  --color-text:        var(--text-body);
+  --color-text-muted:  var(--text-muted);
+  --color-border:      #D1D5DB;
+  --color-muted:       var(--text-muted);
+  --color-info:        var(--ob-orange);
+  --radius:            var(--radius-md);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 *, *::before, *::after {
@@ -51,14 +65,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 600;
   line-height: 1.25;
 }
 
-a { color: var(--color-orange); text-decoration: none; }
-a:hover { color: var(--color-orange-dark); }
+a { color: var(--ob-orange); text-decoration: none; }
+a:hover { color: #D96E10; }
 
 button, .btn {
   font-family: var(--font-heading);
@@ -76,33 +95,49 @@ button, .btn {
 }
 
 .btn-primary {
-  background: var(--color-orange);
-  color: #fff;
-  box-shadow: none;
+  background: var(--ob-orange);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(245, 130, 32, 0.25);
 }
 .btn-primary:hover {
-  background: var(--color-orange-dark);
-  color: #fff;
-  box-shadow: none;
+  background: #D96E10;
+  color: #FFFFFF;
+  box-shadow: 0 6px 20px rgba(245, 130, 32, 0.35);
+}
+
+/* Pill variant for hero CTA */
+.btn-pill {
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.875rem 2.5rem;
+}
+.btn-pill:hover {
+  background: #D96E10;
+  transform: translateY(-1px);
+}
+.btn-pill:focus-visible {
+  transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
-  color: var(--color-orange);
-  border: 2px solid var(--color-orange);
+  color: var(--ob-orange);
+  border: 2px solid var(--ob-orange);
 }
 .btn-outline:hover {
-  background: rgba(239, 125, 0, 0.08);
-  color: var(--color-orange-dark);
+  background: rgba(245, 130, 32, 0.08);
+  color: #D96E10;
 }
 
 .btn-success {
-  background: var(--color-olive);
+  background: #6B7B3C;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(107,123,60,0.3);
+  box-shadow: 0 2px 8px rgba(107, 123, 60, 0.3);
 }
 .btn-success:hover {
-  background: var(--color-olive-dark);
+  background: #5A6A32;
   color: #fff;
 }
 
@@ -118,10 +153,10 @@ input, select, textarea {
   background: var(--color-surface);
   color: var(--color-text);
 }
-input::placeholder { color: var(--color-muted-light); }
+input::placeholder { color: var(--text-muted); }
 input:focus, select:focus, textarea:focus {
-  border-color: var(--color-orange);
-  box-shadow: 0 0 0 4px rgba(239, 125, 0, 0.12);
+  border-color: var(--ob-orange);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .container {
