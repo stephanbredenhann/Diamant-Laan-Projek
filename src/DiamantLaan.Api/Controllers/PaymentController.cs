@@ -33,6 +33,10 @@ public class PaymentController : ControllerBase
     [HttpPost("itn")]
     public async Task<IActionResult> Itn()
     {
+        _logger.LogInformation(
+            "PayFast ITN request received on {Scheme}://{Host}{Path}",
+            Request.Scheme, Request.Host, Request.Path);
+
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         var rawBody = await reader.ReadToEndAsync();
 
