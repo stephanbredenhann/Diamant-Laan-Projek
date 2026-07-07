@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamant Laan — Stadsboufonds</title>
+
+    <!--
+      Google Fonts: Montserrat for body copy.
+      Frutiger is a commercial font—serve locally via @font-face if licensed.
+      The font stack falls back to Arial / Helvetica Neue.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           CSS RESET & BASE
+           ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            /* ── Orania Beweging Brand Colours ── */
+            --ob-orange:   #F58220;
+            --ob-orange-hover: #D96E10;
+            --ob-blue:     #034EA2;
+            --ob-yellow:   #FBCA0E;
+
+            /* ── Semantic ── */
+            --text-body:   #1A1A1A;
+            --text-muted:  #6B7280;
+            --bg-warm:     #FDFBF7;
+            --surface:     #FFFFFF;
+
+            /* ── Radii ── */
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
+            --radius-pill: 999px;
+
+            /* ── Shadows ── */
+            --shadow-soft: 0 8px 30px rgba(3, 78, 162, 0.08);
+            --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.06);
+
+            /* ── Typography ── */
+            --font-heading: 'Frutiger', 'Arial', 'Helvetica Neue', sans-serif;
+            --font-body:    'Montserrat', sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            font-weight: 400;
+            color: var(--text-body);
+            background: var(--bg-warm);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        /* ============================================================
+           NAVBAR — Fixed, white, OB-style
+        ============================================================ */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 60px;
+            background: var(--surface);
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+        }
+
+        .navbar__inner {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar__links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            list-style: none;
+        }
+
+        .navbar__links--right {
+            margin-left: auto;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
+            transition: color 0.15s ease, background 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: var(--ob-blue);
+            background: rgba(3, 78, 162, 0.06);
+        }
+
+        .nav-link.active {
+            color: var(--ob-blue);
+        }
+
+        .nav-link:focus-visible {
+            outline: 2px solid var(--ob-blue);
+            outline-offset: 2px;
+        }
+
+        /* Home icon inside brand link */
+        .nav-link__icon {
+            flex-shrink: 0;
+        }
+
+        /* Admin badge */
+        .nav-badge {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--ob-orange);
+            border: 1px solid var(--ob-orange);
+            border-radius: var(--radius-pill);
+            padding: 0.1em 0.5em;
+            margin-left: 0.2rem;
+        }
+
+        /* ── Auth divider (visual only) ── */
+        .nav-divider {
+            width: 1px;
+            height: 18px;
+            background: #D1D5DB;
+            margin: 0 0.25rem;
+        }
+
+        /* ============================================================
+           HERO SECTION
+           ============================================================ */
+
+        /*
+           REAL IMPLEMENTATION NOTE:
+           Replace the Unsplash placeholder below with the actual hero-bg.jpeg:
+             <img class="hero-bg" src="hero-bg.jpeg" alt=""
+                  style="position:absolute;inset:0;width:100%;height:100%;
+                         object-fit:cover;object-position:center;" />
+           Keep this comment and the fallback gradient for mockup purposes only.
+        */
+        .hero {
+            position: relative;
+            width: 100%;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* ── Photo-like rural road placeholder ── */
+            background-color: #8B7355; /* fallback earth tone */
+            background-image: url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Subtle overlay to keep text readable on the photo */
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(0,0,0,0.05) 0%,
+                rgba(0,0,0,0.00) 30%,
+                rgba(0,0,0,0.10) 70%,
+                rgba(0,0,0,0.35) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* ── Cloud layer — top 15 % of hero ── */
+        /*
+           PLACEHOLDER NOTE:
+           These CSS-shape cloud divs simulate white clouds.
+           Final implementation uses converted EPS→PNG cloud images:
+             public/clouds/cloud-1.png, cloud-2.png, cloud-3.png
+           as <img> elements with identical animation classes.
+        */
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 15%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .cloud {
+            position: absolute;
+            left: 0;
+            background: rgba(255, 255, 255, 0.82);
+            border-radius: 50px;
+            will-change: transform;
+        }
+
+        .cloud::before,
+        .cloud::after {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+        }
+
+        /* ── Cloud size variants ── */
+        .cloud--lg {
+            width: 220px; height: 70px;
+        }
+        .cloud--lg::before {
+            width: 90px; height: 90px;
+            top: -45px; left: 35px;
+        }
+        .cloud--lg::after {
+            width: 70px; height: 70px;
+            top: -30px; left: 120px;
+        }
+
+        .cloud--md {
+            width: 160px; height: 55px;
+        }
+        .cloud--md::before {
+            width: 70px; height: 70px;
+            top: -35px; left: 25px;
+        }
+        .cloud--md::after {
+            width: 55px; height: 55px;
+            top: -22px; left: 85px;
+        }
+
+        .cloud--sm {
+            width: 120px; height: 42px;
+        }
+        .cloud--sm::before {
+            width: 52px; height: 52px;
+            top: -26px; left: 18px;
+        }
+        .cloud--sm::after {
+            width: 40px; height: 40px;
+            top: -16px; left: 62px;
+        }
+
+        /* ── Cloud drift: off-screen left → off-screen right ── */
+        @keyframes cloudDrift {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(100vw); }
+        }
+
+        .cloud--slow   { animation: cloudDrift 60s linear infinite; }
+        .cloud--medium { animation: cloudDrift 45s linear infinite; }
+        .cloud--fast   { animation: cloudDrift 30s linear infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cloud--slow,
+            .cloud--medium,
+            .cloud--fast { animation: none; }
+        }
+
+        /* ── Hero content wrapper ── */
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100dvh;
+            padding: 5.5rem 1.5rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ── Inner flex row: text left, logo right ── */
+        .hero-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        /* ── Left text block ── */
+        .hero-text {
+            flex: 1 1 auto;
+            max-width: 600px;
+        }
+
+        .hero-label {
+            font-family: var(--font-heading);
+            font-size: 0.8125rem;
+            font-weight: 400;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ob-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2.5rem, 7vw, 4.5rem);
+            font-weight: 900;
+            line-height: 0.95;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-title-black { color: var(--text-body); }
+
+        /* "bou" in orange */
+        .hero-title-orange { color: var(--ob-orange); }
+
+        /* Dual underline bar: black + orange */
+        .title-underline {
+            display: flex;
+            gap: 0;
+            width: 100%;
+            max-width: 280px;
+            height: 6px;
+            margin: 0.75rem 0 1rem;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .title-underline--black { flex: 1.15; background: var(--text-body); }
+        .title-underline--orange { flex: 1; background: var(--ob-orange); }
+
+        .hero-subtitle {
+            font-family: var(--font-heading);
+            font-size: clamp(1.125rem, 2.8vw, 1.625rem);
+            font-weight: 400;
+            color: var(--text-body);
+        }
+
+        /* "teerpad" in orange */
+        .hero-subtitle-accent { color: var(--ob-orange); }
+        .hero-subtitle-muted  { color: var(--text-body); }
+
+        /* ── Right logo block ── */
+        .hero-logo {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-ob-logo {
+            height: auto;
+            max-height: 180px;
+            width: auto;
+            max-width: 240px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
+        }
+
+        /* ── Bottom CTA ── */
+        .hero-cta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: auto;
+            padding-bottom: 2rem;
+        }
+
+        /*
+           AUTH NOTE:
+           In production this <a> resolves to /kaart when logged in,
+           /meld-aan when logged out (via Angular routerLink binding).
+        */
+        .pill-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ob-orange);
+            color: #FFFFFF;
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0.875rem 2.5rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(245, 130, 32, 0.35);
+            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+        }
+
+        .pill-cta:hover {
+            background: var(--ob-orange-hover);
+            box-shadow: 0 6px 20px rgba(245, 130, 32, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .pill-cta:focus-visible {
+            outline: 3px solid var(--ob-blue);
+            outline-offset: 2px;
+        }
+
+        .pill-cta-em {
+            font-weight: 900;
+        }
+
+        /* ── Scroll cue — muted colour ── */
+        .scroll-cue {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 1.5rem;
+            color: var(--text-muted);   /* subtle, NOT orange */
+        }
+
+        .scroll-chevron {
+            animation: scrollBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(6px); }
+            60% { transform: translateY(3px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .scroll-chevron { animation: none; }
+        }
+
+        .scroll-label {
+            font-family: var(--font-body);
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           STATS SECTION — Three white cards on warm background
+           ============================================================ */
+        .stats {
+            background: var(--bg-warm);
+            padding: 5rem 2rem;
+        }
+
+        .stats__inner {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            padding: 1.75rem 2rem;
+            text-align: center;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 36px rgba(3, 78, 162, 0.12);
+        }
+
+        .stat-value {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-body);
+            line-height: 1.2;
+        }
+
+        /* Orange accent for "Voltooi" and "Per m²" values */
+        .stat-value--accent {
+            color: var(--ob-orange);
+        }
+
+        .stat-value small {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .stat-label {
+            font-family: var(--font-heading);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 0.5rem;
+        }
+
+        /* ============================================================
+           HOW-IT-WORKS SECTION
+           ============================================================ */
+        .how {
+            background: var(--surface);
+            padding: 5rem 2rem;
+        }
+
+        .how__inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section-heading {
+            font-family: var(--font-heading);
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--ob-blue);
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.75rem 2rem;
+            background: var(--bg-warm);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(3, 78, 162, 0.12);
+        }
+
+        /* ── Circular OB-orange icon container ── */
+        .step-icon {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ob-orange);
+            color: #FFFFFF;
+            border-radius: 50%;
+        }
+
+        .step-body {
+            flex: 1;
+        }
+
+        .step-heading {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-body);
+            margin-bottom: 0.35rem;
+        }
+
+        .step-desc {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+
+        /* ============================================================
+           FOOTER — OB blue background, white text
+           ============================================================ */
+        .site-footer {
+            background: var(--ob-blue);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .footer-copy {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #FFFFFF;
+            margin: 0;
+        }
+
+        .footer-copy a {
+            color: #FFFFFF;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .footer-copy a:hover {
+            opacity: 0.85;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 768px) {
+            /* ── Navbar ── */
+            .navbar {
+                padding: 0 1rem;
+            }
+            .navbar__inner {
+                gap: 0.5rem;
+            }
+            .nav-link {
+                font-size: 0.8125rem;
+                padding: 0.4rem 0.5rem;
+            }
+            /* Hide admin badge text on small screens, keep dot */
+            .nav-badge {
+                font-size: 0.55rem;
+            }
+
+            /* ── Hero ── */
+            .hero-content {
+                padding-top: 4.5rem;
+            }
+
+            .hero-inner {
+                flex-direction: column;
+                text-align: left;   /* left-aligned text, even when stacked */
+                gap: 1.5rem;
+            }
+
+            /* Logo above text on mobile */
+            .hero-logo {
+                order: -1;
+            }
+
+            .hero-ob-logo {
+                max-height: 120px;
+                max-width: 160px;
+            }
+
+            .hero-text {
+                max-width: 100%;
+            }
+
+            /* ── Clouds scale down ── */
+            .cloud--lg { width: 140px; height: 45px; }
+            .cloud--lg::before { width: 60px; height: 60px; top: -30px; left: 20px; }
+            .cloud--lg::after  { width: 48px; height: 48px; top: -20px; left: 75px; }
+
+            .cloud--md { width: 110px; height: 38px; }
+            .cloud--md::before { width: 48px; height: 48px; top: -24px; left: 15px; }
+            .cloud--md::after  { width: 38px; height: 38px; top: -15px; left: 58px; }
+
+            .cloud--sm { width: 80px; height: 30px; }
+            .cloud--sm::before { width: 36px; height: 36px; top: -18px; left: 10px; }
+            .cloud--sm::after  { width: 28px; height: 28px; top: -12px; left: 42px; }
+
+            /* ── Stats ── */
+            .stats-grid {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stat-card {
+                min-width: unset;
+            }
+
+            /* ── How-it-works ── */
+            .step {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .step-body {
+                text-align: center;
+            }
+
+            .stats,
+            .how {
+                padding: 3rem 1.25rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2.25rem;
+            }
+
+            .section-heading {
+                font-size: 1.375rem;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .hero {
+                min-height: 100vh;   /* fallback for browsers without dvh */
+            }
+
+            .pill-cta {
+                padding: 0.85rem 2.2rem;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+    NAVBAR — Fixed, white, OB-style
+    ============================================================
+      AUTH PLACEHOLDER LOGIC:
+      • Admin Portaal — only visible when user has admin role.
+      • Meld aan     — only visible when logged out.
+      • Teken Uit    — only visible when logged in.
+      Both states are shown side-by-side here for mockup review.
+    ============================================================ -->
+    <nav class="navbar" aria-label="Hoofnavigasie">
+        <div class="navbar__inner">
+
+            <!-- Left links -->
+            <ul class="navbar__links">
+                <li>
+                    <!--
+                      Home icon + "Tuis" — active on exact /
+                      Uses routerLinkActive [routerLinkActiveOptions]="{ exact: true }"
+                      in production.
+                    -->
+                    <a href="#" class="nav-link active" aria-current="page">
+                        <svg class="nav-link__icon" width="18" height="18" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Tuis
+                    </a>
+                </li>
+                <li><a href="#" class="nav-link">Kaart</a></li>
+                <li><a href="#" class="nav-link">My Blokke</a></li>
+                <li><a href="#" class="nav-link">My Transaksies</a></li>
+            </ul>
+
+            <!-- Right links (auth-aware in production) -->
+            <ul class="navbar__links navbar__links--right">
+                <!-- Admin Portaal — only when user is admin -->
+                <li>
+                    <a href="#" class="nav-link">
+                        Admin Portaal
+                        <span class="nav-badge" aria-label="slegs admin">admin</span>
+                    </a>
+                </li>
+                <li class="nav-divider" aria-hidden="true"></li>
+                <!-- Meld aan — only when logged out -->
+                <li><a href="#" class="nav-link">Meld aan</a></li>
+                <!-- Teken Uit — only when logged in -->
+                <li><a href="#" class="nav-link">Teken Uit</a></li>
+            </ul>
+
+        </div>
+    </nav>
+
+    <!-- ============================================================
+    HERO SECTION
+    ============================================================ -->
+    <section class="hero" aria-label="Hero — Stadsboufonds">
+
+        <!--
+          REAL IMPLEMENTATION NOTE:
+          Replace the Unsplash placeholder on .hero with the actual hero-bg.jpeg.
+          Use an <img> tag with object-fit: cover for proper responsive handling:
+            <img class="hero-bg" src="hero-bg.jpeg" alt=""
+                 style="position:absolute;inset:0;width:100%;height:100%;
+                        object-fit:cover;object-position:center;z-index:0;" />
+          The Unsplash URL and CSS background-image are mockup-only.
+        -->
+
+        <!--
+          CLOUD PLACEHOLDER NOTE:
+          CSS-shape divs simulate white clouds. Final implementation uses
+          converted EPS→PNG cloud images (public/clouds/cloud-{1,2,3}.png)
+          as <img> elements with identical .cloud--slow/.cloud--medium/.cloud--fast
+          animation classes.
+        -->
+        <div class="cloud-layer" aria-hidden="true">
+            <!-- Slow clouds -->
+            <div class="cloud cloud--lg cloud--slow" style="top: 45%;"></div>
+            <div class="cloud cloud--md cloud--slow" style="top: 8%;  animation-delay: -20s;"></div>
+            <div class="cloud cloud--sm cloud--slow" style="top: 65%; animation-delay: -40s;"></div>
+
+            <!-- Medium clouds -->
+            <div class="cloud cloud--lg cloud--medium" style="top: 30%; animation-delay: -10s;"></div>
+            <div class="cloud cloud--md cloud--medium" style="top: 55%; animation-delay: -30s;"></div>
+            <div class="cloud cloud--sm cloud--medium" style="top: 12%; animation-delay: -5s;"></div>
+
+            <!-- Fast clouds -->
+            <div class="cloud cloud--md cloud--fast" style="top: 20%; animation-delay: -15s;"></div>
+            <div class="cloud cloud--sm cloud--fast" style="top: 50%; animation-delay: -25s;"></div>
+            <div class="cloud cloud--lg cloud--fast" style="top: 70%; animation-delay: -8s;"></div>
+        </div>
+
+        <!-- Hero content -->
+        <div class="hero-content">
+
+            <!-- Inner flex row: text (left) + OB logo (right) -->
+            <div class="hero-inner">
+
+                <!-- Left text block -->
+                <div class="hero-text">
+                    <p class="hero-label">ORANIA</p>
+                    <h1 class="hero-title">
+                        <span class="hero-title-black">Stads</span><!--
+                     --><span class="hero-title-orange">bou</span><!--
+                     --><span class="hero-title-black">fonds</span>
+                    </h1>
+                    <div class="title-underline" aria-hidden="true">
+                        <span class="title-underline--black"></span>
+                        <span class="title-underline--orange"></span>
+                    </div>
+                    <p class="hero-subtitle">
+                        <span class="hero-subtitle-muted">van grondpad /</span>
+                        <span class="hero-subtitle-accent">tot teerpad</span>
+                    </p>
+                </div>
+
+                <!-- Right OB logo — decorative brand reinforcement, not a link -->
+                <div class="hero-logo">
+                    <!--
+                      Source file:
+                      /for redesign/Orania beweging/logo-removebg-preview.png
+                    -->
+                    <img
+                        class="hero-ob-logo"
+                        src="../../../for redesign/Orania beweging/logo-removebg-preview.png"
+                        alt="Orania Beweging"
+                        width="240"
+                        height="240"
+                    >
+                </div>
+
+            </div>
+
+            <!-- Bottom CTA -->
+            <div class="hero-cta">
+                <!--
+                  AUTH-ROUTING NOTE:
+                  In production this resolves to:
+                    • /kaart      when logged in
+                    • /meld-aan   when logged out
+                  (driven by Angular routerLink bound to a computed signal or getter.)
+                -->
+                <a href="#" class="pill-cta">
+                    Begin <span class="pill-cta-em">Bou</span>!
+                </a>
+
+                <div class="scroll-cue" aria-hidden="true">
+                    <svg class="scroll-chevron" width="20" height="20"
+                         viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                    <span class="scroll-label">Sien meer</span>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ============================================================
+    STATS SECTION — Three white cards on warm background
+    ============================================================ -->
+    <section class="stats" aria-label="Stadsboufonds statistieke">
+        <div class="stats__inner">
+            <!-- No section heading per spec — just the three stat cards -->
+            <div class="stats-grid">
+
+                <article class="stat-card">
+                    <!-- Placeholder value; bound to {{ progress }} in production -->
+                    <div class="stat-value stat-value--accent">42<small>%</small></div>
+                    <div class="stat-label">Voltooi</div>
+                </article>
+
+                <article class="stat-card">
+                    <!-- Placeholder value; bound to {{ totalRaised }} in production.
+                         Conditionally visible via showTotalRaised flag. -->
+                    <div class="stat-value">R1&nbsp;250&nbsp;000</div>
+                    <div class="stat-label">Ingesamel</div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-value stat-value--accent">R500</div>
+                    <div class="stat-label">Per m&sup2;</div>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    HOW-IT-WORKS SECTION
+    ============================================================ -->
+    <section class="how" aria-labelledby="how-heading">
+        <div class="how__inner">
+            <h2 id="how-heading" class="section-heading">Bou jou blokkie</h2>
+
+            <div class="steps">
+
+                <!-- Step 1 -->
+                <article class="step">
+                    <div class="step-icon" aria-hidden="true">
+                        <!-- Map-pin icon -->
+                        <svg width="28" height="28" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <div class="step-body">
+                        <h3 class="step-heading">Kies jou koördinate</h3>
+                        <p class="step-desc">
+                            Gebruik die kaart om enige beskikbare vierkante meter
+                            te kies wat jy wil bou.
+                        </p>
+                    </div>
+                </article>
+
+                <!-- Step 2 -->
+                <article class="step">
+                    <div class="step-icon" aria-hidden="true">
+                        <!-- Building / construct icon -->
+                        <svg width="28" height="28" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </div>
+                    <div class="step-body">
+                        <h3 class="step-heading">Bou met jou bydrae</h3>
+                        <p class="step-desc">
+                            Bou &rsquo;n vierkante meter teen R 500. Elke meter
+                            bring ons nader aan &rsquo;n geteerde pad.
+                        </p>
+                    </div>
+                </article>
+
+                <!-- Step 3 -->
+                <article class="step">
+                    <div class="step-icon" aria-hidden="true">
+                        <!-- Trending-up / progress icon -->
+                        <svg width="28" height="28" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                            <polyline points="17 6 23 6 23 12"/>
+                        </svg>
+                    </div>
+                    <div class="step-body">
+                        <h3 class="step-heading">Volg die vordering</h3>
+                        <p class="step-desc">
+                            Kyk hoe jou blok vanuit &rsquo;n grondpad tot teerpad
+                            verander. Sien die impak wat jy maak.
+                        </p>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    FOOTER — OB blue
+    ============================================================ -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p class="footer-copy">
+                &copy; 2026 Stephan Bredenhann &mdash;
+                <a href="https://stephanbredenhann.github.io"
+                   target="_blank" rel="noopener">stephanbredenhann.github.io</a>
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>
