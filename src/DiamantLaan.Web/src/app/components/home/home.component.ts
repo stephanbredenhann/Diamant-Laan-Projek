@@ -521,6 +521,10 @@ import { SettingsService } from '../../services/settings.service';
       text-decoration: underline;
       text-underline-offset: 2px;
     }
+    .footer-copy a:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.8);
+      outline-offset: 2px;
+    }
 
     /* ===== RESPONSIVE ===== */
     @media (min-width: 768px) {
