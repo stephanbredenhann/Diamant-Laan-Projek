@@ -3,11 +3,9 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  NgZone,
   OnDestroy,
   OnInit,
   QueryList,
-  ViewChild,
   ViewChildren,
   inject,
 } from '@angular/core';
@@ -16,16 +14,6 @@ import { Subject, catchError, filter, of, switchMap, takeUntil, tap } from 'rxjs
 import { AuthService } from '../../services/auth.service';
 import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  opacity: number;
-  color: string;
-}
-
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -601,11 +589,9 @@ interface Particle {
   `],
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('heroSection') heroRef!: ElementRef<HTMLElement>;
   @ViewChildren('stepEl') stepElements!: QueryList<ElementRef<HTMLElement>>;
 
   private road = inject(RoadService);
-  private ngZone = inject(NgZone);
   private settingsService = inject(SettingsService);
   auth = inject(AuthService);
 
@@ -615,18 +601,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   totalRaised = 0;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-  private particles: Particle[] = [];
-  private animationFrameId = 0;
-  private mouseX = -1000;
-  private mouseY = -1000;
-  private resizeObserver?: ResizeObserver;
   private intersectionObserver?: IntersectionObserver;
   private reducedMotion = false;
-  private onMouseMove?: (e: MouseEvent) => void;
-  private onMouseLeave?: () => void;
-  private readonly particleCount = 160;
-  private readonly mouseRadius = 140;
   private destroy$ = new Subject<void>();
+
+  get ctaLink(): string {
+    return this.auth.currentUser() ? '/kaart' : '/meld-aan';
+  }
 
   ngOnInit() {
     this.settingsService.getHomeStatsSettings()
@@ -656,145 +637,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     if (typeof window === 'undefined') return;
-
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (!this.reducedMotion) {
-      this.initParticles();
-      this.setupMouseTracking();
-    }
-
     this.setupScrollAnimations();
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-
-    cancelAnimationFrame(this.animationFrameId);
-    this.resizeObserver?.disconnect();
     this.intersectionObserver?.disconnect();
-
-    const hero = this.heroRef?.nativeElement;
-    if (hero && this.onMouseMove) {
-      hero.removeEventListener('mousemove', this.onMouseMove);
-    }
-    if (hero && this.onMouseLeave) {
-      hero.removeEventListener('mouseleave', this.onMouseLeave);
-    }
-  }
-
-  private initParticles() {
-    // Canvas element was removed during template cleanup — particle effect is disabled.
-    return;
-    /* dead code preserved for reference
-    const canvas = this.canvasRef?.nativeElement;
-    const hero = this.heroRef?.nativeElement;
-    if (!canvas || !hero) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const colors = [
-      'rgba(255, 248, 235, ',
-      'rgba(255, 255, 255, ',
-      'rgba(245, 230, 200, ',
-      'rgba(230, 210, 175, ',
-    ];
-
-    const unpavedTop = () => canvas.height * 0.3;
-    const unpavedBottom = () => canvas.height * 0.95;
-
-    const resize = () => {
-      const rect = hero.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-
-      if (this.particles.length === 0) {
-        for (let i = 0; i < this.particleCount; i++) {
-          const top = unpavedTop();
-          const bottom = unpavedBottom();
-          this.particles.push({
-            x: Math.random() * canvas.width * 0.85,
-            y: top + Math.random() * (bottom - top),
-            vx: (Math.random() - 0.5) * 0.35,
-            vy: (Math.random() - 0.5) * 0.2 - 0.08,
-            radius: Math.random() * 3.5 + 1.5,
-            opacity: Math.random() * 0.45 + 0.35,
-            color: colors[Math.floor(Math.random() * colors.length)],
-          });
-        }
-      }
-    };
-
-    resize();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      this.resizeObserver = new ResizeObserver(resize);
-      this.resizeObserver.observe(hero);
-    }
-
-    this.ngZone.runOutsideAngular(() => {
-      const animate = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const top = unpavedTop();
-        const bottom = unpavedBottom();
-
-        for (const p of this.particles) {
-          const dx = p.x - this.mouseX;
-          const dy = p.y - this.mouseY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < this.mouseRadius && dist > 0) {
-            const force = (this.mouseRadius - dist) / this.mouseRadius;
-            p.vx += (dx / dist) * force * 0.22;
-            p.vy += (dy / dist) * force * 0.22;
-          }
-
-          p.vx *= 0.97;
-          p.vy *= 0.97;
-          p.x += p.vx;
-          p.y += p.vy;
-
-          if (p.x < 0) p.x = canvas.width * 0.85;
-          if (p.x > canvas.width * 0.85) p.x = 0;
-          if (p.y < top) p.y = bottom;
-          if (p.y > bottom) p.y = top;
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = p.color + p.opacity + ')';
-          ctx.shadowBlur = p.radius * 1.5;
-          ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-
-        this.animationFrameId = requestAnimationFrame(animate);
-      };
-
-      this.animationFrameId = requestAnimationFrame(animate);
-    });
-    */
-  }
-
-  private setupMouseTracking() {
-    const hero = this.heroRef?.nativeElement;
-    if (!hero) return;
-
-    this.onMouseMove = (e: MouseEvent) => {
-      const rect = hero.getBoundingClientRect();
-      this.mouseX = e.clientX - rect.left;
-      this.mouseY = e.clientY - rect.top;
-    };
-
-    this.onMouseLeave = () => {
-      this.mouseX = -1000;
-      this.mouseY = -1000;
-    };
-
-    hero.addEventListener('mousemove', this.onMouseMove);
-    hero.addEventListener('mouseleave', this.onMouseLeave);
   }
 
   private setupScrollAnimations() {
