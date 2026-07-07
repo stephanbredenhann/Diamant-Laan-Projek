@@ -7,6 +7,7 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
 import { ImageLightboxComponent } from '../shared/image-lightbox/image-lightbox.component';
 import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
+import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-my-squares',
@@ -17,7 +18,7 @@ import { getSquareCentroid } from '../shared/road-map/coordinate-config';
       <div class="page-header">
         <h2>My Blokke</h2>
         @if (squares.length > 0) {
-          <p class="summary">{{ squares.length }} blokke gekoop — <strong>R{{ totalSpent | number:'1.0-0' }}</strong> totaal</p>
+          <p class="summary">{{ squares.length }} {{ blokLabel(squares.length) }} gekoop — <strong>R{{ totalSpent | number:'1.0-0' }}</strong> totaal</p>
           <div class="header-actions">
             <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien DEMO Sertifikaat</a>
             <app-share-button
@@ -188,9 +189,10 @@ export class MySquaresComponent implements OnInit {
   lightboxOpen = false;
   lightboxSquareId: number | null = null;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  readonly blokLabel = blokLabel;
 
   get shareText(): string {
-    return `Ek het ${this.squares.length} blokke geborg op Diamant Laan!`;
+    return `Ek het ${this.squares.length} ${blokLabel(this.squares.length)} geborg op Diamant Laan!`;
   }
 
   ngOnInit() {

@@ -9,6 +9,16 @@ export interface PayFastForm {
   fields: Record<string, string>;
 }
 
+export interface PurchaseTransaction {
+  id: number;
+  purchaseDate: string;
+  amount: number;
+  squareCount: number;
+  amountPerBlock: number;
+  squareIds: number[];
+  paymentStatus: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
   constructor(private http: HttpClient) {}
@@ -65,5 +75,9 @@ export class PurchaseService {
 
   getMySummary() {
     return this.http.get<{ blockCount: number; totalSpent: number }>('/api/my-squares/summary');
+  }
+
+  getMyTransactions() {
+    return this.http.get<PurchaseTransaction[]>('/api/purchase/mine');
   }
 }

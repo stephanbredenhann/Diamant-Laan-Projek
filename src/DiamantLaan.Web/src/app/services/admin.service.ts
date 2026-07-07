@@ -2,6 +2,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AdminProgressImage, SquareStatus } from '../models/square';
 
+export interface AdminTransaction {
+  id: number;
+  purchaseDate: string;
+  amount: number;
+  squareCount: number;
+  amountPerBlock: number;
+  squareIds: number[];
+  paymentStatus: string;
+  userName?: string;
+  userEmail?: string;
+  payFastPaymentId?: string | null;
+}
+
 export interface ImageConflictResult {
   conflictingSquareIds: number[];
   totalSelected: number;
@@ -29,6 +42,10 @@ export class AdminService {
 
   getPurchases() {
     return this.http.get<any[]>('/api/admin/purchases');
+  }
+
+  getTransactions() {
+    return this.http.get<AdminTransaction[]>('/api/admin/transactions');
   }
 
   getStats() {

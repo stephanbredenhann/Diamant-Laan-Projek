@@ -1,0 +1,9 @@
+C 0 M 60 Y 100 K 0#EF7D00
+C 0 M 60 Y 100 K 0#EF7D00
+C 0 M 0 Y 0 K 15#E3E3E3
+C 60 M 51 Y 51 K 20#6D6968
+C 0 M 0 Y 0 K 100#000000
+aA
+Metropolis
+aA
+Century Gothic Pro

@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { Square, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
+import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-map',
@@ -58,7 +59,7 @@ import { RoadMapComponent } from '../shared/road-map/road-map.component';
             <div class="selection-summary">
               <div class="selection-count">
                 <span class="count">{{ selectedIds().size }}</span>
-                <span class="label">blokke gekies</span>
+                <span class="label">{{ blokLabel(selectedIds().size) }} gekies</span>
               </div>
               <div class="selection-total">
                 <span class="label">Totaal</span>
@@ -287,6 +288,7 @@ export class MapComponent implements OnInit {
   amountPerBlock = signal(500);
   mySquareIds = signal<number[]>([]);
   viewMode = signal<MapViewMode>('status');
+  readonly blokLabel = blokLabel;
 
   totalAmount = computed(() => this.selectedIds().size * this.amountPerBlock());
   selectedIdsArray = computed(() => Array.from(this.selectedIds()));

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
+import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-admin-manual-purchase',
@@ -203,7 +204,7 @@ export class AdminManualPurchaseComponent {
     this.loading = true;
     this.admin.manualPurchase(formData).subscribe({
       next: (res) => {
-        this.message = `Aankoop #${res.purchaseId} voltooi — ${res.squareCount} blokke vir R${res.amount}.`;
+        this.message = `Aankoop #${res.purchaseId} voltooi — ${res.squareCount} ${blokLabel(res.squareCount)} vir R${res.amount}.`;
         this.firstName = '';
         this.lastName = '';
         this.email = '';

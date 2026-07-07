@@ -83,6 +83,20 @@ public class PurchaseController : ControllerBase
         }
     }
 
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMyTransactions()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var purchases = await _db.Purchases
+            .Include(p => p.PurchaseSquares)
+            .Where(p => p.UserId == userId && p.PaymentStatus == PaymentStatus.Confirmed)
+            .OrderByDescending(p => p.PurchaseDate)
+            .ToListAsync();
+
+        return Ok(purchases.Select(p => PurchaseTransactionMapper.ToDto(p)));
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPurchase(int id)
     {

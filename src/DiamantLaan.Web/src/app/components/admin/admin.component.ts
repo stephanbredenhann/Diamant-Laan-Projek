@@ -5,6 +5,7 @@ import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import { Square, SquareStatus, STATUS_LABELS } from '../../models/square';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
+import { blokLabel } from '../../utils/afrikaans.util';
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
 const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
@@ -374,11 +375,12 @@ export class AdminComponent implements OnInit {
   }
 
   private buildUploadSuccessMessage(res: { squareCount: number; replacedCount?: number; skippedCount?: number }) {
-    let msg = `Foto opgelaai vir ${res.squareCount} blokke.`;
+    const label = blokLabel(res.squareCount);
+    let msg = `Foto opgelaai vir ${res.squareCount} ${label}.`;
     if (res.skippedCount && res.skippedCount > 0) {
-      msg = `Foto opgelaai vir ${res.squareCount} blokke (${res.skippedCount} het reeds 'n foto en is oorgeslaan).`;
+      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.skippedCount} het reeds 'n foto en is oorgeslaan).`;
     } else if (res.replacedCount && res.replacedCount > 0) {
-      msg = `Foto opgelaai vir ${res.squareCount} blokke (${res.replacedCount} bestaande foto's vervang).`;
+      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.replacedCount} bestaande foto's vervang).`;
     }
     return msg;
   }
@@ -397,7 +399,7 @@ export class AdminComponent implements OnInit {
     const ids = Array.from(this.selectedIds());
     this.admin.updateStatus(ids, this.targetStatus).subscribe({
       next: () => {
-        this.message = `${ids.length} blokke opgedateer.`;
+        this.message = `${ids.length} ${blokLabel(ids.length)} opgedateer.`;
         this.targetStatus = null;
         this.refresh();
         this.clearSelection();

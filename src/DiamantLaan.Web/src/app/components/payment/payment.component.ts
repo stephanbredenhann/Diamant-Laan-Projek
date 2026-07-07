@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
+import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-payment',
@@ -12,7 +13,7 @@ import { PurchaseService } from '../../services/purchase.service';
       <div class="gateway-card">
         <h2>Betaling</h2>
         <p class="summary">
-          {{ squareIds.length }} blokke gekies —
+          {{ squareIds.length }} {{ blokLabel(squareIds.length) }} gekies —
           <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
           @if (amountPerBlock > 500) {
             <span class="per-block">(R{{ amountPerBlock | number:'1.0-0' }} per blok)</span>
@@ -120,6 +121,7 @@ export class PaymentComponent implements OnInit {
   loading = false;
   error = '';
   private createdPurchaseId?: number;
+  readonly blokLabel = blokLabel;
 
   ngOnInit() {
     const ids = this.purchase.pendingSquareIds;
