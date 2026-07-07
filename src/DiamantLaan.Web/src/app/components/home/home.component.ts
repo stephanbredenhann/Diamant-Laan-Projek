@@ -31,23 +31,52 @@ interface Particle {
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="hero" #heroSection>
+    <section class="hero">
       <img src="hero-bg.jpeg" alt="" class="hero-bg" aria-hidden="true" />
+
+      <!-- Cloud layer -->
+      <div class="cloud-layer" aria-hidden="true">
+        <img src="clouds/cloud-1.png" class="cloud cloud--slow" alt="" />
+        <img src="clouds/cloud-2.png" class="cloud cloud--medium" alt="" />
+        <img src="clouds/cloud-3.png" class="cloud cloud--fast" alt="" />
+      </div>
+
       <div class="hero-content">
-        <div class="hero-top">
-          <div class="hero-brand">
-            <p class="orania">ORANIA</p>
-            <h1 class="brand-title">
-              <span class="stads">Stads</span><span class="bou">bou</span><span class="fonds">fonds</span>
+        <div class="hero-inner">
+          <!-- Left text block -->
+          <div class="hero-text">
+            <p class="hero-label">ORANIA</p>
+            <h1 class="hero-title">
+              <span class="hero-title-black">Stads</span><span class="hero-title-orange">bou</span><span class="hero-title-black">fonds</span>
             </h1>
             <div class="title-underline" aria-hidden="true">
-              <span class="line-black"></span>
-              <span class="line-orange"></span>
+              <span class="title-underline--black"></span>
+              <span class="title-underline--orange"></span>
             </div>
-            <div class="hero-tagline">
-              <p><span class="accent">van</span> grondpad</p>
-              <p><span class="accent">tot</span> teerpad</p>
-            </div>
+            <p class="hero-subtitle">
+              <span class="hero-subtitle-muted">van</span> grondpad /
+              <span class="hero-subtitle-muted">tot</span> <span class="hero-subtitle-accent">teerpad</span>
+            </p>
+          </div>
+
+          <!-- Right OB logo -->
+          <div class="hero-logo">
+            <img
+              src="ob-logo.png"
+              alt="Orania Beweging"
+              class="hero-ob-logo"
+            />
+          </div>
+        </div>
+
+        <!-- Bottom-center pill CTA -->
+        <div class="hero-cta">
+          <a [routerLink]="ctaLink" class="pill-cta">Begin <span class="pill-cta-em">Bou</span>!</a>
+          <div class="scroll-cue" aria-hidden="true">
+            <svg class="scroll-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            <span class="scroll-label">Sien meer</span>
           </div>
         </div>
       </div>
@@ -56,23 +85,21 @@ interface Particle {
     @if (showStatsSection) {
       <section class="stats-section">
         <div class="container">
-          <div class="stats-card">
-            <div class="stat">
-              <div class="stat-value accent-value">{{ progress }}<small>%</small></div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value stat-value--accent">{{ progress }}<small>%</small></div>
               <div class="stat-label">Voltooi</div>
             </div>
 
             @if (showTotalRaised) {
-              <div class="stat-divider"></div>
-              <div class="stat">
+              <div class="stat-card">
                 <div class="stat-value">R{{ totalRaised | number:'1.0-0' }}</div>
                 <div class="stat-label">Ingesamel</div>
               </div>
             }
 
-            <div class="stat-divider"></div>
-            <div class="stat">
-              <div class="stat-value accent-value">R500</div>
+            <div class="stat-card">
+              <div class="stat-value stat-value--accent">R500</div>
               <div class="stat-label">Per m²</div>
             </div>
           </div>
@@ -82,27 +109,38 @@ interface Particle {
 
     <section class="how-it-works">
       <div class="container">
-        <div class="section-header">
-          <img src="stadsboufonds-logo-orange.png" alt="Orania Stadsboufonds" class="section-logo" />
-          <h2>Bou jou blokkie</h2>
-        </div>
+        <h2 class="section-heading">Bou jou blokkie</h2>
         <div class="steps">
           <div class="step" #stepEl>
-            <div class="step-number">1</div>
+            <div class="step-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
             <div class="step-body">
               <h3>Kies jou koördinate</h3>
               <p>Gebruik die kaart om enige beskikbare vierkante meter te kies wat jy wil bou.</p>
             </div>
           </div>
           <div class="step" #stepEl>
-            <div class="step-number">2</div>
+            <div class="step-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/>
+              </svg>
+            </div>
             <div class="step-body">
               <h3>Bou met jou bydrae</h3>
               <p>Bou 'n vierkante meter teen R 500. Elke meter bring ons nader aan 'n geteerde pad.</p>
             </div>
           </div>
           <div class="step" #stepEl>
-            <div class="step-number">3</div>
+            <div class="step-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
             <div class="step-body">
               <h3>Volg die vordering</h3>
               <p>Kyk hoe jou blok vanuit 'n grondpad tot teerpad verander. Sien die impak wat jy maak.</p>
@@ -114,9 +152,7 @@ interface Particle {
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <img src="stadsboufonds-logo-full.png" alt="Orania Stadsboufonds" class="footer-logo" />
-        <p class="footer-tagline">van grondpad tot teerpad</p>
-        <p class="footer-copy">Diamant Laan &middot; Orania Stadsboufonds</p>
+        <p class="footer-copy">&copy; 2026 Stephan Bredenhann &mdash; <a href="https://stephanbredenhann.github.io" target="_blank" rel="noopener">stephanbredenhann.github.io</a></p>
       </div>
     </footer>
   `,
