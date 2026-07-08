@@ -137,19 +137,6 @@ public class AdminController : ControllerBase
             .Include(p => p.User)
             .ToListAsync();
 
-        var overMinimumSquares = 0;
-        var exactMinimumSquares = 0;
-        foreach (var p in purchases)
-        {
-            var squareCount = p.PurchaseSquares.Count;
-            if (squareCount == 0) continue;
-            var minAmount = squareCount * 500m;
-            if (p.Amount > minAmount)
-                overMinimumSquares += squareCount;
-            else
-                exactMinimumSquares += squareCount;
-        }
-
         var oraniaSpend = purchases.Where(p => p.User.IsOraniaResident).Sum(p => (double)p.Amount);
         var outsiderSpend = purchases.Where(p => !p.User.IsOraniaResident).Sum(p => (double)p.Amount);
 
@@ -163,8 +150,6 @@ public class AdminController : ControllerBase
             averageSpendPerBlock,
             perStatus,
             dailySales,
-            overMinimumSquares,
-            exactMinimumSquares,
             oraniaSpend,
             outsiderSpend
         });
@@ -241,9 +226,7 @@ public class AdminController : ControllerBase
             if (squares.Any(s => s.Id < 1 || s.Id > 4200))
                 return BadRequest(new { message = "Ongeldige blokke gekies." });
 
-            var minimumAmount = squares.Count * 500m;
-            if (dto.AmountPaid < minimumAmount)
-                return BadRequest(new { message = $"Minimum bedrag is R{minimumAmount:0}." });
+            var amount = squares.Count * 500m;
 
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
@@ -276,7 +259,7 @@ public class AdminController : ControllerBase
             var purchase = new Purchase
             {
                 UserId = user.Id,
-                Amount = dto.AmountPaid,
+                Amount = amount,
                 PaymentStatus = PaymentStatus.Confirmed,
                 ConfirmedAt = DateTime.UtcNow
             };

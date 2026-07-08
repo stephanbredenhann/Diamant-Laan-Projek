@@ -15,9 +15,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
         <p class="summary">
           {{ squareIds.length }} {{ blokLabel(squareIds.length) }} gekies —
           <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
-          @if (amountPerBlock > 500) {
-            <span class="per-block">(R{{ amountPerBlock | number:'1.0-0' }} per blok)</span>
-          }
+          <span class="per-block">(R500 per blok)</span>
         </p>
 
         <div class="gateway-box">
@@ -33,8 +31,13 @@ import { blokLabel } from '../../utils/afrikaans.util';
         <div class="actions">
           <a routerLink="/kaart" class="btn btn-outline">Terug</a>
           <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
-            {{ loading ? 'Besig...' : 'Volgende' }}
-            @if (!loading) { <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> }
+            @if (loading) {
+              <span class="btn-spinner"></span>
+              Besig
+            } @else {
+              Volgende
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            }
           </button>
         </div>
       </div>
@@ -104,6 +107,23 @@ import { blokLabel } from '../../utils/afrikaans.util';
       justify-content: center;
     }
     .actions .btn { flex: 1; }
+    .btn-primary {
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled),
+    .btn-primary:disabled {
+      color: #fff;
+    }
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 480px) {
       .gateway-card { padding: 1.5rem 1.25rem; }
@@ -116,7 +136,6 @@ export class PaymentComponent implements OnInit {
   private purchase = inject(PurchaseService);
 
   squareIds: number[] = [];
-  amountPerBlock = 500;
   totalAmount = 0;
   loading = false;
   error = '';
@@ -127,25 +146,23 @@ export class PaymentComponent implements OnInit {
     const ids = this.purchase.pendingSquareIds;
     if (ids && Array.isArray(ids) && ids.length > 0) {
       this.squareIds = ids;
-      this.amountPerBlock = this.purchase.pendingAmountPerBlock || 500;
-      this.totalAmount = this.squareIds.length * this.amountPerBlock;
+      this.totalAmount = this.squareIds.length * 500;
     } else {
       this.router.navigate(['/kaart']);
     }
   }
 
   submitPayment() {
-    if (this.squareIds.length === 0) return;
+    if (this.loading || this.squareIds.length === 0) return;
     this.error = '';
     this.loading = true;
 
-    // If we already created the purchase, retry just the PayFast form
     if (this.createdPurchaseId) {
       this.requestPayFastForm(this.createdPurchaseId);
       return;
     }
 
-    this.purchase.createPurchase(this.squareIds, this.totalAmount).subscribe({
+    this.purchase.createPurchase(this.squareIds).subscribe({
       next: (res) => {
         this.createdPurchaseId = res.purchaseId;
         this.requestPayFastForm(res.purchaseId);
@@ -159,10 +176,7 @@ export class PaymentComponent implements OnInit {
 
   private requestPayFastForm(purchaseId: number) {
     this.purchase.getPayFastForm(purchaseId).subscribe({
-      next: (form) => {
-        this.loading = false;
-        this.postToPayFast(form);
-      },
+      next: (form) => this.postToPayFast(form),
       error: (err) => {
         this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
         this.loading = false;

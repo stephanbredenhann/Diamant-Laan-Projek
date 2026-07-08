@@ -25,6 +25,32 @@ public class RoadController : ControllerBase
         return Ok(squares);
     }
 
+    [HttpGet("pick-squares")]
+    public async Task<IActionResult> PickSquares([FromQuery] int count)
+    {
+        const int MinPickId = 200;
+        const int MaxSaleableId = 4200;
+        const int MaxPickCount = 4000;
+
+        if (count < 1)
+            return BadRequest(new { message = "Ongeldige aantal blokke." });
+
+        if (count > MaxPickCount)
+            return BadRequest(new { message = "Maksimum 4000 blokke kan gekies word." });
+
+        var squareIds = await _db.Squares
+            .Where(s => s.OwnerId == null && s.Id >= MinPickId && s.Id <= MaxSaleableId)
+            .OrderBy(s => s.Id)
+            .Take(count)
+            .Select(s => s.Id)
+            .ToListAsync();
+
+        if (squareIds.Count < count)
+            return BadRequest(new { message = "Nie genoeg beskikbare blokke nie." });
+
+        return Ok(new { squareIds });
+    }
+
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {

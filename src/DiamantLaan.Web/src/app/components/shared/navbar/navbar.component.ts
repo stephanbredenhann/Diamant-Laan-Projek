@@ -52,7 +52,7 @@ import { AuthService } from '../../../services/auth.service';
       padding: 0;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 1000;
     }
     .navbar-inner {
       display: flex;
@@ -218,7 +218,7 @@ import { AuthService } from '../../../services/auth.service';
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.2);
-        z-index: 99;
+        z-index: 999;
       }
     }
   `]

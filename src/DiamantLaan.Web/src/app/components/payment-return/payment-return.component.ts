@@ -88,6 +88,14 @@ import { takeWhile } from 'rxjs/operators';
       flex-wrap: wrap;
     }
     .actions .btn { flex: 1; min-width: 160px; }
+    .btn-primary,
+    a.btn-primary {
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled),
+    a.btn-primary:hover {
+      color: #fff;
+    }
     .spinner {
       width: 40px;
       height: 40px;
@@ -167,7 +175,6 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
         if (p.paymentStatus === 'Confirmed') {
           this.state = 'success';
           this.purchase.pendingSquareIds = [];
-          this.purchase.pendingAmountPerBlock = 500;
         } else if (p.paymentStatus === 'Failed' || p.paymentStatus === 'Cancelled') {
           this.state = 'failed';
         } else if (this.attempts >= this.maxAttempts) {

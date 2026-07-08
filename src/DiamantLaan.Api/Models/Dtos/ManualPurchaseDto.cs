@@ -20,7 +20,4 @@ public class ManualPurchaseDto
 
     [Required, MinLength(1), MaxLength(100)]
     public List<int> SquareIds { get; set; } = new();
-
-    [Range(500, 1000000)]
-    public decimal AmountPaid { get; set; }
 }

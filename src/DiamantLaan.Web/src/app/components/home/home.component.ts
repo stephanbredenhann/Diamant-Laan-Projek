@@ -23,10 +23,11 @@ import { SettingsService } from '../../services/settings.service';
       <img src="hero-bg.jpeg" alt="" class="hero-bg" aria-hidden="true" />
 
       <!-- Cloud layer -->
-      <div class="cloud-layer" aria-hidden="true">
-        <img src="clouds/cloud-1.png" class="cloud cloud--slow" alt="" />
-        <img src="clouds/cloud-2.png" class="cloud cloud--medium" alt="" />
-        <img src="clouds/cloud-3.png" class="cloud cloud--fast" alt="" />
+      <div class="cloud-layer" [class.cloud-layer--ready]="cloudsReady" aria-hidden="true">
+        <img src="clouds/cloud-1.png" class="cloud cloud--1" alt="" loading="eager" decoding="async" />
+        <img src="clouds/cloud-2.png" class="cloud cloud--2" alt="" loading="eager" decoding="async" />
+        <img src="clouds/cloud-3.png" class="cloud cloud--3" alt="" loading="eager" decoding="async" />
+        <img src="clouds/cloud-5.png" class="cloud cloud--wide cloud--5" alt="" loading="eager" decoding="async" />
       </div>
 
       <div class="hero-content">
@@ -60,7 +61,7 @@ import { SettingsService } from '../../services/settings.service';
         <div class="hero-cta">
           <a [routerLink]="ctaLink" class="pill-cta">Begin <span class="pill-cta-em">Bou</span>!</a>
           <a class="scroll-cue" (click)="scrollToStats($event)" aria-label="Sien meer, blaai af na statistieke">
-            <svg class="scroll-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="scroll-chevron" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9" />
             </svg>
             <span class="scroll-label">Sien meer</span>
@@ -139,7 +140,7 @@ import { SettingsService } from '../../services/settings.service';
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <p class="footer-copy">&copy; 2026 Stephan Bredenhann &mdash; <a href="https://stephanbredenhann.github.io" target="_blank" rel="noopener">stephanbredenhann.github.io</a></p>
+        <p class="footer-copy">&copy; 2026 Stephan Bredenhann &mdash; <a href="https://stephanbredenhann.github.io" target="_blank" rel="noopener">stephanbredenhann.github.io</a> &middot; <a routerLink="/privaatheid">Privaatheidsbeleid</a></p>
       </div>
     </footer>
   `,
@@ -163,7 +164,9 @@ import { SettingsService } from '../../services/settings.service';
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
+      object-position: center 30%;
+      transform: scale(1.1);
+      transform-origin: center 30%;
       z-index: 0;
     }
 
@@ -177,36 +180,58 @@ import { SettingsService } from '../../services/settings.service';
       z-index: 1;
       pointer-events: none;
       overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .cloud-layer--ready {
+      opacity: 1;
     }
 
     .cloud {
       position: absolute;
-      top: 0;
-      height: 100%;
+      left: 0;
+      bottom: 0;
+      top: auto;
+      height: 110%;
       width: auto;
-      opacity: 0.85;
+      opacity: 0.55;
+      mix-blend-mode: screen;
       will-change: transform;
+      animation: cloud-drift linear infinite;
+      animation-fill-mode: backwards;
     }
 
-    .cloud--slow {
-      left: 5%;
-      animation: cloud-drift 60s linear infinite;
-      animation-delay: 0s;
+    .cloud--wide {
+      height: 150%;
+      opacity: 0.35;
     }
-    .cloud--medium {
-      left: 35%;
-      animation: cloud-drift 45s linear infinite;
-      animation-delay: -20s;
+
+    .cloud--1 {
+      animation-duration: 600s;
+      animation-delay: -120s;
     }
-    .cloud--fast {
-      left: 65%;
-      animation: cloud-drift 30s linear infinite;
-      animation-delay: -40s;
+
+    .cloud--2 {
+      height: 100%;
+      animation-duration: 450s;
+      animation-delay: -270s;
+    }
+
+    .cloud--3 {
+      height: 90%;
+      animation-duration: 320s;
+      animation-delay: -160s;
+    }
+
+    .cloud--5 {
+      animation-duration: 900s;
+      animation-delay: -225s;
     }
 
     @keyframes cloud-drift {
-      from { transform: translateX(-100%); }
-      to   { transform: translateX(100vw); }
+      from { transform: translateX(calc(-100% - 5vw)); }
+      to   { transform: translateX(calc(100vw + 5vw)); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -295,9 +320,9 @@ import { SettingsService } from '../../services/settings.service';
 
     .hero-ob-logo {
       height: auto;
-      max-height: 140px;
+      max-height: 210px;
       width: auto;
-      max-width: 180px;
+      max-width: 270px;
       object-fit: contain;
     }
 
@@ -315,7 +340,7 @@ import { SettingsService } from '../../services/settings.service';
       align-items: center;
       justify-content: center;
       background: var(--ob-orange);
-      color: var(--text-body);
+      color: #FFFFFF;
       font-family: var(--font-heading);
       font-size: 1rem;
       font-weight: 700;
@@ -329,6 +354,7 @@ import { SettingsService } from '../../services/settings.service';
 
     .pill-cta:hover {
       background: #D96E10;
+      color: #FFFFFF;
       box-shadow: 0 6px 20px rgba(245, 130, 32, 0.45);
       transform: translateY(-1px);
     }
@@ -342,20 +368,31 @@ import { SettingsService } from '../../services/settings.service';
       font-weight: 900;
     }
 
-    /* Scroll cue */
+    /* Scroll cue — no container, white icon + label */
     .scroll-cue {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.25rem;
-      margin-top: 1.5rem;
-      color: var(--ob-orange);
+      gap: 0.1rem;
+      margin-top: 1.2rem;
+      padding: 0.3rem 1.08rem 0.35rem;
+      background: transparent;
+      color: #FFFFFF;
       text-decoration: none;
+      border: none;
+      transition: opacity 0.2s ease, transform 0.15s ease;
     }
 
     .scroll-cue:hover {
-      color: #D96E10;
+      color: #FFFFFF;
+      opacity: 0.85;
+      transform: translateY(-1px);
       cursor: pointer;
+    }
+
+    .scroll-cue:focus-visible {
+      outline: 3px solid var(--ob-blue);
+      outline-offset: 2px;
     }
 
     .scroll-chevron {
@@ -374,8 +411,9 @@ import { SettingsService } from '../../services/settings.service';
 
     .scroll-label {
       font-family: var(--font-body);
-      font-size: 0.8125rem;
-      font-weight: 500;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
     }
 
     /* ===== STATS SECTION ===== */
@@ -551,8 +589,8 @@ import { SettingsService } from '../../services/settings.service';
       }
 
       .hero-ob-logo {
-        max-height: 100px;
-        max-width: 140px;
+        max-height: 150px;
+        max-width: 210px;
       }
 
       .hero-logo {
@@ -618,6 +656,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   showTotalRaised = true;
   progress = 0;
   totalRaised = 0;
+  cloudsReady = false;
+
+  private static readonly CLOUD_ASSETS = [
+    'clouds/cloud-1.png',
+    'clouds/cloud-2.png',
+    'clouds/cloud-3.png',
+    'clouds/cloud-5.png',
+  ];
 
   private intersectionObserver?: IntersectionObserver;
   private reducedMotion = false;
@@ -634,6 +680,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.preloadClouds();
+
     this.settingsService.getHomeStatsSettings()
       .pipe(
         catchError(() => {
@@ -669,6 +717,31 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.intersectionObserver?.disconnect();
+  }
+
+  private preloadClouds() {
+    if (typeof window === 'undefined') {
+      this.cloudsReady = true;
+      return;
+    }
+
+    Promise.all(
+      HomeComponent.CLOUD_ASSETS.map(
+        src =>
+          new Promise<void>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+            img.src = src;
+          })
+      )
+    )
+      .then(() => {
+        this.cloudsReady = true;
+      })
+      .catch(() => {
+        this.cloudsReady = true;
+      });
   }
 
   private setupScrollAnimations() {

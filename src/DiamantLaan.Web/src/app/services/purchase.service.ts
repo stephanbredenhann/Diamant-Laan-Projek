@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 const PENDING_IDS_KEY = 'pendingSquareIds';
-const PENDING_AMOUNT_KEY = 'pendingAmountPerBlock';
 
 export interface PayFastForm {
   actionUrl: string;
@@ -37,17 +36,8 @@ export class PurchaseService {
     }
   }
 
-  get pendingAmountPerBlock(): number {
-    const raw = sessionStorage.getItem(PENDING_AMOUNT_KEY);
-    return raw ? Number(raw) : 500;
-  }
-
-  set pendingAmountPerBlock(amount: number) {
-    sessionStorage.setItem(PENDING_AMOUNT_KEY, String(amount || 500));
-  }
-
-  createPurchase(squareIds: number[], amount?: number) {
-    const body = { squareIds, amount };
+  createPurchase(squareIds: number[]) {
+    const body = { squareIds };
     return this.http.post<{ purchaseId: number; amount: number; squareCount: number; paymentStatus: string }>(
       '/api/purchase', body
     );

@@ -27,5 +27,6 @@ export const routes: Routes = [
   },
   { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [authGuard] },
   { path: 'betalings/kanselleer', loadComponent: () => import('./components/payment-cancel/payment-cancel.component').then(m => m.PaymentCancelComponent), canActivate: [authGuard] },
+  { path: 'privaatheid', loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent) },
   { path: '**', redirectTo: '' }
 ];

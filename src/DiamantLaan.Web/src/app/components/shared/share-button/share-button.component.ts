@@ -21,15 +21,22 @@ import { CommonModule } from '@angular/common';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+    }
     .share-wrap {
       position: relative;
-      display: inline-block;
+      display: block;
+      width: 100%;
     }
     .share-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.375rem;
+      width: 100%;
     }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .share-menu {
       position: absolute;
       top: calc(100% + 0.375rem);

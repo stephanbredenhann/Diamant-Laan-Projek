@@ -41,14 +41,11 @@ interface StatusCount {
 interface Stats {
   totalSquares: number;
   soldSquares: number;
-  progress: number;
   totalRaised: number;
   sponsorBaseline: number;
   averageSpendPerBlock: number;
   perStatus: StatusCount[];
   dailySales: DailySale[];
-  overMinimumSquares: number;
-  exactMinimumSquares: number;
   oraniaSpend: number;
   outsiderSpend: number;
 }
@@ -103,10 +100,6 @@ type OraniaChartMode = 'spend' | 'count';
               <div class="mini-progress-fill" [style.width.%]="salesPercent"></div>
             </div>
             <div class="stat-sub">{{ salesPercent | number:'1.0-1' }}% verkoop · {{ availableSquares | number:'1.0-0' }} beskikbaar</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ stats.progress }}<small>%</small></div>
-            <div class="stat-label">Gefinansier</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">R{{ stats.averageSpendPerBlock | number:'1.0-0' }}</div>
@@ -187,14 +180,6 @@ type OraniaChartMode = 'spend' | 'count';
               [data]="statusChartData"
               [options]="donutChartOptions"
               [type]="'doughnut'">
-            </canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Blokke: Bo Minimum vs R500 Presies</h3>
-            <canvas baseChart
-              [data]="overMinimumChartData"
-              [options]="donutChartOptions"
-              [type]="'pie'">
             </canvas>
           </div>
           <div class="chart-card">
@@ -572,14 +557,11 @@ export class AdminStatsComponent implements OnInit {
   stats: Stats = {
     totalSquares: 4200,
     soldSquares: 0,
-    progress: 0,
     totalRaised: 0,
     sponsorBaseline: 2_000_000,
     averageSpendPerBlock: 0,
     perStatus: [],
     dailySales: [],
-    overMinimumSquares: 0,
-    exactMinimumSquares: 0,
     oraniaSpend: 0,
     outsiderSpend: 0
   };
@@ -604,7 +586,6 @@ export class AdminStatsComponent implements OnInit {
   dailyChartData: any;
   squaresChartData: any;
   statusChartData: any;
-  overMinimumChartData: any;
   oraniaChartData: any;
 
   lineChartOptions: any = {
@@ -921,7 +902,6 @@ export class AdminStatsComponent implements OnInit {
     this.buildDailyChart();
     this.buildSquaresChart();
     this.buildStatusChart();
-    this.buildOverMinimumChart();
     this.buildOraniaChart();
   }
 
@@ -987,17 +967,6 @@ export class AdminStatsComponent implements OnInit {
       datasets: [{
         data: statusCounts,
         backgroundColor: statusColors,
-        borderWidth: 1
-      }]
-    };
-  }
-
-  private buildOverMinimumChart() {
-    this.overMinimumChartData = {
-      labels: ['Bo R500 per blok', 'Presies R500 per blok'],
-      datasets: [{
-        data: [this.stats.overMinimumSquares, this.stats.exactMinimumSquares],
-        backgroundColor: ['#6B7B3C', '#D4C4A8'],
         borderWidth: 1
       }]
     };

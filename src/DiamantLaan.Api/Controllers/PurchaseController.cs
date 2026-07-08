@@ -45,11 +45,7 @@ public class PurchaseController : ControllerBase
             if (squares.Any(s => s.Id < 1 || s.Id > 4200))
                 return BadRequest(new { message = "Ongeldige blokke gekies." });
 
-            var minimumAmount = squares.Count * 500m;
-            decimal amount = dto.Amount ?? minimumAmount;
-
-            if (amount < minimumAmount)
-                return BadRequest(new { message = $"Minimum bedrag is R{minimumAmount:0} (R500 per blok)." });
+            var amount = squares.Count * 500m;
 
             var purchase = new Purchase
             {

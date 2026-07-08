@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, Simpl
 import * as L from 'leaflet';
 import { Square, SquareStatus, STATUS_LABELS, STATUS_COLORS, MapViewMode } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
-import { generateSquareGeoJson, getMapBounds } from './coordinate-config';
+import { generateSquareGeoJson, getMapBounds, getSquareCentroid } from './coordinate-config';
 
 const SOLD_COLOR = '#C67B5C';
 const AVAILABLE_COLOR = '#D4C4A8';
@@ -46,12 +46,13 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
     if (changes['squares']) {
       this.rebuildLayer();
-      return;
     }
-
     if (changes['selectedIds'] || changes['statusFilter'] || changes['viewMode']) {
       this.syncSelectedIdSet();
       this.applyStyles();
+      if (changes['selectedIds']) {
+        this.closeTooltipIfDeselected();
+      }
     }
   }
 
@@ -67,6 +68,59 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       this.map.dragging.enable();
       this.map.getContainer().style.touchAction = '';
       this.cancelSelection();
+    }
+  }
+
+  focusSquare(squareId: number, options?: { showTooltip?: boolean }): void {
+    if (!this.initialized || !this.map) return;
+
+    this.closeActiveTooltip();
+
+    const centroid = getSquareCentroid(squareId);
+    if (!centroid) return;
+
+    const zoom = Math.max(this.map.getZoom(), 20);
+    this.map.flyTo([centroid.lat, centroid.lng], zoom, { duration: 0.75 });
+
+    if (options?.showTooltip) {
+      this.map.once('moveend', () => {
+        const layer = this.findLayerBySquareId(squareId);
+        if (!layer) return;
+
+        this.closeActiveTooltip();
+        layer.openTooltip();
+        this.activeTooltipLayer = layer;
+      });
+    }
+  }
+
+  private findLayerBySquareId(squareId: number): L.Layer | null {
+    if (!this.geoLayer) return null;
+
+    let found: L.Layer | null = null;
+    this.geoLayer.eachLayer((layer: L.Layer) => {
+      if (found) return;
+      const id = (layer as L.Layer & { feature?: GeoJSON.Feature }).feature?.properties?.['id'] as number | undefined;
+      if (id === squareId) {
+        found = layer;
+      }
+    });
+    return found;
+  }
+
+  private closeActiveTooltip(): void {
+    if (this.activeTooltipLayer) {
+      this.activeTooltipLayer.closeTooltip();
+      this.activeTooltipLayer = null;
+    }
+  }
+
+  private closeTooltipIfDeselected(): void {
+    if (!this.activeTooltipLayer) return;
+
+    const id = (this.activeTooltipLayer as L.Layer & { feature?: GeoJSON.Feature }).feature?.properties?.['id'] as number | undefined;
+    if (id == null || !this.selectedIdSet.has(id)) {
+      this.closeActiveTooltip();
     }
   }
 
@@ -98,10 +152,12 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       maxZoom: 22,
       maxBounds: getMapBounds(),
       maxBoundsViscosity: 1.0,
-      zoomControl: true,
+      zoomControl: false,
       attributionControl: true,
       renderer: L.canvas(),
     });
+
+    L.control.zoom({ position: 'topright' }).addTo(this.map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -285,12 +341,21 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
           return;
         }
 
-        if (this.activeTooltipLayer && this.activeTooltipLayer !== layer) {
-          this.activeTooltipLayer.closeTooltip();
+        const wasSelected = this.selectedIdSet.has(id);
+
+        if (wasSelected) {
+          layer.closeTooltip();
+          if (this.activeTooltipLayer === layer) {
+            this.activeTooltipLayer = null;
+          }
+        } else {
+          if (this.activeTooltipLayer && this.activeTooltipLayer !== layer) {
+            this.activeTooltipLayer.closeTooltip();
+          }
+          layer.openTooltip();
+          this.activeTooltipLayer = layer;
         }
 
-        layer.openTooltip();
-        this.activeTooltipLayer = layer;
         this.squareClicked.emit(id);
       });
     });

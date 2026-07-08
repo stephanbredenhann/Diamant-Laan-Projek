@@ -9,12 +9,19 @@
   width: 100%;
 }
 
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100;
+  pointer-events: none;
+}
+
 .select-toggle {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 800;
+  pointer-events: auto;
   padding: 6px 16px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -42,6 +49,7 @@
 }
 
 .map-container {
+  position: relative;
   width: 100%;
   height: 70vh;
   min-height: 400px;
@@ -51,9 +59,20 @@
   background: var(--color-cream);
 }
 
+:host ::ng-deep .leaflet-tile-pane { z-index: 1; }
+:host ::ng-deep .leaflet-overlay-pane { z-index: 2; }
+:host ::ng-deep .leaflet-shadow-pane { z-index: 3; }
+:host ::ng-deep .leaflet-marker-pane { z-index: 4; }
+:host ::ng-deep .leaflet-tooltip-pane { z-index: 5; }
+:host ::ng-deep .leaflet-popup-pane { z-index: 6; }
+
 :host ::ng-deep .leaflet-control-container .leaflet-top,
 :host ::ng-deep .leaflet-control-container .leaflet-bottom {
-  z-index: 600;
+  z-index: 1000;
+}
+
+:host ::ng-deep .leaflet-control {
+  z-index: 800;
 }
 
 :host ::ng-deep .block-info-tooltip {

@@ -43,10 +43,13 @@ import { blokLabel } from '../../utils/afrikaans.util';
             <label for="squareIds">Blok ID's (komma-geskei)</label>
             <input id="squareIds" [(ngModel)]="squareIdsText" name="squareIds" required placeholder="101, 102, 103">
           </div>
-          <div class="field">
-            <label for="amountPaid">Bedrag Betaal (min R{{ minimumAmount }})</label>
-            <input id="amountPaid" type="number" min="500" [(ngModel)]="amountPaid" name="amountPaid" required>
-          </div>
+          @if (parseSquareIds().length > 0) {
+            <div class="field total-summary">
+              <span class="total-label">Totaal</span>
+              <span class="total-amount">R{{ totalAmount }}</span>
+              <span class="total-hint">R500 per blok</span>
+            </div>
+          }
           <div class="field">
             <label for="proof">Bewys van Betaling (PDF, opsioneel)</label>
             <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
@@ -114,13 +117,40 @@ import { blokLabel } from '../../utils/afrikaans.util';
       outline-offset: 2px;
     }
     .field input[type="text"],
-    .field input[type="email"],
-    .field input[type="number"] {
+    .field input[type="email"] {
       width: 100%;
       padding: 0.625rem 0.75rem;
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       font-size: 0.875rem;
+    }
+    .total-summary {
+      background: var(--color-cream);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+    .total-label {
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+    }
+    .total-amount {
+      display: block;
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+    .total-hint {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-top: 0.25rem;
     }
     .msg {
       font-size: 0.8125rem;
@@ -148,15 +178,13 @@ export class AdminManualPurchaseComponent {
   phoneNumber = '';
   isOraniaResident = false;
   squareIdsText = '';
-  amountPaid = 500;
   proofFile: File | null = null;
   message = '';
   isError = false;
   loading = false;
 
-  get minimumAmount(): number {
-    const count = this.parseSquareIds().length;
-    return count > 0 ? count * 500 : 500;
+  get totalAmount(): number {
+    return this.parseSquareIds().length * 500;
   }
 
   onFileSelected(event: Event) {
@@ -182,20 +210,12 @@ export class AdminManualPurchaseComponent {
       return;
     }
 
-    const min = squareIds.length * 500;
-    if (this.amountPaid < min) {
-      this.message = `Minimum bedrag is R${min}.`;
-      this.isError = true;
-      return;
-    }
-
     const formData = new FormData();
     formData.append('firstName', this.firstName.trim());
     formData.append('lastName', this.lastName.trim());
     formData.append('email', this.email.trim());
     formData.append('phoneNumber', this.phoneNumber.trim());
     formData.append('isOraniaResident', String(this.isOraniaResident));
-    formData.append('amountPaid', String(this.amountPaid));
     squareIds.forEach(id => formData.append('squareIds', String(id)));
     if (this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
@@ -211,7 +231,6 @@ export class AdminManualPurchaseComponent {
         this.phoneNumber = '';
         this.isOraniaResident = false;
         this.squareIdsText = '';
-        this.amountPaid = 500;
         this.proofFile = null;
         this.loading = false;
       },

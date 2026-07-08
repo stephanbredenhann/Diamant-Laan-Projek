@@ -92,13 +92,18 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .summary strong { color: var(--color-terracotta); }
     .header-actions {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 0.75rem;
-      align-items: center;
       margin-top: 0.75rem;
     }
-    .cert-link { display: inline-flex; }
+    .cert-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
@@ -179,6 +184,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
+      .header-actions { grid-template-columns: 1fr; }
     }
   `]
 })

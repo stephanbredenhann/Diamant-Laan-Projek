@@ -23,10 +23,6 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
     <div class="admin-content">
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-value">{{ stats.progress }}<small>%</small></div>
-          <div class="stat-label">Gefinansier</div>
-        </div>
-        <div class="stat-card">
           <div class="stat-value">R{{ stats.totalRaised | number:'1.0-0' }}</div>
           <div class="stat-label">Ingesamel</div>
         </div>
@@ -248,7 +244,7 @@ export class AdminComponent implements OnInit {
   private road = inject(RoadService);
 
   squares: Square[] = [];
-  stats = { progress: 0, totalRaised: 0 };
+  stats = { totalRaised: 0 };
   selectedIds = signal<Set<number>>(new Set());
   targetStatus: SquareStatus | null = null;
   message = '';
@@ -413,7 +409,7 @@ export class AdminComponent implements OnInit {
 
   private refresh() {
     this.admin.getStats().subscribe({
-      next: s => this.stats = s,
+      next: s => this.stats = { totalRaised: s.totalRaised ?? 0 },
       error: () => {
         this.message = 'Kon nie statistieke laai nie.';
         this.isError = true;
