@@ -18,6 +18,9 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<ProgressImage> ProgressImages => Set<ProgressImage>();
     public DbSet<ProgressImageSquare> ProgressImageSquares => Set<ProgressImageSquare>();
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
+    public DbSet<PasswordResetOtp> PasswordResetOtps => Set<PasswordResetOtp>();
+    public DbSet<ProfileChangeLog> ProfileChangeLogs => Set<ProfileChangeLog>();
+    public DbSet<PendingBlockNotification> PendingBlockNotifications => Set<PendingBlockNotification>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -82,6 +85,38 @@ public class AppDbContext : IdentityDbContext<User>
         builder.Entity<Square>()
             .Property(s => s.RowVersion)
             .IsRowVersion();
+
+        builder.Entity<PasswordResetOtp>()
+            .HasOne(o => o.User)
+            .WithMany()
+            .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProfileChangeLog>()
+            .HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProfileChangeLog>()
+            .HasIndex(l => new { l.UserId, l.CreatedAt });
+
+        builder.Entity<PendingBlockNotification>()
+            .HasKey(p => p.UserId);
+
+        builder.Entity<PendingBlockNotification>()
+            .HasOne(p => p.User)
+            .WithMany()
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<User>()
+            .Property(u => u.ReceiveBlockProgressEmails)
+            .HasDefaultValue(true);
+
+        builder.Entity<User>()
+            .Property(u => u.PhoneCountryCode)
+            .HasDefaultValue("+27");
     }
 
     public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)

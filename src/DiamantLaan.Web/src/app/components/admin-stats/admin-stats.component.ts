@@ -16,7 +16,6 @@ interface Buyer {
   isOraniaResident?: boolean;
   squares: number;
   totalSpent: number;
-  spendPerBlock: number;
 }
 
 interface NonPurchaser {
@@ -43,7 +42,6 @@ interface Stats {
   soldSquares: number;
   totalRaised: number;
   sponsorBaseline: number;
-  averageSpendPerBlock: number;
   perStatus: StatusCount[];
   dailySales: DailySale[];
   oraniaSpend: number;
@@ -100,10 +98,6 @@ type OraniaChartMode = 'spend' | 'count';
               <div class="mini-progress-fill" [style.width.%]="salesPercent"></div>
             </div>
             <div class="stat-sub">{{ salesPercent | number:'1.0-1' }}% verkoop · {{ availableSquares | number:'1.0-0' }} beskikbaar</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">R{{ stats.averageSpendPerBlock | number:'1.0-0' }}</div>
-            <div class="stat-label">Gemiddelde Donasie per Blok</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ conversionRate | number:'1.0-1' }}<small>%</small></div>
@@ -240,9 +234,6 @@ type OraniaChartMode = 'spend' | 'count';
                   <th (click)="sortBy('totalSpent')" class="numeric" [class.sorted]="sortKey === 'totalSpent'">
                     Totaal Bestee <span class="sort-icon">{{ sortIcon('totalSpent') }}</span>
                   </th>
-                  <th (click)="sortBy('spendPerBlock')" class="numeric" [class.sorted]="sortKey === 'spendPerBlock'">
-                    Bestee per Blok <span class="sort-icon">{{ sortIcon('spendPerBlock') }}</span>
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -254,12 +245,11 @@ type OraniaChartMode = 'spend' | 'count';
                     <td>{{ b.isOraniaResident ? 'Ja' : 'Nee' }}</td>
                     <td class="numeric">{{ b.squares }}</td>
                     <td class="numeric">R{{ b.totalSpent | number:'1.0-0' }}</td>
-                    <td class="numeric">R{{ b.spendPerBlock | number:'1.0-0' }}</td>
                   </tr>
                 }
                 @if (filteredBuyers.length === 0) {
                   <tr>
-                    <td colspan="7" class="empty">Geen kopers gevind nie.</td>
+                    <td colspan="6" class="empty">Geen kopers gevind nie.</td>
                   </tr>
                 }
               </tbody>
@@ -559,7 +549,6 @@ export class AdminStatsComponent implements OnInit {
     soldSquares: 0,
     totalRaised: 0,
     sponsorBaseline: 2_000_000,
-    averageSpendPerBlock: 0,
     perStatus: [],
     dailySales: [],
     oraniaSpend: 0,
@@ -677,10 +666,7 @@ export class AdminStatsComponent implements OnInit {
 
     this.admin.getPurchases().subscribe({
       next: (b) => {
-        this.buyers = b.map((buyer: Omit<Buyer, 'spendPerBlock'>) => ({
-          ...buyer,
-          spendPerBlock: buyer.squares > 0 ? buyer.totalSpent / buyer.squares : 0
-        }));
+        this.buyers = b;
         this.applyFilters();
         this.buildOraniaChart();
         this.finishRequest();
@@ -847,15 +833,14 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadCsv() {
-    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Blokke', 'Totaal Bestee', 'Bestee per Blok'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Blokke', 'Totaal Bestee'];
     const rows = this.filteredBuyers.map(b => [
       b.name,
       b.email,
       b.phoneNumber || '',
       b.isOraniaResident ? 'Ja' : 'Nee',
       b.squares.toString(),
-      b.totalSpent.toString(),
-      b.spendPerBlock.toFixed(0)
+      b.totalSpent.toString()
     ]);
 
     this.downloadCsvFile('diamant-laan-kopers.csv', headers, rows);

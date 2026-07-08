@@ -30,6 +30,7 @@ import { AuthService } from '../../services/auth.service';
             {{ loading ? 'Besig...' : 'Meld aan' }}
           </button>
         </form>
+        <p class="auth-link"><a routerLink="/wagwoord-vergeet">Wagwoord vergeet?</a></p>
         <p class="auth-link">Nog nie 'n rekening? <a routerLink="/registreer">Registreer hier</a></p>
       </div>
     </div>

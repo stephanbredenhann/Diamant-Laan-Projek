@@ -31,35 +31,35 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
           <div class="stat-label">Gekies</div>
         </div>
       </div>
-      <div class="controls">
-        @if (selectedIds().size > 0) {
-          <select [(ngModel)]="targetStatus" (change)="updateStatus()">
-            <option [ngValue]="null">Stel in as...</option>
-            @for (s of STATUS_OPTIONS; track s) {
-              <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
-            }
-          </select>
-        }
-        <button class="btn btn-outline btn-sm" (click)="clearSelection()">
-          Maak Keuses Skoon ({{ selectedIds().size }})
-        </button>
-        @if (selectedIds().size > 0) {
-          <div class="upload-panel">
-            <h4>Voeg foto by</h4>
+
+      @if (selectedIds().size > 0) {
+        <div class="action-panel" [class.has-drafts]="hasUnsavedChanges">
+          <div class="action-section">
+            <h4>Status</h4>
+            <select [(ngModel)]="draftStatus" name="draftStatus" (ngModelChange)="onDraftChanged()">
+              <option [ngValue]="null">Geen statusverandering</option>
+              @for (s of STATUS_OPTIONS; track s) {
+                <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="action-section">
+            <h4>Foto</h4>
             @if (imageConflictPrompt) {
               <div class="conflict-prompt">
                 <p>
                   {{ imageConflictPrompt.conflictingCount }} van {{ imageConflictPrompt.totalSelected }}
-                  gekose blokke het reeds 'n foto vir {{ STATUS_LABELS[imageStatus] }}.
+                  gekose blokke het reeds 'n foto vir {{ STATUS_LABELS[draftImageStatus] }}.
                 </p>
                 <div class="conflict-actions">
-                  <button class="btn btn-primary btn-sm" type="button" [disabled]="uploadingImage" (click)="confirmUpload(true)">
+                  <button class="btn btn-primary btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(true)">
                     Vervang bestaande
                   </button>
-                  <button class="btn btn-outline btn-sm" type="button" [disabled]="uploadingImage" (click)="confirmUpload(false)">
+                  <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(false)">
                     Net nuwe blokke
                   </button>
-                  <button class="btn btn-outline btn-sm" type="button" [disabled]="uploadingImage" (click)="cancelConflictPrompt()">
+                  <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="cancelConflictPrompt()">
                     Kanselleer
                   </button>
                 </div>
@@ -67,8 +67,8 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
             }
             <div class="upload-fields">
               <div class="field">
-                <label for="imageStatus">Status</label>
-                <select id="imageStatus" [(ngModel)]="imageStatus">
+                <label for="imageStatus">Foto-status</label>
+                <select id="imageStatus" [(ngModel)]="draftImageStatus" name="draftImageStatus">
                   @for (s of IMAGE_STATUS_OPTIONS; track s) {
                     <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
                   }
@@ -80,20 +80,37 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
               </div>
               <div class="field">
                 <label for="imageCaption">Byskrif (opsioneel)</label>
-                <input id="imageCaption" type="text" [(ngModel)]="imageCaption" placeholder="Bv. Teerwerk begin">
+                <input id="imageCaption" type="text" [(ngModel)]="draftImageCaption" name="draftImageCaption" placeholder="Bv. Teerwerk begin">
               </div>
-              <button
-                class="btn btn-primary btn-sm"
-                type="button"
-                [disabled]="!selectedImageFile || uploadingImage || !!imageConflictPrompt"
-                (click)="startUpload()"
-              >
-                {{ uploadingImage ? 'Laai op...' : 'Laai foto op' }}
-              </button>
             </div>
+            @if (draftImageFile) {
+              <p class="draft-file-hint">Gekose lêer: {{ draftImageFile.name }}</p>
+            }
           </div>
-        }
-      </div>
+
+          <div class="action-footer">
+            <button
+              class="btn btn-primary btn-sm"
+              type="button"
+              [disabled]="!hasUnsavedChanges || saving || !!imageConflictPrompt"
+              (click)="saveChanges()"
+            >
+              {{ saving ? 'Besig...' : 'Stoor veranderinge' }}
+            </button>
+            <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="cancelDrafts()">
+              Kanselleer
+            </button>
+            <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="clearSelection()">
+              Maak keuses skoon ({{ selectedIds().size }})
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="controls">
+          <p class="select-hint">Kies blokke op die kaart om status of 'n foto by te werk.</p>
+        </div>
+      }
+
       @if (message) {
         <div class="msg" [class.error]="isError">{{ message }}</div>
       }
@@ -107,6 +124,7 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
       <app-road-map
         [squares]="squares"
         [selectedIds]="selectedIdsArray()"
+        [viewMode]="'status'"
         (squareClicked)="toggleById($event)"
         (squaresRangeSelected)="selectRange($event)"
       />
@@ -134,11 +152,6 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
       font-weight: 700;
       color: var(--color-text);
     }
-    .stat-value small {
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: var(--color-muted);
-    }
     .stat-label {
       font-family: var(--font-heading);
       font-size: 0.6875rem;
@@ -148,14 +161,43 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
       margin-top: 0.125rem;
     }
     .controls {
-      display: flex;
-      gap: 0.75rem;
       margin-bottom: 1rem;
-      flex-wrap: wrap;
     }
-    .controls select {
+    .select-hint {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+    }
+    .action-panel {
+      background: var(--color-cream);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .action-panel.has-drafts {
+      border-color: #D97706;
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15);
+    }
+    .action-section h4 {
+      font-family: var(--font-heading);
+      font-size: 0.875rem;
+      margin-bottom: 0.625rem;
+      color: var(--color-text);
+    }
+    .action-section select {
       width: auto;
-      min-width: 200px;
+      min-width: 220px;
+      max-width: 100%;
+    }
+    .action-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--color-border);
     }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .msg {
@@ -177,20 +219,6 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
     .dot.prep { background: #B5651D; }
     .dot.busy { background: #8B7355; }
     .dot.done { background: #6B7B3C; }
-    .upload-panel {
-      width: 100%;
-      background: var(--color-cream);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 1rem;
-      margin-top: 0.5rem;
-    }
-    .upload-panel h4 {
-      font-family: var(--font-heading);
-      font-size: 0.875rem;
-      margin-bottom: 0.75rem;
-      color: var(--color-text);
-    }
     .conflict-prompt {
       background: #F5F0E1;
       border: 1px solid var(--color-border);
@@ -232,6 +260,11 @@ const IMAGE_STATUS_OPTIONS: SquareStatus[] = [
       border-radius: var(--radius-sm);
       font-size: 0.8125rem;
     }
+    .draft-file-hint {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--color-muted);
+    }
     @media (max-width: 640px) {
       .stats-row { flex-direction: column; }
     }
@@ -246,20 +279,31 @@ export class AdminComponent implements OnInit {
   squares: Square[] = [];
   stats = { totalRaised: 0 };
   selectedIds = signal<Set<number>>(new Set());
-  targetStatus: SquareStatus | null = null;
+
+  draftStatus: SquareStatus | null = null;
+  draftImageStatus: SquareStatus = SquareStatus.Voorberei;
+  draftImageCaption = '';
+  draftImageFile: File | null = null;
+
   message = '';
   isError = false;
-  imageStatus: SquareStatus = SquareStatus.Voorberei;
-  imageCaption = '';
-  selectedImageFile: File | null = null;
-  uploadingImage = false;
+  saving = false;
   imageConflictPrompt: { conflictingCount: number; totalSelected: number } | null = null;
+
   STATUS_LABELS = STATUS_LABELS;
   STATUS_OPTIONS = STATUS_OPTIONS;
   IMAGE_STATUS_OPTIONS = IMAGE_STATUS_OPTIONS;
 
+  get hasUnsavedChanges(): boolean {
+    return this.draftStatus !== null || this.draftImageFile !== null;
+  }
+
   ngOnInit() {
     this.refresh();
+  }
+
+  onDraftChanged() {
+    // Triggers change detection for hasUnsavedChanges when status select changes
   }
 
   selectedIdsArray(): number[] {
@@ -283,13 +327,21 @@ export class AdminComponent implements OnInit {
     const ids = Array.from(this.selectedIds());
     if (ids.length === 0) return;
     const first = this.squares.find(s => s.id === ids[0]);
-    if (first) this.imageStatus = first.status;
+    if (first) this.draftImageStatus = first.status;
   }
 
   clearSelection() {
     this.selectedIds.set(new Set());
+    this.cancelDrafts();
     this.message = '';
+  }
+
+  cancelDrafts() {
+    this.draftStatus = null;
+    this.draftImageCaption = '';
+    this.draftImageFile = null;
     this.imageConflictPrompt = null;
+    this.resetImageInput();
   }
 
   selectRange(ids: number[]) {
@@ -301,24 +353,51 @@ export class AdminComponent implements OnInit {
 
   onImageSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.selectedImageFile = input.files?.[0] ?? null;
+    this.draftImageFile = input.files?.[0] ?? null;
     this.imageConflictPrompt = null;
   }
 
-  startUpload() {
-    if (!this.selectedImageFile || this.selectedIds().size === 0) return;
+  saveChanges() {
+    if (!this.hasUnsavedChanges || this.selectedIds().size === 0) return;
     this.message = '';
     this.isError = false;
-    this.imageConflictPrompt = null;
+    this.saving = true;
 
+    const afterStatus = () => {
+      if (this.draftImageFile) {
+        this.startImageConflictCheck();
+      } else {
+        this.finishSaveSuccess(this.buildStatusOnlyMessage());
+      }
+    };
+
+    if (this.draftStatus !== null) {
+      const ids = Array.from(this.selectedIds());
+      const status = this.draftStatus;
+      this.admin.updateStatus(ids, status).subscribe({
+        next: () => afterStatus(),
+        error: (err) => {
+          this.message = err.error?.message || 'Statusopdatering het misluk.';
+          this.isError = true;
+          this.saving = false;
+        }
+      });
+    } else {
+      afterStatus();
+    }
+  }
+
+  private startImageConflictCheck() {
+    if (!this.draftImageFile || this.selectedIds().size === 0) return;
     const ids = Array.from(this.selectedIds());
-    this.admin.checkImageConflicts(ids, this.imageStatus).subscribe({
+    this.admin.checkImageConflicts(ids, this.draftImageStatus).subscribe({
       next: (result) => {
         if (result.conflictingSquareIds.length > 0) {
           this.imageConflictPrompt = {
             conflictingCount: result.conflictingSquareIds.length,
             totalSelected: result.totalSelected
           };
+          this.saving = false;
         } else {
           this.performUpload(false);
         }
@@ -326,11 +405,13 @@ export class AdminComponent implements OnInit {
       error: (err) => {
         this.message = err.error?.message || 'Kon nie konflikte kontroleer nie.';
         this.isError = true;
+        this.saving = false;
       }
     });
   }
 
   confirmUpload(replaceExisting: boolean) {
+    this.saving = true;
     this.performUpload(replaceExisting);
   }
 
@@ -339,9 +420,8 @@ export class AdminComponent implements OnInit {
   }
 
   private performUpload(replaceExisting: boolean) {
-    if (!this.selectedImageFile || this.selectedIds().size === 0) return;
+    if (!this.draftImageFile || this.selectedIds().size === 0) return;
 
-    this.uploadingImage = true;
     this.message = '';
     this.isError = false;
     this.imageConflictPrompt = null;
@@ -350,24 +430,40 @@ export class AdminComponent implements OnInit {
     for (const id of this.selectedIds()) {
       formData.append('squareIds', String(id));
     }
-    formData.append('status', String(this.imageStatus));
-    formData.append('image', this.selectedImageFile);
-    if (this.imageCaption.trim()) {
-      formData.append('caption', this.imageCaption.trim());
+    formData.append('status', String(this.draftImageStatus));
+    formData.append('image', this.draftImageFile);
+    if (this.draftImageCaption.trim()) {
+      formData.append('caption', this.draftImageCaption.trim());
     }
+
+    const statusPart = this.draftStatus !== null
+      ? `${this.selectedIds().size} ${blokLabel(this.selectedIds().size)} se status opgedateer. `
+      : '';
 
     this.admin.uploadProgressImage(formData, replaceExisting).subscribe({
       next: (res) => {
-        this.message = this.buildUploadSuccessMessage(res);
-        this.uploadingImage = false;
-        this.resetImageForm();
+        this.finishSaveSuccess(statusPart + this.buildUploadSuccessMessage(res));
       },
       error: (err) => {
         this.message = err.error?.message || 'Foto-oplaai het misluk.';
         this.isError = true;
-        this.uploadingImage = false;
+        this.saving = false;
       }
     });
+  }
+
+  private finishSaveSuccess(msg: string) {
+    this.message = msg;
+    this.isError = false;
+    this.saving = false;
+    this.cancelDrafts();
+    this.selectedIds.set(new Set());
+    this.refresh();
+  }
+
+  private buildStatusOnlyMessage(): string {
+    const n = this.selectedIds().size;
+    return `${n} ${blokLabel(n)} se status opgedateer.`;
   }
 
   private buildUploadSuccessMessage(res: { squareCount: number; replacedCount?: number; skippedCount?: number }) {
@@ -381,30 +477,10 @@ export class AdminComponent implements OnInit {
     return msg;
   }
 
-  private resetImageForm() {
-    this.selectedImageFile = null;
-    this.imageCaption = '';
+  private resetImageInput() {
     if (this.imageFileInput?.nativeElement) {
       this.imageFileInput.nativeElement.value = '';
     }
-  }
-
-  updateStatus() {
-    this.message = ''; this.isError = false;
-    if (!this.targetStatus || this.selectedIds().size === 0) return;
-    const ids = Array.from(this.selectedIds());
-    this.admin.updateStatus(ids, this.targetStatus).subscribe({
-      next: () => {
-        this.message = `${ids.length} ${blokLabel(ids.length)} opgedateer.`;
-        this.targetStatus = null;
-        this.refresh();
-        this.clearSelection();
-      },
-      error: (err) => {
-        this.message = err.error?.message || 'Opdatering het misluk.';
-        this.isError = true;
-      }
-    });
   }
 
   private refresh() {

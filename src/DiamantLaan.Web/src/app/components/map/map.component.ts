@@ -33,75 +33,104 @@ import { blokLabel } from '../../utils/afrikaans.util';
               >Beskikbaarheid</button>
             </div>
           </div>
-          <div class="map-pill-controls-group">
-            <div class="auto-pick-section">
-              <span class="auto-pick-label">Outomatiese keuse</span>
-              <p class="auto-pick-hint">Kies hoeveel blokke jy wil hê, dan druk die knoppie.</p>
-              <div class="auto-pick-panel">
-                <div class="view-toggle pick-amount-toggle">
-                  @for (preset of pickPresets; track preset) {
+          <div class="controls-disclosure">
+            <button
+              type="button"
+              class="controls-toggle"
+              (click)="toggleControlsExpanded()"
+              [attr.aria-expanded]="controlsExpanded()"
+              aria-controls="map-pill-controls"
+            >
+              <span class="controls-toggle-label">Kies vir my en Soek</span>
+              <svg
+                class="controls-chevron"
+                [class.rotated]="controlsExpanded()"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir 'n spesifieke bloknommer</p>
+            @if (controlsExpanded()) {
+              <div id="map-pill-controls" class="map-pill-controls-group" role="region" aria-label="Blokke-kies en soek">
+                <div class="auto-pick-section">
+                  <span class="auto-pick-label">Outomatiese keuse</span>
+                  <p class="auto-pick-hint">Kies hoeveel blokke jy wil hê, dan druk die knoppie.</p>
+                  <div class="auto-pick-panel">
+                    <div class="view-toggle pick-amount-toggle">
+                      @for (preset of pickPresets; track preset) {
+                        <button
+                          type="button"
+                          [class.active]="pickPreset() === preset"
+                          (click)="setPreset(preset)"
+                        >{{ preset }}</button>
+                      }
+                      <div
+                        class="pick-custom-segment"
+                        [class.active]="pickCustomMode()"
+                        (click)="setCustomMode()"
+                      >
+                        @if (pickCustomMode()) {
+                          <input
+                            #customCountInput
+                            type="number"
+                            name="customCount"
+                            class="pick-custom-input"
+                            min="1"
+                            [(ngModel)]="customCount"
+                            (click)="$event.stopPropagation()"
+                          />
+                        } @else {
+                          Eie hoeveelheid
+                        }
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      [class.active]="pickPreset() === preset"
-                      (click)="setPreset(preset)"
-                    >{{ preset }}</button>
-                  }
-                  <div
-                    class="pick-custom-segment"
-                    [class.active]="pickCustomMode()"
-                    (click)="setCustomMode()"
-                  >
-                    @if (pickCustomMode()) {
-                      <input
-                        #customCountInput
-                        type="number"
-                        name="customCount"
-                        class="pick-custom-input"
-                        min="1"
-                        [(ngModel)]="customCount"
-                        (click)="$event.stopPropagation()"
-                      />
-                    } @else {
-                      Eie hoeveelheid
-                    }
+                      class="pick-action-btn"
+                      (click)="pickForMe()"
+                      [disabled]="picking()"
+                    >{{ picking() ? 'Besig...' : 'Kies vir my' }}</button>
                   </div>
+                  @if (pickError()) {
+                    <div class="msg error">{{ pickError() }}</div>
+                  }
                 </div>
-                <button
-                  type="button"
-                  class="pick-action-btn"
-                  (click)="pickForMe()"
-                  [disabled]="picking()"
-                >{{ picking() ? 'Besig...' : 'Kies vir my' }}</button>
+                <div class="search-block-section">
+                  <span class="auto-pick-label">Soek n spesifiek blok</span>
+                  <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek.</p>
+                  <div class="auto-pick-panel search-block-panel">
+                    <input
+                      #searchBlockInput
+                      type="number"
+                      name="searchBlockNumber"
+                      class="search-block-input"
+                      min="1"
+                      max="4200"
+                      placeholder="Bloknommer"
+                      [(ngModel)]="searchBlockNumber"
+                      (keydown.enter)="searchBlock()"
+                    />
+                    <button
+                      type="button"
+                      class="pick-action-btn"
+                      (click)="searchBlock()"
+                    >Soek</button>
+                  </div>
+                  @if (searchError()) {
+                    <div class="msg error">{{ searchError() }}</div>
+                  }
+                </div>
               </div>
-              @if (pickError()) {
-                <div class="msg error">{{ pickError() }}</div>
-              }
-            </div>
-            <div class="search-block-section">
-              <span class="auto-pick-label">Soek n spesifiek blok</span>
-              <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek.</p>
-              <div class="auto-pick-panel search-block-panel">
-                <input
-                  #searchBlockInput
-                  type="number"
-                  name="searchBlockNumber"
-                  class="search-block-input"
-                  min="1"
-                  max="4200"
-                  placeholder="Bloknommer"
-                  [(ngModel)]="searchBlockNumber"
-                  (keydown.enter)="searchBlock()"
-                />
-                <button
-                  type="button"
-                  class="pick-action-btn"
-                  (click)="searchBlock()"
-                >Soek</button>
-              </div>
-              @if (searchError()) {
-                <div class="msg error">{{ searchError() }}</div>
-              }
-            </div>
+            }
           </div>
           <div class="legend">
             @if (viewMode() === 'status') {
@@ -183,6 +212,53 @@ import { blokLabel } from '../../utils/afrikaans.util';
       align-items: center;
       margin-bottom: 0.75rem;
     }
+    .controls-disclosure {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 0.75rem;
+    }
+    .controls-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 44px;
+      padding: 0.5rem 1.25rem;
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      font-family: var(--font-heading);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .controls-toggle:hover {
+      background: rgba(3, 78, 162, 0.06);
+      border-color: var(--ob-blue);
+      color: var(--ob-blue);
+    }
+    .controls-toggle-label {
+      line-height: 1.2;
+    }
+    .controls-chevron {
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .controls-chevron.rotated {
+      transform: rotate(180deg);
+    }
+    .controls-toggle-hint {
+      margin-top: 0.375rem;
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      text-align: center;
+      max-width: 28rem;
+      line-height: 1.4;
+    }
     .map-pill-controls-group {
       display: inline-flex;
       flex-direction: column;
@@ -190,7 +266,16 @@ import { blokLabel } from '../../utils/afrikaans.util';
       gap: 0.75rem;
       width: fit-content;
       max-width: 100%;
-      margin-bottom: 0.625rem;
+      margin-top: 0.75rem;
+      animation: controls-reveal 0.2s ease;
+    }
+    @keyframes controls-reveal {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .controls-chevron { transition: none; }
+      .map-pill-controls-group { animation: none; }
     }
     .auto-pick-section,
     .search-block-section {
@@ -424,12 +509,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .btn-full { width: 100%; margin-bottom: 0.5rem; }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
-    .sidebar-card .btn-primary {
-      color: #fff;
-    }
-    .sidebar-card .btn-primary:hover {
-      color: #fff;
-    }
     .msg {
       font-size: 0.8125rem;
       padding: 0.625rem 0.75rem;
@@ -516,6 +595,7 @@ export class MapComponent implements OnInit {
   selectedIds = signal<Set<number>>(new Set());
   mySquareIds = signal<number[]>([]);
   viewMode = signal<MapViewMode>('status');
+  controlsExpanded = signal(false);
   pickPreset = signal<1 | 2 | 5 | 10 | null>(null);
   pickCustomMode = signal(false);
   customCount: number | null = null;
@@ -529,6 +609,10 @@ export class MapComponent implements OnInit {
 
   totalAmount = computed(() => this.selectedIds().size * 500);
   selectedIdsArray = computed(() => Array.from(this.selectedIds()));
+
+  toggleControlsExpanded() {
+    this.controlsExpanded.update(v => !v);
+  }
 
   ngOnInit() {
     this.road.getSquares().subscribe(data => this.squares = data);

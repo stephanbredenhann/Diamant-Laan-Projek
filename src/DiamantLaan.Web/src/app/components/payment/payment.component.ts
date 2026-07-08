@@ -107,13 +107,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
       justify-content: center;
     }
     .actions .btn { flex: 1; }
-    .btn-primary {
-      color: #fff;
-    }
-    .btn-primary:hover:not(:disabled),
-    .btn-primary:disabled {
-      color: #fff;
-    }
     .btn-spinner {
       width: 16px;
       height: 16px;

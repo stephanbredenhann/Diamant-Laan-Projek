@@ -42,8 +42,8 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.AllowedForNewUsers = true;
@@ -71,18 +71,22 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.Configure<ResendSettings>(builder.Configuration.GetSection("Resend"));
+builder.Services.AddSingleton<IEmailService, ResendEmailService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<SiteSettingsService>();
+builder.Services.AddScoped<ProfileRateLimitService>();
+builder.Services.AddScoped<PasswordResetOtpService>();
+builder.Services.AddScoped<BlockNotificationService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
+builder.Services.AddHostedService<BlockNotificationBackgroundService>();
 
 var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSettings>()
     ?? new PayFastSettings();
 
 builder.Services.AddSingleton(payFastSettings);
 builder.Services.AddHttpClient<IPayFastService, PayFastService>();
-
-builder.Services.AddHostedService<PendingReservationCleanupService>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -94,6 +98,26 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 10,
                 Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    options.AddPolicy("forgot-password", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+    options.AddPolicy("profile", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromHours(1),
                 QueueLimit = 0
             }));
 });
@@ -114,6 +138,12 @@ if (string.IsNullOrWhiteSpace(appPayFastSettings.MerchantId) ||
     string.IsNullOrWhiteSpace(appPayFastSettings.MerchantKey))
 {
     app.Logger.LogWarning("PayFast MerchantId and/or MerchantKey are not configured. Payments will fail until they are set via user secrets or environment variables.");
+}
+
+var resendSettings = app.Configuration.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
+if (string.IsNullOrWhiteSpace(resendSettings.ApiKey) || string.IsNullOrWhiteSpace(resendSettings.FromEmail))
+{
+    app.Logger.LogWarning("Resend ApiKey and/or FromEmail are not configured. Transactional emails will be skipped until they are set via user secrets or environment variables.");
 }
 
 if (!app.Environment.IsDevelopment())

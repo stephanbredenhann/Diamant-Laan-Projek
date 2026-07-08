@@ -2,12 +2,13 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
+import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-picker-modal.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-admin-manual-purchase',
   standalone: true,
-  imports: [FormsModule, AlertComponent],
+  imports: [FormsModule, AlertComponent, BlockPickerModalComponent],
   template: `
     <div class="admin-content">
       <div class="form-card">
@@ -40,14 +41,32 @@ import { blokLabel } from '../../utils/afrikaans.util';
             </label>
           </div>
           <div class="field">
-            <label for="squareIds">Blok ID's (komma-geskei)</label>
-            <input id="squareIds" [(ngModel)]="squareIdsText" name="squareIds" required placeholder="101, 102, 103">
+            <label>Blokke</label>
+            <button type="button" class="btn btn-outline btn-sm" (click)="openPicker()">
+              Kies blokke op kaart
+            </button>
+            @if (selectedSquareIds.length > 0) {
+              <div class="pills">
+                @for (id of selectedSquareIds; track id) {
+                  <span class="block-pill">
+                    #{{ id }}
+                    <button
+                      type="button"
+                      class="block-pill-remove"
+                      (click)="removeSquare(id)"
+                      [attr.aria-label]="'Verwyder blok ' + id"
+                    >&times;</button>
+                  </span>
+                }
+              </div>
+            } @else {
+              <p class="empty-blocks">Geen blokke gekies nie.</p>
+            }
           </div>
-          @if (parseSquareIds().length > 0) {
+          @if (selectedSquareIds.length > 0) {
             <div class="field total-summary">
               <span class="total-label">Totaal</span>
               <span class="total-amount">R{{ totalAmount }}</span>
-              <span class="total-hint">R500 per blok</span>
             </div>
           }
           <div class="field">
@@ -62,6 +81,14 @@ import { blokLabel } from '../../utils/afrikaans.util';
           </button>
         </form>
       </div>
+
+      @if (pickerOpen) {
+        <app-block-picker-modal
+          [initialIds]="selectedSquareIds"
+          (confirmed)="onPickerConfirmed($event)"
+          (cancelled)="pickerOpen = false"
+        />
+      }
     </div>
   `,
   styles: [`
@@ -124,6 +151,18 @@ import { blokLabel } from '../../utils/afrikaans.util';
       border-radius: var(--radius-sm);
       font-size: 0.875rem;
     }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.75rem;
+    }
+    .empty-blocks {
+      margin-top: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
     .total-summary {
       background: var(--color-cream);
       border: 1px solid var(--color-border);
@@ -146,24 +185,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
       font-weight: 700;
       color: var(--color-text);
     }
-    .total-hint {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--color-muted);
-      margin-top: 0.25rem;
-    }
-    .msg {
-      font-size: 0.8125rem;
-      padding: 0.625rem 0.75rem;
-      border-radius: var(--radius-sm);
-      background: #E8ECD8;
-      color: #5A6A32;
-      margin-bottom: 1rem;
-    }
-    .msg.error {
-      background: #FEF2F2;
-      color: #DC2626;
-    }
     @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -177,14 +198,28 @@ export class AdminManualPurchaseComponent {
   email = '';
   phoneNumber = '';
   isOraniaResident = false;
-  squareIdsText = '';
+  selectedSquareIds: number[] = [];
+  pickerOpen = false;
   proofFile: File | null = null;
   message = '';
   isError = false;
   loading = false;
 
   get totalAmount(): number {
-    return this.parseSquareIds().length * 500;
+    return this.selectedSquareIds.length * 500;
+  }
+
+  openPicker() {
+    this.pickerOpen = true;
+  }
+
+  onPickerConfirmed(ids: number[]) {
+    this.selectedSquareIds = ids;
+    this.pickerOpen = false;
+  }
+
+  removeSquare(id: number) {
+    this.selectedSquareIds = this.selectedSquareIds.filter(x => x !== id);
   }
 
   onFileSelected(event: Event) {
@@ -192,20 +227,12 @@ export class AdminManualPurchaseComponent {
     this.proofFile = input.files?.[0] ?? null;
   }
 
-  parseSquareIds(): number[] {
-    return this.squareIdsText
-      .split(/[,\s]+/)
-      .map(s => parseInt(s.trim(), 10))
-      .filter(n => !isNaN(n) && n > 0);
-  }
-
   submit() {
     this.message = '';
     this.isError = false;
 
-    const squareIds = this.parseSquareIds();
-    if (squareIds.length === 0) {
-      this.message = 'Voer ten minste een geldige blok ID in.';
+    if (this.selectedSquareIds.length === 0) {
+      this.message = 'Kies ten minste een blok op die kaart.';
       this.isError = true;
       return;
     }
@@ -216,7 +243,7 @@ export class AdminManualPurchaseComponent {
     formData.append('email', this.email.trim());
     formData.append('phoneNumber', this.phoneNumber.trim());
     formData.append('isOraniaResident', String(this.isOraniaResident));
-    squareIds.forEach(id => formData.append('squareIds', String(id)));
+    this.selectedSquareIds.forEach(id => formData.append('squareIds', String(id)));
     if (this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
     }
@@ -230,7 +257,7 @@ export class AdminManualPurchaseComponent {
         this.email = '';
         this.phoneNumber = '';
         this.isOraniaResident = false;
-        this.squareIdsText = '';
+        this.selectedSquareIds = [];
         this.proofFile = null;
         this.loading = false;
       },

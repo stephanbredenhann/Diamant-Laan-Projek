@@ -33,7 +33,7 @@ import { AuthService } from '../../../services/auth.service';
             @if (auth.isAdmin()) {
               <a routerLink="/admin" routerLinkActive="active" (click)="menuOpen.set(false)">Admin Portaal</a>
             }
-            <span class="navbar-user desktop-only">{{ user.firstName }}</span>
+            <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">My Profiel</a>
             <button class="btn-logout" (click)="logout()">Teken Uit</button>
           } @else {
             <a routerLink="/meld-aan" class="btn-nav" (click)="menuOpen.set(false)">Meld aan</a>
@@ -119,19 +119,9 @@ import { AuthService } from '../../../services/auth.service';
     .navbar-links a.active {
       color: var(--ob-blue);
     }
-    .navbar-user {
-      font-family: var(--font-body);
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      padding: 0.5rem 0.75rem;
-    }
-    .desktop-only {
-      display: inline;
-    }
     .navbar-links > a.btn-nav {
       background: var(--ob-orange);
-      color: var(--text-body);
+      color: var(--color-on-primary);
       padding: 0.45rem 1.1rem;
       border-radius: var(--radius-sm);
       font-weight: 600;
@@ -139,10 +129,10 @@ import { AuthService } from '../../../services/auth.service';
     }
     .navbar-links > a.btn-nav:hover {
       background: #D96E10;
-      color: var(--text-body);
+      color: var(--color-on-primary);
     }
     .navbar-links > a.btn-nav.active {
-      color: var(--text-body);
+      color: var(--color-on-primary);
       background: var(--ob-orange);
     }
     .btn-logout {
@@ -167,7 +157,6 @@ import { AuthService } from '../../../services/auth.service';
 
     @media (max-width: 768px) {
       .hamburger { display: flex; align-items: center; justify-content: center; }
-      .desktop-only { display: none; }
 
       .navbar-links {
         display: none;
@@ -197,12 +186,6 @@ import { AuthService } from '../../../services/auth.service';
         text-align: center;
         justify-content: center;
         display: flex;
-      }
-
-      .navbar-user {
-        padding: 0.5rem 1.5rem;
-        font-size: 0.875rem;
-        border-bottom: 1px solid var(--color-border);
       }
 
       .btn-logout {

@@ -11,15 +11,34 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  register(firstName: string, lastName: string, email: string, password: string, phoneNumber: string, isOraniaResident: boolean) {
+  register(
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    confirmPassword: string,
+    phoneNumber: string,
+    phoneCountryCode: string,
+    isOraniaResident: boolean
+  ) {
     return this.http.post<AuthResponse>(`${this.base}/register`, {
-      firstName, lastName, email, password, phoneNumber, isOraniaResident
+      firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident
     }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
   }
 
   login(email: string, password: string) {
     return this.http.post<AuthResponse>(`${this.base}/login`, { email, password }, { withCredentials: true })
       .pipe(tap(res => this.setSession(res)));
+  }
+
+  forgotPassword(email: string) {
+    return this.http.post<{ message: string }>(`${this.base}/forgot-password`, { email });
+  }
+
+  resetPassword(email: string, otp: string, newPassword: string, confirmPassword: string) {
+    return this.http.post<{ message: string }>(`${this.base}/reset-password`, {
+      email, otp, newPassword, confirmPassword
+    });
   }
 
   refreshToken(): Observable<AuthResponse> {
@@ -35,6 +54,14 @@ export class AuthService {
     localStorage.removeItem('user');
     this.currentUser.set(null);
     this.router.navigate(['/']);
+  }
+
+  updateSessionUser(partial: Partial<AuthResponse>) {
+    const current = this.currentUser();
+    if (!current) return;
+    const updated = { ...current, ...partial };
+    localStorage.setItem('user', JSON.stringify(updated));
+    this.currentUser.set(updated);
   }
 
   isAdmin(): boolean {

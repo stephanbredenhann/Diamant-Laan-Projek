@@ -21,19 +21,22 @@ public class AdminController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly AuditLogService _audit;
     private readonly SiteSettingsService _siteSettings;
+    private readonly BlockNotificationService _blockNotifications;
 
     public AdminController(
         AppDbContext db,
         UserManager<User> userManager,
         IWebHostEnvironment env,
         AuditLogService audit,
-        SiteSettingsService siteSettings)
+        SiteSettingsService siteSettings,
+        BlockNotificationService blockNotifications)
     {
         _db = db;
         _userManager = userManager;
         _env = env;
         _audit = audit;
         _siteSettings = siteSettings;
+        _blockNotifications = blockNotifications;
     }
 
     [HttpPut("settings/home-stats")]
@@ -74,6 +77,7 @@ public class AdminController : ControllerBase
 
         await _db.SaveChangesAsync();
         await _audit.LogAsync(User, "BulkStatusUpdate", $"Updated {squares.Count} squares to {dto.Status}");
+        await _blockNotifications.QueueOwnersAsync(squares.Select(s => s.OwnerId));
 
         return Ok(new { updated = squares.Count });
     }

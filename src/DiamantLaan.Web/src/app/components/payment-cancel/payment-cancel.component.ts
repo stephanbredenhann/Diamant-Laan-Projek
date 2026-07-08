@@ -59,14 +59,6 @@ import { PurchaseService } from '../../services/purchase.service';
       flex-wrap: wrap;
     }
     .actions .btn { flex: 1; min-width: 160px; }
-    .btn-primary,
-    a.btn-primary {
-      color: #fff;
-    }
-    .btn-primary:hover:not(:disabled),
-    a.btn-primary:hover {
-      color: #fff;
-    }
     .spinner {
       width: 40px;
       height: 40px;

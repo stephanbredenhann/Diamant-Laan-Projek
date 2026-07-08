@@ -4,6 +4,7 @@ using System.Text;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Services;
+using DiamantLaan.Api.Validation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,37 +20,54 @@ public class AuthController : ControllerBase
     private readonly SignInManager<User> _signInManager;
     private readonly IConfiguration _config;
     private readonly RefreshTokenService _refreshTokens;
+    private readonly PasswordResetOtpService _passwordResetOtps;
 
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         IConfiguration config,
-        RefreshTokenService refreshTokens)
+        RefreshTokenService refreshTokens,
+        PasswordResetOtpService passwordResetOtps)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _config = config;
         _refreshTokens = refreshTokens;
+        _passwordResetOtps = passwordResetOtps;
     }
 
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
+        if (!EmailValidator.IsValid(dto.Email, out var emailError))
+            return BadRequest(new { message = emailError });
+
+        if (dto.Password != dto.ConfirmPassword)
+            return BadRequest(new { message = "Wagwoorde stem nie ooreen nie." });
+
+        if (!PasswordValidator.IsValid(dto.Password, out var passwordError))
+            return BadRequest(new { message = passwordError });
+
+        if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var e164, out var phoneError))
+            return BadRequest(new { message = phoneError });
+
         var user = new User
         {
             UserName = dto.Email,
             Email = dto.Email,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            PhoneNumber = dto.PhoneNumber,
-            IsOraniaResident = dto.IsOraniaResident
+            FirstName = dto.FirstName.Trim(),
+            LastName = dto.LastName.Trim(),
+            PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164,
+            PhoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim(),
+            IsOraniaResident = dto.IsOraniaResident,
+            ReceiveBlockProgressEmails = true
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
-            return BadRequest(new { message = "Registrasie het misluk. Kontroleer jou besonderhede en probeer weer." });
+            return BadRequest(new { message = FormatIdentityErrors(result) });
 
         await _userManager.AddToRoleAsync(user, "Buyer");
 
@@ -58,7 +76,7 @@ public class AuthController : ControllerBase
         var refresh = await _refreshTokens.CreateAsync(user.Id);
         SetRefreshCookie(refresh.Token);
 
-        return Ok(new { token, user.Email, user.FirstName, user.LastName, user.PhoneNumber, user.IsOraniaResident, roles });
+        return Ok(AuthPayload(token, user, roles));
     }
 
     [HttpPost("login")]
@@ -80,7 +98,7 @@ public class AuthController : ControllerBase
         var refresh = await _refreshTokens.CreateAsync(user.Id);
         SetRefreshCookie(refresh.Token);
 
-        return Ok(new { token, user.Email, user.FirstName, user.LastName, user.PhoneNumber, user.IsOraniaResident, roles });
+        return Ok(AuthPayload(token, user, roles));
     }
 
     [HttpPost("refresh")]
@@ -101,16 +119,7 @@ public class AuthController : ControllerBase
         var newRefresh = await _refreshTokens.CreateAsync(stored.UserId);
         SetRefreshCookie(newRefresh.Token);
 
-        return Ok(new
-        {
-            token,
-            stored.User.Email,
-            stored.User.FirstName,
-            stored.User.LastName,
-            stored.User.PhoneNumber,
-            stored.User.IsOraniaResident,
-            roles
-        });
+        return Ok(AuthPayload(token, stored.User, roles));
     }
 
     [HttpPost("logout")]
@@ -122,6 +131,61 @@ public class AuthController : ControllerBase
 
         Response.Cookies.Delete("refreshToken");
         return Ok(new { message = "Uitgeteken." });
+    }
+
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        await _passwordResetOtps.RequestAsync(dto.Email.Trim());
+        return Ok(new { message = "As die e-pos bestaan, is 'n herstelkode gestuur." });
+    }
+
+    [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        if (dto.NewPassword != dto.ConfirmPassword)
+            return BadRequest(new { message = "Wagwoorde stem nie ooreen nie." });
+
+        if (!PasswordValidator.IsValid(dto.NewPassword, out var passwordError))
+            return BadRequest(new { message = passwordError });
+
+        var (success, error) = await _passwordResetOtps.ResetAsync(dto.Email.Trim(), dto.Otp, dto.NewPassword);
+        if (!success)
+            return BadRequest(new { message = error });
+
+        var user = await _userManager.FindByEmailAsync(dto.Email.Trim());
+        if (user != null)
+            await _refreshTokens.RevokeAllForUserAsync(user.Id);
+
+        return Ok(new { message = "Wagwoord is herstel. Jy kan nou aanmeld." });
+    }
+
+    private static object AuthPayload(string token, User user, IList<string> roles) => new
+    {
+        token,
+        user.Email,
+        user.FirstName,
+        user.LastName,
+        user.PhoneNumber,
+        user.PhoneCountryCode,
+        user.IsOraniaResident,
+        user.ReceiveBlockProgressEmails,
+        roles
+    };
+
+    private static string FormatIdentityErrors(IdentityResult result)
+    {
+        foreach (var err in result.Errors)
+        {
+            if (err.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                return "Wagwoord voldoen nie aan die vereistes nie (minstens 8 karakters, nommer, spesiale karakter, hoof- en kleinletter).";
+            if (err.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase))
+                return "Hierdie e-posadres is reeds geregistreer.";
+        }
+        return result.Errors.FirstOrDefault()?.Description
+            ?? "Registrasie het misluk. Kontroleer jou besonderhede en probeer weer.";
     }
 
     private void SetRefreshCookie(string token)

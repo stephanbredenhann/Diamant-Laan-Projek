@@ -20,6 +20,7 @@ interface ImageCardState extends AdminProgressImage {
   imports: [CommonModule, AlertComponent],
   template: `
     <div class="admin-content">
+      <p class="gallery-hint">Nuwe foto's word op die Kaart-oortjie bygevoeg.</p>
       <app-alert [message]="message" [type]="isError ? 'error' : 'success'"></app-alert>
 
       @if (loading) {
@@ -87,6 +88,11 @@ interface ImageCardState extends AdminProgressImage {
   `,
   styles: [`
     .admin-content { }
+    .gallery-hint {
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+      margin-bottom: 1rem;
+    }
     .muted, .empty {
       font-size: 0.875rem;
       color: var(--color-muted);
