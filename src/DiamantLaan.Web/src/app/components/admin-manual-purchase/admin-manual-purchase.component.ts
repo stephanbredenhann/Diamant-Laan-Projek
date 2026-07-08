@@ -3,12 +3,14 @@ import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-picker-modal.component';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util';
 
 @Component({
   selector: 'app-admin-manual-purchase',
   standalone: true,
-  imports: [FormsModule, AlertComponent, BlockPickerModalComponent],
+  imports: [FormsModule, AlertComponent, BlockPickerModalComponent, PhoneInputComponent],
   template: `
     <div class="admin-content">
       <div class="form-card">
@@ -31,13 +33,25 @@ import { blokLabel } from '../../utils/afrikaans.util';
             <input id="email" type="email" [(ngModel)]="email" name="email" required>
           </div>
           <div class="field">
-            <label for="phone">Foonnommer</label>
-            <input id="phone" [(ngModel)]="phoneNumber" name="phoneNumber">
+            <label>Foonnommer</label>
+            <app-phone-input
+              [(countryCode)]="phoneCountryCode"
+              [(phoneNumber)]="phoneNumber"
+            />
+            @if (phoneError) {
+              <p class="field-error">{{ phoneError }}</p>
+            }
           </div>
           <div class="field checkbox">
             <label>
               <input type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
               Inwoner van Orania?
+            </label>
+          </div>
+          <div class="field checkbox">
+            <label>
+              <input type="checkbox" [(ngModel)]="isOraniaBewegingMember" name="isOraniaBewegingMember">
+              Lid van Orania Beweging?
             </label>
           </div>
           <div class="field">
@@ -151,6 +165,11 @@ import { blokLabel } from '../../utils/afrikaans.util';
       border-radius: var(--radius-sm);
       font-size: 0.875rem;
     }
+    .field-error {
+      color: var(--color-error, #c0392b);
+      font-size: 0.8125rem;
+      margin-top: 0.375rem;
+    }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .pills {
       display: flex;
@@ -197,7 +216,10 @@ export class AdminManualPurchaseComponent {
   lastName = '';
   email = '';
   phoneNumber = '';
+  phoneCountryCode = '+27';
+  phoneError = '';
   isOraniaResident = false;
+  isOraniaBewegingMember = false;
   selectedSquareIds: number[] = [];
   pickerOpen = false;
   proofFile: File | null = null;
@@ -230,9 +252,17 @@ export class AdminManualPurchaseComponent {
   submit() {
     this.message = '';
     this.isError = false;
+    this.phoneError = '';
 
     if (this.selectedSquareIds.length === 0) {
       this.message = 'Kies ten minste een blok op die kaart.';
+      this.isError = true;
+      return;
+    }
+
+    const phoneError = validatePhone(this.phoneNumber, this.phoneCountryCode);
+    if (phoneError) {
+      this.phoneError = phoneError;
       this.isError = true;
       return;
     }
@@ -241,8 +271,10 @@ export class AdminManualPurchaseComponent {
     formData.append('firstName', this.firstName.trim());
     formData.append('lastName', this.lastName.trim());
     formData.append('email', this.email.trim());
-    formData.append('phoneNumber', this.phoneNumber.trim());
+    formData.append('phoneNumber', normalizePhoneLocal(this.phoneNumber, this.phoneCountryCode));
+    formData.append('phoneCountryCode', this.phoneCountryCode);
     formData.append('isOraniaResident', String(this.isOraniaResident));
+    formData.append('isOraniaBewegingMember', String(this.isOraniaBewegingMember));
     this.selectedSquareIds.forEach(id => formData.append('squareIds', String(id)));
     if (this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
@@ -256,7 +288,10 @@ export class AdminManualPurchaseComponent {
         this.lastName = '';
         this.email = '';
         this.phoneNumber = '';
+        this.phoneCountryCode = '+27';
+        this.phoneError = '';
         this.isOraniaResident = false;
+        this.isOraniaBewegingMember = false;
         this.selectedSquareIds = [];
         this.proofFile = null;
         this.loading = false;

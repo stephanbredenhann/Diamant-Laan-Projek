@@ -2,35 +2,43 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import {
-  COUNTRY_CODES,
   getPasswordChecks,
   isPasswordValid,
+  normalizePhoneLocal,
   validateEmail,
   validatePassword,
   validatePhone,
+  validateName,
 } from '../../utils/validation.util';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PhoneInputComponent],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
           <h2>Registreer</h2>
-          <p>Sluit aan by die gemeenskap en help om die Diamant Laan te teer.</p>
+          <p>Sluit aan by die gemeenskap en help om Diamant Laan te teer.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
               <label>Voornaam</label>
               <input type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam">
+              @if (firstNameError) {
+                <p class="field-error">{{ firstNameError }}</p>
+              }
             </div>
             <div class="form-group">
               <label>Van</label>
               <input type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van">
+              @if (lastNameError) {
+                <p class="field-error">{{ lastNameError }}</p>
+              }
             </div>
           </div>
           <div class="form-group">
@@ -57,22 +65,10 @@ import {
           </div>
           <div class="form-group">
             <label>Foonnommer</label>
-            <input
-              type="text"
-              class="country-filter"
-              [(ngModel)]="countryFilter"
-              name="countryFilter"
-              placeholder="Soek land..."
-              aria-label="Soek landkode"
-            >
-            <div class="phone-row">
-              <select [(ngModel)]="phoneCountryCode" name="phoneCountryCode" aria-label="Landkode">
-                @for (c of filteredCountryCodes(); track c.code + c.label) {
-                  <option [value]="c.code">{{ c.label }}</option>
-                }
-              </select>
-              <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="082 123 4567" inputmode="numeric">
-            </div>
+            <app-phone-input
+              [(countryCode)]="phoneCountryCode"
+              [(phoneNumber)]="phoneNumber"
+            />
             @if (phoneError) {
               <p class="field-error">{{ phoneError }}</p>
             }
@@ -83,6 +79,12 @@ import {
               Inwoner van Orania?
             </label>
           </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="isOraniaBewegingMember" name="isOraniaBewegingMember">
+              Lid van Orania Beweging?
+            </label>
+          </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>
           }
@@ -90,7 +92,7 @@ import {
             {{ loading ? 'Besig...' : 'Registreer' }}
           </button>
         </form>
-        <p class="auth-link">Reeds 'n rekening? <a routerLink="/meld-aan">Meld aan hier</a></p>
+        <p class="auth-link">Reeds 'n rekening? <a routerLink="/meld-aan">Meld hier aan</a></p>
       </div>
     </div>
   `,
@@ -111,18 +113,6 @@ import {
       letter-spacing: normal;
     }
     .checkbox-group input { width: auto; }
-    .country-filter {
-      margin-bottom: 0.4rem;
-    }
-    .phone-row {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .phone-row select {
-      min-width: 11rem;
-      flex-shrink: 0;
-    }
-    .phone-row input { flex: 1; }
     .field-error {
       margin-top: 0.35rem;
       font-size: 0.8125rem;
@@ -163,26 +153,19 @@ export class RegisterComponent {
   phoneNumber = '';
   phoneCountryCode = '+27';
   isOraniaResident = false;
+  isOraniaBewegingMember = false;
   error = '';
   emailError = '';
+  firstNameError = '';
+  lastNameError = '';
   phoneError = '';
   loading = false;
-  countryCodes = COUNTRY_CODES;
-  countryFilter = '';
   passwordSig = signal('');
   checks = computed(() => getPasswordChecks(this.passwordSig()));
 
-  filteredCountryCodes() {
-    const term = this.countryFilter.trim().toLowerCase();
-    if (!term) return this.countryCodes;
-    return this.countryCodes.filter((c) =>
-      c.country.toLowerCase().includes(term) || c.code.includes(term)
-    );
-  }
-
   canSubmit(): boolean {
-    return !!this.firstName.trim()
-      && !!this.lastName.trim()
+    return !validateName(this.firstName, 'Voornaam')
+      && !validateName(this.lastName, 'Van')
       && !validateEmail(this.email)
       && isPasswordValid(this.password)
       && this.password === this.confirmPassword
@@ -192,8 +175,20 @@ export class RegisterComponent {
   submit() {
     this.error = '';
     this.emailError = '';
+    this.firstNameError = '';
+    this.lastNameError = '';
     this.phoneError = '';
 
+    const firstNameError = validateName(this.firstName, 'Voornaam');
+    if (firstNameError) {
+      this.firstNameError = firstNameError;
+      return;
+    }
+    const lastNameError = validateName(this.lastName, 'Van');
+    if (lastNameError) {
+      this.lastNameError = lastNameError;
+      return;
+    }
     const emailError = validateEmail(this.email);
     if (emailError) {
       this.emailError = emailError;
@@ -216,14 +211,15 @@ export class RegisterComponent {
 
     this.loading = true;
     this.auth.register(
-      this.firstName,
-      this.lastName,
+      this.firstName.trim(),
+      this.lastName.trim(),
       this.email,
       this.password,
       this.confirmPassword,
-      this.phoneNumber,
+      normalizePhoneLocal(this.phoneNumber, this.phoneCountryCode),
       this.phoneCountryCode,
-      this.isOraniaResident
+      this.isOraniaResident,
+      this.isOraniaBewegingMember
     ).subscribe({
       next: () => this.router.navigate(['/kaart']),
       error: (err) => { this.error = err.error?.message || 'Registrasie het misluk.'; this.loading = false; }

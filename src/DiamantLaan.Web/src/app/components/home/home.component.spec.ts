@@ -13,10 +13,12 @@ describe('HomeComponent', () => {
   let fixture: ComponentFixture<HomeComponent>;
   let roadService: jasmine.SpyObj<RoadService>;
   let settingsService: jasmine.SpyObj<SettingsService>;
+  let currentUser = signal<{ id: number } | null>(null);
 
   beforeEach(async () => {
     roadService = jasmine.createSpyObj('RoadService', ['getStats']);
     settingsService = jasmine.createSpyObj('SettingsService', ['getHomeStatsSettings']);
+    currentUser = signal(null);
 
     roadService.getStats.and.returnValue(of({ progress: 50, totalRaised: 12345 }));
     settingsService.getHomeStatsSettings.and.returnValue(of({ showStatsSection: true, showTotalRaised: true }));
@@ -29,7 +31,7 @@ describe('HomeComponent', () => {
         provideRouter([]),
         { provide: RoadService, useValue: roadService },
         { provide: SettingsService, useValue: settingsService },
-        { provide: AuthService, useValue: { currentUser: signal(null) } }
+        { provide: AuthService, useValue: { currentUser } }
       ]
     }).compileComponents();
 
@@ -76,5 +78,19 @@ describe('HomeComponent', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.stats-section')).toBeTruthy();
+  });
+
+  it('links Begin Bou to register when logged out', () => {
+    currentUser.set(null);
+    fixture.detectChanges();
+    const link = fixture.nativeElement.querySelector('.pill-cta') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/registreer');
+  });
+
+  it('links Begin Bou to kaart when logged in', () => {
+    currentUser.set({ id: 1 });
+    fixture.detectChanges();
+    const link = fixture.nativeElement.querySelector('.pill-cta') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/kaart');
   });
 });

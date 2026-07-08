@@ -19,45 +19,45 @@ import { blokLabel } from '../../utils/afrikaans.util';
     <div class="map-page">
       <div class="map-header">
         <div class="container">
-          <div class="map-header-controls">
-            <div class="view-toggle">
-              <button
-                type="button"
-                [class.active]="viewMode() === 'status'"
-                (click)="viewMode.set('status')"
-              >Vordering</button>
-              <button
-                type="button"
-                [class.active]="viewMode() === 'availability'"
-                (click)="viewMode.set('availability')"
-              >Beskikbaarheid</button>
-            </div>
-          </div>
           <div class="controls-disclosure">
-            <button
-              type="button"
-              class="controls-toggle"
-              (click)="toggleControlsExpanded()"
-              [attr.aria-expanded]="controlsExpanded()"
-              aria-controls="map-pill-controls"
-            >
-              <span class="controls-toggle-label">Kies vir my en Soek</span>
-              <svg
-                class="controls-chevron"
-                [class.rotated]="controlsExpanded()"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
+            <div class="map-header-toolbar">
+              <div class="view-toggle">
+                <button
+                  type="button"
+                  [class.active]="viewMode() === 'status'"
+                  (click)="viewMode.set('status')"
+                >Vordering</button>
+                <button
+                  type="button"
+                  [class.active]="viewMode() === 'availability'"
+                  (click)="viewMode.set('availability')"
+                >Beskikbaarheid</button>
+              </div>
+              <button
+                type="button"
+                class="controls-toggle"
+                (click)="toggleControlsExpanded()"
+                [attr.aria-expanded]="controlsExpanded()"
+                aria-controls="map-pill-controls"
               >
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
+                <span class="controls-toggle-label">Kies vir my en Soek</span>
+                <svg
+                  class="controls-chevron"
+                  [class.rotated]="controlsExpanded()"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
             <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir 'n spesifieke bloknommer</p>
             @if (controlsExpanded()) {
               <div id="map-pill-controls" class="map-pill-controls-group" role="region" aria-label="Blokke-kies en soek">
@@ -205,13 +205,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
       padding: 1rem 0;
       margin-bottom: 1rem;
     }
-    .map-header-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.625rem;
-      align-items: center;
-      margin-bottom: 0.75rem;
-    }
     .controls-disclosure {
       display: flex;
       flex-direction: column;
@@ -219,26 +212,41 @@ import { blokLabel } from '../../utils/afrikaans.util';
       width: 100%;
       margin-bottom: 0.75rem;
     }
-    .controls-toggle {
+    .map-header-toolbar {
+      display: inline-flex;
+      align-items: stretch;
+      gap: 0;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .map-header-toolbar .view-toggle {
+      border: none;
+      border-radius: 0;
+    }
+    .map-header-toolbar .controls-toggle {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      min-height: 44px;
       padding: 0.5rem 1.25rem;
-      background: transparent;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      color: var(--color-text);
-      font-family: var(--font-heading);
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
+      border: none;
+      border-left: 1px solid var(--color-border);
+      border-radius: 0;
+      background: var(--color-surface);
+      color: var(--color-muted);
+      font-family: var(--font-heading);
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, color 0.15s;
     }
-    .controls-toggle:hover {
+    .map-header-toolbar .controls-toggle:hover {
       background: rgba(3, 78, 162, 0.06);
-      border-color: var(--ob-blue);
+      color: var(--ob-blue);
+    }
+    .map-header-toolbar .controls-toggle[aria-expanded="true"] {
+      background: rgba(3, 78, 162, 0.08);
       color: var(--ob-blue);
     }
     .controls-toggle-label {
@@ -543,6 +551,22 @@ import { blokLabel } from '../../utils/afrikaans.util';
       margin: 2px;
     }
     @media (max-width: 768px) {
+      .map-header-toolbar {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+      .map-header-toolbar .view-toggle {
+        width: 100%;
+      }
+      .map-header-toolbar .view-toggle button {
+        flex: 1;
+      }
+      .map-header-toolbar .controls-toggle {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--color-border);
+      }
       .map-pill-controls-group {
         width: 100%;
       }

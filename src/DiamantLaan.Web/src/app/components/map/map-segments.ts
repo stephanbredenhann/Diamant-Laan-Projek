@@ -13,16 +13,7 @@ export interface SegmentDef {
   cellH: number;
 }
 
-// Road: 700m long, 6m wide = 4200 blocks numbered 1-4200.
-// Cell size: 6×6 SVG units per block (1px gap between cells).
-// SVG viewBox: 0 0 1700 2640
-//
-// Road shape (top → bottom):
-//   Seg1  – 130m vertical  (top-right,  x=1640)
-//   Seg2  – 100m horizontal (turn left, y=800)
-//   Seg3  – 170m horizontal (continue left, y=800)
-//   Seg4  –  10m kink       (corner, y=836)
-//   Seg5  – 290m vertical  (bottom-left, x=20, y=872)
+
 
 export const SEGMENTS: SegmentDef[] = [
   {
@@ -68,9 +59,7 @@ export interface Waypoint {
   lng: number;
 }
 
-// OSM centerline path: Diamantlaan reversed from the southern end to the
-// Oewerlaan junction, then Oewerlaan forward. Squares 1–4200 are distributed
-// evenly along this polyline, 6 squares wide.
+
 export const WAYPOINTS: Waypoint[] = [
   { label: 'Start', lat: -29.8060799, lng: 24.4194275 },
   { label: 'P1',    lat: -29.8058501, lng: 24.4196822 },

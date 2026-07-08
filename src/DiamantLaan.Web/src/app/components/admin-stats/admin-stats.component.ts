@@ -13,7 +13,9 @@ interface Buyer {
   name: string;
   email: string;
   phoneNumber?: string;
+  phoneDisplay?: string;
   isOraniaResident?: boolean;
+  isOraniaBewegingMember?: boolean;
   squares: number;
   totalSpent: number;
 }
@@ -23,7 +25,9 @@ interface NonPurchaser {
   name: string;
   email: string;
   phoneNumber?: string;
+  phoneDisplay?: string;
   isOraniaResident?: boolean;
+  isOraniaBewegingMember?: boolean;
 }
 
 interface DailySale {
@@ -44,12 +48,13 @@ interface Stats {
   sponsorBaseline: number;
   perStatus: StatusCount[];
   dailySales: DailySale[];
-  oraniaSpend: number;
-  outsiderSpend: number;
+  oraniaSquares: number;
+  outsiderSquares: number;
+  bewegingSquares: number;
+  nonBewegingSquares: number;
 }
 
 type DailyChartMode = 'daily' | 'cumulative';
-type OraniaChartMode = 'spend' | 'count';
 
 @Component({
   selector: 'app-admin-stats',
@@ -177,27 +182,19 @@ type OraniaChartMode = 'spend' | 'count';
             </canvas>
           </div>
           <div class="chart-card">
-            <div class="chart-header">
-              <h3>Inwoners vs Uitwoners</h3>
-              <div class="chart-toggle">
-                <button
-                  type="button"
-                  class="toggle-btn"
-                  [class.active]="oraniaChartMode === 'spend'"
-                  (click)="setOraniaChartMode('spend')">
-                  Bedrag
-                </button>
-                <button
-                  type="button"
-                  class="toggle-btn"
-                  [class.active]="oraniaChartMode === 'count'"
-                  (click)="setOraniaChartMode('count')">
-                  Kopers
-                </button>
-              </div>
-            </div>
+            <h3>Inwoners vs Uitwoners</h3>
+            <p class="chart-subtitle">Blokke gekoop</p>
             <canvas baseChart
               [data]="oraniaChartData"
+              [options]="donutChartOptions"
+              [type]="'pie'">
+            </canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Bewegingslede vs Nie-Lede</h3>
+            <p class="chart-subtitle">Blokke gekoop</p>
+            <canvas baseChart
+              [data]="bewegingChartData"
               [options]="donutChartOptions"
               [type]="'pie'">
             </canvas>
@@ -228,6 +225,9 @@ type OraniaChartMode = 'spend' | 'count';
                   <th (click)="sortBy('isOraniaResident')" [class.sorted]="sortKey === 'isOraniaResident'">
                     Inwoner <span class="sort-icon">{{ sortIcon('isOraniaResident') }}</span>
                   </th>
+                  <th (click)="sortBy('isOraniaBewegingMember')" [class.sorted]="sortKey === 'isOraniaBewegingMember'">
+                    Bewegingslid <span class="sort-icon">{{ sortIcon('isOraniaBewegingMember') }}</span>
+                  </th>
                   <th (click)="sortBy('squares')" class="numeric" [class.sorted]="sortKey === 'squares'">
                     Blokke <span class="sort-icon">{{ sortIcon('squares') }}</span>
                   </th>
@@ -241,15 +241,16 @@ type OraniaChartMode = 'spend' | 'count';
                   <tr>
                     <td>{{ b.name }}</td>
                     <td>{{ b.email }}</td>
-                    <td>{{ b.phoneNumber || '-' }}</td>
+                    <td>{{ b.phoneDisplay || b.phoneNumber || '-' }}</td>
                     <td>{{ b.isOraniaResident ? 'Ja' : 'Nee' }}</td>
+                    <td>{{ b.isOraniaBewegingMember ? 'Ja' : 'Nee' }}</td>
                     <td class="numeric">{{ b.squares }}</td>
                     <td class="numeric">R{{ b.totalSpent | number:'1.0-0' }}</td>
                   </tr>
                 }
                 @if (filteredBuyers.length === 0) {
                   <tr>
-                    <td colspan="6" class="empty">Geen kopers gevind nie.</td>
+                    <td colspan="7" class="empty">Geen kopers gevind nie.</td>
                   </tr>
                 }
               </tbody>
@@ -276,6 +277,7 @@ type OraniaChartMode = 'spend' | 'count';
                   <th>E-pos</th>
                   <th>Foonnommer</th>
                   <th>Inwoner</th>
+                  <th>Bewegingslid</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,13 +285,14 @@ type OraniaChartMode = 'spend' | 'count';
                   <tr>
                     <td>{{ u.name }}</td>
                     <td>{{ u.email }}</td>
-                    <td>{{ u.phoneNumber || '-' }}</td>
+                    <td>{{ u.phoneDisplay || u.phoneNumber || '-' }}</td>
                     <td>{{ u.isOraniaResident ? 'Ja' : 'Nee' }}</td>
+                    <td>{{ u.isOraniaBewegingMember ? 'Ja' : 'Nee' }}</td>
                   </tr>
                 }
                 @if (filteredNonPurchasers.length === 0 && !nonPurchaserError) {
                   <tr>
-                    <td colspan="4" class="empty">Geen geregistreerde gebruikers sonder aankoop nie.</td>
+                    <td colspan="5" class="empty">Geen geregistreerde gebruikers sonder aankoop nie.</td>
                   </tr>
                 }
               </tbody>
@@ -438,6 +441,11 @@ type OraniaChartMode = 'spend' | 'count';
       color: var(--color-text);
       margin: 0;
     }
+    .chart-subtitle {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin: 0.25rem 0 0.75rem;
+    }
     .chart-toggle {
       display: flex;
       gap: 0.25rem;
@@ -551,8 +559,10 @@ export class AdminStatsComponent implements OnInit {
     sponsorBaseline: 2_000_000,
     perStatus: [],
     dailySales: [],
-    oraniaSpend: 0,
-    outsiderSpend: 0
+    oraniaSquares: 0,
+    outsiderSquares: 0,
+    bewegingSquares: 0,
+    nonBewegingSquares: 0
   };
   buyers: Buyer[] = [];
   filteredBuyers: Buyer[] = [];
@@ -570,12 +580,12 @@ export class AdminStatsComponent implements OnInit {
 
   dailyChartMode: DailyChartMode = 'daily';
   squaresChartMode: DailyChartMode = 'daily';
-  oraniaChartMode: OraniaChartMode = 'spend';
 
   dailyChartData: any;
   squaresChartData: any;
   statusChartData: any;
   oraniaChartData: any;
+  bewegingChartData: any;
 
   lineChartOptions: any = {
     responsive: true,
@@ -668,7 +678,6 @@ export class AdminStatsComponent implements OnInit {
       next: (b) => {
         this.buyers = b;
         this.applyFilters();
-        this.buildOraniaChart();
         this.finishRequest();
       },
       error: () => {
@@ -705,11 +714,6 @@ export class AdminStatsComponent implements OnInit {
   setSquaresChartMode(mode: DailyChartMode) {
     this.squaresChartMode = mode;
     this.buildSquaresChart();
-  }
-
-  setOraniaChartMode(mode: OraniaChartMode) {
-    this.oraniaChartMode = mode;
-    this.buildOraniaChart();
   }
 
   sortIcon(key: keyof Buyer): string {
@@ -833,12 +837,13 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadCsv() {
-    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Blokke', 'Totaal Bestee'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Bewegingslid', 'Blokke', 'Totaal Bestee'];
     const rows = this.filteredBuyers.map(b => [
       b.name,
       b.email,
-      b.phoneNumber || '',
+      b.phoneDisplay || b.phoneNumber || '',
       b.isOraniaResident ? 'Ja' : 'Nee',
+      b.isOraniaBewegingMember ? 'Ja' : 'Nee',
       b.squares.toString(),
       b.totalSpent.toString()
     ]);
@@ -856,12 +861,13 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadNonPurchaserCsv() {
-    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Bewegingslid'];
     const rows = this.filteredNonPurchasers.map(u => [
       u.name,
       u.email,
-      u.phoneNumber || '',
-      u.isOraniaResident ? 'Ja' : 'Nee'
+      u.phoneDisplay || u.phoneNumber || '',
+      u.isOraniaResident ? 'Ja' : 'Nee',
+      u.isOraniaBewegingMember ? 'Ja' : 'Nee'
     ]);
 
     this.downloadCsvFile('diamant-laan-nie-kopers.csv', headers, rows);
@@ -888,6 +894,7 @@ export class AdminStatsComponent implements OnInit {
     this.buildSquaresChart();
     this.buildStatusChart();
     this.buildOraniaChart();
+    this.buildBewegingChart();
   }
 
   private buildDailyChart() {
@@ -958,26 +965,24 @@ export class AdminStatsComponent implements OnInit {
   }
 
   private buildOraniaChart() {
-    if (this.oraniaChartMode === 'spend') {
-      this.oraniaChartData = {
-        labels: ['Inwoners', 'Uitwoners'],
-        datasets: [{
-          data: [this.stats.oraniaSpend, this.stats.outsiderSpend],
-          backgroundColor: ['#B5651D', '#C67B5C'],
-          borderWidth: 1
-        }]
-      };
-    } else {
-      const residentCount = this.buyers.filter(b => b.isOraniaResident).length;
-      const outsiderCount = this.buyers.filter(b => !b.isOraniaResident).length;
-      this.oraniaChartData = {
-        labels: ['Inwoners', 'Uitwoners'],
-        datasets: [{
-          data: [residentCount, outsiderCount],
-          backgroundColor: ['#B5651D', '#C67B5C'],
-          borderWidth: 1
-        }]
-      };
-    }
+    this.oraniaChartData = {
+      labels: ['Inwoners', 'Uitwoners'],
+      datasets: [{
+        data: [this.stats.oraniaSquares, this.stats.outsiderSquares],
+        backgroundColor: ['#B5651D', '#C67B5C'],
+        borderWidth: 1
+      }]
+    };
+  }
+
+  private buildBewegingChart() {
+    this.bewegingChartData = {
+      labels: ['Bewegingslede', 'Nie-Lede'],
+      datasets: [{
+        data: [this.stats.bewegingSquares, this.stats.nonBewegingSquares],
+        backgroundColor: ['#5C7A29', '#8FA65A'],
+        borderWidth: 1
+      }]
+    };
   }
 }

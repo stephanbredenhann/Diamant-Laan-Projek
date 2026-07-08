@@ -143,6 +143,7 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
         id,
         status: sq?.status ?? 0,
         isSold: sq?.isSold ?? false,
+        imageCount: sq?.imageCount ?? 0,
       },
     };
   });

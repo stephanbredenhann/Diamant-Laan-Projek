@@ -1,4 +1,4 @@
-export type MapViewMode = 'status' | 'availability';
+export type MapViewMode = 'status' | 'availability' | 'photos';
 
 export enum SquareStatus {
   NogNieBeginNie = 0,

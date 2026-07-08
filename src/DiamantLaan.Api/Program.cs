@@ -184,6 +184,7 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.Map("/api/{**catchall}", () => Results.NotFound(new { message = "API-endpunt nie gevind nie." }));
 app.MapFallbackToFile("index.html");
 
 app.Map("/error", () => Results.Json(new { message = "Interne bedienerfout." }, statusCode: 500));

@@ -4,6 +4,7 @@ using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Models.Enums;
 using DiamantLaan.Api.Services;
+using DiamantLaan.Api.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,8 @@ public class AdminController : ControllerBase
     private readonly AuditLogService _audit;
     private readonly SiteSettingsService _siteSettings;
     private readonly BlockNotificationService _blockNotifications;
+    private readonly IEmailService _email;
+    private readonly IConfiguration _config;
 
     public AdminController(
         AppDbContext db,
@@ -29,7 +32,9 @@ public class AdminController : ControllerBase
         IWebHostEnvironment env,
         AuditLogService audit,
         SiteSettingsService siteSettings,
-        BlockNotificationService blockNotifications)
+        BlockNotificationService blockNotifications,
+        IEmailService email,
+        IConfiguration config)
     {
         _db = db;
         _userManager = userManager;
@@ -37,6 +42,8 @@ public class AdminController : ControllerBase
         _audit = audit;
         _siteSettings = siteSettings;
         _blockNotifications = blockNotifications;
+        _email = email;
+        _config = config;
     }
 
     [HttpPut("settings/home-stats")]
@@ -93,20 +100,44 @@ public class AdminController : ControllerBase
 
         var buyers = purchases
             .GroupBy(p => p.UserId)
-            .Select(g => new
+            .Select(g =>
             {
-                UserId = g.Key,
-                Name = g.First().User.FirstName + " " + g.First().User.LastName,
-                Email = g.First().User.Email,
-                PhoneNumber = g.First().User.PhoneNumber,
-                IsOraniaResident = g.First().User.IsOraniaResident,
-                Squares = g.Sum(p => p.PurchaseSquares.Count),
-                TotalSpent = g.Sum(p => p.Amount)
+                var user = g.First().User;
+                var phone = FormatPhoneFields(user);
+                return new
+                {
+                    UserId = g.Key,
+                    Name = user.FirstName + " " + user.LastName,
+                    Email = user.Email,
+                    phone.PhoneNumber,
+                    phone.PhoneCountryCode,
+                    phone.PhoneDisplay,
+                    IsOraniaResident = user.IsOraniaResident,
+                    IsOraniaBewegingMember = user.IsOraniaBewegingMember,
+                    Squares = g.Sum(p => p.PurchaseSquares.Count),
+                    TotalSpent = g.Sum(p => p.Amount)
+                };
             })
             .OrderByDescending(b => b.TotalSpent)
             .ToList();
 
         return Ok(buyers);
+    }
+
+    [HttpGet("transactions")]
+    public async Task<IActionResult> GetTransactions()
+    {
+        var purchases = await _db.Purchases
+            .Include(p => p.User)
+            .Include(p => p.PurchaseSquares)
+            .OrderByDescending(p => p.PurchaseDate)
+            .ToListAsync();
+
+        var transactions = purchases
+            .Select(p => PurchaseTransactionMapper.ToDto(p, includeUser: true))
+            .ToList();
+
+        return Ok(transactions);
     }
 
     [HttpGet("stats")]
@@ -141,8 +172,10 @@ public class AdminController : ControllerBase
             .Include(p => p.User)
             .ToListAsync();
 
-        var oraniaSpend = purchases.Where(p => p.User.IsOraniaResident).Sum(p => (double)p.Amount);
-        var outsiderSpend = purchases.Where(p => !p.User.IsOraniaResident).Sum(p => (double)p.Amount);
+        var oraniaSquares = purchases.Where(p => p.User.IsOraniaResident).Sum(p => p.PurchaseSquares.Count);
+        var outsiderSquares = purchases.Where(p => !p.User.IsOraniaResident).Sum(p => p.PurchaseSquares.Count);
+        var bewegingSquares = purchases.Where(p => p.User.IsOraniaBewegingMember).Sum(p => p.PurchaseSquares.Count);
+        var nonBewegingSquares = purchases.Where(p => !p.User.IsOraniaBewegingMember).Sum(p => p.PurchaseSquares.Count);
 
         return Ok(new
         {
@@ -154,8 +187,10 @@ public class AdminController : ControllerBase
             averageSpendPerBlock,
             perStatus,
             dailySales,
-            oraniaSpend,
-            outsiderSpend
+            oraniaSquares,
+            outsiderSquares,
+            bewegingSquares,
+            nonBewegingSquares
         });
     }
 
@@ -175,17 +210,25 @@ public class AdminController : ControllerBase
         var users = await _db.Users
             .Where(u => !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
             .OrderBy(u => u.Email)
-            .Select(u => new
+            .ToListAsync();
+
+        var result = users.Select(u =>
+        {
+            var phone = FormatPhoneFields(u);
+            return new
             {
                 u.Id,
                 Name = u.FirstName + " " + u.LastName,
                 u.Email,
-                u.PhoneNumber,
-                u.IsOraniaResident
-            })
-            .ToListAsync();
+                phone.PhoneNumber,
+                phone.PhoneCountryCode,
+                phone.PhoneDisplay,
+                u.IsOraniaResident,
+                u.IsOraniaBewegingMember
+            };
+        }).ToList();
 
-        return Ok(users);
+        return Ok(result);
     }
 
     [HttpPost("users/make-admin")]
@@ -232,31 +275,43 @@ public class AdminController : ControllerBase
 
             var amount = squares.Count * 500m;
 
+            if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var e164, out var phoneError))
+                return BadRequest(new { message = phoneError });
+
+            var phoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim();
             var user = await _userManager.FindByEmailAsync(dto.Email);
+            string? welcomeTempPassword = null;
+            var isNewUser = user == null;
             if (user == null)
             {
+                welcomeTempPassword = TemporaryPasswordGenerator.Generate();
                 user = new User
                 {
                     UserName = dto.Email,
                     Email = dto.Email,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    PhoneNumber = dto.PhoneNumber,
+                    FirstName = dto.FirstName.Trim(),
+                    LastName = dto.LastName.Trim(),
+                    PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164,
+                    PhoneCountryCode = phoneCountryCode,
                     IsOraniaResident = dto.IsOraniaResident,
-                    EmailConfirmed = true
+                    IsOraniaBewegingMember = dto.IsOraniaBewegingMember,
+                    EmailConfirmed = true,
+                    MustChangePassword = true,
+                    ReceiveBlockProgressEmails = true
                 };
-                var tempPassword = Guid.NewGuid().ToString("N") + "Aa1!";
-                var createResult = await _userManager.CreateAsync(user, tempPassword);
+                var createResult = await _userManager.CreateAsync(user, welcomeTempPassword);
                 if (!createResult.Succeeded)
                     return BadRequest(new { message = "Kon nie gebruiker skep nie." });
                 await _userManager.AddToRoleAsync(user, "Buyer");
             }
             else
             {
-                user.FirstName = dto.FirstName;
-                user.LastName = dto.LastName;
-                user.PhoneNumber = dto.PhoneNumber;
+                user.FirstName = dto.FirstName.Trim();
+                user.LastName = dto.LastName.Trim();
+                user.PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164;
+                user.PhoneCountryCode = phoneCountryCode;
                 user.IsOraniaResident = dto.IsOraniaResident;
+                user.IsOraniaBewegingMember = dto.IsOraniaBewegingMember;
                 await _userManager.UpdateAsync(user);
             }
 
@@ -290,6 +345,17 @@ public class AdminController : ControllerBase
 
             await transaction.CommitAsync();
             await _audit.LogAsync(User, "ManualPurchase", $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
+
+            if (isNewUser && welcomeTempPassword != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                var siteUrl = _config["App:PublicUrl"] ?? "http://localhost:4200";
+                var html = EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl);
+                await _email.SendAsync(
+                    user.Email,
+                    "Jou Diamant Laan rekening — Diamant Laan",
+                    html,
+                    $"manual-purchase-welcome/{purchase.Id}");
+            }
 
             return Ok(new
             {
@@ -482,6 +548,16 @@ public class AdminController : ControllerBase
         await _audit.LogAsync(User, "DeleteProgressImage", $"Deleted image #{id}");
 
         return Ok(new { message = "Beeld verwyder." });
+    }
+
+    private static (string? PhoneNumber, string PhoneCountryCode, string? PhoneDisplay) FormatPhoneFields(User user)
+    {
+        var (countryCode, local) = PhoneValidator.SplitE164(user.PhoneNumber, user.PhoneCountryCode);
+        if (string.IsNullOrWhiteSpace(local))
+            return (null, countryCode, null);
+
+        var display = $"{countryCode} {local}";
+        return (local, countryCode, display);
     }
 
     private async Task<List<int>> GetConflictingSquareIdsAsync(List<int> squareIds, SquareStatus status)

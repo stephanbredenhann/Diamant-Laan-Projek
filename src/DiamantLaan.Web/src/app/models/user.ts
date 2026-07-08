@@ -6,8 +6,10 @@ export interface AuthResponse {
   phoneNumber?: string;
   phoneCountryCode?: string;
   isOraniaResident?: boolean;
+  isOraniaBewegingMember?: boolean;
   receiveBlockProgressEmails?: boolean;
   roles?: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface ProfileResponse {
@@ -17,6 +19,7 @@ export interface ProfileResponse {
   phoneNumber?: string;
   phoneCountryCode?: string;
   isOraniaResident?: boolean;
+  isOraniaBewegingMember?: boolean;
   receiveBlockProgressEmails: boolean;
   changesRemaining: number;
   changesAllowed: boolean;

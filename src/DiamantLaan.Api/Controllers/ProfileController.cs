@@ -47,6 +47,7 @@ public class ProfileController : ControllerBase
             phoneNumber = localPhone,
             phoneCountryCode = countryCode,
             user.IsOraniaResident,
+            user.IsOraniaBewegingMember,
             user.ReceiveBlockProgressEmails,
             changesRemaining = remaining,
             changesAllowed = allowed,

@@ -32,6 +32,21 @@ export function isPasswordValid(password: string): boolean {
   return validatePassword(password) === null;
 }
 
+const NAME_REGEX = /^[\p{L}\s'-]+$/u;
+
+export function validateName(name: string, fieldLabel: 'Voornaam' | 'Van'): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return `${fieldLabel} is verplig.`;
+  if (!NAME_REGEX.test(trimmed)) {
+    return `${fieldLabel} mag nie syfers of spesiale karakters bevat nie (net ' en - is toegelaat).`;
+  }
+  return null;
+}
+
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
 export const COUNTRY_CODES = ALL_COUNTRY_CODES;
 
 const DEFAULT_MIN_LOCAL_LENGTH = 4;
@@ -80,6 +95,16 @@ export function validatePhone(localNumber: string, countryCode: string): string 
 /** 9 digits without leading 0, or 10 with leading 0. Returns error or null. */
 export function validateSaPhone(localNumber: string): string | null {
   return validatePhone(localNumber, '+27');
+}
+
+/**
+ * Strips non-digits and a leading 0 from a local phone number (matching
+ * backend PhoneValidator.TryNormalize). Returns digits-only local part.
+ */
+export function normalizePhoneLocal(localNumber: string, _countryCode: string): string {
+  const digits = localNumber.replace(/\D/g, '');
+  if (digits.startsWith('0') && digits.length > 1) return digits.slice(1);
+  return digits;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

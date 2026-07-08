@@ -66,6 +66,7 @@ public class PurchaseTransactionMapperTests
         Assert.Equal(500m, dto.AmountPerBlock);
         Assert.Equal(new[] { 101, 102 }, dto.SquareIds);
         Assert.Equal("Confirmed", dto.PaymentStatus);
+        Assert.Equal("TelefonieseAankoop", dto.PurchaseSource);
         Assert.Null(dto.UserName);
     }
 
@@ -82,6 +83,27 @@ public class PurchaseTransactionMapperTests
         Assert.Equal("Jan Smit", dto.UserName);
         Assert.Equal("jan@example.com", dto.UserEmail);
         Assert.Equal("PF-123", dto.PayFastPaymentId);
+        Assert.Equal("PayFast", dto.PurchaseSource);
+    }
+
+    [Fact]
+    public void ToDto_ConfirmedWithoutPayFastId_MapsTelefonieseAankoop()
+    {
+        var purchase = CreatePurchase(1, "u1", 500m, PaymentStatus.Confirmed, 101);
+
+        var dto = PurchaseTransactionMapper.ToDto(purchase);
+
+        Assert.Equal("TelefonieseAankoop", dto.PurchaseSource);
+    }
+
+    [Fact]
+    public void ToDto_PendingWithoutPayFastId_MapsPayFast()
+    {
+        var purchase = CreatePurchase(1, "u1", 500m, PaymentStatus.Pending, 101);
+
+        var dto = PurchaseTransactionMapper.ToDto(purchase);
+
+        Assert.Equal("PayFast", dto.PurchaseSource);
     }
 
     [Fact]
@@ -110,6 +132,32 @@ public class PurchaseTransactionMapperTests
         Assert.Equal(2, dtos.Count);
         Assert.Equal(2, dtos[0].SquareCount);
         Assert.Equal(1, dtos[1].SquareCount);
+    }
+
+    [Fact]
+    public async Task ToDto_WorksAgainstProjectSqliteDatabase()
+    {
+        var dbPath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "..",
+            "src", "DiamantLaan.Api", "diamantlaan.db"));
+
+        if (!File.Exists(dbPath))
+            return;
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+
+        await using var db = new AppDbContext(options);
+        var purchases = await db.Purchases
+            .Include(p => p.User)
+            .Include(p => p.PurchaseSquares)
+            .OrderByDescending(p => p.PurchaseDate)
+            .ToListAsync();
+
+        var dtos = purchases.Select(p => PurchaseTransactionMapper.ToDto(p, includeUser: true)).ToList();
+        Assert.NotEmpty(dtos);
     }
 
     [Fact]

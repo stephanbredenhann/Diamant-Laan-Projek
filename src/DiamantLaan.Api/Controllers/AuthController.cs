@@ -5,6 +5,7 @@ using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Services;
 using DiamantLaan.Api.Validation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -61,6 +62,7 @@ public class AuthController : ControllerBase
             PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164,
             PhoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim(),
             IsOraniaResident = dto.IsOraniaResident,
+            IsOraniaBewegingMember = dto.IsOraniaBewegingMember,
             ReceiveBlockProgressEmails = true
         };
 
@@ -162,6 +164,41 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Wagwoord is herstel. Jy kan nou aanmeld." });
     }
 
+    [Authorize]
+    [HttpPost("complete-required-password-change")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> CompleteRequiredPasswordChange([FromBody] CompleteRequiredPasswordChangeDto dto)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return Unauthorized();
+
+        if (!user.MustChangePassword)
+            return BadRequest(new { message = "Geen verpligte wagwoordverandering is nodig nie." });
+
+        if (dto.NewPassword != dto.ConfirmPassword)
+            return BadRequest(new { message = "Wagwoorde stem nie ooreen nie." });
+
+        if (!PasswordValidator.IsValid(dto.NewPassword, out var passwordError))
+            return BadRequest(new { message = passwordError });
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(new { message = FormatIdentityErrors(result) });
+
+        user.MustChangePassword = false;
+        await _userManager.UpdateAsync(user);
+        await _refreshTokens.RevokeAllForUserAsync(user.Id);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var jwt = GenerateJwtToken(user, roles);
+        var refresh = await _refreshTokens.CreateAsync(user.Id);
+        SetRefreshCookie(refresh.Token);
+
+        return Ok(AuthPayload(jwt, user, roles));
+    }
+
     private static object AuthPayload(string token, User user, IList<string> roles) => new
     {
         token,
@@ -171,7 +208,9 @@ public class AuthController : ControllerBase
         user.PhoneNumber,
         user.PhoneCountryCode,
         user.IsOraniaResident,
+        user.IsOraniaBewegingMember,
         user.ReceiveBlockProgressEmails,
+        user.MustChangePassword,
         roles
     };
 

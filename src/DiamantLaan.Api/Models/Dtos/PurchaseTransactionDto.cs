@@ -12,4 +12,5 @@ public class PurchaseTransactionDto
     public string? UserName { get; set; }
     public string? UserEmail { get; set; }
     public string? PayFastPaymentId { get; set; }
+    public string PurchaseSource { get; set; } = string.Empty;
 }

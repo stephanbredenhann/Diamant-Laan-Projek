@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { mustChangePasswordGuard } from './guards/must-change-password.guard';
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
@@ -9,15 +10,16 @@ export const routes: Routes = [
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'wagwoord-vergeet', loadComponent: () => import('./components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
   { path: 'wagwoord-herstel', loadComponent: () => import('./components/reset-password/reset-password.component').then(m => m.ResetPasswordComponent) },
-  { path: 'my-profiel', loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent), canActivate: [authGuard] },
-  { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard] },
-  { path: 'my-blokke/sertifikaat', loadComponent: () => import('./components/certificate/certificate.component').then(m => m.CertificateComponent), canActivate: [authGuard] },
-  { path: 'my-transaksies', loadComponent: () => import('./components/my-transactions/my-transactions.component').then(m => m.MyTransactionsComponent), canActivate: [authGuard] },
-  { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [authGuard] },
+  { path: 'wagwoord-wysig-verplig', loadComponent: () => import('./components/required-password-change/required-password-change.component').then(m => m.RequiredPasswordChangeComponent), canActivate: [authGuard] },
+  { path: 'my-profiel', loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent), canActivate: [authGuard, mustChangePasswordGuard] },
+  { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard, mustChangePasswordGuard] },
+  { path: 'my-blokke/sertifikaat', loadComponent: () => import('./components/certificate/certificate.component').then(m => m.CertificateComponent), canActivate: [authGuard, mustChangePasswordGuard] },
+  { path: 'my-transaksies', loadComponent: () => import('./components/my-transactions/my-transactions.component').then(m => m.MyTransactionsComponent), canActivate: [authGuard, mustChangePasswordGuard] },
+  { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [authGuard, mustChangePasswordGuard] },
   {
     path: 'admin',
     loadComponent: () => import('./components/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
-    canActivate: [authGuard, adminGuard],
+    canActivate: [authGuard, mustChangePasswordGuard, adminGuard],
     children: [
       { path: '', loadComponent: () => import('./components/admin/admin.component').then(m => m.AdminComponent) },
       { path: 'fotos', loadComponent: () => import('./components/admin-images/admin-images.component').then(m => m.AdminImagesComponent) },
@@ -28,8 +30,8 @@ export const routes: Routes = [
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
     ]
   },
-  { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [authGuard] },
-  { path: 'betalings/kanselleer', loadComponent: () => import('./components/payment-cancel/payment-cancel.component').then(m => m.PaymentCancelComponent), canActivate: [authGuard] },
+  { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [authGuard, mustChangePasswordGuard] },
+  { path: 'betalings/kanselleer', loadComponent: () => import('./components/payment-cancel/payment-cancel.component').then(m => m.PaymentCancelComponent), canActivate: [authGuard, mustChangePasswordGuard] },
   { path: 'privaatheid', loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent) },
   { path: '**', redirectTo: '' }
 ];

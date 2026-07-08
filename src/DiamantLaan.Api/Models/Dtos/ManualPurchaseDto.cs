@@ -16,7 +16,12 @@ public class ManualPurchaseDto
     [Phone, MaxLength(20)]
     public string? PhoneNumber { get; set; }
 
+    [MaxLength(8)]
+    public string PhoneCountryCode { get; set; } = "+27";
+
     public bool IsOraniaResident { get; set; }
+
+    public bool IsOraniaBewegingMember { get; set; }
 
     [Required, MinLength(1), MaxLength(100)]
     public List<int> SquareIds { get; set; } = new();

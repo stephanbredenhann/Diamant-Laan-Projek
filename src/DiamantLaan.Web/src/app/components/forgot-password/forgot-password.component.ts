@@ -64,7 +64,10 @@ export class ForgotPasswordComponent {
       next: (res) => {
         this.success = res.message;
         this.loading = false;
-        this.router.navigate(['/wagwoord-herstel'], { queryParams: { email: this.email.trim() } });
+        this.router.navigate(['/wagwoord-herstel'], {
+          queryParams: { email: this.email.trim() },
+          state: { email: this.email.trim() }
+        });
       },
       error: (err) => {
         this.error = err.error?.message || 'Kon nie herstelversoek stuur nie.';

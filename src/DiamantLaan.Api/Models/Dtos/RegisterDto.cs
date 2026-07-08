@@ -26,4 +26,6 @@ public class RegisterDto
     public string PhoneCountryCode { get; set; } = "+27";
 
     public bool IsOraniaResident { get; set; }
+
+    public bool IsOraniaBewegingMember { get; set; }
 }

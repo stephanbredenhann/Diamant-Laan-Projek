@@ -59,7 +59,10 @@ import { SettingsService } from '../../services/settings.service';
 
         <!-- Bottom-center pill CTA -->
         <div class="hero-cta">
-          <a [routerLink]="ctaLink" class="pill-cta">Begin <span class="pill-cta-em">Bou</span>!</a>
+          <a [routerLink]="ctaLink" class="pill-cta">
+            Begin&nbsp;<span class="pill-cta-em">Bou</span>!
+          </a>
+     
           <a class="scroll-cue" (click)="scrollToStats($event)" aria-label="Sien meer, blaai af na statistieke">
             <svg class="scroll-chevron" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9" />
@@ -140,7 +143,7 @@ import { SettingsService } from '../../services/settings.service';
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <p class="footer-copy">&copy; 2026 Stephan Bredenhann &mdash; <a href="https://stephanbredenhann.github.io" target="_blank" rel="noopener">stephanbredenhann.github.io</a> &middot; <a routerLink="/privaatheid">Privaatheidsbeleid</a></p>
+        <p class="footer-copy">&copy; 2026 <a href="https://www.stephanbredenhann.dev" target="_blank" rel="noopener">Stephan Bredenhann</a> &middot; <a routerLink="/privaatheid">Privaatheidsbeleid</a></p>
       </div>
     </footer>
   `,
@@ -670,7 +673,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   get ctaLink(): string {
-    return this.auth.currentUser() ? '/kaart' : '/meld-aan';
+    return this.auth.currentUser() ? '/kaart' : '/registreer';
   }
 
   scrollToStats(event: Event) {

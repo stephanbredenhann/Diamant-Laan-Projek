@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { AdminProgressImage, SquareStatus } from '../models/square';
 
 export interface AdminTransaction {
@@ -13,6 +13,7 @@ export interface AdminTransaction {
   userName?: string;
   userEmail?: string;
   payFastPaymentId?: string | null;
+  purchaseSource: 'PayFast' | 'TelefonieseAankoop';
 }
 
 export interface ImageConflictResult {
@@ -45,7 +46,12 @@ export class AdminService {
   }
 
   getTransactions() {
-    return this.http.get<AdminTransaction[]>('/api/admin/transactions');
+    return this.http.get<AdminTransaction[]>(`/api/admin/transactions?_=${Date.now()}`, {
+      headers: new HttpHeaders({
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      })
+    });
   }
 
   getStats() {

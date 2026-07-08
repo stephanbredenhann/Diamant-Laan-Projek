@@ -19,7 +19,13 @@ public class RoadController : ControllerBase
     {
         var squares = await _db.Squares
             .OrderBy(s => s.Id)
-            .Select(s => new SquareDto { Id = s.Id, Status = s.Status, IsSold = s.OwnerId != null })
+            .Select(s => new SquareDto
+            {
+                Id = s.Id,
+                Status = s.Status,
+                IsSold = s.OwnerId != null,
+                ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
+            })
             .ToListAsync();
 
         return Ok(squares);

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -44,6 +45,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                     Koper <span class="sort-icon">{{ sortIcon('userName') }}</span>
                   </th>
                   <th>E-pos</th>
+                  <th>Metode</th>
                   <th (click)="sortBy('squareCount')" class="numeric" [class.sorted]="sortKey === 'squareCount'">
                     Aantal <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
                   </th>
@@ -64,6 +66,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                     <td>#{{ tx.id }}</td>
                     <td>{{ tx.userName }}</td>
                     <td>{{ tx.userEmail }}</td>
+                    <td>{{ purchaseSourceLabel(tx.purchaseSource) }}</td>
                     <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
                     <td class="numeric">R{{ tx.amountPerBlock | number:'1.0-0' }}</td>
                     <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
@@ -81,7 +84,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                 }
                 @if (sortedTransactions.length === 0) {
                   <tr>
-                    <td colspan="9" class="empty">Geen transaksies gevind nie.</td>
+                    <td colspan="10" class="empty">Geen transaksies gevind nie.</td>
                   </tr>
                 }
               </tbody>
@@ -198,14 +201,22 @@ export class AdminTransactionsComponent implements OnInit {
 
   readonly blokLabel = blokLabel;
 
+  purchaseSourceLabel(source: string): string {
+    return source === 'TelefonieseAankoop' ? 'Telefoniese Aankoop' : 'PayFast';
+  }
+
   ngOnInit() {
     this.admin.getTransactions().subscribe({
       next: (rows) => {
         this.transactions = rows;
         this.loading = false;
       },
-      error: () => {
-        this.loadError = 'Kon nie transaksies laai nie.';
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 401 || err.status === 403) {
+          this.loadError = 'Geen toegang nie. Meld asseblief weer as admin aan.';
+        } else {
+          this.loadError = 'Kon nie transaksies laai nie.';
+        }
         this.loading = false;
       }
     });

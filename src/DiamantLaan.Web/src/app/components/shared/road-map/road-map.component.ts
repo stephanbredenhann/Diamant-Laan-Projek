@@ -6,6 +6,8 @@ import { generateSquareGeoJson, getMapBounds, getSquareCentroid } from './coordi
 
 const SOLD_COLOR = '#C67B5C';
 const AVAILABLE_COLOR = '#D4C4A8';
+const HAS_PHOTO_COLOR = '#034EA2';
+const NO_PHOTO_COLOR = '#D4C4A8';
 const SELECTED_FILL = '#F5A623';
 const SELECTED_STROKE = '#3D2B1F';
 const DRAG_THRESHOLD = 5;
@@ -283,6 +285,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       const id = props?.['id'] as number;
       const status = (props?.['status'] as number) ?? SquareStatus.NogNieBeginNie;
       const isSold = props?.['isSold'] as boolean;
+      const imageCount = (props?.['imageCount'] as number) ?? 0;
 
       let fillColor: string;
       let fillOpacity = 0.85;
@@ -291,6 +294,8 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
 
       if (this.viewMode === 'availability') {
         fillColor = isSold ? SOLD_COLOR : AVAILABLE_COLOR;
+      } else if (this.viewMode === 'photos') {
+        fillColor = imageCount > 0 ? HAS_PHOTO_COLOR : NO_PHOTO_COLOR;
       } else {
         fillColor = STATUS_COLORS[status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
         if (status === SquareStatus.NogNieBeginNie && isSold) {

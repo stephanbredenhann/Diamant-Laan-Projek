@@ -19,10 +19,11 @@ export class AuthService {
     confirmPassword: string,
     phoneNumber: string,
     phoneCountryCode: string,
-    isOraniaResident: boolean
+    isOraniaResident: boolean,
+    isOraniaBewegingMember: boolean
   ) {
     return this.http.post<AuthResponse>(`${this.base}/register`, {
-      firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident
+      firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident, isOraniaBewegingMember
     }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
   }
 
@@ -39,6 +40,12 @@ export class AuthService {
     return this.http.post<{ message: string }>(`${this.base}/reset-password`, {
       email, otp, newPassword, confirmPassword
     });
+  }
+
+  completeRequiredPasswordChange(newPassword: string, confirmPassword: string) {
+    return this.http.post<AuthResponse>(`${this.base}/complete-required-password-change`, {
+      newPassword, confirmPassword
+    }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
   }
 
   refreshToken(): Observable<AuthResponse> {

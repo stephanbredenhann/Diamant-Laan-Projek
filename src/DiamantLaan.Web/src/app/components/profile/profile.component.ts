@@ -2,21 +2,23 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertComponent } from '../shared/alert/alert.component';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
 import {
-  COUNTRY_CODES,
   getPasswordChecks,
   isPasswordValid,
+  normalizePhoneLocal,
   validateEmail,
   validatePassword,
   validatePhone,
+  validateName,
 } from '../../utils/validation.util';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, AlertComponent],
+  imports: [FormsModule, AlertComponent, PhoneInputComponent],
   template: `
     <div class="container">
       <div class="page-header">
@@ -37,30 +39,24 @@ import {
                 <div class="form-group">
                   <label>Voornaam</label>
                   <input type="text" [(ngModel)]="firstName" name="firstName" required>
+                  @if (firstNameError) {
+                    <p class="field-error">{{ firstNameError }}</p>
+                  }
                 </div>
                 <div class="form-group">
                   <label>Van</label>
                   <input type="text" [(ngModel)]="lastName" name="lastName" required>
+                  @if (lastNameError) {
+                    <p class="field-error">{{ lastNameError }}</p>
+                  }
                 </div>
               </div>
               <div class="form-group">
                 <label>Foonnommer</label>
-                <input
-                  type="text"
-                  class="country-filter"
-                  [(ngModel)]="countryFilter"
-                  name="countryFilter"
-                  placeholder="Soek land..."
-                  aria-label="Soek landkode"
-                >
-                <div class="phone-row">
-                  <select [(ngModel)]="phoneCountryCode" name="phoneCountryCode" aria-label="Landkode">
-                    @for (c of filteredCountryCodes(); track c.code + c.label) {
-                      <option [value]="c.code">{{ c.label }}</option>
-                    }
-                  </select>
-                  <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="082 123 4567" inputmode="numeric">
-                </div>
+                <app-phone-input
+                  [(countryCode)]="phoneCountryCode"
+                  [(phoneNumber)]="phoneNumber"
+                />
                 @if (phoneError) {
                   <p class="field-error">{{ phoneError }}</p>
                 }
@@ -164,10 +160,6 @@ import {
     }
     .form-row { display: flex; gap: 1rem; }
     .form-row .form-group { flex: 1; }
-    .country-filter { margin-bottom: 0.4rem; }
-    .phone-row { display: flex; gap: 0.5rem; }
-    .phone-row select { min-width: 11rem; flex-shrink: 0; }
-    .phone-row input { flex: 1; }
     .field-error {
       margin-top: 0.35rem;
       font-size: 0.8125rem;
@@ -236,8 +228,6 @@ import {
     @media (max-width: 640px) {
       .form-row { flex-direction: column; gap: 0; }
       .card { padding: 1.5rem 1.25rem; }
-      .phone-row { flex-direction: column; }
-      .phone-row select { min-width: 0; width: 100%; }
     }
   `]
 })
@@ -251,8 +241,6 @@ export class ProfileComponent implements OnInit {
   changesRemaining = 3;
   changesAllowed = true;
   maxChanges = 3;
-  countryCodes = COUNTRY_CODES;
-  countryFilter = '';
   isPasswordValid = isPasswordValid;
 
   firstName = '';
@@ -260,6 +248,8 @@ export class ProfileComponent implements OnInit {
   phoneNumber = '';
   phoneCountryCode = '+27';
   phoneError = '';
+  firstNameError = '';
+  lastNameError = '';
   receiveBlockProgressEmails = true;
   profileLoading = false;
   profileMessage = '';
@@ -293,17 +283,22 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  filteredCountryCodes() {
-    const term = this.countryFilter.trim().toLowerCase();
-    if (!term) return this.countryCodes;
-    return this.countryCodes.filter((c) =>
-      c.country.toLowerCase().includes(term) || c.code.includes(term)
-    );
-  }
-
   saveProfile() {
     this.profileMessage = '';
     this.phoneError = '';
+    this.firstNameError = '';
+    this.lastNameError = '';
+
+    const firstNameError = validateName(this.firstName, 'Voornaam');
+    if (firstNameError) {
+      this.firstNameError = firstNameError;
+      return;
+    }
+    const lastNameError = validateName(this.lastName, 'Van');
+    if (lastNameError) {
+      this.lastNameError = lastNameError;
+      return;
+    }
     const phoneError = validatePhone(this.phoneNumber, this.phoneCountryCode);
     if (phoneError) {
       this.phoneError = phoneError;
@@ -311,9 +306,9 @@ export class ProfileComponent implements OnInit {
     }
     this.profileLoading = true;
     this.profileService.update({
-      firstName: this.firstName,
-      lastName: this.lastName,
-      phoneNumber: this.phoneNumber,
+      firstName: this.firstName.trim(),
+      lastName: this.lastName.trim(),
+      phoneNumber: normalizePhoneLocal(this.phoneNumber, this.phoneCountryCode),
       phoneCountryCode: this.phoneCountryCode,
       receiveBlockProgressEmails: this.receiveBlockProgressEmails
     }).subscribe({

@@ -12,57 +12,82 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2>Herstel wagwoord</h2>
-          <p>Voer die 6-karakter kode in wat per e-pos gestuur is, en kies 'n nuwe wagwoord.</p>
+          @if (step === 1) {
+            <h2>Voer herstelkode in</h2>
+            <p>Voer die 6-karakter kode in wat per e-pos gestuur is.</p>
+          } @else {
+            <h2>Kies nuwe wagwoord</h2>
+            <p>Kies 'n nuwe wagwoord vir jou rekening.</p>
+          }
         </div>
-        <form (ngSubmit)="submit()">
-          <div class="form-group">
-            <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email">
-          </div>
-          <div class="form-group">
-            <label>Herstelkode</label>
-            <input
-              type="text"
-              class="otp-input"
-              [(ngModel)]="otp"
-              name="otp"
-              required
-              maxlength="6"
-              autocomplete="one-time-code"
-              placeholder="ABC123"
-              (input)="otp = otp.toUpperCase()">
-          </div>
-          <div class="form-group">
-            <label>Nuwe wagwoord</label>
-            <input type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
-            <ul class="pw-checklist">
-              <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-              <li [class.ok]="checks().hasNumber">'n Nommer</li>
-              <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
-              <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
-              <li [class.ok]="checks().hasLower">'n Kleinletter</li>
-            </ul>
-          </div>
-          <div class="form-group">
-            <label>Bevestig wagwoord</label>
-            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
-          </div>
-          @if (error) {
-            <div class="error-alert">{{ error }}</div>
-          }
-          @if (success) {
-            <div class="success-alert">{{ success }}</div>
-          }
-          <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !canSubmit()">
-            {{ loading ? 'Besig...' : 'Stel nuwe wagwoord' }}
-          </button>
-        </form>
+
+        <p class="email-display">Herstel vir: <strong>{{ email }}</strong></p>
+
+        @if (step === 1) {
+          <form (ngSubmit)="nextStep()">
+            <div class="form-group">
+              <label>Herstelkode</label>
+              <input
+                type="text"
+                class="otp-input"
+                [(ngModel)]="otp"
+                name="otp"
+                required
+                maxlength="6"
+                autocomplete="one-time-code"
+                placeholder="ABC123"
+                (input)="otp = otp.toUpperCase()">
+            </div>
+            @if (error) {
+              <div class="error-alert">{{ error }}</div>
+            }
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="otp.trim().length !== 6">
+              Volgende
+            </button>
+          </form>
+        } @else {
+          <form (ngSubmit)="submit()">
+            <div class="form-group">
+              <label>Nuwe wagwoord</label>
+              <input type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+              <ul class="pw-checklist">
+                <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
+                <li [class.ok]="checks().hasNumber">'n Nommer</li>
+                <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
+                <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
+                <li [class.ok]="checks().hasLower">'n Kleinletter</li>
+              </ul>
+            </div>
+            <div class="form-group">
+              <label>Bevestig wagwoord</label>
+              <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+            </div>
+            @if (error) {
+              <div class="error-alert">{{ error }}</div>
+            }
+            @if (success) {
+              <div class="success-alert">{{ success }}</div>
+            }
+            <div class="btn-row">
+              <button type="button" class="btn btn-outline" (click)="step = 1; error = ''">Terug</button>
+              <button type="submit" class="btn btn-primary" [disabled]="loading || !canSubmit()">
+                {{ loading ? 'Besig...' : 'Stel nuwe wagwoord' }}
+              </button>
+            </div>
+          </form>
+        }
+
         <p class="auth-link"><a routerLink="/meld-aan">Terug na aanmeld</a></p>
       </div>
     </div>
   `,
   styles: [`
+    .email-display {
+      margin: 0 0 1.25rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
     .otp-input {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       letter-spacing: 0.35rem;
@@ -81,6 +106,11 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     .pw-checklist li::before { content: '○ '; }
     .pw-checklist li.ok { color: var(--color-olive); }
     .pw-checklist li.ok::before { content: '● '; }
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .btn-row .btn-primary { flex: 1; }
     .success-alert {
       background: #E8ECD8;
       color: #5A6A32;
@@ -107,19 +137,31 @@ export class ResetPasswordComponent implements OnInit {
   error = '';
   success = '';
   loading = false;
+  step = 1;
   passwordSig = signal('');
   checks = computed(() => getPasswordChecks(this.passwordSig()));
 
   ngOnInit() {
+    const nav = this.router.getCurrentNavigation();
+    const stateEmail = nav?.extras?.state?.['email'] as string | undefined;
     const q = this.route.snapshot.queryParamMap.get('email');
-    if (q) this.email = q;
+    this.email = (q || stateEmail || '').trim();
+    if (!this.email) {
+      this.router.navigate(['/wagwoord-vergeet']);
+    }
+  }
+
+  nextStep() {
+    this.error = '';
+    if (this.otp.trim().length !== 6) {
+      this.error = 'Voer die volledige 6-karakter kode in.';
+      return;
+    }
+    this.step = 2;
   }
 
   canSubmit(): boolean {
-    return !!this.email.trim()
-      && this.otp.trim().length === 6
-      && isPasswordValid(this.newPassword)
-      && this.newPassword === this.confirmPassword;
+    return isPasswordValid(this.newPassword) && this.newPassword === this.confirmPassword;
   }
 
   submit() {
@@ -135,7 +177,7 @@ export class ResetPasswordComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.auth.resetPassword(this.email.trim(), this.otp.trim(), this.newPassword, this.confirmPassword).subscribe({
+    this.auth.resetPassword(this.email, this.otp.trim(), this.newPassword, this.confirmPassword).subscribe({
       next: (res) => {
         this.success = res.message;
         this.loading = false;
