@@ -2,12 +2,14 @@ using DiamantLaan.Api.Controllers;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Dtos;
+using DiamantLaan.Api.Models.Enums;
 using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -21,6 +23,14 @@ public class AuthPasswordResetTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new AppDbContext(options);
+    }
+
+    private static PasswordResetOtpService CreateOtpService(AppDbContext db, Mock<UserManager<User>> userManager, Mock<IEmailService> email)
+    {
+        email.Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var outbox = new EmailOutboxService(db, email.Object, Mock.Of<ILogger<EmailOutboxService>>());
+        return new PasswordResetOtpService(db, userManager.Object, outbox);
     }
 
     [Fact]
@@ -39,7 +49,7 @@ public class AuthPasswordResetTests
             null!, null!, null!, null!);
 
         var email = new Mock<IEmailService>();
-        var otp = new PasswordResetOtpService(db, userManager.Object, email.Object);
+        var otp = CreateOtpService(db, userManager, email);
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Jwt:Key"] = "01234567890123456789012345678901",
@@ -62,7 +72,40 @@ public class AuthPasswordResetTests
     }
 
     [Fact]
-    public async Task PasswordResetOtpService_CreatesHashedOtpAndSendsEmail()
+    public async Task PasswordResetOtpService_CreatesHashedOtpAndQueuesEmail()
+    {
+        await using var db = CreateDb();
+        var user = new User
+        {
+            Id = "u1",
+            Email = "user@test.com",
+            UserName = "user@test.com",
+            FirstName = "Jan"
+        };
+        var store = new Mock<IUserStore<User>>();
+        var userManager = new Mock<UserManager<User>>(
+            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        userManager.Setup(m => m.FindByEmailAsync(user.Email)).ReturnsAsync(user);
+
+        var email = new Mock<IEmailService>();
+        var service = CreateOtpService(db, userManager, email);
+        await service.RequestAsync(user.Email!);
+
+        Assert.Equal(1, await db.PasswordResetOtps.CountAsync());
+        var otp = await db.PasswordResetOtps.SingleAsync();
+        Assert.False(otp.Used);
+        Assert.Equal(64, otp.CodeHash.Length);
+        Assert.Equal(1, await db.PendingEmails.CountAsync(e => e.Sent));
+        email.Verify(e => e.SendAsync(
+            "user@test.com",
+            It.Is<string>(s => s.Contains("wagwoord")),
+            It.IsAny<string>(),
+            It.Is<string>(k => k.StartsWith("password-reset-otp/")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PasswordResetOtpService_QueuesEmailForRetry_WhenSendFails()
     {
         await using var db = CreateDb();
         var user = new User
@@ -79,20 +122,14 @@ public class AuthPasswordResetTests
 
         var email = new Mock<IEmailService>();
         email.Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .ReturnsAsync(false);
+        var outbox = new EmailOutboxService(db, email.Object, Mock.Of<ILogger<EmailOutboxService>>());
+        var service = new PasswordResetOtpService(db, userManager.Object, outbox);
 
-        var service = new PasswordResetOtpService(db, userManager.Object, email.Object);
         await service.RequestAsync(user.Email!);
 
-        Assert.Equal(1, await db.PasswordResetOtps.CountAsync());
-        var otp = await db.PasswordResetOtps.SingleAsync();
-        Assert.False(otp.Used);
-        Assert.Equal(64, otp.CodeHash.Length);
-        email.Verify(e => e.SendAsync(
-            "user@test.com",
-            It.Is<string>(s => s.Contains("wagwoord")),
-            It.IsAny<string>(),
-            It.Is<string>(k => k.StartsWith("password-reset-otp/u1/")),
-            It.IsAny<CancellationToken>()), Times.Once);
+        var pending = await db.PendingEmails.SingleAsync();
+        Assert.False(pending.Sent);
+        Assert.Equal(1, pending.AttemptCount);
     }
 }

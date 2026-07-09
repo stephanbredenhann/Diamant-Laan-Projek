@@ -72,7 +72,15 @@ public class PaymentController : ControllerBase
             return Ok("OK");
         }
 
-        await ConfirmPurchaseAsync(purchase, result.PayFastPaymentId!, result.PaymentStatus!);
+        var confirmed = await ConfirmPurchaseAsync(purchase, result.PayFastPaymentId!, result.PaymentStatus!);
+        if (!confirmed)
+        {
+            _logger.LogError(
+                "PayFast ITN confirmation failed for purchase {PurchaseId}; returning 500 so PayFast will retry",
+                purchaseId);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Confirmation failed");
+        }
+
         return Ok("OK");
     }
 
@@ -97,12 +105,14 @@ public class PaymentController : ControllerBase
         if (purchase.PaymentStatus != PaymentStatus.Pending)
             return BadRequest(new { message = "Aankoop is nie meer hangend nie." });
 
-        await ConfirmPurchaseAsync(purchase, dto.PaymentId ?? $"sandbox-{purchase.Id}", dto.Status);
+        var confirmed = await ConfirmPurchaseAsync(purchase, dto.PaymentId ?? $"sandbox-{purchase.Id}", dto.Status);
+        if (!confirmed)
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Kon nie aankoop bevestig nie." });
 
         return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
     }
 
-    private async Task ConfirmPurchaseAsync(Purchase purchase, string payFastPaymentId, string paymentStatus)
+    private async Task<bool> ConfirmPurchaseAsync(Purchase purchase, string payFastPaymentId, string paymentStatus)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -113,7 +123,7 @@ public class PaymentController : ControllerBase
             {
                 _logger.LogInformation("PayFast ITN for non-pending purchase {PurchaseId}", purchase.Id);
                 await transaction.RollbackAsync();
-                return;
+                return true;
             }
 
             purchase.PaymentStatus = PaymentStatus.Confirmed;
@@ -132,16 +142,19 @@ public class PaymentController : ControllerBase
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
             _logger.LogInformation("Purchase {PurchaseId} confirmed", purchase.Id);
+            return true;
         }
         catch (DbUpdateConcurrencyException ex)
         {
             await transaction.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency conflict confirming purchase {PurchaseId}", purchase.Id);
+            return false;
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error confirming purchase {PurchaseId}", purchase.Id);
+            return false;
         }
     }
 

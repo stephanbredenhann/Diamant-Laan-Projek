@@ -23,7 +23,7 @@ public class AdminController : ControllerBase
     private readonly AuditLogService _audit;
     private readonly SiteSettingsService _siteSettings;
     private readonly BlockNotificationService _blockNotifications;
-    private readonly IEmailService _email;
+    private readonly EmailOutboxService _emailOutbox;
     private readonly IConfiguration _config;
 
     public AdminController(
@@ -33,7 +33,7 @@ public class AdminController : ControllerBase
         AuditLogService audit,
         SiteSettingsService siteSettings,
         BlockNotificationService blockNotifications,
-        IEmailService email,
+        EmailOutboxService emailOutbox,
         IConfiguration config)
     {
         _db = db;
@@ -42,7 +42,7 @@ public class AdminController : ControllerBase
         _audit = audit;
         _siteSettings = siteSettings;
         _blockNotifications = blockNotifications;
-        _email = email;
+        _emailOutbox = emailOutbox;
         _config = config;
     }
 
@@ -234,6 +234,14 @@ public class AdminController : ControllerBase
     [HttpPost("users/make-admin")]
     public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminDto dto)
     {
+        var seedAdminEmail = _config["AdminUser:Email"];
+        var callerEmail = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(seedAdminEmail)
+            || !string.Equals(callerEmail, seedAdminEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
             return NotFound(new { message = "Gebruiker nie gevind nie." });
@@ -346,11 +354,12 @@ public class AdminController : ControllerBase
             await transaction.CommitAsync();
             await _audit.LogAsync(User, "ManualPurchase", $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
 
+            var welcomeEmailSent = false;
             if (isNewUser && welcomeTempPassword != null && !string.IsNullOrWhiteSpace(user.Email))
             {
                 var siteUrl = _config["App:PublicUrl"] ?? "http://localhost:4200";
                 var html = EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl);
-                await _email.SendAsync(
+                welcomeEmailSent = await _emailOutbox.QueueAsync(
                     user.Email,
                     "Jou Diamant Laan rekening — Diamant Laan",
                     html,
@@ -364,7 +373,8 @@ public class AdminController : ControllerBase
                 squareCount = squares.Count,
                 userId = user.Id,
                 paymentStatus = purchase.PaymentStatus.ToString(),
-                hasProof = purchase.ProofOfPaymentPath != null
+                hasProof = purchase.ProofOfPaymentPath != null,
+                welcomeEmailSent
             });
         }
         catch (DbUpdateConcurrencyException)
@@ -607,5 +617,31 @@ public class AdminController : ControllerBase
 
         _db.ProgressImages.Remove(progressImage);
         return _db.SaveChangesAsync();
+    }
+
+    [HttpGet("diagnostics")]
+    public IActionResult GetDiagnostics()
+    {
+        var resend = _config.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
+        var emailConfigured = !string.IsNullOrWhiteSpace(resend.ApiKey)
+            && !string.IsNullOrWhiteSpace(resend.FromEmail);
+
+        var pendingEmails = _db.PendingEmails.Count(e => !e.Sent);
+        var pendingBlockNotifications = _db.PendingBlockNotifications.Count(p => !p.Sent);
+
+        return Ok(new
+        {
+            email = new
+            {
+                configured = emailConfigured,
+                fromEmailSet = !string.IsNullOrWhiteSpace(resend.FromEmail),
+                apiKeySet = !string.IsNullOrWhiteSpace(resend.ApiKey),
+                pendingOutboxCount = pendingEmails
+            },
+            notifications = new
+            {
+                pendingBlockNotificationCount = pendingBlockNotifications
+            }
+        });
     }
 }

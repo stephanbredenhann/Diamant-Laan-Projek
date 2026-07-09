@@ -5,6 +5,7 @@ using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace DiamantLaan.Api.Tests.Controllers;
@@ -24,7 +25,8 @@ public class SettingsControllerTests
     {
         await using var db = CreateDb();
         var service = new SiteSettingsService(db);
-        var controller = new SettingsController(service);
+        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings()));
+        var controller = new SettingsController(service, emailHealth);
 
         var result = await controller.GetHomeStatsSettings();
 
@@ -47,7 +49,8 @@ public class SettingsControllerTests
         await db.SaveChangesAsync();
 
         var service = new SiteSettingsService(db);
-        var controller = new SettingsController(service);
+        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings()));
+        var controller = new SettingsController(service, emailHealth);
 
         var result = await controller.GetHomeStatsSettings();
 
@@ -55,5 +58,23 @@ public class SettingsControllerTests
         var dto = Assert.IsType<HomeStatsSettingsDto>(ok.Value);
         Assert.False(dto.ShowStatsSection);
         Assert.True(dto.ShowTotalRaised);
+    }
+
+    [Fact]
+    public void Health_ReturnsEmailConfiguredStatus()
+    {
+        var service = new SiteSettingsService(CreateDb());
+        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings
+        {
+            ApiKey = "re_test",
+            FromEmail = "noreply@test.com"
+        }));
+        var controller = new SettingsController(service, emailHealth);
+
+        var result = controller.Health();
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+        Assert.Contains("\"emailConfigured\":true", json);
     }
 }

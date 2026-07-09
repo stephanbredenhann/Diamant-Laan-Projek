@@ -150,7 +150,7 @@ public class AdminTransactionsTests
             new AuditLogService(db),
             new SiteSettingsService(db),
             blockNotifications,
-            Mock.Of<IEmailService>(),
+            new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>()),
             config);
     }
 }

@@ -136,7 +136,6 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
-    [EnableRateLimiting("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         await _passwordResetOtps.RequestAsync(dto.Email.Trim());
@@ -144,7 +143,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("reset-password")]
-    [EnableRateLimiting("auth")]
+    [EnableRateLimiting("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
         if (dto.NewPassword != dto.ConfirmPassword)
@@ -251,7 +250,8 @@ public class AuthController : ControllerBase
             new(ClaimTypes.GivenName, user.FirstName),
             new(ClaimTypes.Surname, user.LastName),
             new("PhoneNumber", user.PhoneNumber ?? ""),
-            new("IsOraniaResident", user.IsOraniaResident.ToString())
+            new("IsOraniaResident", user.IsOraniaResident.ToString()),
+            new("MustChangePassword", user.MustChangePassword.ToString())
         };
 
         foreach (var role in roles)

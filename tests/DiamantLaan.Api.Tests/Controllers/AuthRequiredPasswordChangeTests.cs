@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
 using Xunit;
@@ -63,7 +64,8 @@ public class AuthRequiredPasswordChangeTests
             ["Jwt:RefreshExpireDays"] = "7"
         }).Build();
         var refresh = new RefreshTokenService(db, config);
-        var otp = new PasswordResetOtpService(db, userManager.Object, Mock.Of<IEmailService>());
+        var outbox = new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>());
+        var otp = new PasswordResetOtpService(db, userManager.Object, outbox);
 
         var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp)
         {
@@ -119,7 +121,8 @@ public class AuthRequiredPasswordChangeTests
             ["Jwt:RefreshExpireDays"] = "7"
         }).Build();
         var refresh = new RefreshTokenService(db, config);
-        var otp = new PasswordResetOtpService(db, userManager.Object, Mock.Of<IEmailService>());
+        var outbox = new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>());
+        var otp = new PasswordResetOtpService(db, userManager.Object, outbox);
 
         var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp)
         {

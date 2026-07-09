@@ -59,6 +59,8 @@ cd "<repo-folder>"
 dotnet user-secrets set --project src/DiamantLaan.Api "Jwt:Key" "your-development-key"
 dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Email" "admin@example.com"
 dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Password" "YourPassword123!"
+dotnet user-secrets set --project src/DiamantLaan.Api "Resend:ApiKey" "re_your_api_key"
+dotnet user-secrets set --project src/DiamantLaan.Api "Resend:FromEmail" "noreply@yourdomain.com"
 
 # Install Angular dependencies
 cd src/DiamantLaan.Web
@@ -100,9 +102,15 @@ az webapp config appsettings set --name <app-name> -g <group-name> \
     "Jwt__Key=<production-key>" \
     "AdminUser__Email=<admin-email>" \
     "AdminUser__Password=<admin-password>" \
+    "Resend__ApiKey=<resend-api-key>" \
+    "Resend__FromEmail=<verified-sender@yourdomain.com>" \
+    "App__PublicUrl=https://<app-name>.azurewebsites.net" \
     "ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db"
+```
 
+Verify your sender domain in the [Resend dashboard](https://resend.com/domains) before going live. Check email health at `GET /api/health` (public) or `GET /api/admin/diagnostics` (admin).
 
+SQLite backups are written automatically to `/home/site/backups/` on Azure (daily, last 7 retained).
 
 ## License
 

@@ -85,9 +85,8 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
       gap: 0.5rem;
     }
     .country-slot {
-      flex: 2 1 0;
-      min-width: 0;
-      max-width: 20%;
+      flex: 0 0 auto;
+      min-width: 5.5rem;
     }
     .country-trigger {
       display: flex;
@@ -121,7 +120,7 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
       color: var(--text-muted);
     }
     .phone-number {
-      flex: 8 1 0;
+      flex: 1 1 0;
       min-width: 0;
       width: auto;
     }

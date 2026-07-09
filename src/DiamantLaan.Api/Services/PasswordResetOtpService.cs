@@ -14,13 +14,13 @@ public class PasswordResetOtpService
 
     private readonly AppDbContext _db;
     private readonly UserManager<User> _userManager;
-    private readonly IEmailService _email;
+    private readonly EmailOutboxService _emailOutbox;
 
-    public PasswordResetOtpService(AppDbContext db, UserManager<User> userManager, IEmailService email)
+    public PasswordResetOtpService(AppDbContext db, UserManager<User> userManager, EmailOutboxService emailOutbox)
     {
         _db = db;
         _userManager = userManager;
-        _email = email;
+        _emailOutbox = emailOutbox;
     }
 
     public async Task RequestAsync(string email, CancellationToken cancellationToken = default)
@@ -38,21 +38,22 @@ public class PasswordResetOtpService
         foreach (var row in existing)
             row.Used = true;
 
-        _db.PasswordResetOtps.Add(new PasswordResetOtp
+        var record = new PasswordResetOtp
         {
             UserId = user.Id,
             CodeHash = Hash(otp),
             ExpiresAt = now.Add(Expiry),
             CreatedAt = now
-        });
+        };
+        _db.PasswordResetOtps.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
 
         var html = EmailTemplates.PasswordResetOtp(user.FirstName, otp);
-        await _email.SendAsync(
+        await _emailOutbox.QueueAsync(
             user.Email,
             "Herstel jou wagwoord — Diamant Laan",
             html,
-            $"password-reset-otp/{user.Id}/{now:yyyyMMddHHmm}",
+            $"password-reset-otp/{record.Id}",
             cancellationToken);
     }
 

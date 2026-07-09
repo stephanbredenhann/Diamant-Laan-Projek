@@ -1,6 +1,8 @@
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 using DiamantLaan.Api.Data;
+using DiamantLaan.Api.Middleware;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -79,8 +81,12 @@ builder.Services.AddScoped<SiteSettingsService>();
 builder.Services.AddScoped<ProfileRateLimitService>();
 builder.Services.AddScoped<PasswordResetOtpService>();
 builder.Services.AddScoped<BlockNotificationService>();
+builder.Services.AddScoped<EmailOutboxService>();
+builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 builder.Services.AddHostedService<BlockNotificationBackgroundService>();
+builder.Services.AddHostedService<EmailOutboxBackgroundService>();
+builder.Services.AddHostedService<SqliteBackupBackgroundService>();
 
 var payFastSettings = builder.Configuration.GetSection("PayFast").Get<PayFastSettings>()
     ?? new PayFastSettings();
@@ -100,13 +106,24 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
-    options.AddPolicy("forgot-password", httpContext =>
+    options.AddPolicy("reset-password", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 3,
-                Window = TimeSpan.FromHours(1),
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    options.AddPolicy("purchase", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
     options.AddPolicy("profile", httpContext =>
@@ -154,10 +171,17 @@ if (!app.Environment.IsDevelopment())
 
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 2
 };
 forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
+if (Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") != null)
+{
+    forwardedHeadersOptions.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    forwardedHeadersOptions.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    forwardedHeadersOptions.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
+}
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseHttpsRedirection();
@@ -182,6 +206,7 @@ app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseMiddleware<MustChangePasswordMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.Map("/api/{**catchall}", () => Results.NotFound(new { message = "API-endpunt nie gevind nie." }));
@@ -196,6 +221,7 @@ using (var scope = app.Services.CreateScope())
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var db = services.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+    await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     var adminEmail = app.Configuration["AdminUser:Email"];
     var adminPassword = app.Configuration["AdminUser:Password"];
     if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))

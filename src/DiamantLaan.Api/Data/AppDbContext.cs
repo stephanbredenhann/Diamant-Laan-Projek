@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<PasswordResetOtp> PasswordResetOtps => Set<PasswordResetOtp>();
     public DbSet<ProfileChangeLog> ProfileChangeLogs => Set<ProfileChangeLog>();
     public DbSet<PendingBlockNotification> PendingBlockNotifications => Set<PendingBlockNotification>();
+    public DbSet<PendingEmail> PendingEmails => Set<PendingEmail>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -109,6 +110,9 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany()
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PendingEmail>()
+            .HasIndex(e => e.Sent);
 
         builder.Entity<User>()
             .Property(u => u.ReceiveBlockProgressEmails)

@@ -6,6 +6,7 @@ using DiamantLaan.Api.Models.Enums;
 using DiamantLaan.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiamantLaan.Api.Controllers;
@@ -15,6 +16,8 @@ namespace DiamantLaan.Api.Controllers;
 [Authorize]
 public class PurchaseController : ControllerBase
 {
+    private const int MaxConcurrentPendingPurchases = 3;
+
     private readonly AppDbContext _db;
     private readonly IPayFastService _payFastService;
 
@@ -25,9 +28,20 @@ public class PurchaseController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("purchase")]
     public async Task<IActionResult> CreatePurchase([FromBody] PurchaseRequestDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var pendingCount = await _db.Purchases
+            .CountAsync(p => p.UserId == userId && p.PaymentStatus == PaymentStatus.Pending);
+        if (pendingCount >= MaxConcurrentPendingPurchases)
+        {
+            return BadRequest(new
+            {
+                message = $"Jy het reeds {MaxConcurrentPendingPurchases} hangende aankope. Voltooi of kanselleer hulle eers."
+            });
+        }
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
