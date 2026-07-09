@@ -100,7 +100,7 @@ public class AuthPasswordResetTests
             "user@test.com",
             It.Is<string>(s => s.Contains("wagwoord")),
             It.IsAny<string>(),
-            It.Is<string>(k => k.StartsWith("password-reset-otp/")),
+            null,
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

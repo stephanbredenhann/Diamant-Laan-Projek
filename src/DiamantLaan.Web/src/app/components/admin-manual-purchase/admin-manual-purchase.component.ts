@@ -284,6 +284,10 @@ export class AdminManualPurchaseComponent {
     this.admin.manualPurchase(formData).subscribe({
       next: (res) => {
         this.message = `Aankoop #${res.purchaseId} voltooi — ${res.squareCount} ${blokLabel(res.squareCount)} vir R${res.amount}.`;
+        if (res.welcomeEmailSent === false) {
+          this.message += ' Waarskuwing: die welkom-e-pos kon nie gestuur word nie. Kontroleer Resend-instellings of stuur die wagwoord handmatig.';
+          this.isError = true;
+        }
         this.firstName = '';
         this.lastName = '';
         this.email = '';

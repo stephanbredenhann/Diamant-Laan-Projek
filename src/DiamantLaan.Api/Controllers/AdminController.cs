@@ -362,8 +362,7 @@ public class AdminController : ControllerBase
                 welcomeEmailSent = await _emailOutbox.QueueAsync(
                     user.Email,
                     "Jou Diamant Laan rekening — Diamant Laan",
-                    html,
-                    $"manual-purchase-welcome/{purchase.Id}");
+                    html);
             }
 
             return Ok(new

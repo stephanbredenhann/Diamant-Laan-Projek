@@ -21,7 +21,6 @@ public class EmailOutboxService
         string to,
         string subject,
         string html,
-        string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
         var pending = new PendingEmail
@@ -29,7 +28,7 @@ public class EmailOutboxService
             To = to,
             Subject = subject,
             HtmlBody = html,
-            IdempotencyKey = idempotencyKey,
+            IdempotencyKey = Guid.NewGuid().ToString("N"),
             Sent = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -69,7 +68,7 @@ public class EmailOutboxService
             pending.To,
             pending.Subject,
             pending.HtmlBody,
-            pending.IdempotencyKey,
+            idempotencyKey: null,
             cancellationToken);
 
         if (sent)

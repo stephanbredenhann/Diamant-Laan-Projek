@@ -53,7 +53,6 @@ public class PasswordResetOtpService
             user.Email,
             "Herstel jou wagwoord — Diamant Laan",
             html,
-            $"password-reset-otp/{record.Id}",
             cancellationToken);
     }
 

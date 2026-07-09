@@ -44,6 +44,7 @@ public class ResendEmailService : IEmailService
                 return false;
             }
 
+            _logger.LogInformation("Resend email sent to {To}, messageId={MessageId}", to, response.Content);
             return true;
         }
         catch (ResendException ex)

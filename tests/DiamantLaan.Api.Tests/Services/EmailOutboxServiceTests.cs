@@ -28,7 +28,7 @@ public class EmailOutboxServiceTests
             });
 
         var outbox = new EmailOutboxService(db, email.Object, Mock.Of<ILogger<EmailOutboxService>>());
-        await outbox.QueueAsync("user@test.com", "Subject", "<p>Hi</p>", "test-key-1");
+        await outbox.QueueAsync("user@test.com", "Subject", "<p>Hi</p>");
 
         var pending = await db.PendingEmails.SingleAsync();
         Assert.False(pending.Sent);

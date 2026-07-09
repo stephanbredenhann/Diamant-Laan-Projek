@@ -117,12 +117,11 @@ public class BlockNotificationService
             hasPhotos,
             siteUrl);
 
-        var key = $"block-progress/{user.Id}/{pending.FirstQueuedAt.Ticks}";
         var sent = await _email.SendAsync(
             user.Email,
             "Opdatering op jou blokke — Diamant Laan",
             html,
-            key,
+            idempotencyKey: null,
             cancellationToken);
 
         if (sent)

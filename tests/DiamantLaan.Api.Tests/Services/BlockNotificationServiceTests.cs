@@ -121,7 +121,7 @@ public class BlockNotificationServiceTests
             "a@b.com",
             It.Is<string>(s => s.Contains("blokke")),
             It.Is<string>(html => html.Contains("Besig om te teer") && html.Contains("Voorberei")),
-            It.Is<string>(k => k.StartsWith("block-progress/u1/")),
+            null,
             It.IsAny<CancellationToken>()), Times.Once);
         Assert.True((await db.PendingBlockNotifications.SingleAsync()).Sent);
     }
