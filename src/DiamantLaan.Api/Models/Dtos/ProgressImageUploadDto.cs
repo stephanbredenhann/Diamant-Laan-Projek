@@ -14,4 +14,8 @@ public class ProgressImageUploadDto
     public string? Caption { get; set; }
 
     public bool ReplaceExisting { get; set; }
+
+    /// <summary>Optional GUID shared with a preceding status update in the same Stoor action.</summary>
+    [MaxLength(64)]
+    public string? UndoBatchId { get; set; }
 }

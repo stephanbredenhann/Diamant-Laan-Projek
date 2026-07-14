@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminService } from '../../services/admin.service';
+import { AdminService, UndoLastInfo } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
 import {
   AdminProgressImage,
@@ -38,6 +38,23 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
           <div class="stat-label">Gekies</div>
         </div>
       </div>
+
+      @if (undoAvailable()) {
+        <div class="undo-bar">
+          <div class="undo-text">
+            <strong>Laaste stoor kan ongedaan gemaak word</strong>
+            <span class="undo-hint">Nog {{ undoMinutesLeft() }} min</span>
+          </div>
+          <button
+            class="btn btn-outline btn-sm"
+            type="button"
+            [disabled]="undoing"
+            (click)="undoLastSave()"
+          >
+            {{ undoing ? 'Besig...' : 'Maak ongedaan' }}
+          </button>
+        </div>
+      }
 
       @if (selectedIds().size > 0) {
         <div class="action-panel" [class.has-drafts]="hasUnsavedChanges">
@@ -242,6 +259,29 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       display: flex;
       gap: 1rem;
       margin-bottom: 1.25rem;
+    }
+    .undo-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .undo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+      font-size: 0.8125rem;
+      color: var(--color-text);
+    }
+    .undo-hint {
+      font-size: 0.75rem;
+      color: var(--color-muted);
     }
     .stat-card {
       flex: 1;
@@ -505,7 +545,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
     }
   `]
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, OnDestroy {
   @ViewChild('imageFileInput') imageFileInput?: ElementRef<HTMLInputElement>;
   @ViewChild(RoadMapComponent) roadMap?: RoadMapComponent;
 
@@ -523,6 +563,9 @@ export class AdminComponent implements OnInit {
   photoSquareIds = signal<Set<number>>(new Set());
 
   private progressImages: AdminProgressImage[] = [];
+  private undoExpiresAt: Date | null = null;
+  private undoCountdownTimer: ReturnType<typeof setInterval> | null = null;
+  private activeUndoBatchId: string | null = null;
 
   searchBlockNumber: number | null = null;
   searchError = '';
@@ -539,6 +582,9 @@ export class AdminComponent implements OnInit {
   message = '';
   isError = false;
   saving = false;
+  undoing = false;
+  undoAvailable = signal(false);
+  undoMinutesLeft = signal(0);
   imageConflictPrompt: { conflictingCount: number; totalSelected: number } | null = null;
   /** Snapshot of image status used for the open conflict prompt / pending upload. */
   pendingImageStatus: SquareStatus | null = null;
@@ -553,6 +599,11 @@ export class AdminComponent implements OnInit {
 
   ngOnInit() {
     this.refresh();
+    this.loadUndoState();
+  }
+
+  ngOnDestroy() {
+    this.clearUndoCountdown();
   }
 
   private updateMapDisplaySquares() {
@@ -698,6 +749,7 @@ export class AdminComponent implements OnInit {
     this.message = '';
     this.isError = false;
     this.saving = true;
+    this.activeUndoBatchId = crypto.randomUUID();
 
     const afterStatus = () => {
       if (this.draftImageFile) {
@@ -710,12 +762,14 @@ export class AdminComponent implements OnInit {
     if (this.draftStatus !== null) {
       const ids = Array.from(this.selectedIds());
       const status = this.draftStatus;
-      this.admin.updateStatus(ids, status).subscribe({
+      this.admin.updateStatus(ids, status, this.activeUndoBatchId ?? undefined).subscribe({
         next: () => afterStatus(),
         error: (err) => {
           this.message = err.error?.message || 'Statusopdatering het misluk.';
           this.isError = true;
           this.saving = false;
+          this.activeUndoBatchId = null;
+          this.loadUndoState();
         }
       });
     } else {
@@ -744,6 +798,7 @@ export class AdminComponent implements OnInit {
             totalSelected: result.totalSelected
           };
           this.saving = false;
+          this.loadUndoState();
         } else {
           this.performUpload(false);
         }
@@ -753,6 +808,7 @@ export class AdminComponent implements OnInit {
         this.message = err.error?.message || 'Kon nie konflikte kontroleer nie.';
         this.isError = true;
         this.saving = false;
+        this.loadUndoState();
       }
     });
   }
@@ -797,7 +853,7 @@ export class AdminComponent implements OnInit {
       ? `${this.selectedIds().size} ${blokLabel(this.selectedIds().size)} se status opgedateer. `
       : '';
 
-    this.admin.uploadProgressImage(formData, replaceExisting).subscribe({
+    this.admin.uploadProgressImage(formData, replaceExisting, this.activeUndoBatchId ?? undefined).subscribe({
       next: (res) => {
         this.finishSaveSuccess(statusPart + this.buildUploadSuccessMessage(res));
       },
@@ -805,6 +861,31 @@ export class AdminComponent implements OnInit {
         this.message = err.error?.message || 'Foto-oplaai het misluk.';
         this.isError = true;
         this.saving = false;
+        this.activeUndoBatchId = null;
+        this.loadUndoState();
+      }
+    });
+  }
+
+  undoLastSave() {
+    if (!this.undoAvailable() || this.undoing) return;
+    this.undoing = true;
+    this.message = '';
+    this.isError = false;
+    this.admin.undoLast().subscribe({
+      next: (res) => {
+        this.undoing = false;
+        this.clearUndoState();
+        this.message = res.message || 'Laaste stoor is ongedaan gemaak.';
+        this.isError = false;
+        this.refresh();
+      },
+      error: (err) => {
+        this.undoing = false;
+        this.clearUndoState();
+        this.message = err.error?.message || 'Kon nie ongedaan maak nie.';
+        this.isError = true;
+        this.loadUndoState();
       }
     });
   }
@@ -813,9 +894,11 @@ export class AdminComponent implements OnInit {
     this.message = msg;
     this.isError = false;
     this.saving = false;
+    this.activeUndoBatchId = null;
     this.cancelDrafts();
     this.selectedIds.set(new Set());
     this.refresh();
+    this.loadUndoState();
   }
 
   private buildStatusOnlyMessage(): string {
@@ -884,6 +967,61 @@ export class AdminComponent implements OnInit {
     });
     if (this.viewMode() === 'photos') {
       this.loadPhotoOverlay();
+    }
+  }
+
+  private loadUndoState() {
+    this.admin.getUndoLast().subscribe({
+      next: (info) => this.applyUndoInfo(info),
+      error: () => this.clearUndoState()
+    });
+  }
+
+  private applyUndoInfo(info: UndoLastInfo) {
+    if (!info.available || !info.expiresAt) {
+      this.clearUndoState();
+      return;
+    }
+    this.undoExpiresAt = this.parseUtcDate(info.expiresAt);
+    this.tickUndoCountdown();
+    this.clearUndoCountdown();
+    this.undoCountdownTimer = setInterval(() => this.tickUndoCountdown(), 15_000);
+  }
+
+  /** Treat API timestamps without Z as UTC (SQLite/EF often omit the offset). */
+  private parseUtcDate(value: string): Date {
+    const trimmed = value.trim();
+    if (/[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) {
+      return new Date(trimmed);
+    }
+    return new Date(trimmed.endsWith('Z') ? trimmed : `${trimmed}Z`);
+  }
+
+  private tickUndoCountdown() {
+    if (!this.undoExpiresAt) {
+      this.clearUndoState();
+      return;
+    }
+    const msLeft = this.undoExpiresAt.getTime() - Date.now();
+    if (msLeft <= 0) {
+      this.clearUndoState();
+      return;
+    }
+    this.undoAvailable.set(true);
+    this.undoMinutesLeft.set(Math.max(1, Math.ceil(msLeft / 60_000)));
+  }
+
+  private clearUndoState() {
+    this.undoAvailable.set(false);
+    this.undoMinutesLeft.set(0);
+    this.undoExpiresAt = null;
+    this.clearUndoCountdown();
+  }
+
+  private clearUndoCountdown() {
+    if (this.undoCountdownTimer !== null) {
+      clearInterval(this.undoCountdownTimer);
+      this.undoCountdownTimer = null;
     }
   }
 }

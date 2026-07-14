@@ -81,6 +81,7 @@ builder.Services.AddScoped<SiteSettingsService>();
 builder.Services.AddScoped<ProfileRateLimitService>();
 builder.Services.AddScoped<PasswordResetOtpService>();
 builder.Services.AddScoped<BlockNotificationService>();
+builder.Services.AddScoped<AdminSaveUndoService>();
 builder.Services.AddScoped<EmailOutboxService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();

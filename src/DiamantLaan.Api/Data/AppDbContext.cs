@@ -22,6 +22,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<ProfileChangeLog> ProfileChangeLogs => Set<ProfileChangeLog>();
     public DbSet<PendingBlockNotification> PendingBlockNotifications => Set<PendingBlockNotification>();
     public DbSet<PendingEmail> PendingEmails => Set<PendingEmail>();
+    public DbSet<AdminSaveSnapshot> AdminSaveSnapshots => Set<AdminSaveSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -113,6 +114,12 @@ public class AppDbContext : IdentityDbContext<User>
 
         builder.Entity<PendingEmail>()
             .HasIndex(e => e.Sent);
+
+        builder.Entity<AdminSaveSnapshot>()
+            .HasIndex(s => new { s.ConsumedAt, s.CreatedAt });
+
+        builder.Entity<AdminSaveSnapshot>()
+            .HasIndex(s => s.UndoBatchId);
 
         builder.Entity<User>()
             .Property(u => u.ReceiveBlockProgressEmails)

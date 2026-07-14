@@ -23,6 +23,7 @@ public class AdminController : ControllerBase
     private readonly AuditLogService _audit;
     private readonly SiteSettingsService _siteSettings;
     private readonly BlockNotificationService _blockNotifications;
+    private readonly AdminSaveUndoService _saveUndo;
     private readonly EmailOutboxService _emailOutbox;
     private readonly IConfiguration _config;
 
@@ -33,6 +34,7 @@ public class AdminController : ControllerBase
         AuditLogService audit,
         SiteSettingsService siteSettings,
         BlockNotificationService blockNotifications,
+        AdminSaveUndoService saveUndo,
         EmailOutboxService emailOutbox,
         IConfiguration config)
     {
@@ -42,6 +44,7 @@ public class AdminController : ControllerBase
         _audit = audit;
         _siteSettings = siteSettings;
         _blockNotifications = blockNotifications;
+        _saveUndo = saveUndo;
         _emailOutbox = emailOutbox;
         _config = config;
     }
@@ -78,15 +81,47 @@ public class AdminController : ControllerBase
                 return BadRequest(new { message = $"Blok #{square.Id} is reeds klaar geteer." });
             if ((int)dto.Status > (int)square.Status + 1)
                 return BadRequest(new { message = $"Kan nie blok #{square.Id} van {square.Status} na {dto.Status} skuif nie." });
-
-            square.Status = dto.Status;
         }
+
+        var statusChanges = squares
+            .Select(s => new SquareStatusChange(s.Id, (int)s.Status))
+            .ToList();
+        var ownerIds = squares
+            .Select(s => s.OwnerId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Cast<string>()
+            .Distinct()
+            .ToList();
+
+        foreach (var square in squares)
+            square.Status = dto.Status;
 
         await _db.SaveChangesAsync();
         await _audit.LogAsync(User, "BulkStatusUpdate", $"Updated {squares.Count} squares to {dto.Status}");
+
+        var adminUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        await _saveUndo.BeginOrReplaceAsync(adminUserId, dto.UndoBatchId, statusChanges, ownerIds);
         await _blockNotifications.QueueOwnersAsync(squares.Select(s => s.OwnerId));
 
         return Ok(new { updated = squares.Count });
+    }
+
+    [HttpGet("squares/undo-last")]
+    public async Task<IActionResult> GetUndoLast()
+    {
+        var info = await _saveUndo.GetActiveAsync();
+        return Ok(info);
+    }
+
+    [HttpPost("squares/undo-last")]
+    public async Task<IActionResult> UndoLast()
+    {
+        var (success, errorMessage) = await _saveUndo.UndoActiveAsync();
+        if (!success)
+            return Conflict(new { message = errorMessage ?? "Kan nie ongedaan maak nie." });
+
+        await _audit.LogAsync(User, "UndoLastSave", "Undid last admin square save");
+        return Ok(new { message = "Laaste stoor is ongedaan gemaak." });
     }
 
     [HttpGet("purchases")]
@@ -502,10 +537,11 @@ public class AdminController : ControllerBase
         var conflictingIds = await GetConflictingSquareIdsAsync(squareIds, dto.Status);
         var replacedCount = 0;
         var skippedCount = 0;
+        var replacedImages = new List<ReplacedImageInfo>();
 
         if (dto.ReplaceExisting)
         {
-            replacedCount = await RemoveExistingImageLinksAsync(squareIds, dto.Status);
+            (replacedCount, replacedImages) = await _saveUndo.CaptureAndUnlinkImagesAsync(squareIds, dto.Status);
         }
         else
         {
@@ -550,6 +586,8 @@ public class AdminController : ControllerBase
 
         progressImage.FilePath = $"progress/{fileName}";
         await _db.SaveChangesAsync();
+
+        await _saveUndo.MergeImageAsync(userId, dto.UndoBatchId, progressImage.Id, replacedImages);
 
         await _audit.LogAsync(User, "UploadProgressImage", $"Image #{progressImage.Id} for {squares.Count} squares at status {dto.Status}");
 
