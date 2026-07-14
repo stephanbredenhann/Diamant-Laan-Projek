@@ -3,11 +3,24 @@ import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
-import { MapViewMode, Square, SquareStatus, STATUS_LABELS } from '../../models/square';
+import {
+  AdminProgressImage,
+  MapViewMode,
+  Square,
+  SquareStatus,
+  STATUS_LABELS
+} from '../../models/square';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
+
+const PHOTO_VIEW_STATUSES: SquareStatus[] = [
+  SquareStatus.NogNieBeginNie,
+  SquareStatus.Voorberei,
+  SquareStatus.BesigOmTeTeer,
+  SquareStatus.KlaarGeteer
+];
 
 @Component({
   selector: 'app-admin',
@@ -106,24 +119,106 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
       @if (message) {
         <div class="msg" [class.error]="isError">{{ message }}</div>
       }
+      <div class="advanced-search">
+        <button
+          type="button"
+          class="advanced-search-toggle"
+          (click)="advancedSearchOpen.set(!advancedSearchOpen())"
+          [attr.aria-expanded]="advancedSearchOpen()"
+        >
+          <span>Gevorderde soek</span>
+          <span class="chevron" [class.open]="advancedSearchOpen()">▾</span>
+        </button>
+        @if (advancedSearchOpen()) {
+          <div class="advanced-search-body">
+            <div class="search-block-section">
+              <span class="section-label">Soek ’n spesifieke blok</span>
+              <p class="section-hint">Voer die bloknommer in, dan druk Soek.</p>
+              <div class="search-row">
+                <input
+                  type="number"
+                  name="searchBlockNumber"
+                  class="search-input"
+                  min="1"
+                  max="4200"
+                  placeholder="Bloknommer"
+                  [(ngModel)]="searchBlockNumber"
+                  (keydown.enter)="searchBlock()"
+                />
+                <button type="button" class="btn btn-outline btn-sm" (click)="searchBlock()">Soek</button>
+              </div>
+              @if (searchError) {
+                <div class="msg error search-msg">{{ searchError }}</div>
+              }
+            </div>
+            <div class="range-section">
+              <span class="section-label">Kies binne reeks</span>
+              <p class="section-hint">Kies alle blokke tussen twee nommers (byvoeg tot huidige keuse).</p>
+              <div class="search-row range-row">
+                <input
+                  type="number"
+                  name="rangeFrom"
+                  class="search-input range-input"
+                  min="1"
+                  max="4200"
+                  placeholder="Van"
+                  [(ngModel)]="rangeFrom"
+                  (keydown.enter)="selectNumericRange()"
+                />
+                <span class="range-sep">—</span>
+                <input
+                  type="number"
+                  name="rangeTo"
+                  class="search-input range-input"
+                  min="1"
+                  max="4200"
+                  placeholder="Tot"
+                  [(ngModel)]="rangeTo"
+                  (keydown.enter)="selectNumericRange()"
+                />
+                <button type="button" class="btn btn-outline btn-sm" (click)="selectNumericRange()">Kies</button>
+              </div>
+              @if (rangeError) {
+                <div class="msg error search-msg">{{ rangeError }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
       <div class="map-header-controls">
         <div class="view-toggle">
           <button
             type="button"
             [class.active]="viewMode() === 'status'"
-            (click)="viewMode.set('status')"
+            (click)="setStatusView()"
           >Vordering</button>
           <button
             type="button"
             [class.active]="viewMode() === 'photos'"
-            (click)="viewMode.set('photos')"
+            (click)="setPhotosView()"
           >Het foto</button>
         </div>
+        @if (viewMode() === 'photos') {
+          <label class="photo-status-picker">
+            <span class="photo-status-label">Foto status</span>
+            <select
+              class="photo-status-select"
+              [ngModel]="photoViewStatus()"
+              (ngModelChange)="onPhotoViewStatusChange($event)"
+              name="photoViewStatus"
+            >
+              @for (s of PHOTO_VIEW_STATUSES; track s) {
+                <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
+              }
+            </select>
+          </label>
+        }
       </div>
       <div class="legend">
         @if (viewMode() === 'photos') {
           <span><span class="dot has-photo"></span> Het foto</span>
           <span><span class="dot no-photo"></span> Geen foto</span>
+          <span class="photo-status-hint">Vir: {{ STATUS_LABELS[photoViewStatus()] }}</span>
         } @else {
           <span><span class="dot free"></span> Beskikbaar</span>
           <span><span class="dot sold"></span> Verkoop</span>
@@ -133,7 +228,7 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
         }
       </div>
       <app-road-map
-        [squares]="squares"
+        [squares]="mapDisplaySquares"
         [selectedIds]="selectedIdsArray()"
         [viewMode]="viewMode()"
         (squareClicked)="toggleById($event)"
@@ -225,7 +320,84 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
       background: #FEF2F2;
       color: #DC2626;
     }
-    .map-header-controls { margin-bottom: 0.75rem; }
+    .advanced-search {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .advanced-search-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-heading);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+    .chevron {
+      color: var(--color-muted);
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+    .chevron.open { transform: rotate(180deg); }
+    .advanced-search-body {
+      padding: 0 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border-top: 1px solid var(--color-border);
+      padding-top: 0.875rem;
+    }
+    .section-label {
+      display: block;
+      font-family: var(--font-heading);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.25rem;
+    }
+    .section-hint {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+    }
+    .range-input { flex: 0 1 100px; min-width: 80px; }
+    .range-sep { color: var(--color-muted); }
+    .search-msg { margin: 0.5rem 0 0; }
+    .range-section {
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .map-header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+    }
     .view-toggle {
       display: inline-flex;
       border: 1px solid var(--color-border);
@@ -249,6 +421,29 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
     .view-toggle button.active {
       background: var(--ob-orange);
       color: #fff;
+    }
+    .photo-status-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .photo-status-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-muted);
+      white-space: nowrap;
+    }
+    .photo-status-select {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+    .photo-status-hint {
+      font-weight: 600;
+      color: var(--color-text);
     }
     .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); margin-bottom: 0.75rem; }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
@@ -312,14 +507,30 @@ const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.Bes
 })
 export class AdminComponent implements OnInit {
   @ViewChild('imageFileInput') imageFileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild(RoadMapComponent) roadMap?: RoadMapComponent;
 
   private admin = inject(AdminService);
   private road = inject(RoadService);
 
   squares: Square[] = [];
+  /** Bound to the map; stable reference except when squares/view/photo overlay change. */
+  mapDisplaySquares: Square[] = [];
   stats = { totalRaised: 0 };
   selectedIds = signal<Set<number>>(new Set());
   viewMode = signal<MapViewMode>('status');
+  advancedSearchOpen = signal(false);
+  photoViewStatus = signal<SquareStatus>(SquareStatus.Voorberei);
+  photoSquareIds = signal<Set<number>>(new Set());
+
+  private progressImages: AdminProgressImage[] = [];
+
+  searchBlockNumber: number | null = null;
+  searchError = '';
+  rangeFrom: number | null = null;
+  rangeTo: number | null = null;
+  rangeError = '';
+
+  readonly maxBlockId = 4200;
 
   draftStatus: SquareStatus | null = null;
   draftImageCaption = '';
@@ -334,6 +545,7 @@ export class AdminComponent implements OnInit {
 
   STATUS_LABELS = STATUS_LABELS;
   STATUS_OPTIONS = STATUS_OPTIONS;
+  PHOTO_VIEW_STATUSES = PHOTO_VIEW_STATUSES;
 
   get hasUnsavedChanges(): boolean {
     return this.draftStatus !== null || this.draftImageFile !== null;
@@ -343,8 +555,36 @@ export class AdminComponent implements OnInit {
     this.refresh();
   }
 
+  private updateMapDisplaySquares() {
+    if (this.viewMode() !== 'photos') {
+      this.mapDisplaySquares = this.squares;
+      return;
+    }
+    const ids = this.photoSquareIds();
+    this.mapDisplaySquares = this.squares.map(sq => ({
+      ...sq,
+      imageCount: ids.has(sq.id) ? 1 : 0
+    }));
+  }
+
   onDraftChanged() {
     // Triggers change detection for hasUnsavedChanges when status select changes
+  }
+
+  setStatusView() {
+    this.viewMode.set('status');
+    this.updateMapDisplaySquares();
+  }
+
+  setPhotosView() {
+    this.viewMode.set('photos');
+    this.photoViewStatus.set(SquareStatus.Voorberei);
+    this.loadPhotoOverlay();
+  }
+
+  onPhotoViewStatusChange(status: SquareStatus) {
+    this.photoViewStatus.set(status);
+    this.applyPhotoOverlayFromCache();
   }
 
   selectedIdsArray(): number[] {
@@ -405,6 +645,45 @@ export class AdminComponent implements OnInit {
     const selected = new Set(this.selectedIds());
     for (const id of ids) selected.add(id);
     this.selectedIds.set(selected);
+  }
+
+  searchBlock() {
+    this.searchError = '';
+    const id = Math.floor(Number(this.searchBlockNumber));
+    if (!Number.isFinite(id) || id < 1 || id > this.maxBlockId) {
+      this.searchError = 'Voer \'n geldige bloknommer in.';
+      return;
+    }
+
+    this.roadMap?.focusSquare(id, { showTooltip: true });
+    const selected = new Set(this.selectedIds());
+    selected.add(id);
+    this.selectedIds.set(selected);
+  }
+
+  selectNumericRange() {
+    this.rangeError = '';
+    const from = Math.floor(Number(this.rangeFrom));
+    const to = Math.floor(Number(this.rangeTo));
+    if (
+      !Number.isFinite(from) ||
+      !Number.isFinite(to) ||
+      from < 1 ||
+      to > this.maxBlockId ||
+      from >= to
+    ) {
+      this.rangeError = 'Ongeldige keuse';
+      return;
+    }
+
+    if (this.imageConflictPrompt) return;
+
+    const selected = new Set(this.selectedIds());
+    for (let id = from; id <= to; id++) {
+      selected.add(id);
+    }
+    this.selectedIds.set(selected);
+    this.roadMap?.focusSquare(from, { showTooltip: true });
   }
 
   onImageSelected(event: Event) {
@@ -561,6 +840,36 @@ export class AdminComponent implements OnInit {
     }
   }
 
+  private loadPhotoOverlay() {
+    this.admin.getProgressImages().subscribe({
+      next: (images) => {
+        this.progressImages = images;
+        this.applyPhotoOverlayFromCache();
+      },
+      error: () => {
+        this.progressImages = [];
+        this.photoSquareIds.set(new Set());
+        this.updateMapDisplaySquares();
+        this.message = 'Kon nie fotodata laai nie.';
+        this.isError = true;
+      }
+    });
+  }
+
+  private applyPhotoOverlayFromCache() {
+    const status = this.photoViewStatus();
+    const ids = new Set<number>();
+    for (const image of this.progressImages) {
+      if (Number(image.status) === status) {
+        for (const squareId of image.squareIds) {
+          ids.add(squareId);
+        }
+      }
+    }
+    this.photoSquareIds.set(ids);
+    this.updateMapDisplaySquares();
+  }
+
   private refresh() {
     this.admin.getStats().subscribe({
       next: s => this.stats = { totalRaised: s.totalRaised ?? 0 },
@@ -569,6 +878,12 @@ export class AdminComponent implements OnInit {
         this.isError = true;
       }
     });
-    this.road.getSquares().subscribe(s => this.squares = s);
+    this.road.getSquares().subscribe(s => {
+      this.squares = s;
+      this.updateMapDisplaySquares();
+    });
+    if (this.viewMode() === 'photos') {
+      this.loadPhotoOverlay();
+    }
   }
 }

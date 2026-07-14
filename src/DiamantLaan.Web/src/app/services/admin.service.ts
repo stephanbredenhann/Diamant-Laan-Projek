@@ -14,6 +14,7 @@ export interface AdminTransaction {
   userEmail?: string;
   payFastPaymentId?: string | null;
   purchaseSource: 'PayFast' | 'TelefonieseAankoop';
+  hasProof?: boolean;
 }
 
 export interface ImageConflictResult {
@@ -68,6 +69,20 @@ export class AdminService {
 
   manualPurchase(formData: FormData) {
     return this.http.post<any>('/api/admin/manual-purchase', formData);
+  }
+
+  getProofOfPayment(id: number) {
+    return this.http.get(`/api/admin/purchases/${id}/proof`, { responseType: 'blob' });
+  }
+
+  uploadProofOfPayment(id: number, file: File) {
+    const formData = new FormData();
+    formData.append('proofOfPayment', file);
+    return this.http.post<{ hasProof: boolean }>(`/api/admin/purchases/${id}/proof`, formData);
+  }
+
+  deleteProofOfPayment(id: number) {
+    return this.http.delete<{ hasProof: boolean }>(`/api/admin/purchases/${id}/proof`);
   }
 
   checkImageConflicts(squareIds: number[], status: SquareStatus) {

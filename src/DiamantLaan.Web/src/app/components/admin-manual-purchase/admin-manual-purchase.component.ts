@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminService } from '../../services/admin.service';
+import { AdminService, AdminTransaction } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-picker-modal.component';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
@@ -10,7 +11,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
 @Component({
   selector: 'app-admin-manual-purchase',
   standalone: true,
-  imports: [FormsModule, AlertComponent, BlockPickerModalComponent, PhoneInputComponent],
+  imports: [CommonModule, FormsModule, AlertComponent, BlockPickerModalComponent, PhoneInputComponent],
   template: `
     <div class="admin-content">
       <div class="form-card">
@@ -96,6 +97,105 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
         </form>
       </div>
 
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Bewyse van betaling</h3>
+          <div class="table-actions">
+            <input
+              type="text"
+              [(ngModel)]="proofSearch"
+              name="proofSearch"
+              placeholder="Soek koper, e-pos of aankoop #...">
+          </div>
+        </div>
+
+        @if (proofsLoading) {
+          <p class="muted">Laai bewyse...</p>
+        } @else if (proofsLoadError) {
+          <p class="error-msg">{{ proofsLoadError }}</p>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Aankoop #</th>
+                  <th>Koper</th>
+                  <th>E-pos</th>
+                  <th class="numeric">Blokke</th>
+                  <th class="numeric">Totaal</th>
+                  <th class="action-col">Bewys</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tx of filteredProofs; track tx.id) {
+                  <tr>
+                    <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
+                    <td>#{{ tx.id }}</td>
+                    <td>{{ tx.userName }}</td>
+                    <td>{{ tx.userEmail }}</td>
+                    <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
+                    <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
+                    <td class="action-col">
+                      @if (tx.hasProof) {
+                        <div class="proof-actions">
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            [disabled]="proofActionId === tx.id"
+                            (click)="openProof(tx)">
+                            {{ proofActionId === tx.id && proofAction === 'open' ? 'Besig...' : 'Maak oop' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            [disabled]="proofActionId === tx.id"
+                            (click)="startProofUpload(tx.id)">
+                            Vervang
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            [disabled]="proofActionId === tx.id"
+                            (click)="deleteProof(tx)">
+                            {{ proofActionId === tx.id && proofAction === 'delete' ? 'Besig...' : 'Verwyder' }}
+                          </button>
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          [disabled]="proofActionId === tx.id"
+                          (click)="startProofUpload(tx.id)">
+                          {{ proofActionId === tx.id && proofAction === 'upload' ? 'Besig...' : 'Laai op' }}
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (filteredProofs.length === 0) {
+                  <tr>
+                    <td colspan="7" class="empty">Geen telefoniese aankope gevind nie.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (proofActionError) {
+          <p class="error-msg">{{ proofActionError }}</p>
+        }
+      </div>
+
+      <input
+        #proofUploadInput
+        type="file"
+        accept="application/pdf"
+        class="hidden-file"
+        (change)="onProofUploadSelected($event)"
+      />
+
       @if (pickerOpen) {
         <app-block-picker-modal
           [initialIds]="selectedSquareIds"
@@ -106,8 +206,14 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
     </div>
   `,
   styles: [`
-    .admin-content { max-width: 640px; }
+    .admin-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 1100px;
+    }
     .form-card {
+      max-width: 640px;
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
@@ -204,12 +310,87 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
       font-weight: 700;
       color: var(--color-text);
     }
+    .table-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .table-header h3 {
+      font-family: var(--font-heading);
+      font-size: 0.9375rem;
+      color: var(--color-text);
+      margin: 0;
+    }
+    .table-actions input {
+      width: 260px;
+      max-width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    th, td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+    th {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--color-muted);
+      white-space: nowrap;
+    }
+    td { color: var(--color-muted); }
+    .numeric { text-align: right; }
+    .action-col { text-align: center; white-space: nowrap; }
+    .proof-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      justify-content: center;
+    }
+    .muted { color: var(--color-muted); }
+    .error-msg {
+      color: #b33;
+      font-size: 0.8125rem;
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: #fdf0f0;
+      border: 1px solid #f0c0c0;
+      border-radius: var(--radius-sm);
+    }
+    .empty {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--color-muted);
+    }
+    .hidden-file {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
     @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
     }
   `]
 })
-export class AdminManualPurchaseComponent {
+export class AdminManualPurchaseComponent implements OnInit {
+  @ViewChild('proofUploadInput') proofUploadInput?: ElementRef<HTMLInputElement>;
+
   private admin = inject(AdminService);
 
   firstName = '';
@@ -227,8 +408,33 @@ export class AdminManualPurchaseComponent {
   isError = false;
   loading = false;
 
+  telephonePurchases: AdminTransaction[] = [];
+  proofsLoading = true;
+  proofsLoadError = '';
+  proofSearch = '';
+  proofActionId: number | null = null;
+  proofAction: 'open' | 'upload' | 'delete' | null = null;
+  proofActionError = '';
+  uploadTargetId: number | null = null;
+
+  readonly blokLabel = blokLabel;
+
   get totalAmount(): number {
     return this.selectedSquareIds.length * 500;
+  }
+
+  get filteredProofs(): AdminTransaction[] {
+    const q = this.proofSearch.trim().toLowerCase();
+    if (!q) return this.telephonePurchases;
+    return this.telephonePurchases.filter(tx =>
+      String(tx.id).includes(q) ||
+      (tx.userName ?? '').toLowerCase().includes(q) ||
+      (tx.userEmail ?? '').toLowerCase().includes(q)
+    );
+  }
+
+  ngOnInit() {
+    this.loadProofs();
   }
 
   openPicker() {
@@ -247,6 +453,97 @@ export class AdminManualPurchaseComponent {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.proofFile = input.files?.[0] ?? null;
+  }
+
+  loadProofs() {
+    this.proofsLoading = true;
+    this.proofsLoadError = '';
+    this.admin.getTransactions().subscribe({
+      next: (rows) => {
+        this.telephonePurchases = rows
+          .filter(r => r.purchaseSource === 'TelefonieseAankoop')
+          .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
+        this.proofsLoading = false;
+      },
+      error: () => {
+        this.proofsLoadError = 'Kon nie bewyse laai nie.';
+        this.proofsLoading = false;
+      }
+    });
+  }
+
+  openProof(tx: AdminTransaction) {
+    this.proofActionError = '';
+    this.proofActionId = tx.id;
+    this.proofAction = 'open';
+    this.admin.getProofOfPayment(tx.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.proofActionId = null;
+        this.proofAction = null;
+      },
+      error: () => {
+        this.proofActionError = `Kon nie bewys vir aankoop #${tx.id} oopmaak nie.`;
+        this.proofActionId = null;
+        this.proofAction = null;
+        this.loadProofs();
+      }
+    });
+  }
+
+  startProofUpload(purchaseId: number) {
+    this.proofActionError = '';
+    this.uploadTargetId = purchaseId;
+    const input = this.proofUploadInput?.nativeElement;
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+
+  onProofUploadSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    const purchaseId = this.uploadTargetId;
+    this.uploadTargetId = null;
+    input.value = '';
+    if (!file || purchaseId == null) return;
+
+    this.proofActionId = purchaseId;
+    this.proofAction = 'upload';
+    this.admin.uploadProofOfPayment(purchaseId, file).subscribe({
+      next: () => {
+        this.proofActionId = null;
+        this.proofAction = null;
+        this.loadProofs();
+      },
+      error: (err) => {
+        this.proofActionError = err.error?.message || `Kon nie bewys vir aankoop #${purchaseId} oplaai nie.`;
+        this.proofActionId = null;
+        this.proofAction = null;
+      }
+    });
+  }
+
+  deleteProof(tx: AdminTransaction) {
+    if (!confirm(`Verwyder bewys vir aankoop #${tx.id}?`)) return;
+
+    this.proofActionError = '';
+    this.proofActionId = tx.id;
+    this.proofAction = 'delete';
+    this.admin.deleteProofOfPayment(tx.id).subscribe({
+      next: () => {
+        this.proofActionId = null;
+        this.proofAction = null;
+        this.loadProofs();
+      },
+      error: (err) => {
+        this.proofActionError = err.error?.message || `Kon nie bewys vir aankoop #${tx.id} verwyder nie.`;
+        this.proofActionId = null;
+        this.proofAction = null;
+      }
+    });
   }
 
   submit() {
@@ -299,6 +596,7 @@ export class AdminManualPurchaseComponent {
         this.selectedSquareIds = [];
         this.proofFile = null;
         this.loading = false;
+        this.loadProofs();
       },
       error: (err) => {
         this.message = err.error?.message || (Array.isArray(err.error) ? err.error.join(', ') : 'Aankoop het misluk.');

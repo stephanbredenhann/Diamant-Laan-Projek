@@ -383,6 +383,8 @@ public class AdminController : ControllerBase
         }
     }
 
+    private const long MaxProofOfPaymentBytes = 10 * 1024 * 1024;
+
     [HttpGet("purchases/{id}/proof")]
     public async Task<IActionResult> GetProofOfPayment(int id)
     {
@@ -395,6 +397,61 @@ public class AdminController : ControllerBase
             return NotFound();
 
         return PhysicalFile(filePath, "application/pdf", $"bewys-{id}.pdf");
+    }
+
+    [HttpPost("purchases/{id}/proof")]
+    public async Task<IActionResult> UploadProofOfPayment(int id, IFormFile? proofOfPayment)
+    {
+        if (proofOfPayment == null)
+            return BadRequest(new { message = "Bewys van betaling is nodig." });
+
+        if (proofOfPayment.Length > MaxProofOfPaymentBytes)
+            return BadRequest(new { message = "Bewys van betaling mag nie groter as 10 MB wees nie." });
+
+        if (!FileUploadService.IsPdf(proofOfPayment))
+            return BadRequest(new { message = "Bewys van betaling moet 'n geldige PDF wees." });
+
+        var purchase = await _db.Purchases.FindAsync(id);
+        if (purchase == null)
+            return NotFound();
+
+        if (!PurchaseTransactionMapper.IsTelefonieseAankoop(purchase))
+            return BadRequest(new { message = "Bewys van betaling kan net vir telefoniese aankope gestoor word." });
+
+        var uploadsDir = FileUploadService.GetPrivateUploadsPath(_env);
+        var fileName = $"{purchase.Id}.pdf";
+        var filePath = Path.Combine(uploadsDir, fileName);
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await proofOfPayment.CopyToAsync(stream);
+        }
+
+        purchase.ProofOfPaymentPath = $"proofs/{fileName}";
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(User, "UploadProofOfPayment", $"Purchase #{purchase.Id}");
+
+        return Ok(new { hasProof = true });
+    }
+
+    [HttpDelete("purchases/{id}/proof")]
+    public async Task<IActionResult> DeleteProofOfPayment(int id)
+    {
+        var purchase = await _db.Purchases.FindAsync(id);
+        if (purchase == null || string.IsNullOrEmpty(purchase.ProofOfPaymentPath))
+            return NotFound();
+
+        if (!PurchaseTransactionMapper.IsTelefonieseAankoop(purchase))
+            return BadRequest(new { message = "Bewys van betaling kan net vir telefoniese aankope verwyder word." });
+
+        var filePath = FileUploadService.ResolveProofFilePath(_env, purchase.ProofOfPaymentPath);
+        if (filePath != null && System.IO.File.Exists(filePath))
+            System.IO.File.Delete(filePath);
+
+        purchase.ProofOfPaymentPath = null;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(User, "DeleteProofOfPayment", $"Purchase #{purchase.Id}");
+
+        return Ok(new { hasProof = false });
     }
 
     [HttpGet("squares/images")]

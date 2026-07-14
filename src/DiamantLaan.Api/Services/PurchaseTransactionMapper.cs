@@ -27,12 +27,14 @@ public static class PurchaseTransactionMapper
                 : includeUser ? "Onbekend" : null,
             UserEmail = includeUser ? user?.Email : null,
             PayFastPaymentId = includeUser ? purchase.PayFastPaymentId : null,
-            PurchaseSource = GetPurchaseSource(purchase)
+            PurchaseSource = GetPurchaseSource(purchase),
+            HasProof = !string.IsNullOrEmpty(purchase.ProofOfPaymentPath)
         };
     }
 
+    public static bool IsTelefonieseAankoop(Purchase purchase) =>
+        string.IsNullOrEmpty(purchase.PayFastPaymentId) && purchase.PaymentStatus == PaymentStatus.Confirmed;
+
     private static string GetPurchaseSource(Purchase purchase) =>
-        !string.IsNullOrEmpty(purchase.PayFastPaymentId) || purchase.PaymentStatus != PaymentStatus.Confirmed
-            ? "PayFast"
-            : "TelefonieseAankoop";
+        IsTelefonieseAankoop(purchase) ? "TelefonieseAankoop" : "PayFast";
 }

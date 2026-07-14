@@ -13,4 +13,5 @@ public class PurchaseTransactionDto
     public string? UserEmail { get; set; }
     public string? PayFastPaymentId { get; set; }
     public string PurchaseSource { get; set; } = string.Empty;
+    public bool HasProof { get; set; }
 }
