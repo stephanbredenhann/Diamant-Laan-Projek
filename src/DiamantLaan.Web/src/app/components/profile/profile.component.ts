@@ -194,14 +194,6 @@ import {
   styles: [`
     :host {
       display: block;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: clip;
-    }
-    .profile-page {
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
     }
     .page-header { margin: 1.5rem 0 1.25rem; }
     .page-header h2 {
@@ -368,10 +360,6 @@ import {
       margin-top: 1.25rem;
     }
     @media (max-width: 640px) {
-      .profile-page.container {
-        padding-left: 1rem;
-        padding-right: 1rem;
-      }
       .form-row { flex-direction: column; gap: 0; }
       .card { padding: 1.25rem 1rem; }
       .prompt-backdrop { padding: 1rem; }

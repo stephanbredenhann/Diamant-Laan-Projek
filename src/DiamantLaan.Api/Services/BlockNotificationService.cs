@@ -33,7 +33,7 @@ public class BlockNotificationService
 
         var now = DateTime.UtcNow;
         var existing = await _db.PendingBlockNotifications
-            .Where(p => ids.Contains(p.UserId) && !p.Sent)
+            .Where(p => ids.Contains(p.UserId))
             .ToListAsync(cancellationToken);
         var existingMap = existing.ToDictionary(p => p.UserId);
 
@@ -41,7 +41,10 @@ public class BlockNotificationService
         {
             if (existingMap.TryGetValue(userId, out var pending))
             {
+                if (pending.Sent)
+                    pending.FirstQueuedAt = now;
                 pending.LastQueuedAt = now;
+                pending.Sent = false;
             }
             else
             {

@@ -51,6 +51,30 @@ public class BlockNotificationServiceTests
     }
 
     [Fact]
+    public async Task QueueOwnersAsync_RearmsPreviouslySentRow()
+    {
+        await using var db = CreateDb();
+        var previouslySentAt = DateTime.UtcNow.AddMinutes(-30);
+        db.PendingBlockNotifications.Add(new PendingBlockNotification
+        {
+            UserId = "u1",
+            FirstQueuedAt = previouslySentAt,
+            LastQueuedAt = previouslySentAt,
+            Sent = true
+        });
+        await db.SaveChangesAsync();
+
+        var email = new Mock<IEmailService>();
+        var service = CreateService(db, email);
+        await service.QueueOwnersAsync(new[] { "u1" });
+
+        var row = await db.PendingBlockNotifications.SingleAsync();
+        Assert.False(row.Sent);
+        Assert.True(row.LastQueuedAt > previouslySentAt);
+        Assert.True(row.FirstQueuedAt > previouslySentAt);
+    }
+
+    [Fact]
     public async Task FlushDueAsync_SkipsOptedOutUsers()
     {
         await using var db = CreateDb();
