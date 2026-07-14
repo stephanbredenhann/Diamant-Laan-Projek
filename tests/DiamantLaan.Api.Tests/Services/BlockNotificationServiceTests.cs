@@ -125,4 +125,67 @@ public class BlockNotificationServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
         Assert.True((await db.PendingBlockNotifications.SingleAsync()).Sent);
     }
+
+    [Fact]
+    public async Task QueueOwnersAsync_RearmsExistingSentRow_WithoutDuplicateInsert()
+    {
+        await using var db = CreateDb();
+        db.PendingBlockNotifications.Add(new PendingBlockNotification
+        {
+            UserId = "u1",
+            FirstQueuedAt = DateTime.UtcNow.AddHours(-2),
+            LastQueuedAt = DateTime.UtcNow.AddHours(-2),
+            Sent = true
+        });
+        await db.SaveChangesAsync();
+
+        var email = new Mock<IEmailService>();
+        var service = CreateService(db, email);
+        await service.QueueOwnersAsync(new[] { "u1" });
+
+        var row = await db.PendingBlockNotifications.SingleAsync();
+        Assert.Equal("u1", row.UserId);
+        Assert.False(row.Sent);
+        Assert.True(row.LastQueuedAt > DateTime.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
+    public async Task CancelPendingAsync_RemovesUnsentRows_LeavesSentAlone()
+    {
+        await using var db = CreateDb();
+        db.PendingBlockNotifications.AddRange(
+            new PendingBlockNotification
+            {
+                UserId = "u1",
+                FirstQueuedAt = DateTime.UtcNow,
+                LastQueuedAt = DateTime.UtcNow,
+                Sent = false
+            },
+            new PendingBlockNotification
+            {
+                UserId = "u2",
+                FirstQueuedAt = DateTime.UtcNow,
+                LastQueuedAt = DateTime.UtcNow,
+                Sent = true
+            },
+            new PendingBlockNotification
+            {
+                UserId = "u3",
+                FirstQueuedAt = DateTime.UtcNow,
+                LastQueuedAt = DateTime.UtcNow,
+                Sent = false
+            });
+        await db.SaveChangesAsync();
+
+        var email = new Mock<IEmailService>();
+        var service = CreateService(db, email);
+        await service.CancelPendingAsync(new[] { "u1", "u2" });
+
+        var remaining = await db.PendingBlockNotifications.OrderBy(p => p.UserId).ToListAsync();
+        Assert.Equal(2, remaining.Count);
+        Assert.Equal("u2", remaining[0].UserId);
+        Assert.True(remaining[0].Sent);
+        Assert.Equal("u3", remaining[1].UserId);
+        Assert.False(remaining[1].Sent);
+    }
 }

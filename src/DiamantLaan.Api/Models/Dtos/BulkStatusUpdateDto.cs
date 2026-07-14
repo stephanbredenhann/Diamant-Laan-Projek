@@ -9,4 +9,8 @@ public class BulkStatusUpdateDto
     public List<int> SquareIds { get; set; } = new();
     [Required]
     public SquareStatus Status { get; set; }
+
+    /// <summary>Optional GUID shared with a following image upload in the same Stoor action.</summary>
+    [MaxLength(64)]
+    public string? UndoBatchId { get; set; }
 }

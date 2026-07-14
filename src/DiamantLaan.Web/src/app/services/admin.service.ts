@@ -31,15 +31,36 @@ export interface UploadProgressImageResult {
   skippedCount?: number;
 }
 
+export interface UndoLastSummary {
+  statusChangeCount: number;
+  hasPhoto: boolean;
+  willCancelEmails: boolean;
+}
+
+export interface UndoLastInfo {
+  available: boolean;
+  expiresAt?: string | null;
+  summary?: UndoLastSummary | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
 
-  updateStatus(squareIds: number[], status: SquareStatus) {
+  updateStatus(squareIds: number[], status: SquareStatus, undoBatchId?: string) {
     return this.http.put<any>('/api/admin/squares/status', {
       squareIds,
-      status: Number(status)
+      status: Number(status),
+      undoBatchId: undoBatchId || undefined
     });
+  }
+
+  getUndoLast() {
+    return this.http.get<UndoLastInfo>('/api/admin/squares/undo-last');
+  }
+
+  undoLast() {
+    return this.http.post<{ message: string }>('/api/admin/squares/undo-last', {});
   }
 
   getPurchases() {
@@ -97,9 +118,12 @@ export class AdminService {
     return this.http.get<AdminProgressImage[]>('/api/admin/squares/images');
   }
 
-  uploadProgressImage(formData: FormData, replaceExisting = false) {
+  uploadProgressImage(formData: FormData, replaceExisting = false, undoBatchId?: string) {
     if (replaceExisting) {
       formData.append('replaceExisting', 'true');
+    }
+    if (undoBatchId) {
+      formData.append('undoBatchId', undoBatchId);
     }
     return this.http.post<UploadProgressImageResult>('/api/admin/squares/images', formData);
   }

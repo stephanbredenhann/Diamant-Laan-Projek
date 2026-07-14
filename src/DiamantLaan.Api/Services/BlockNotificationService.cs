@@ -32,8 +32,9 @@ public class BlockNotificationService
         if (ids.Count == 0) return;
 
         var now = DateTime.UtcNow;
+        // UserId is the PK — must load Sent rows too so we re-arm instead of inserting duplicates.
         var existing = await _db.PendingBlockNotifications
-            .Where(p => ids.Contains(p.UserId) && !p.Sent)
+            .Where(p => ids.Contains(p.UserId))
             .ToListAsync(cancellationToken);
         var existingMap = existing.ToDictionary(p => p.UserId);
 
@@ -41,7 +42,10 @@ public class BlockNotificationService
         {
             if (existingMap.TryGetValue(userId, out var pending))
             {
+                if (pending.Sent)
+                    pending.FirstQueuedAt = now;
                 pending.LastQueuedAt = now;
+                pending.Sent = false;
             }
             else
             {
@@ -55,6 +59,21 @@ public class BlockNotificationService
             }
         }
 
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task CancelPendingAsync(IEnumerable<string> userIds, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        if (ids.Count == 0) return;
+
+        var pending = await _db.PendingBlockNotifications
+            .Where(p => !p.Sent && ids.Contains(p.UserId))
+            .ToListAsync(cancellationToken);
+
+        if (pending.Count == 0) return;
+
+        _db.PendingBlockNotifications.RemoveRange(pending);
         await _db.SaveChangesAsync(cancellationToken);
     }
 

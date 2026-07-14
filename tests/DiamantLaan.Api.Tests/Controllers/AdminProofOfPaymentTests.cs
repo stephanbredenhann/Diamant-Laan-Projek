@@ -52,6 +52,11 @@ public class AdminProofOfPaymentTests : IDisposable
             Mock.Of<IEmailService>(),
             config,
             Mock.Of<ILogger<BlockNotificationService>>());
+        var saveUndo = new AdminSaveUndoService(
+            db,
+            blockNotifications,
+            env.Object,
+            Mock.Of<ILogger<AdminSaveUndoService>>());
 
         var controller = new AdminController(
             db,
@@ -60,6 +65,7 @@ public class AdminProofOfPaymentTests : IDisposable
             new AuditLogService(db),
             new SiteSettingsService(db),
             blockNotifications,
+            saveUndo,
             new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>()),
             config);
 

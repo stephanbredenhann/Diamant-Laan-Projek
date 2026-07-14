@@ -137,19 +137,26 @@ public class AdminTransactionsTests
     private static AdminController CreateController(AppDbContext db)
     {
         var config = new ConfigurationBuilder().Build();
+        var env = Mock.Of<IWebHostEnvironment>();
         var blockNotifications = new BlockNotificationService(
             db,
             Mock.Of<IEmailService>(),
             config,
             Mock.Of<ILogger<BlockNotificationService>>());
+        var saveUndo = new AdminSaveUndoService(
+            db,
+            blockNotifications,
+            env,
+            Mock.Of<ILogger<AdminSaveUndoService>>());
 
         return new AdminController(
             db,
             CreateUserManagerMock().Object,
-            Mock.Of<IWebHostEnvironment>(),
+            env,
             new AuditLogService(db),
             new SiteSettingsService(db),
             blockNotifications,
+            saveUndo,
             new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>()),
             config);
     }
