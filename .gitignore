@@ -13,3 +13,5 @@ publish/
 wwwroot/
 dist/
 node_modules/
+.opencode/
+.cursor
