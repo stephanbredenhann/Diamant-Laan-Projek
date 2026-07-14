@@ -249,7 +249,9 @@ public class PayFastServiceTests
             MerchantId = "10000100",
             MerchantKey = "46f0cd694581a",
             Passphrase = "jt7NOE43FZPn",
-            Sandbox = true
+            Sandbox = true,
+            FrontendBaseUrl = "https://www.example.com/",
+            NotifyUrl = "https://www.example.com/api/payment/itn"
         };
 
         var service = new PayFastService(settings, new HttpClient());
@@ -257,7 +259,7 @@ public class PayFastServiceTests
         var purchase = new Purchase { Id = 42, Amount = 200.00m, UserId = "user-1" };
         var user = new User { FirstName = "Test User", LastName = "Doe", Email = "test+user@example.com" };
 
-        var request = service.CreatePaymentRequest(purchase, user, "https://www.example.com/");
+        var request = service.CreatePaymentRequest(purchase, user, "https://api.example.com/");
 
         Assert.Equal("https://sandbox.payfast.co.za/eng/process", request.ActionUrl);
         Assert.Equal("10000100", request.Fields["merchant_id"]);
@@ -265,6 +267,49 @@ public class PayFastServiceTests
         Assert.Equal("200.00", request.Fields["amount"]);
         Assert.True(request.Fields.ContainsKey("signature"));
         Assert.Matches("^[a-f0-9]{32}$", request.Fields["signature"]);
+
+        Assert.Equal("https://www.example.com/betalings/terug?purchaseId=42", request.Fields["return_url"]);
+        Assert.Equal("https://www.example.com/betalings/kanselleer?purchaseId=42", request.Fields["cancel_url"]);
+        Assert.Equal("https://www.example.com/api/payment/itn", request.Fields["notify_url"]);
+        Assert.Equal("Diamant Laan - Aankoop #42", request.Fields["item_name"]);
+
+        // Signature must match the exact fields we post to PayFast (no empty unsigned fields).
+        var fieldsWithoutSignature = request.Fields
+            .Where(kv => !kv.Key.Equals("signature", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        var expectedSignature = PayFastService.CreateSignature(fieldsWithoutSignature, "jt7NOE43FZPn");
+        Assert.Equal(expectedSignature, request.Fields["signature"]);
+        Assert.Equal("5f05d3624c9635a30ff3bd807851c743", request.Fields["signature"]);
+    }
+
+    [Fact]
+    public void CreatePaymentRequest_NullEmail_OmitsEmailFieldFromForm()
+    {
+        var settings = new PayFastSettings
+        {
+            MerchantId = "10000100",
+            MerchantKey = "46f0cd694581a",
+            Passphrase = "jt7NOE43FZPn",
+            Sandbox = true,
+            FrontendBaseUrl = "https://www.example.com/",
+            NotifyUrl = "https://www.example.com/api/payment/itn"
+        };
+
+        var service = new PayFastService(settings, new HttpClient());
+
+        var purchase = new Purchase { Id = 42, Amount = 200.00m, UserId = "user-1" };
+        var user = new User { FirstName = "Test User", LastName = "Doe", Email = null };
+
+        var request = service.CreatePaymentRequest(purchase, user, "https://api.example.com/");
+
+        Assert.False(request.Fields.ContainsKey("email_address"));
+
+        var fieldsWithoutSignature = request.Fields
+            .Where(kv => !kv.Key.Equals("signature", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        var expectedSignature = PayFastService.CreateSignature(fieldsWithoutSignature, "jt7NOE43FZPn");
+        Assert.Equal(expectedSignature, request.Fields["signature"]);
+        Assert.Equal("f6da276f907d8f527cc4d57269c20136", request.Fields["signature"]);
     }
 
     [Fact]

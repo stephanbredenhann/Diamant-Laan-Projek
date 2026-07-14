@@ -31,6 +31,7 @@ done < <(dotnet user-secrets list --project "${API_PROJECT}")
 # Add/override Azure-specific settings.
 settings+=(
     "ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db"
+    "App__PublicUrl=https://${APP_NAME}.azurewebsites.net"
     "PayFast__FrontendBaseUrl=${FRONTEND_BASE_URL}"
     "PayFast__NotifyUrl=${NOTIFY_URL}"
 )

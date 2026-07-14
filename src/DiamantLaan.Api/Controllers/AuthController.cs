@@ -86,13 +86,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
+        if (user == null || user.IsAnonymized)
             return Unauthorized(new { message = "Ongeldige e-pos of wagwoord." });
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
         if (result.IsLockedOut)
             return Unauthorized(new { message = "Rekening is tydelik gesluit weens te veel mislukte pogings." });
         if (!result.Succeeded)
+            return Unauthorized(new { message = "Ongeldige e-pos of wagwoord." });
+
+        if (user.IsAnonymized)
             return Unauthorized(new { message = "Ongeldige e-pos of wagwoord." });
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -113,6 +116,9 @@ public class AuthController : ControllerBase
 
         var stored = await _refreshTokens.ValidateAsync(refreshToken);
         if (stored == null)
+            return Unauthorized(new { message = "Verfrissing-token is ongeldig of verval." });
+
+        if (stored.User.IsAnonymized)
             return Unauthorized(new { message = "Verfrissing-token is ongeldig of verval." });
 
         var roles = await _userManager.GetRolesAsync(stored.User);
@@ -170,6 +176,9 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
+            return Unauthorized();
+
+        if (user.IsAnonymized)
             return Unauthorized();
 
         if (!user.MustChangePassword)

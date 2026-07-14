@@ -172,6 +172,8 @@ public class PayFastService : IPayFastService
             ? _settings.NotifyUrl
             : $"{baseUrl}api/payment/itn";
 
+        // Only include non-empty optional fields. CreateSignature skips empty values, and
+        // PayFast rejects the form if unsigned empty fields (e.g. email_address=) are posted.
         var fields = new Dictionary<string, string>
         {
             ["merchant_id"] = _settings.MerchantId,
@@ -179,13 +181,14 @@ public class PayFastService : IPayFastService
             ["return_url"] = returnUrl,
             ["cancel_url"] = cancelUrl,
             ["notify_url"] = notifyUrl,
-            ["name_first"] = user.FirstName,
-            ["name_last"] = user.LastName,
-            ["email_address"] = user.Email ?? string.Empty,
             ["m_payment_id"] = purchase.Id.ToString(),
             ["amount"] = purchase.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
             ["item_name"] = $"Diamant Laan - Aankoop #{purchase.Id}"
         };
+
+        AddOptionalField(fields, "name_first", user.FirstName);
+        AddOptionalField(fields, "name_last", user.LastName);
+        AddOptionalField(fields, "email_address", user.Email);
 
         fields["signature"] = CreateSignature(fields);
 
@@ -261,6 +264,12 @@ public class PayFastService : IPayFastService
             data.GetValueOrDefault("m_payment_id"),
             amountGross,
             null);
+    }
+
+    private static void AddOptionalField(Dictionary<string, string> fields, string key, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            fields[key] = value;
     }
 
     private static List<KeyValuePair<string, string>> ParseFormUrlEncoded(string rawBody)

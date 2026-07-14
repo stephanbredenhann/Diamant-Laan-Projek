@@ -20,7 +20,7 @@ import {
   standalone: true,
   imports: [FormsModule, AlertComponent, PhoneInputComponent],
   template: `
-    <div class="container">
+    <div class="container profile-page">
       <div class="page-header">
         <h2>My Profiel</h2>
         <p class="summary">{{ changesRemaining }} van {{ maxChanges }} veranderinge oor vir die volgende 12 uur</p>
@@ -130,11 +130,79 @@ import {
               </button>
             </form>
           </section>
+
+          <section class="card danger-card">
+            <h3>Verwyder rekening</h3>
+            <p class="danger-copy">
+              Jou blokke bly besit en onbeskikbaar, maar word as &ldquo;Onaktiewe rekening&rdquo; gewys.
+              Jy sal nie weer met hierdie rekening kan aanmeld nie.
+            </p>
+            <button type="button" class="btn btn-outline danger" (click)="openDeleteModal()">
+              Verwyder rekening
+            </button>
+          </section>
         </div>
       }
     </div>
+
+    @if (showDeleteModal) {
+      <div class="prompt-backdrop" (click)="closeDeleteModal()">
+        <div
+          class="prompt-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-account-title"
+          (click)="$event.stopPropagation()"
+        >
+          <h3 id="delete-account-title">Verwyder rekening?</h3>
+          <p>
+            Tik jou wagwoord om te bevestig. Jou blokke bly verkoop en verskyn as &ldquo;Onaktiewe rekening&rdquo;.
+          </p>
+          <div class="form-group">
+            <label for="deletePassword">Huidige wagwoord</label>
+            <input
+              id="deletePassword"
+              type="password"
+              [(ngModel)]="deletePassword"
+              [ngModelOptions]="{ standalone: true }"
+              name="deletePassword"
+              required
+              autocomplete="current-password"
+              [disabled]="deleteLoading"
+            >
+          </div>
+          @if (deleteError) {
+            <app-alert type="error" [message]="deleteError" />
+          }
+          <div class="prompt-actions">
+            <button type="button" class="btn btn-outline" [disabled]="deleteLoading" (click)="closeDeleteModal()">
+              Kanselleer
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline danger"
+              [disabled]="deleteLoading || !deletePassword"
+              (click)="confirmDeleteAccount()"
+            >
+              {{ deleteLoading ? 'Besig...' : 'Verwyder permanent' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: clip;
+    }
+    .profile-page {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     .page-header { margin: 1.5rem 0 1.25rem; }
     .page-header h2 {
       font-family: var(--font-heading);
@@ -143,13 +211,20 @@ import {
       margin-bottom: 0.375rem;
     }
     .summary { color: var(--text-muted); font-size: 0.875rem; }
-    .cards { display: grid; gap: 1.25rem; margin-bottom: 2.5rem; }
+    .cards {
+      display: grid;
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+      min-width: 0;
+    }
     .card {
       background: var(--surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
       padding: 2rem 2.5rem;
       box-shadow: var(--shadow-sm);
+      min-width: 0;
+      max-width: 100%;
     }
     .card h3 {
       font-family: var(--font-heading);
@@ -158,8 +233,18 @@ import {
       color: var(--color-text);
       margin-bottom: 1rem;
     }
-    .form-row { display: flex; gap: 1rem; }
-    .form-row .form-group { flex: 1; }
+    .card :is(input, select, textarea, button, app-phone-input) {
+      max-width: 100%;
+    }
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      min-width: 0;
+    }
+    .form-row .form-group {
+      flex: 1;
+      min-width: 0;
+    }
     .field-error {
       margin-top: 0.35rem;
       font-size: 0.8125rem;
@@ -168,7 +253,8 @@ import {
     .toggle-group { margin-top: 0.25rem; }
     .toggle {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
       gap: 0.75rem;
       cursor: pointer;
       text-transform: none;
@@ -190,6 +276,7 @@ import {
       position: relative;
       flex-shrink: 0;
       transition: background 0.2s;
+      margin-top: 0.1rem;
     }
     .toggle-ui::after {
       content: '';
@@ -213,6 +300,11 @@ import {
       outline: 2px solid var(--ob-blue);
       outline-offset: 2px;
     }
+    .toggle-label {
+      flex: 1 1 12rem;
+      min-width: 0;
+      line-height: 1.4;
+    }
     .pw-checklist {
       list-style: none;
       margin: 0.5rem 0 0;
@@ -225,9 +317,65 @@ import {
     .pw-checklist li::before { content: '○ '; }
     .pw-checklist li.ok { color: var(--color-olive); }
     .pw-checklist li.ok::before { content: '● '; }
+    .danger-card h3 { color: #B91C1C; }
+    .danger-copy {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+    .btn.danger {
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+    .btn.danger:hover:not(:disabled) {
+      background: #FEF2F2;
+    }
+    .prompt-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(61, 43, 31, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 1000;
+    }
+    .prompt-dialog {
+      width: min(100%, 480px);
+      max-width: 100%;
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-lg);
+      box-sizing: border-box;
+    }
+    .prompt-dialog h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: var(--color-text);
+    }
+    .prompt-dialog p {
+      color: var(--color-muted);
+      font-size: 0.9375rem;
+      margin-bottom: 0.75rem;
+    }
+    .prompt-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
     @media (max-width: 640px) {
+      .profile-page.container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
       .form-row { flex-direction: column; gap: 0; }
-      .card { padding: 1.5rem 1.25rem; }
+      .card { padding: 1.25rem 1rem; }
+      .prompt-backdrop { padding: 1rem; }
+      .prompt-dialog { padding: 1.25rem; }
     }
   `]
 })
@@ -270,6 +418,11 @@ export class ProfileComponent implements OnInit {
   passwordMessageType: 'success' | 'error' | 'info' = 'info';
   passwordSig = signal('');
   checks = computed(() => getPasswordChecks(this.passwordSig()));
+
+  showDeleteModal = false;
+  deletePassword = '';
+  deleteLoading = false;
+  deleteError = '';
 
   ngOnInit() {
     this.profileService.get().subscribe({
@@ -387,6 +540,41 @@ export class ProfileComponent implements OnInit {
         this.passwordMessageType = 'error';
         this.passwordLoading = false;
         if (err.status === 429) this.changesAllowed = false;
+      }
+    });
+  }
+
+  openDeleteModal() {
+    this.deletePassword = '';
+    this.deleteError = '';
+    this.deleteLoading = false;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    if (this.deleteLoading) return;
+    this.showDeleteModal = false;
+    this.deletePassword = '';
+    this.deleteError = '';
+  }
+
+  confirmDeleteAccount() {
+    this.deleteError = '';
+    if (!this.deletePassword) {
+      this.deleteError = 'Tik jou wagwoord om te bevestig.';
+      return;
+    }
+    this.deleteLoading = true;
+    this.profileService.deleteAccount(this.deletePassword).subscribe({
+      next: () => {
+        this.deleteLoading = false;
+        this.showDeleteModal = false;
+        this.auth.logout(false);
+        this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.deleteError = err.error?.message || 'Kon nie rekening verwyder nie.';
+        this.deleteLoading = false;
       }
     });
   }

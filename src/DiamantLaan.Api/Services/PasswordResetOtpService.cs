@@ -26,7 +26,7 @@ public class PasswordResetOtpService
     public async Task RequestAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user == null || string.IsNullOrWhiteSpace(user.Email))
+        if (user == null || user.IsAnonymized || string.IsNullOrWhiteSpace(user.Email))
             return;
 
         var otp = GenerateOtp();
@@ -59,7 +59,7 @@ public class PasswordResetOtpService
     public async Task<(bool Success, string? Error)> ResetAsync(string email, string otp, string newPassword, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user == null)
+        if (user == null || user.IsAnonymized)
             return (false, "Ongeldige kode of e-pos.");
 
         var now = DateTime.UtcNow;

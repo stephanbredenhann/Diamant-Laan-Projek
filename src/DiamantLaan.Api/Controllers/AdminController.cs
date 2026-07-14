@@ -208,7 +208,7 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         var users = await _db.Users
-            .Where(u => !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
+            .Where(u => !u.IsAnonymized && !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
             .OrderBy(u => u.Email)
             .ToListAsync();
 
@@ -357,7 +357,7 @@ public class AdminController : ControllerBase
             var welcomeEmailSent = false;
             if (isNewUser && welcomeTempPassword != null && !string.IsNullOrWhiteSpace(user.Email))
             {
-                var siteUrl = _config["App:PublicUrl"] ?? "http://localhost:4200";
+                var siteUrl = AppPublicUrl.Resolve(_config);
                 var html = EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl);
                 welcomeEmailSent = await _emailOutbox.QueueAsync(
                     user.Email,

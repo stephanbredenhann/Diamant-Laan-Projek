@@ -7,6 +7,9 @@
 .map-wrapper {
   position: relative;
   width: 100%;
+  /* Keep Leaflet/control z-indexes local so they cannot cover the sticky navbar */
+  isolation: isolate;
+  z-index: 0;
 }
 
 .map-overlay {

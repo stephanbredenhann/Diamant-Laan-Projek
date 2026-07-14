@@ -82,7 +82,7 @@ public class BlockNotificationService
     private async Task SendForUserAsync(PendingBlockNotification pending, CancellationToken cancellationToken)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == pending.UserId, cancellationToken);
-        if (user == null || string.IsNullOrWhiteSpace(user.Email) || !user.ReceiveBlockProgressEmails)
+        if (user == null || user.IsAnonymized || string.IsNullOrWhiteSpace(user.Email) || !user.ReceiveBlockProgressEmails)
         {
             pending.Sent = true;
             await _db.SaveChangesAsync(cancellationToken);
@@ -109,7 +109,7 @@ public class BlockNotificationService
         var hasPhotos = await _db.ProgressImageSquares
             .AnyAsync(pis => squareIds.Contains(pis.SquareId), cancellationToken);
 
-        var siteUrl = _config["App:PublicUrl"] ?? "https://localhost:4200";
+        var siteUrl = AppPublicUrl.Resolve(_config);
         var html = EmailTemplates.BlockProgressSummary(
             user.FirstName,
             squares.Count,

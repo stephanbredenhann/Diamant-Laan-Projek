@@ -156,6 +156,10 @@ if (string.IsNullOrWhiteSpace(appPayFastSettings.MerchantId) ||
 {
     app.Logger.LogWarning("PayFast MerchantId and/or MerchantKey are not configured. Payments will fail until they are set via user secrets or environment variables.");
 }
+if (string.IsNullOrWhiteSpace(appPayFastSettings.Passphrase))
+{
+    app.Logger.LogWarning("PayFast Passphrase is not configured. PayFast will reject payment signatures until it matches the merchant dashboard setting via user secrets or environment variables.");
+}
 
 var resendSettings = app.Configuration.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
 if (string.IsNullOrWhiteSpace(resendSettings.ApiKey) || string.IsNullOrWhiteSpace(resendSettings.FromEmail))

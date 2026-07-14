@@ -31,4 +31,10 @@ export class ProfileService {
       currentPassword, newPassword, confirmPassword
     });
   }
+
+  deleteAccount(currentPassword: string) {
+    return this.http.delete<{ message: string }>(this.base, {
+      body: { currentPassword }
+    });
+  }
 }

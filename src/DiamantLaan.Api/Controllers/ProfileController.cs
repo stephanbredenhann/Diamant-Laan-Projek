@@ -144,6 +144,51 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Wagwoord is verander. Meld asseblief weer aan." });
     }
 
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto dto)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user == null) return Unauthorized();
+
+        if (user.IsAnonymized)
+            return BadRequest(new { message = "Hierdie rekening is reeds gedeaktiveer." });
+
+        if (await _userManager.IsInRoleAsync(user, "Admin"))
+            return BadRequest(new { message = "Admin-rekeninge kan nie self verwyder word nie." });
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.CurrentPassword))
+            return BadRequest(new { message = "Huidige wagwoord is verkeerd." });
+
+        var anonymizedEmail = $"deleted-{user.Id}@anonymized.invalid";
+        user.IsAnonymized = true;
+        user.AnonymizedAt = DateTime.UtcNow;
+        user.FirstName = "Onaktiewe";
+        user.LastName = "rekening";
+        user.PhoneNumber = null;
+        user.PhoneCountryCode = "+27";
+        user.ReceiveBlockProgressEmails = false;
+        user.MustChangePassword = false;
+        user.LockoutEnabled = true;
+        user.LockoutEnd = DateTimeOffset.MaxValue;
+
+        var setEmail = await _userManager.SetEmailAsync(user, anonymizedEmail);
+        if (!setEmail.Succeeded)
+            return BadRequest(new { message = FormatIdentityErrors(setEmail) });
+
+        var setUserName = await _userManager.SetUserNameAsync(user, anonymizedEmail);
+        if (!setUserName.Succeeded)
+            return BadRequest(new { message = FormatIdentityErrors(setUserName) });
+
+        var update = await _userManager.UpdateAsync(user);
+        if (!update.Succeeded)
+            return BadRequest(new { message = FormatIdentityErrors(update) });
+
+        await _userManager.UpdateSecurityStampAsync(user);
+        await _refreshTokens.RevokeAllForUserAsync(user.Id);
+
+        return Ok(new { message = "Jou rekening is gedeaktiveer." });
+    }
+
     private async Task<User?> GetCurrentUserAsync()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

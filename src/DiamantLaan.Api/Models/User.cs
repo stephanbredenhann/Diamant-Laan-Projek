@@ -10,6 +10,8 @@ public class User : IdentityUser
     public bool IsOraniaBewegingMember { get; set; }
     public bool ReceiveBlockProgressEmails { get; set; } = true;
     public bool MustChangePassword { get; set; }
+    public bool IsAnonymized { get; set; }
+    public DateTime? AnonymizedAt { get; set; }
     public string PhoneCountryCode { get; set; } = "+27";
     public ICollection<Square> Squares { get; set; } = new List<Square>();
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();

@@ -40,6 +40,12 @@ public class UpdatePasswordDto
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
+public class DeleteAccountDto
+{
+    [Required]
+    public string CurrentPassword { get; set; } = string.Empty;
+}
+
 public class ForgotPasswordDto
 {
     [Required, EmailAddress, MaxLength(256)]
