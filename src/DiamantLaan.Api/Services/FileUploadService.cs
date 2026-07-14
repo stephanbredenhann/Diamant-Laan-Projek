@@ -63,16 +63,28 @@ public static class FileUploadService
         _ => "application/octet-stream"
     };
 
+    private static bool IsRunningOnAzure =>
+        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
+
+    /// <summary>
+    /// On Azure, store uploads under /home/site/uploads so they survive zip deploys of wwwroot.
+    /// Locally, use App_Data/uploads under the content root.
+    /// </summary>
+    private static string GetUploadsRoot(IWebHostEnvironment env) =>
+        IsRunningOnAzure
+            ? "/home/site/uploads"
+            : Path.Combine(env.ContentRootPath, "App_Data", "uploads");
+
     public static string GetPrivateUploadsPath(IWebHostEnvironment env)
     {
-        var path = Path.Combine(env.ContentRootPath, "App_Data", "uploads", "proofs");
+        var path = Path.Combine(GetUploadsRoot(env), "proofs");
         Directory.CreateDirectory(path);
         return path;
     }
 
     public static string GetProgressUploadsPath(IWebHostEnvironment env)
     {
-        var path = Path.Combine(env.ContentRootPath, "App_Data", "uploads", "progress");
+        var path = Path.Combine(GetUploadsRoot(env), "progress");
         Directory.CreateDirectory(path);
         return path;
     }
@@ -83,7 +95,20 @@ public static class FileUploadService
             return null;
 
         if (storedPath.StartsWith("proofs/", StringComparison.OrdinalIgnoreCase))
-            return Path.GetFullPath(Path.Combine(GetPrivateUploadsPath(env), Path.GetFileName(storedPath)));
+        {
+            var fileName = Path.GetFileName(storedPath);
+            var primary = Path.GetFullPath(Path.Combine(GetPrivateUploadsPath(env), fileName));
+            if (File.Exists(primary))
+                return primary;
+
+            // Pre-migration location when uploads lived under the deploy root.
+            var legacyAppData = Path.GetFullPath(
+                Path.Combine(env.ContentRootPath, "App_Data", "uploads", "proofs", fileName));
+            if (File.Exists(legacyAppData))
+                return legacyAppData;
+
+            return primary;
+        }
 
         var legacyPath = Path.GetFullPath(Path.Combine(env.WebRootPath ?? "", storedPath.TrimStart('/')));
         var webRoot = Path.GetFullPath(env.WebRootPath ?? env.ContentRootPath);
@@ -102,11 +127,19 @@ public static class FileUploadService
             return null;
 
         var fileName = Path.GetFileName(storedPath);
-        var fullPath = Path.GetFullPath(Path.Combine(GetProgressUploadsPath(env), fileName));
+        var primary = Path.GetFullPath(Path.Combine(GetProgressUploadsPath(env), fileName));
         var uploadsRoot = Path.GetFullPath(GetProgressUploadsPath(env));
-        if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+        if (!primary.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
             return null;
 
-        return fullPath;
+        if (File.Exists(primary))
+            return primary;
+
+        var legacyAppData = Path.GetFullPath(
+            Path.Combine(env.ContentRootPath, "App_Data", "uploads", "progress", fileName));
+        if (File.Exists(legacyAppData))
+            return legacyAppData;
+
+        return primary;
     }
 }

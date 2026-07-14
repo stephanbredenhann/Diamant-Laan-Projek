@@ -88,29 +88,59 @@ This compiles the Angular SPA and bundles it into the API's `wwwroot/`, producin
 
 ## Deployment
 
-The project is hosted on Azure App Service (F1 free tier). Deployment steps:
+Hosted on Azure App Service (`diamantlaan-sb`, F1 Linux). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): `dotnet publish` then zip-deploy via the publish profile.
+
+### One-time setup
+
+1. **GitHub secret** — Azure Portal → App Service → *Get publish profile* → paste the full XML into repo secret `AZURE_WEBAPP_PUBLISH_PROFILE`.
+2. **App Settings** — keep secrets and the Azure DB path on the web app (not in git). From a machine that has your user-secrets:
 
 ```bash
-# Create resources (one-time)
+./scripts/set-azure-app-settings.sh
+```
+
+Or set manually, including:
+
+```text
+ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db
+App__PublicUrl=https://diamantlaan-sb.azurewebsites.net
+```
+
+Local development keeps `appsettings.json` (`Data Source=diamantlaan.db`) and `dotnet user-secrets`. Azure App Settings override those values only on App Service.
+
+### Migrations
+
+EF migrations under `src/DiamantLaan.Api/Migrations/` are committed and shipped in the publish output. On startup, `MigrateAsync()` applies pending migrations to **that environment’s** SQLite file (local PC and Azure are separate databases). Feature branches only affect Azure after you merge/push `main`.
+
+### Durable files on Azure
+
+| Path | Purpose |
+|------|---------|
+| `/home/site/diamantlaan.db` | SQLite database |
+| `/home/site/backups/` | Automatic daily backups (last 7) |
+| `/home/site/uploads/` | User uploads (proofs, progress images) — survives redeploys |
+
+SPA build output under `/home/site/wwwroot` is replaced each deploy. Local uploads stay in `App_Data/uploads/`.
+
+If an older deploy already stored files under `/home/site/wwwroot/App_Data/uploads/`, copy them once to `/home/site/uploads/` (Kudu/SSH). The API also falls back to the old path when resolving existing files.
+
+### Manual deploy fallback
+
+```bash
+./scripts/deploy.sh
+```
+
+Uses `az webapp deploy --clean false` (same publish package as CI).
+
+### New App Service (optional)
+
+```bash
 az group create --name <group-name> --location westeurope
 az appservice plan create --name <plan-name> -g <group-name> --sku F1 --is-linux
 az webapp create --name <app-name> -g <group-name> --plan <plan-name> --runtime "DOTNETCORE|8.0"
-
-# Set production secrets
-az webapp config appsettings set --name <app-name> -g <group-name> \
-  --settings \
-    "Jwt__Key=<production-key>" \
-    "AdminUser__Email=<admin-email>" \
-    "AdminUser__Password=<admin-password>" \
-    "Resend__ApiKey=<resend-api-key>" \
-    "Resend__FromEmail=<verified-sender@yourdomain.com>" \
-    "App__PublicUrl=https://<app-name>.azurewebsites.net" \
-    "ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db"
 ```
 
 Verify your sender domain in the [Resend dashboard](https://resend.com/domains) before going live. Check email health at `GET /api/health` (public) or `GET /api/admin/diagnostics` (admin).
-
-SQLite backups are written automatically to `/home/site/backups/` on Azure (daily, last 7 retained).
 
 ## License
 

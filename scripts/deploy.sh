@@ -25,11 +25,14 @@ echo "Packaging deployment archive..."
 )
 
 echo "Deploying to Azure App Service: ${APP_NAME}..."
+# --clean false keeps files not in the zip (e.g. leftover under wwwroot during transitions).
+# Durable uploads live under /home/site/uploads and are outside the deploy root.
 az webapp deploy \
     --name "${APP_NAME}" \
     --resource-group "${RESOURCE_GROUP}" \
     --src-path "${ZIP_FILE}" \
-    --type zip
+    --type zip \
+    --clean false
 
 echo "Deployment complete."
 echo "Verify with: curl -sI https://${APP_NAME}.azurewebsites.net/"
