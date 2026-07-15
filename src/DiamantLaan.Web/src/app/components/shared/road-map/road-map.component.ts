@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, SimpleChanges, ElementRef, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, SimpleChanges, ElementRef, inject, NgZone } from '@angular/core';
 import * as L from 'leaflet';
 import { Square, SquareStatus, STATUS_LABELS, STATUS_COLORS, MapViewMode } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
@@ -27,8 +27,11 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   @Output() squaresRangeSelected = new EventEmitter<number[]>();
 
   selectMode = false;
+  roadIndicatorVisible = false;
+  roadIndicatorBearing = 0;
 
   private el = inject(ElementRef);
+  private zone = inject(NgZone);
   private map!: L.Map;
   private geoLayer!: L.GeoJSON;
   private initialized = false;
@@ -94,6 +97,35 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
         this.activeTooltipLayer = layer;
       });
     }
+  }
+
+  flyToRoad() {
+    if (!this.geoLayer) return;
+    this.map.flyToBounds(this.geoLayer.getBounds(), { padding: [40, 40], duration: 0.8 });
+  }
+
+  private checkRoadVisibility() {
+    if (!this.geoLayer) return;
+    const mapBounds = this.map.getBounds();
+    const roadBounds = this.geoLayer.getBounds();
+    if (!roadBounds.isValid()) return;
+
+    const visible = mapBounds.intersects(roadBounds);
+    let bearing = this.roadIndicatorBearing;
+
+    if (!visible) {
+      const c = this.map.getCenter();
+      const r = roadBounds.getCenter();
+      // bearing in degrees, 0 = up (north)
+      bearing = Math.atan2(r.lng - c.lng, r.lat - c.lat) * (180 / Math.PI);
+    }
+
+    this.zone.run(() => {
+      this.roadIndicatorVisible = !visible;
+      if (!visible) {
+        this.roadIndicatorBearing = bearing;
+      }
+    });
   }
 
   private findLayerBySquareId(squareId: number): L.Layer | null {
@@ -168,6 +200,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     }).addTo(this.map);
 
     this.setupDragSelect();
+    this.map.on('move zoom', () => this.checkRoadVisibility());
     this.initialized = true;
     this.syncSelectedIdSet();
     this.rebuildLayer();
@@ -275,6 +308,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     this.bindSquareInteractions();
     this.applyStyles();
     this.geoLayer.addTo(this.map);
+    this.checkRoadVisibility();
   }
 
   private applyStyles() {
