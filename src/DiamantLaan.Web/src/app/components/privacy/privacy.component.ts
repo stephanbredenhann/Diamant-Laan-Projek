@@ -15,7 +15,7 @@ import { RouterLink } from '@angular/router';
 
       <p>
         Hierdie kennisgewing verduidelik hoe die Diamant Laan-webwerf persoonlike inligting
-        versamel, gebruik en beskerm word. Dit is ’n informele, praktiese opsomming van ons
+        versamel, gebruik en beskerm. Dit is ’n informele, praktiese opsomming van ons
         praktyke en is nie formele regsadvisering nie.
       </p>
 
@@ -37,8 +37,8 @@ import { RouterLink } from '@angular/router';
         <ul>
           <li>
             <strong>Rekeningbesonderhede:</strong> voornaam, van, e-posadres, opsionele
-            telefoonnommer, of jy ’n Orania-inwoner is, of jy ’n lid van die Orania Beweging
-            is, jou e-posvoorkeur vir blokvorderingsopdaterings, en ’n gehashte wagwoord.
+            telefoonnommer, jou status as Orania-inwoner, jou lidmaatskap van die Orania
+            Beweging, jou e-posvoorkeur vir blokvorderingsopdaterings, en ’n gehashte wagwoord.
           </li>
           <li>
             <strong>Wagwoordherstelkodes:</strong> gehashte eenmalige kodes met ’n kort
@@ -47,7 +47,7 @@ import { RouterLink } from '@angular/router';
           <li>
             <strong>Aankope en blokke:</strong> aankooprekords (bedrag, status, datum),
             watter padblokke jy besit of gereserveer het, PayFast-betalingsverwysings, en
-            waar van toepassing bewys-van-betalinglêers (byvoorbeeld PDF’s vir
+            waar toepaslik bewys-van-betalinglêers (byvoorbeeld PDF’s vir
             telefoonaankope).
           </li>
           <li>
@@ -62,7 +62,7 @@ import { RouterLink } from '@angular/router';
           </li>
         </ul>
         <p>
-          Die openbare kaart toon slegs of ’n blok verkoop is; nie die eienaar se naam,
+          Die openbare kaart toon slegs of ’n blok verkoop is, nie die eienaar se naam,
           e-pos of telefoonnommer nie.
         </p>
       </section>
@@ -102,7 +102,7 @@ import { RouterLink } from '@angular/router';
             betalingsbesonderhede word aan PayFast gestuur).
           </li>
           <li>
-            <strong>Resend:</strong> om diense-posse af te lewer (jou e-posadres en die
+            <strong>Resend:</strong> om diens-e-posse af te lewer (jou e-posadres en die
             inhoud van die boodskap word aan Resend gestuur).
           </li>
           <li>
@@ -117,7 +117,7 @@ import { RouterLink } from '@angular/router';
           </li>
         </ul>
         <p>
-          Ons stuur nie bemarkingse-posse of SMS-boodskappe nie; e-posse is slegs
+          Ons stuur nie bemarking-e-posse of SMS-boodskappe nie; e-posse is slegs
           diensgerelateerd (wagwoordherstel, rekeningwelkom, blokvordering). Ons gebruik
           ook nie bemarkingsanaliseplatforms nie.
         </p>
@@ -145,7 +145,7 @@ import { RouterLink } from '@angular/router';
           </li>
         </ul>
         <p>
-          E-posse oor blokvordering is opsioneel. Jy kan dit afskakel onder
+          E-posse oor blokvordering is opsioneel. Jy kan hulle afskakel onder
           <strong>My Profiel</strong>. Wagwoordherstel- en rekeningwelkom-e-posse is nodig
           om die diens te lewer en kan nie afgeskakel word nie.
         </p>
@@ -202,7 +202,7 @@ import { RouterLink } from '@angular/router';
           meer versoek om:
         </p>
         <ul>
-          <li>toegang tot die persoonlike inligting wat ons oor jou hou;</li>
+          <li>toegang te verkry tot die persoonlike inligting wat ons oor jou hou;</li>
           <li>verkeerde inligting reg te stel;</li>
           <li>uitwissing of beperking van verwerking aan te vra (waar toepaslik);</li>
           <li>te kla by die Inligtingsreguleerder indien jy van mening is dat jou regte
