@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - Diamant-Laan-Projek
+name: Build and deploy ASP.NET Core app to Azure Web App - Diamant-Laan-Projek
 
 on:
   push:
@@ -12,13 +12,47 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: src/DiamantLaan.Web/package-lock.json
+
+      - name: Install Angular dependencies
+        working-directory: src/DiamantLaan.Web
+        run: npm ci
+
+      - name: Build Angular frontend
+        working-directory: src/DiamantLaan.Web
+        run: npm run build
+
+      - name: Copy Angular build to API wwwroot
+        shell: pwsh
+        run: |
+          $source = "src/DiamantLaan.Web/dist/diamant-laan.web"
+          $destination = "src/DiamantLaan.Api/wwwroot"
+
+          if (!(Test-Path $source)) {
+              Write-Error "Angular build output not found at $source"
+              exit 1
+          }
+
+          if (Test-Path $destination) {
+              Remove-Item $destination -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          Copy-Item "$source\*" $destination -Recurse -Force
+
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
@@ -38,28 +72,26 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_33BE6C70AEC24945B5579B9C405EAD3B }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_49A75DE47427410DA83A017199DFB0CF }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8D23724E851247A09F9E01725488ED32 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3BE6C70AEC249455B579B9C405EAD3B }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4A975DE4742710DAB3A017199DFB0FC }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8023724E851247A09FE0172548ED32 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'Diamant-Laan-Projek'
-          slot-name: 'Production'
-          package: .
-          
