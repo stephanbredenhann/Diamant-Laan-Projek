@@ -82,7 +82,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+      - name: Check Azure credentials are available
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3BE6C70AEC249455B579B9C405EAD3B }}
+          AZURE_TENANT_ID: ${{ secrets.AZUREAPPSERVICE_TENANTID_4A975DE4742710DAB3A017199DFB0FC }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8023724E851247A09FE0172548ED32 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:AZURE_CLIENT_ID)) {
+            Write-Error "CLIENT ID IS EMPTY"
+          } else {
+            Write-Host "Client ID is present"
+          }
 
+          if ([string]::IsNullOrWhiteSpace($env:AZURE_TENANT_ID)) {
+            Write-Error "TENANT ID IS EMPTY"
+          } else {
+            Write-Host "Tenant ID is present"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:AZURE_SUBSCRIPTION_ID)) {
+            Write-Error "SUBSCRIPTION ID IS EMPTY"
+          } else {
+            Write-Host "Subscription ID is present"
+          }
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3BE6C70AEC249455B579B9C405EAD3B }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4A975DE4742710DAB3A017199DFB0FC }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8023724E851247A09FE0172548ED32 }}
       - name: Login to Azure
         uses: azure/login@v2
         with:
