@@ -2,11 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace DiamantLaan.Api.Validation;
 
-/// <summary>
-/// Practical email format check. [EmailAddress] model validation already runs via
-/// [ApiController], but it returns generic English ModelState errors, so this gives
-/// controllers a way to surface a consistent Afrikaans message instead.
-/// </summary>
+
 public static partial class EmailValidator
 {
     private const int MaxLength = 254;

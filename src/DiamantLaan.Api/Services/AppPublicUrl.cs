@@ -2,12 +2,7 @@ namespace DiamantLaan.Api.Services;
 
 public static class AppPublicUrl
 {
-    /// <summary>
-    /// Resolves the public frontend base URL for email links.
-    /// Prefers App:PublicUrl, then PayFast:FrontendBaseUrl, then localhost for local dev.
-    /// Skips localhost values when a non-localhost candidate exists so production can
-    /// fall back to PayFast:FrontendBaseUrl while appsettings still defaults App:PublicUrl to localhost.
-    /// </summary>
+    
     public static string Resolve(IConfiguration config)
     {
         var app = Normalize(config["App:PublicUrl"]);

@@ -8,13 +8,7 @@ public static partial class PhoneValidator
     private const int MaxInternationalLocalDigits = 15;
     private const int MaxE164Digits = 15;
 
-    /// <summary>
-    /// Validates a local phone number for the given international dialling code.
-    /// For South Africa (+27): 9 digits without leading 0, or 10 with leading 0.
-    /// For other countries: 4-15 digits after stripping non-digits (and an optional leading 0),
-    /// with the total E.164 number (country code + local digits) not exceeding 15 digits.
-    /// Returns E.164 combined with country code when valid.
-    /// </summary>
+    
     public static bool TryNormalize(string? localNumber, string? countryCode, out string e164, out string? error)
     {
         e164 = string.Empty;
