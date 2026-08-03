@@ -6,7 +6,6 @@ import { PurchaseService, GuestPurchaseRef } from '../../services/purchase.servi
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import {
   getPasswordChecks,
-  isPasswordValid,
   normalizePhoneLocal,
   validateEmail,
   validatePassword,
@@ -35,14 +34,16 @@ import {
           <div class="form-row">
             <div class="form-group">
               <label>Voornaam</label>
-              <input type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam">
+              <input type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam"
+                     [class.invalid]="firstNameError" (blur)="checkFirstName()">
               @if (firstNameError) {
                 <p class="field-error">{{ firstNameError }}</p>
               }
             </div>
             <div class="form-group">
               <label>Van</label>
-              <input type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van">
+              <input type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van"
+                     [class.invalid]="lastNameError" (blur)="checkLastName()">
               @if (lastNameError) {
                 <p class="field-error">{{ lastNameError }}</p>
               }
@@ -50,14 +51,16 @@ import {
           </div>
           <div class="form-group">
             <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
+            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za"
+                   [class.invalid]="emailError" (blur)="checkEmail()">
             @if (emailError) {
               <p class="field-error">{{ emailError }}</p>
             }
           </div>
           <div class="form-group">
             <label>Wagwoord</label>
-            <input type="password" [(ngModel)]="password" (ngModelChange)="passwordSig.set($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies 'n wagwoord">
+            <input type="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies 'n wagwoord"
+                   [class.invalid]="passwordError" (blur)="checkPassword()">
             <ul class="pw-checklist" aria-live="polite">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
               <li [class.ok]="checks().hasNumber">'n Nommer</li>
@@ -65,16 +68,26 @@ import {
               <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
               <li [class.ok]="checks().hasLower">'n Kleinletter</li>
             </ul>
+            @if (passwordError) {
+              <p class="field-error">{{ passwordError }}</p>
+            }
           </div>
           <div class="form-group">
             <label>Bevestig wagwoord</label>
-            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer">
+            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
+                   [class.invalid]="confirmPasswordError" (blur)="checkConfirmPassword()">
+            @if (confirmPasswordError) {
+              <p class="field-error">{{ confirmPasswordError }}</p>
+            }
           </div>
           <div class="form-group">
             <label>Foonnommer</label>
+            <!-- Expanded from the two-way form so the error can clear as they correct it. -->
             <app-phone-input
-              [(countryCode)]="phoneCountryCode"
-              [(phoneNumber)]="phoneNumber"
+              [countryCode]="phoneCountryCode"
+              (countryCodeChange)="onCountryCodeChange($event)"
+              [phoneNumber]="phoneNumber"
+              (phoneNumberChange)="onPhoneNumberChange($event)"
             />
             @if (phoneError) {
               <p class="field-error">{{ phoneError }}</p>
@@ -98,7 +111,9 @@ import {
           @if (requiresLogin) {
             <p class="auth-link"><a [routerLink]="'/meld-aan'">Meld aan met daardie e-posadres</a> om jou blokke te koppel.</p>
           }
-          <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !canSubmit()">
+          <!-- Deliberately always clickable: a disabled button cannot explain what is wrong,
+               and browser autofill regularly leaves one field the form does not accept. -->
+          <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
             {{ loading ? 'Besig...' : 'Registreer' }}
           </button>
         </form>
@@ -142,6 +157,12 @@ import {
       font-size: 0.8125rem;
       color: #DC2626;
     }
+    input.invalid {
+      border-color: #DC2626;
+    }
+    input.invalid:focus {
+      outline-color: #DC2626;
+    }
     .pw-checklist {
       list-style: none;
       margin: 0.5rem 0 0;
@@ -184,6 +205,8 @@ export class RegisterComponent implements OnInit {
   emailError = '';
   firstNameError = '';
   lastNameError = '';
+  passwordError = '';
+  confirmPasswordError = '';
   phoneError = '';
   loading = false;
   requiresLogin = false;
@@ -200,49 +223,88 @@ export class RegisterComponent implements OnInit {
     }
   }
 
-  canSubmit(): boolean {
-    return !validateName(this.firstName, 'Voornaam')
-      && !validateName(this.lastName, 'Van')
-      && !validateEmail(this.email)
-      && isPasswordValid(this.password)
-      && this.password === this.confirmPassword
-      && !validatePhone(this.phoneNumber, this.phoneCountryCode);
+  onPasswordChange(value: string) {
+    this.passwordSig.set(value);
+
+    // Once a mismatch has been pointed out, keep it honest as they fix either field.
+    if (this.confirmPasswordError && value === this.confirmPassword) {
+      this.confirmPasswordError = '';
+    }
+  }
+
+  checkFirstName() {
+    this.firstNameError = validateName(this.firstName, 'Voornaam') ?? '';
+  }
+
+  checkLastName() {
+    this.lastNameError = validateName(this.lastName, 'Van') ?? '';
+  }
+
+  checkEmail() {
+    this.emailError = validateEmail(this.email) ?? '';
+  }
+
+  checkPassword() {
+    this.passwordError = validatePassword(this.password) ?? '';
+    if (this.confirmPassword) {
+      this.checkConfirmPassword();
+    }
+  }
+
+  checkConfirmPassword() {
+    if (!this.confirmPassword) {
+      this.confirmPasswordError = 'Bevestig asseblief jou wagwoord.';
+      return;
+    }
+    this.confirmPasswordError = this.password === this.confirmPassword
+      ? ''
+      : 'Wagwoorde stem nie ooreen nie.';
+  }
+
+  checkPhone() {
+    this.phoneError = validatePhone(this.phoneNumber, this.phoneCountryCode) ?? '';
+  }
+
+  onPhoneNumberChange(value: string) {
+    this.phoneNumber = value;
+    if (this.phoneError) {
+      this.checkPhone();
+    }
+  }
+
+  onCountryCodeChange(value: string) {
+    this.phoneCountryCode = value;
+    if (this.phoneError) {
+      this.checkPhone();
+    }
+  }
+
+  /**
+   * Validates every field at once and reports all of them, rather than stopping at the first
+   * problem. Autofill often leaves more than one field in a state the form will not accept.
+   */
+  private validateAll(): boolean {
+    this.checkFirstName();
+    this.checkLastName();
+    this.checkEmail();
+    this.checkPassword();
+    this.checkConfirmPassword();
+    this.checkPhone();
+
+    return !this.firstNameError
+      && !this.lastNameError
+      && !this.emailError
+      && !this.passwordError
+      && !this.confirmPasswordError
+      && !this.phoneError;
   }
 
   submit() {
     this.error = '';
-    this.emailError = '';
-    this.firstNameError = '';
-    this.lastNameError = '';
-    this.phoneError = '';
+    this.requiresLogin = false;
 
-    const firstNameError = validateName(this.firstName, 'Voornaam');
-    if (firstNameError) {
-      this.firstNameError = firstNameError;
-      return;
-    }
-    const lastNameError = validateName(this.lastName, 'Van');
-    if (lastNameError) {
-      this.lastNameError = lastNameError;
-      return;
-    }
-    const emailError = validateEmail(this.email);
-    if (emailError) {
-      this.emailError = emailError;
-      return;
-    }
-    const pwError = validatePassword(this.password);
-    if (pwError) {
-      this.error = pwError;
-      return;
-    }
-    if (this.password !== this.confirmPassword) {
-      this.error = 'Wagwoorde stem nie ooreen nie.';
-      return;
-    }
-    const phoneError = validatePhone(this.phoneNumber, this.phoneCountryCode);
-    if (phoneError) {
-      this.phoneError = phoneError;
+    if (!this.validateAll()) {
+      this.error = 'Kontroleer asseblief die velde wat hierbo gemerk is.';
       return;
     }
 

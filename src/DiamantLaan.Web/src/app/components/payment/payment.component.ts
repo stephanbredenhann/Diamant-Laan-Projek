@@ -35,6 +35,8 @@ import { validateEmail } from '../../utils/validation.util';
               autocomplete="email"
               required
               placeholder="jou@epos.co.za"
+              [class.invalid]="emailError"
+              (blur)="checkEmail()"
               [(ngModel)]="guestEmail">
             <p class="guest-hint">
               Ons het jou e-posadres nodig om jou betaling te bevestig en vir jou 'n skakel te stuur
@@ -58,7 +60,8 @@ import { validateEmail } from '../../utils/validation.util';
 
         <div class="actions">
           <a routerLink="/kaart" class="btn btn-outline">Terug</a>
-          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading || !canSubmit()">
+          <!-- Always clickable so that a missing or malformed email explains itself. -->
+          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
             @if (loading) {
               <span class="btn-spinner"></span>
               Besig
@@ -138,6 +141,9 @@ import { validateEmail } from '../../utils/validation.util';
       font-size: 0.75rem;
       color: #DC2626;
       margin-top: 0.5rem;
+    }
+    .guest-box input.invalid {
+      border-color: #DC2626;
     }
     .gateway-box {
       border: 2px dashed var(--color-border);
@@ -252,8 +258,8 @@ export class PaymentComponent implements OnInit {
   }
 
   /** Guests must give an email address; it is the only way back to a purchase without an account. */
-  canSubmit(): boolean {
-    return !this.isGuest || !validateEmail(this.guestEmail);
+  checkEmail() {
+    this.emailError = this.isGuest ? validateEmail(this.guestEmail) ?? '' : '';
   }
 
   private submitGuestPayment() {
