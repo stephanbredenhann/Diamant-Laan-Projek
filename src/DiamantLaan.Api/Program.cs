@@ -83,6 +83,7 @@ builder.Services.AddScoped<PasswordResetOtpService>();
 builder.Services.AddScoped<BlockNotificationService>();
 builder.Services.AddScoped<AdminSaveUndoService>();
 builder.Services.AddScoped<EmailOutboxService>();
+builder.Services.AddScoped<GuestPurchaseService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 builder.Services.AddHostedService<BlockNotificationBackgroundService>();
@@ -121,6 +122,16 @@ builder.Services.AddRateLimiter(options =>
             httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                 ?? httpContext.Connection.RemoteIpAddress?.ToString()
                 ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    // Guest checkout has no account behind it, so the only handle we have is the caller's IP.
+    options.AddPolicy("guest-purchase", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 10,

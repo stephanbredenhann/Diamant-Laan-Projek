@@ -80,11 +80,11 @@ describe('HomeComponent', () => {
     expect(compiled.querySelector('.stats-section')).toBeTruthy();
   });
 
-  it('links Begin Bou to register when logged out', () => {
+  it('links Begin Bou to kaart when logged out', () => {
     currentUser.set(null);
     fixture.detectChanges();
     const link = fixture.nativeElement.querySelector('.pill-cta') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toContain('/registreer');
+    expect(link.getAttribute('href')).toContain('/kaart');
   });
 
   it('links Begin Bou to kaart when logged in', () => {

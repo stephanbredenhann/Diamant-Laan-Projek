@@ -28,4 +28,11 @@ public class RegisterDto
     public bool IsOraniaResident { get; set; }
 
     public bool IsOraniaBewegingMember { get; set; }
+
+    /// <summary>Set when the visitor is turning a guest checkout into an account.</summary>
+    public int? GuestPurchaseId { get; set; }
+
+    /// <summary>Bearer token for <see cref="GuestPurchaseId"/>, proving the guest purchase is theirs.</summary>
+    [MaxLength(128)]
+    public string? GuestToken { get; set; }
 }

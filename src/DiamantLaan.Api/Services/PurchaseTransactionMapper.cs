@@ -22,14 +22,29 @@ public static class PurchaseTransactionMapper
                 .OrderBy(id => id)
                 .ToList(),
             PaymentStatus = purchase.PaymentStatus.ToString(),
-            UserName = includeUser && user != null
-                ? $"{user.FirstName} {user.LastName}".Trim()
-                : includeUser ? "Onbekend" : null,
-            UserEmail = includeUser ? user?.Email : null,
+            UserName = includeUser ? DescribeBuyer(user) : null,
+            UserEmail = includeUser ? user?.Email ?? purchase.GuestEmail : null,
             PayFastPaymentId = includeUser ? purchase.PayFastPaymentId : null,
             PurchaseSource = GetPurchaseSource(purchase),
             HasProof = !string.IsNullOrEmpty(purchase.ProofOfPaymentPath)
         };
+    }
+
+    /// <summary>
+    /// Names the buyer for the admin views. A guest who never created an account has only whatever
+    /// name PayFast reported, or none at all.
+    /// </summary>
+    private static string DescribeBuyer(User? user)
+    {
+        if (user == null)
+            return "Onbekend";
+
+        var name = $"{user.FirstName} {user.LastName}".Trim();
+
+        if (user.IsGuest)
+            return string.IsNullOrEmpty(name) ? "Gas (geen rekening)" : $"{name} (gas, geen rekening)";
+
+        return string.IsNullOrEmpty(name) ? "Onbekend" : name;
     }
 
     public static bool IsTelefonieseAankoop(Purchase purchase) =>

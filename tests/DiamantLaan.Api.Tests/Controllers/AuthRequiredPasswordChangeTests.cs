@@ -67,7 +67,7 @@ public class AuthRequiredPasswordChangeTests
         var outbox = new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>());
         var otp = new PasswordResetOtpService(db, userManager.Object, outbox);
 
-        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp)
+        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp, new GuestPurchaseService(db, userManager.Object, Mock.Of<ILogger<GuestPurchaseService>>()))
         {
             ControllerContext = new ControllerContext
             {
@@ -124,7 +124,7 @@ public class AuthRequiredPasswordChangeTests
         var outbox = new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>());
         var otp = new PasswordResetOtpService(db, userManager.Object, outbox);
 
-        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp)
+        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp, new GuestPurchaseService(db, userManager.Object, Mock.Of<ILogger<GuestPurchaseService>>()))
         {
             ControllerContext = new ControllerContext
             {

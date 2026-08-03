@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PurchaseService } from '../../services/purchase.service';
 
 @Component({
   selector: 'app-login',
@@ -72,6 +73,7 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private purchase = inject(PurchaseService);
   email = '';
   password = '';
   error = '';
@@ -84,6 +86,9 @@ export class LoginComponent {
       next: (res) => {
         if (res.mustChangePassword) {
           this.router.navigate(['/wagwoord-wysig-verplig']);
+        } else if (this.purchase.guestPurchase) {
+          // They paid as a guest and signed in afterwards, so go back and attach that purchase.
+          this.router.navigate(['/betalings/klaar']);
         } else {
           this.router.navigate(['/kaart']);
         }

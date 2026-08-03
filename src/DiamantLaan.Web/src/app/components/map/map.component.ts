@@ -180,7 +180,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
             }
             @if (!auth.currentUser()) {
               <div class="login-nudge">
-                <p><a routerLink="/meld-aan">Meld aan</a> om blokke te kies</p>
+                <p>Jy kan sonder 'n rekening koop. <a routerLink="/meld-aan">Meld aan</a> om jou blokke se vordering te volg.</p>
               </div>
             }
             <div class="my-squares-mini">
@@ -646,10 +646,6 @@ export class MapComponent implements OnInit {
   }
 
   toggleSquare(sqId: number) {
-    if (!this.auth.currentUser()) {
-      this.router.navigate(['/meld-aan']);
-      return;
-    }
     const sq = this.squares.find(s => s.id === sqId);
     if (!sq) return;
     if (sq.isSold) return;
@@ -665,10 +661,6 @@ export class MapComponent implements OnInit {
   }
 
   selectRange(ids: number[]) {
-    if (!this.auth.currentUser()) {
-      this.router.navigate(['/meld-aan']);
-      return;
-    }
     const selected = new Set(this.selectedIds());
     for (const id of ids) {
       const sq = this.squares.find(s => s.id === id);
@@ -699,11 +691,6 @@ export class MapComponent implements OnInit {
   }
 
   pickForMe() {
-    if (!this.auth.currentUser()) {
-      this.router.navigate(['/meld-aan']);
-      return;
-    }
-
     if (!this.pickCustomMode() && this.pickPreset() === null) {
       this.pickError.set('Kies eers hoeveel blokke jy wil hê.');
       return;
@@ -764,11 +751,6 @@ export class MapComponent implements OnInit {
 
     if (sq.isSold) {
       this.searchError.set('Hierdie blok is reeds toegeken.');
-      return;
-    }
-
-    if (!this.auth.currentUser()) {
-      this.router.navigate(['/meld-aan']);
       return;
     }
 

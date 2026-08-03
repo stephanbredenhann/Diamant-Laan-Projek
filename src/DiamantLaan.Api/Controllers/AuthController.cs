@@ -22,14 +22,17 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly RefreshTokenService _refreshTokens;
     private readonly PasswordResetOtpService _passwordResetOtps;
+    private readonly GuestPurchaseService _guests;
 
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         IConfiguration config,
         RefreshTokenService refreshTokens,
-        PasswordResetOtpService passwordResetOtps)
+        PasswordResetOtpService passwordResetOtps,
+        GuestPurchaseService guests)
     {
+        _guests = guests;
         _userManager = userManager;
         _signInManager = signInManager;
         _config = config;
@@ -53,6 +56,15 @@ public class AuthController : ControllerBase
         if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var e164, out var phoneError))
             return BadRequest(new { message = phoneError });
 
+        var phoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim();
+
+        // Someone turning a guest checkout into an account keeps the placeholder account their
+        // blocks are already on, so upgrading it in place means nothing has to be moved.
+        if (dto.GuestPurchaseId is int guestPurchaseId && !string.IsNullOrWhiteSpace(dto.GuestToken))
+        {
+            return await RegisterFromGuestPurchaseAsync(dto, guestPurchaseId, e164, phoneCountryCode);
+        }
+
         var user = new User
         {
             UserName = dto.Email,
@@ -60,7 +72,7 @@ public class AuthController : ControllerBase
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),
             PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164,
-            PhoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim(),
+            PhoneCountryCode = phoneCountryCode,
             IsOraniaResident = dto.IsOraniaResident,
             IsOraniaBewegingMember = dto.IsOraniaBewegingMember,
             ReceiveBlockProgressEmails = true
@@ -72,6 +84,55 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = FormatIdentityErrors(result) });
 
         await _userManager.AddToRoleAsync(user, "Buyer");
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user, roles);
+        var refresh = await _refreshTokens.CreateAsync(user.Id);
+        SetRefreshCookie(refresh.Token);
+
+        return Ok(AuthPayload(token, user, roles));
+    }
+
+    /// <summary>
+    /// Registration path for a visitor who paid as a guest. The placeholder account that already
+    /// owns their blocks is upgraded into a real account, so the purchase and squares stay put.
+    /// </summary>
+    private async Task<IActionResult> RegisterFromGuestPurchaseAsync(
+        RegisterDto dto, int guestPurchaseId, string? e164, string phoneCountryCode)
+    {
+        var purchase = await _guests.FindByTokenAsync(guestPurchaseId, dto.GuestToken);
+        if (purchase == null)
+            return BadRequest(new { message = "Hierdie aankoop kon nie gevind word nie." });
+
+        var existing = await _userManager.FindByEmailAsync(dto.Email);
+        if (existing != null)
+        {
+            // They already have an account. Registering again would fail on the duplicate email,
+            // so tell the frontend to send them through login and claim the purchase afterwards.
+            return Conflict(new
+            {
+                message = "Hierdie e-posadres het reeds 'n rekening. Meld aan om jou blokke daaraan te koppel.",
+                requiresLogin = true
+            });
+        }
+
+        var details = new GuestPurchaseService.RegistrationDetails(
+            dto.Email,
+            dto.Password,
+            dto.FirstName.Trim(),
+            dto.LastName.Trim(),
+            string.IsNullOrEmpty(e164) ? null : e164,
+            phoneCountryCode,
+            dto.IsOraniaResident,
+            dto.IsOraniaBewegingMember);
+
+        var upgrade = await _guests.UpgradeShadowUserAsync(purchase, details);
+        if (!upgrade.Succeeded)
+            return BadRequest(new { message = FormatIdentityErrors(upgrade) });
+
+        var user = await _userManager.FindByIdAsync(purchase.UserId);
+        if (user == null)
+            return BadRequest(new { message = "Registrasie het misluk. Probeer weer." });
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwtToken(user, roles);

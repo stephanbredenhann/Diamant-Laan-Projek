@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PurchaseService, GuestPurchaseRef } from '../../services/purchase.service';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import {
   getPasswordChecks,
@@ -24,6 +25,12 @@ import {
           <h2>Registreer</h2>
           <p>Sluit aan by die gemeenskap en help om Diamant Laan te teer.</p>
         </div>
+        @if (guestRef) {
+          <div class="guest-banner">
+            <strong>Jou aankoop word aan hierdie rekening gekoppel.</strong>
+            <span>Sodra jy registreer, verskyn jou blokke onder My Blokke.</span>
+          </div>
+        }
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
@@ -88,6 +95,9 @@ import {
           @if (error) {
             <div class="error-alert">{{ error }}</div>
           }
+          @if (requiresLogin) {
+            <p class="auth-link"><a [routerLink]="'/meld-aan'">Meld aan met daardie e-posadres</a> om jou blokke te koppel.</p>
+          }
           <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !canSubmit()">
             {{ loading ? 'Besig...' : 'Registreer' }}
           </button>
@@ -113,6 +123,20 @@ import {
       letter-spacing: normal;
     }
     .checkbox-group input { width: auto; }
+    .guest-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-olive);
+      border-radius: var(--radius-sm);
+      background: var(--color-cream);
+      padding: 0.875rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
+    .guest-banner strong { color: var(--color-text); }
     .field-error {
       margin-top: 0.35rem;
       font-size: 0.8125rem;
@@ -142,9 +166,11 @@ import {
     }
   `]
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private purchase = inject(PurchaseService);
   firstName = '';
   lastName = '';
   email = '';
@@ -160,8 +186,19 @@ export class RegisterComponent {
   lastNameError = '';
   phoneError = '';
   loading = false;
+  requiresLogin = false;
+  guestRef: GuestPurchaseRef | null = null;
   passwordSig = signal('');
   checks = computed(() => getPasswordChecks(this.passwordSig()));
+
+  ngOnInit() {
+    // Arriving from a guest checkout: the purchase id is in the URL, the token in session storage.
+    const guestPurchaseId = Number(this.route.snapshot.queryParamMap.get('gas'));
+    const stored = this.purchase.guestPurchase;
+    if (guestPurchaseId && stored && stored.purchaseId === guestPurchaseId) {
+      this.guestRef = stored;
+    }
+  }
 
   canSubmit(): boolean {
     return !validateName(this.firstName, 'Voornaam')
@@ -210,6 +247,7 @@ export class RegisterComponent {
     }
 
     this.loading = true;
+    this.requiresLogin = false;
     this.auth.register(
       this.firstName.trim(),
       this.lastName.trim(),
@@ -219,10 +257,24 @@ export class RegisterComponent {
       normalizePhoneLocal(this.phoneNumber, this.phoneCountryCode),
       this.phoneCountryCode,
       this.isOraniaResident,
-      this.isOraniaBewegingMember
+      this.isOraniaBewegingMember,
+      this.guestRef
     ).subscribe({
-      next: () => this.router.navigate(['/kaart']),
-      error: (err) => { this.error = err.error?.message || 'Registrasie het misluk.'; this.loading = false; }
+      next: () => {
+        if (this.guestRef) {
+          // The guest purchase now belongs to this account outright.
+          this.purchase.guestPurchase = null;
+          this.purchase.pendingSquareIds = [];
+          this.router.navigate(['/my-blokke']);
+          return;
+        }
+        this.router.navigate(['/kaart']);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Registrasie het misluk.';
+        this.requiresLogin = err.status === 409 && !!err.error?.requiresLogin;
+        this.loading = false;
+      }
     });
   }
 }

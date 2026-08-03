@@ -139,11 +139,15 @@ public class AdminController : ControllerBase
             {
                 var user = g.First().User;
                 var phone = FormatPhoneFields(user);
+                var name = (user.FirstName + " " + user.LastName).Trim();
                 return new
                 {
                     UserId = g.Key,
-                    Name = user.FirstName + " " + user.LastName,
-                    Email = user.Email,
+                    // A guest buyer has no account, and often no name beyond what PayFast reported.
+                    Name = user.IsGuest
+                        ? (string.IsNullOrEmpty(name) ? "Gas (geen rekening)" : name + " (gas, geen rekening)")
+                        : name,
+                    Email = user.Email ?? g.Select(p => p.GuestEmail).FirstOrDefault(e => e != null),
                     phone.PhoneNumber,
                     phone.PhoneCountryCode,
                     phone.PhoneDisplay,
@@ -243,7 +247,7 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         var users = await _db.Users
-            .Where(u => !u.IsAnonymized && !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
+            .Where(u => !u.IsAnonymized && !u.IsGuest && !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
             .OrderBy(u => u.Email)
             .ToListAsync();
 

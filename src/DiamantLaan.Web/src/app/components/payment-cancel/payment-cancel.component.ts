@@ -101,11 +101,18 @@ export class PaymentCancelComponent implements OnInit {
   }
 
   private doCancel() {
-    this.purchase.cancelPurchase(this.purchaseId!).subscribe({
+    // A guest has no session to authorise the cancel with, so their token stands in for one.
+    const guestRef = this.purchase.guestPurchase;
+    const request = guestRef && guestRef.purchaseId === this.purchaseId
+      ? this.purchase.cancelGuestPurchase(guestRef)
+      : this.purchase.cancelPurchase(this.purchaseId!);
+
+    request.subscribe({
       next: () => {
         this.loading = false;
         this.error = '';
         this.purchase.pendingSquareIds = [];
+        this.purchase.guestPurchase = null;
       },
       error: (err) => {
         this.loading = false;

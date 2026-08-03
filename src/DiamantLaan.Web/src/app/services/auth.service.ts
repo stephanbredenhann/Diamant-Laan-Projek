@@ -20,10 +20,13 @@ export class AuthService {
     phoneNumber: string,
     phoneCountryCode: string,
     isOraniaResident: boolean,
-    isOraniaBewegingMember: boolean
+    isOraniaBewegingMember: boolean,
+    guest?: { purchaseId: number; token: string } | null
   ) {
     return this.http.post<AuthResponse>(`${this.base}/register`, {
-      firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident, isOraniaBewegingMember
+      firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident, isOraniaBewegingMember,
+      guestPurchaseId: guest?.purchaseId ?? null,
+      guestToken: guest?.token ?? null
     }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
   }
 

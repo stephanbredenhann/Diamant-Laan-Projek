@@ -78,6 +78,12 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(u => u.Purchases)
             .HasForeignKey(p => p.UserId);
 
+        builder.Entity<Purchase>()
+            .HasIndex(p => p.GuestTokenHash);
+
+        builder.Entity<Purchase>()
+            .HasIndex(p => p.ClaimTokenHash);
+
         builder.Entity<RefreshToken>()
             .HasOne(rt => rt.User)
             .WithMany()

@@ -42,6 +42,35 @@ public static class EmailTemplates
             """;
     }
 
+    /// <summary>
+    /// Sent once to a guest who paid without an account and left us an email address. The link
+    /// carries a claim token, so following it can still turn the purchase into an account later.
+    /// </summary>
+    public static string GuestPurchaseClaim(int blockCount, decimal amount, string claimUrl, int validDays)
+    {
+        var url = WebUtility.HtmlEncode(claimUrl);
+        var blocks = blockCount == 1 ? "blok" : "blokke";
+        var total = amount.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        return $"""
+            <div style="font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; line-height: 1.6; max-width: 560px;">
+              <h2 style="color: #034EA2; margin-bottom: 0.5rem;">Dankie vir jou bydrae tot Diamant Laan</h2>
+              <p>Hallo daar,</p>
+              <p>Jou betaling is bevestig. Jy het <strong>{blockCount}</strong> {blocks} geborg, R{total} in totaal.</p>
+              <p>Jy het sonder 'n rekening gekoop. As jy later van plan verander, kan jy met hierdie skakel een skep en jou blokke daaraan koppel:</p>
+              <p><a href="{url}" style="display:inline-block; background:#F58220; color:#1A1A1A; text-decoration:none; padding:0.6rem 1.1rem; border-radius:8px; font-weight:600;">Skep 'n rekening</a></p>
+              <p>Met 'n rekening kan jy:</p>
+              <ul>
+                <li>Die vordering van elke blok volg, van nog nie begin nie tot klaar geteer</li>
+                <li>Foto's sien van die werk op jou blokke</li>
+                <li>Jou sertifikaat enige tyd weer aflaai</li>
+                <li>Al jou aankope op een plek hou</li>
+              </ul>
+              <p style="color: #6B7280; font-size: 0.875rem;">Die skakel werk vir {validDays} dae. Jy hoef niks te doen as jy tevrede is soos jy is nie, jou bydrae bly staan.</p>
+              <p style="margin-top: 1.5rem;">Diamant Laan</p>
+            </div>
+            """;
+    }
+
     public static string BlockProgressSummary(
         string firstName,
         int totalBlocks,

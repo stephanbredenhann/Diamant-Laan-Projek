@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { PurchaseService } from '../../services/purchase.service';
+import { PurchaseService, GuestPurchaseRef } from '../../services/purchase.service';
 import { Subscription, interval } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
 
@@ -129,12 +129,18 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
   private consecutiveErrors = 0;
   private sub?: Subscription;
   private purchaseId = 0;
+  private guestRef?: GuestPurchaseRef;
 
   ngOnInit() {
     this.purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
     if (!this.purchaseId) {
       this.router.navigate(['/kaart']);
       return;
+    }
+
+    const storedGuest = this.purchase.guestPurchase;
+    if (storedGuest && storedGuest.purchaseId === this.purchaseId) {
+      this.guestRef = storedGuest;
     }
 
     this.sub = interval(2000)
@@ -161,12 +167,21 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
 
   private checkStatus(purchaseId: number) {
     this.attempts++;
-    this.purchase.getPurchase(purchaseId).subscribe({
+    const request = this.guestRef
+      ? this.purchase.getGuestPurchase(this.guestRef)
+      : this.purchase.getPurchase(purchaseId);
+
+    request.subscribe({
       next: (p) => {
         this.consecutiveErrors = 0;
         if (p.paymentStatus === 'Confirmed') {
           this.state = 'success';
           this.purchase.pendingSquareIds = [];
+          if (this.guestRef) {
+            // Guests carry on to the "create an account?" step rather than My Blocks.
+            this.sub?.unsubscribe();
+            this.router.navigate(['/betalings/klaar']);
+          }
         } else if (p.paymentStatus === 'Failed' || p.paymentStatus === 'Cancelled') {
           this.state = 'failed';
         } else if (this.attempts >= this.maxAttempts) {

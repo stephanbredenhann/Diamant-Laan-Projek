@@ -60,7 +60,7 @@ public class AuthPasswordResetTests
         }).Build();
         var refresh = new RefreshTokenService(db, config);
 
-        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp)
+        var controller = new AuthController(userManager.Object, signIn.Object, config, refresh, otp, new GuestPurchaseService(db, userManager.Object, Mock.Of<ILogger<GuestPurchaseService>>()))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

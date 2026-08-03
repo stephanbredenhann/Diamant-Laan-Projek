@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subject, catchError, filter, of, switchMap, takeUntil, tap } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
 import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
 @Component({
@@ -59,7 +58,7 @@ import { SettingsService } from '../../services/settings.service';
 
         <!-- Bottom-center pill CTA -->
         <div class="hero-cta">
-          <a [routerLink]="ctaLink" class="pill-cta">
+          <a routerLink="/kaart" class="pill-cta">
             Begin&nbsp;<span class="pill-cta-em">Bou</span>!
           </a>
      
@@ -653,7 +652,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private road = inject(RoadService);
   private settingsService = inject(SettingsService);
-  auth = inject(AuthService);
 
   showStatsSection = true;
   showTotalRaised = true;
@@ -671,10 +669,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private intersectionObserver?: IntersectionObserver;
   private reducedMotion = false;
   private destroy$ = new Subject<void>();
-
-  get ctaLink(): string {
-    return this.auth.currentUser() ? '/kaart' : '/registreer';
-  }
 
   scrollToStats(event: Event) {
     event.preventDefault();

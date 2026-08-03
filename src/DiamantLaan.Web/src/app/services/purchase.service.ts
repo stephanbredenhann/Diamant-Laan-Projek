@@ -2,10 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 const PENDING_IDS_KEY = 'pendingSquareIds';
+const GUEST_PURCHASE_KEY = 'guestPurchase';
 
 export interface PayFastForm {
   actionUrl: string;
   fields: Record<string, string>;
+}
+
+/** Identifies a purchase made without an account. The token is a one-time bearer secret. */
+export interface GuestPurchaseRef {
+  purchaseId: number;
+  token: string;
+}
+
+export interface GuestPurchase {
+  id: number;
+  amount: number;
+  purchaseDate: string;
+  paymentStatus: string;
+  squares: number[];
+  certificateName: string | null;
+  email: string | null;
 }
 
 export interface PurchaseTransaction {
@@ -36,6 +53,26 @@ export class PurchaseService {
     }
   }
 
+  /** The guest purchase this browser tab is busy with, if any. */
+  get guestPurchase(): GuestPurchaseRef | null {
+    const raw = sessionStorage.getItem(GUEST_PURCHASE_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as GuestPurchaseRef;
+      return parsed?.purchaseId && parsed?.token ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  set guestPurchase(ref: GuestPurchaseRef | null) {
+    if (!ref) {
+      sessionStorage.removeItem(GUEST_PURCHASE_KEY);
+    } else {
+      sessionStorage.setItem(GUEST_PURCHASE_KEY, JSON.stringify(ref));
+    }
+  }
+
   createPurchase(squareIds: number[]) {
     const body = { squareIds };
     return this.http.post<{ purchaseId: number; amount: number; squareCount: number; paymentStatus: string }>(
@@ -53,6 +90,41 @@ export class PurchaseService {
 
   getPurchase(id: number) {
     return this.http.get<{ id: number; amount: number; purchaseDate: string; paymentStatus: string; squares: number[] }>(`/api/purchase/${id}`);
+  }
+
+  createGuestPurchase(squareIds: number[], email?: string | null) {
+    return this.http.post<{ purchaseId: number; token: string; amount: number; squareCount: number; paymentStatus: string }>(
+      '/api/purchase/guest', { squareIds, email: email || null }
+    );
+  }
+
+  getGuestPayFastForm(ref: GuestPurchaseRef) {
+    return this.http.post<PayFastForm>(`/api/purchase/guest/${ref.purchaseId}/pay`, { token: ref.token });
+  }
+
+  getGuestPurchase(ref: GuestPurchaseRef) {
+    return this.http.get<GuestPurchase>(
+      `/api/purchase/guest/${ref.purchaseId}`, { params: { token: ref.token } }
+    );
+  }
+
+  cancelGuestPurchase(ref: GuestPurchaseRef) {
+    return this.http.post<{ purchaseId: number; paymentStatus: string }>(
+      `/api/purchase/guest/${ref.purchaseId}/cancel`, { token: ref.token }
+    );
+  }
+
+  setGuestCertificateName(ref: GuestPurchaseRef, name: string) {
+    return this.http.post<{ certificateName: string }>(
+      `/api/purchase/guest/${ref.purchaseId}/certificate-name`, { token: ref.token, name }
+    );
+  }
+
+  /** Attaches a guest purchase to the account that is currently signed in. */
+  claimGuestPurchase(ref: GuestPurchaseRef) {
+    return this.http.post<{ purchaseId: number }>(
+      `/api/purchase/guest/${ref.purchaseId}/claim`, { token: ref.token }
+    );
   }
 
   simulateItn(purchaseId: number) {

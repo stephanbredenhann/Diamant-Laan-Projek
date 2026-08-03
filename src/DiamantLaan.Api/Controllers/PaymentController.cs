@@ -20,13 +20,26 @@ public class PaymentController : ControllerBase
     private readonly IPayFastService _payFastService;
     private readonly ILogger<PaymentController> _logger;
     private readonly IWebHostEnvironment _environment;
+    private readonly GuestPurchaseService _guests;
+    private readonly EmailOutboxService _emails;
+    private readonly IConfiguration _config;
 
-    public PaymentController(AppDbContext db, IPayFastService payFastService, ILogger<PaymentController> logger, IWebHostEnvironment environment)
+    public PaymentController(
+        AppDbContext db,
+        IPayFastService payFastService,
+        ILogger<PaymentController> logger,
+        IWebHostEnvironment environment,
+        GuestPurchaseService guests,
+        EmailOutboxService emails,
+        IConfiguration config)
     {
         _db = db;
         _payFastService = payFastService;
         _logger = logger;
         _environment = environment;
+        _guests = guests;
+        _emails = emails;
+        _config = config;
     }
 
     [AllowAnonymous]
@@ -72,6 +85,8 @@ public class PaymentController : ControllerBase
             return Ok("OK");
         }
 
+        await CaptureGuestPayerDetailsAsync(purchase, rawBody);
+
         var confirmed = await ConfirmPurchaseAsync(purchase, result.PayFastPaymentId!, result.PaymentStatus!);
         if (!confirmed)
         {
@@ -80,6 +95,8 @@ public class PaymentController : ControllerBase
                 purchaseId);
             return StatusCode(StatusCodes.Status500InternalServerError, "Confirmation failed");
         }
+
+        await SendGuestClaimEmailAsync(purchase);
 
         return Ok("OK");
     }
@@ -109,7 +126,85 @@ public class PaymentController : ControllerBase
         if (!confirmed)
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Kon nie aankoop bevestig nie." });
 
+        await SendGuestClaimEmailAsync(purchase);
+
         return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
+    }
+
+    /// <summary>
+    /// Sends the guest who left us an email address one message with a link that can still turn
+    /// their purchase into an account later. Issuing the token marks the email as sent, so a
+    /// repeated ITN never produces a second one.
+    /// </summary>
+    private async Task SendGuestClaimEmailAsync(Purchase purchase)
+    {
+        if (purchase.GuestTokenHash == null || string.IsNullOrWhiteSpace(purchase.GuestEmail))
+            return;
+
+        if (purchase.PaymentStatus != PaymentStatus.Confirmed || purchase.ClaimEmailSentAt != null)
+            return;
+
+        try
+        {
+            var token = await _guests.IssueClaimTokenAsync(purchase);
+            if (token == null)
+                return;
+
+            var siteUrl = AppPublicUrl.Resolve(_config).TrimEnd('/');
+            var claimUrl = $"{siteUrl}/betalings/klaar?aankoop={purchase.Id}&sleutel={Uri.EscapeDataString(token)}";
+
+            await _emails.QueueAsync(
+                purchase.GuestEmail,
+                "Jou Diamant Laan aankoop is bevestig",
+                EmailTemplates.GuestPurchaseClaim(
+                    purchase.PurchaseSquares.Count,
+                    purchase.Amount,
+                    claimUrl,
+                    (int)GuestPurchaseService.ClaimTokenLifetime.TotalDays));
+        }
+        catch (Exception ex)
+        {
+            // The payment is already confirmed; a failed email must not make PayFast retry the ITN.
+            _logger.LogError(ex, "Could not send claim email for guest purchase {PurchaseId}", purchase.Id);
+        }
+    }
+
+    /// <summary>
+    /// A guest gives us nothing before checkout unless they volunteer an email, but PayFast collects
+    /// the payer's name and email anyway and echoes them back on the ITN. Keeping them makes the
+    /// purchase claimable later and gives the certificate a name to fall back on.
+    /// </summary>
+    private async Task CaptureGuestPayerDetailsAsync(Purchase purchase, string rawBody)
+    {
+        if (purchase.GuestTokenHash == null)
+            return;
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == purchase.UserId);
+        if (user == null || !user.IsGuest)
+            return;
+
+        var firstName = ExtractValue(rawBody, "name_first");
+        var lastName = ExtractValue(rawBody, "name_last");
+        var email = ExtractValue(rawBody, "email_address");
+
+        if (string.IsNullOrWhiteSpace(user.FirstName) && !string.IsNullOrWhiteSpace(firstName))
+            user.FirstName = firstName.Trim();
+
+        if (string.IsNullOrWhiteSpace(user.LastName) && !string.IsNullOrWhiteSpace(lastName))
+            user.LastName = lastName.Trim();
+
+        if (string.IsNullOrWhiteSpace(purchase.GuestEmail) && !string.IsNullOrWhiteSpace(email))
+            purchase.GuestEmail = email.Trim();
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Never let this block confirmation, because the payment itself is what matters.
+            _logger.LogWarning(ex, "Could not store payer details for guest purchase {PurchaseId}", purchase.Id);
+        }
     }
 
     private async Task<bool> ConfirmPurchaseAsync(Purchase purchase, string payFastPaymentId, string paymentStatus)

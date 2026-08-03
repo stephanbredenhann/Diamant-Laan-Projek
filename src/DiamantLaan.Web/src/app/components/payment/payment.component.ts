@@ -1,13 +1,16 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { PurchaseService } from '../../services/purchase.service';
+import { PurchaseService, PayFastForm, GuestPurchaseRef } from '../../services/purchase.service';
+import { AuthService } from '../../services/auth.service';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { validateEmail } from '../../utils/validation.util';
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, FormsModule],
   template: `
     <div class="container">
       <div class="gateway-card">
@@ -17,6 +20,29 @@ import { blokLabel } from '../../utils/afrikaans.util';
           <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
           <span class="per-block">(R500 per blok)</span>
         </p>
+
+        @if (isGuest) {
+          <div class="guest-box">
+            <p class="guest-note">
+              Jy koop sonder 'n rekening. Na jou betaling kan jy kies om een te skep, of net jou
+              sertifikaat aflaai.
+            </p>
+            <label for="guest-email">E-pos <span class="optional">(opsioneel)</span></label>
+            <input
+              id="guest-email"
+              type="email"
+              name="guestEmail"
+              autocomplete="email"
+              placeholder="jou@epos.co.za"
+              [(ngModel)]="guestEmail">
+            <p class="guest-hint">
+              Gee dit en ons stuur jou 'n bewys van betaling en 'n skakel om later by jou blokke uit te kom.
+            </p>
+            @if (emailError) {
+              <p class="field-error">{{ emailError }}</p>
+            }
+          </div>
+        }
 
         <div class="gateway-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
@@ -69,6 +95,49 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .summary strong { color: var(--color-terracotta); }
     .per-block { display: block; font-size: 0.8125rem; margin-top: 0.25rem; }
+    .guest-box {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      background: var(--color-cream);
+    }
+    .guest-note {
+      font-size: 0.875rem;
+      color: var(--color-text);
+      margin-bottom: 1rem;
+    }
+    .guest-box label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.375rem;
+    }
+    .guest-box .optional {
+      font-weight: 400;
+      color: var(--color-muted-light);
+    }
+    .guest-box input {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: 0.9375rem;
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+    .guest-hint {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-top: 0.5rem;
+    }
+    .field-error {
+      font-size: 0.75rem;
+      color: #DC2626;
+      margin-top: 0.5rem;
+    }
     .gateway-box {
       border: 2px dashed var(--color-border);
       border-radius: var(--radius);
@@ -127,15 +196,22 @@ import { blokLabel } from '../../utils/afrikaans.util';
 export class PaymentComponent implements OnInit {
   private router = inject(Router);
   private purchase = inject(PurchaseService);
+  private auth = inject(AuthService);
 
   squareIds: number[] = [];
   totalAmount = 0;
   loading = false;
   error = '';
+  guestEmail = '';
+  emailError = '';
+  isGuest = false;
   private createdPurchaseId?: number;
+  private guestRef?: GuestPurchaseRef;
   readonly blokLabel = blokLabel;
 
   ngOnInit() {
+    this.isGuest = !this.auth.currentUser();
+
     const ids = this.purchase.pendingSquareIds;
     if (ids && Array.isArray(ids) && ids.length > 0) {
       this.squareIds = ids;
@@ -148,6 +224,13 @@ export class PaymentComponent implements OnInit {
   submitPayment() {
     if (this.loading || this.squareIds.length === 0) return;
     this.error = '';
+    this.emailError = '';
+
+    if (this.isGuest) {
+      this.submitGuestPayment();
+      return;
+    }
+
     this.loading = true;
 
     if (this.createdPurchaseId) {
@@ -167,9 +250,50 @@ export class PaymentComponent implements OnInit {
     });
   }
 
+  private submitGuestPayment() {
+    const email = this.guestEmail.trim();
+    if (email) {
+      const invalid = validateEmail(email);
+      if (invalid) {
+        this.emailError = invalid;
+        return;
+      }
+    }
+
+    this.loading = true;
+
+    if (this.guestRef) {
+      this.requestGuestPayFastForm(this.guestRef);
+      return;
+    }
+
+    this.purchase.createGuestPurchase(this.squareIds, email || null).subscribe({
+      next: (res) => {
+        this.guestRef = { purchaseId: res.purchaseId, token: res.token };
+        // Persist immediately, because the token is the only way back to this purchase after PayFast.
+        this.purchase.guestPurchase = this.guestRef;
+        this.requestGuestPayFastForm(this.guestRef);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Aankoop het misluk.';
+        this.loading = false;
+      }
+    });
+  }
+
   private requestPayFastForm(purchaseId: number) {
     this.purchase.getPayFastForm(purchaseId).subscribe({
       next: (form) => this.postToPayFast(form),
+      error: (err) => {
+        this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
+        this.loading = false;
+      }
+    });
+  }
+
+  private requestGuestPayFastForm(ref: GuestPurchaseRef) {
+    this.purchase.getGuestPayFastForm(ref).subscribe({
+      next: (form: PayFastForm) => this.postToPayFast(form),
       error: (err) => {
         this.error = err.error?.message || 'Kon nie PayFast betaling voorberei nie.';
         this.loading = false;
