@@ -151,8 +151,8 @@ public class PurchaseController : ControllerBase
         if (User.Identity?.IsAuthenticated == true)
             return BadRequest(new { message = "Jy is reeds aangemeld. Gebruik die gewone aankoopvloei." });
 
-        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
-        if (email != null && !EmailValidator.IsValid(email, out var emailError))
+        var email = dto.Email?.Trim() ?? string.Empty;
+        if (!EmailValidator.IsValid(email, out var emailError))
             return BadRequest(new { message = emailError });
 
         var ipHash = GuestPurchaseService.Hash(HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");

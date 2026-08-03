@@ -27,16 +27,18 @@ import { validateEmail } from '../../utils/validation.util';
               Jy koop sonder 'n rekening. Na jou betaling kan jy kies om een te skep, of net jou
               sertifikaat aflaai.
             </p>
-            <label for="guest-email">E-pos <span class="optional">(opsioneel)</span></label>
+            <label for="guest-email">E-pos <span class="required-mark" aria-hidden="true">*</span></label>
             <input
               id="guest-email"
               type="email"
               name="guestEmail"
               autocomplete="email"
+              required
               placeholder="jou@epos.co.za"
               [(ngModel)]="guestEmail">
             <p class="guest-hint">
-              Gee dit en ons stuur jou 'n bewys van betaling en 'n skakel om later by jou blokke uit te kom.
+              Ons het jou e-posadres nodig om jou betaling te bevestig en vir jou 'n skakel te stuur
+              waarmee jy later 'n rekening kan skep. Ons stuur niks anders nie.
             </p>
             @if (emailError) {
               <p class="field-error">{{ emailError }}</p>
@@ -56,7 +58,7 @@ import { validateEmail } from '../../utils/validation.util';
 
         <div class="actions">
           <a routerLink="/kaart" class="btn btn-outline">Terug</a>
-          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
+          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading || !canSubmit()">
             @if (loading) {
               <span class="btn-spinner"></span>
               Besig
@@ -114,9 +116,8 @@ import { validateEmail } from '../../utils/validation.util';
       color: var(--color-text);
       margin-bottom: 0.375rem;
     }
-    .guest-box .optional {
-      font-weight: 400;
-      color: var(--color-muted-light);
+    .guest-box .required-mark {
+      color: var(--color-terracotta);
     }
     .guest-box input {
       width: 100%;
@@ -250,14 +251,17 @@ export class PaymentComponent implements OnInit {
     });
   }
 
+  /** Guests must give an email address; it is the only way back to a purchase without an account. */
+  canSubmit(): boolean {
+    return !this.isGuest || !validateEmail(this.guestEmail);
+  }
+
   private submitGuestPayment() {
     const email = this.guestEmail.trim();
-    if (email) {
-      const invalid = validateEmail(email);
-      if (invalid) {
-        this.emailError = invalid;
-        return;
-      }
+    const invalid = validateEmail(email);
+    if (invalid) {
+      this.emailError = invalid;
+      return;
     }
 
     this.loading = true;
@@ -267,7 +271,7 @@ export class PaymentComponent implements OnInit {
       return;
     }
 
-    this.purchase.createGuestPurchase(this.squareIds, email || null).subscribe({
+    this.purchase.createGuestPurchase(this.squareIds, email).subscribe({
       next: (res) => {
         this.guestRef = { purchaseId: res.purchaseId, token: res.token };
         // Persist immediately, because the token is the only way back to this purchase after PayFast.

@@ -92,9 +92,9 @@ export class PurchaseService {
     return this.http.get<{ id: number; amount: number; purchaseDate: string; paymentStatus: string; squares: number[] }>(`/api/purchase/${id}`);
   }
 
-  createGuestPurchase(squareIds: number[], email?: string | null) {
+  createGuestPurchase(squareIds: number[], email: string) {
     return this.http.post<{ purchaseId: number; token: string; amount: number; squareCount: number; paymentStatus: string }>(
-      '/api/purchase/guest', { squareIds, email: email || null }
+      '/api/purchase/guest', { squareIds, email }
     );
   }
 

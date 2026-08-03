@@ -92,6 +92,29 @@ public class GuestPurchaseTests : IDisposable
         Assert.Null(await _db.Squares.Where(s => s.Id == 3).Select(s => s.OwnerId).SingleAsync());
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("nie-n-epos")]
+    public async Task CreateGuestPurchase_RequiresAValidEmail(string? email)
+    {
+        SeedSquares(1);
+        var controller = CreateController();
+
+        var result = await controller.CreateGuestPurchase(new GuestPurchaseRequestDto
+        {
+            SquareIds = new List<int> { 1 },
+            Email = email!
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        // Nothing may be reserved or created when the email is missing.
+        Assert.Null(await _db.Squares.Where(s => s.Id == 1).Select(s => s.OwnerId).SingleAsync());
+        Assert.False(await _db.Users.AnyAsync(u => u.IsGuest));
+        Assert.False(await _db.Purchases.AnyAsync());
+    }
+
     [Fact]
     public async Task CreateGuestPurchase_WithSoldSquare_LeavesNoShadowUserBehind()
     {
@@ -105,7 +128,8 @@ public class GuestPurchaseTests : IDisposable
 
         var result = await controller.CreateGuestPurchase(new GuestPurchaseRequestDto
         {
-            SquareIds = new List<int> { 1 }
+            SquareIds = new List<int> { 1 },
+            Email = "gas@test.com"
         });
 
         Assert.IsType<BadRequestObjectResult>(result);
@@ -122,14 +146,16 @@ public class GuestPurchaseTests : IDisposable
         {
             var ok = await controller.CreateGuestPurchase(new GuestPurchaseRequestDto
             {
-                SquareIds = new List<int> { squareId }
+                SquareIds = new List<int> { squareId },
+                Email = "gas@test.com"
             });
             Assert.IsType<OkObjectResult>(ok);
         }
 
         var blocked = await controller.CreateGuestPurchase(new GuestPurchaseRequestDto
         {
-            SquareIds = new List<int> { 4 }
+            SquareIds = new List<int> { 4 },
+            Email = "gas@test.com"
         });
 
         Assert.IsType<BadRequestObjectResult>(blocked);
@@ -328,7 +354,8 @@ public class GuestPurchaseTests : IDisposable
 
         var result = await controller.CreateGuestPurchase(new GuestPurchaseRequestDto
         {
-            SquareIds = squareIds.ToList()
+            SquareIds = squareIds.ToList(),
+            Email = "gas@test.com"
         });
 
         var ok = Assert.IsType<OkObjectResult>(result);
