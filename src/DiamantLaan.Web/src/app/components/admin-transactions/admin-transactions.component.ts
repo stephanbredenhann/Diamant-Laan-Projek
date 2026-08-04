@@ -14,38 +14,6 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
   standalone: true,
   imports: [CommonModule, FormsModule, ReceiptCardComponent],
   template: `
-   ...
-  `,
-  styles: [`
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .status-confirmed {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-pending {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .status-cancelled {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-failed {
-      background: #e2e3e5;
-      color: #383d41;
-    }
-  `],
-})
     <div class="admin-content">
       <div class="table-card">
         <div class="table-header">
@@ -148,6 +116,33 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
     }
   `,
   styles: [`
+  .status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-failed {
+  background: #e2e3e5;
+  color: #383d41;
+}
     .admin-content { display: flex; flex-direction: column; gap: 1.5rem; }
     .table-card {
       background: var(--color-surface);
