@@ -46,6 +46,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                   </th>
                   <th>E-pos</th>
                   <th>Metode</th>
+                  <th>Status</th>
                   <th (click)="sortBy('squareCount')" class="numeric" [class.sorted]="sortKey === 'squareCount'">
                     Aantal <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
                   </th>
@@ -67,6 +68,11 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                     <td>{{ tx.userName }}</td>
                     <td>{{ tx.userEmail }}</td>
                     <td>{{ purchaseSourceLabel(tx.purchaseSource) }}</td>
+                    <td>
+  <span class="status-badge" [ngClass]="tx.paymentStatus.toLowerCase()">
+    {{ tx.paymentStatus }}
+  </span>
+</td>
                     <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
                     <td class="numeric">R{{ tx.amountPerBlock | number:'1.0-0' }}</td>
                     <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
