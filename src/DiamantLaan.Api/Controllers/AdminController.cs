@@ -195,13 +195,21 @@ public class AdminController : ControllerBase
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
 
         var soldCount = await saleableQuery.CountAsync(s => s.OwnerId != null);
-        var totalRaised = await _db.Purchases.SumAsync(p => (double)p.Amount);
+        var totalRaised = await _db.Purchases
+    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+    .SumAsync(p => (double)p.Amount);
 
         var dailySales = await _db.Purchases
-            .GroupBy(p => p.PurchaseDate.Date)
-            .Select(g => new { Date = g.Key, Amount = g.Sum(p => (double)p.Amount), Squares = g.Sum(p => p.PurchaseSquares.Count) })
-            .OrderBy(g => g.Date)
-            .ToListAsync();
+    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+    .GroupBy(p => p.PurchaseDate.Date)
+    .Select(g => new
+    {
+        Date = g.Key,
+        Amount = g.Sum(p => (double)p.Amount),
+        Squares = g.Sum(p => p.PurchaseSquares.Count)
+    })
+    .OrderBy(g => g.Date)
+    .ToListAsync();
 
         const double sponsorBaseline = 2_000_000;
         var averageSpendPerBlock = soldCount > 0 ? Math.Round(totalRaised / soldCount, 2) : 0;
