@@ -44,7 +44,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
       background: #e2e3e5;
       color: #383d41;
     }
-  `]
+  `],
 })
     <div class="admin-content">
       <div class="table-card">
