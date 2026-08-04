@@ -63,7 +63,9 @@ public class RoadController : ControllerBase
         var total = await _db.Squares.CountAsync();
         var klaarCount = await _db.Squares.CountAsync(s => s.Status == SquareStatus.KlaarGeteer);
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
-        var totalRaised = await _db.Purchases.SumAsync(p => (double)p.Amount);
+        var totalRaised = await _db.Purchases
+    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+    .SumAsync(p => (double)p.Amount);
 
         return Ok(new { progress, totalRaised });
     }
