@@ -245,9 +245,10 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetRegisteredNoPurchase()
     {
         var usersWithPurchases = await _db.Purchases
-            .Select(p => p.UserId)
-            .Distinct()
-            .ToListAsync();
+    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+    .Select(p => p.UserId)
+    .Distinct()
+    .ToListAsync();
 
         var adminUserIds = await _db.UserRoles
             .Where(ur => _db.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin"))
