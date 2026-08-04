@@ -14,6 +14,38 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
   standalone: true,
   imports: [CommonModule, FormsModule, ReceiptCardComponent],
   template: `
+   ...
+  `,
+  styles: [`
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-confirmed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-cancelled {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-failed {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+  `]
+})
     <div class="admin-content">
       <div class="table-card">
         <div class="table-header">
@@ -69,8 +101,13 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                     <td>{{ tx.userEmail }}</td>
                     <td>{{ purchaseSourceLabel(tx.purchaseSource) }}</td>
                     <td>
-  <span class="status-badge" [ngClass]="tx.paymentStatus.toLowerCase()">
-    {{ tx.paymentStatus }}
+  <span
+    class="status-badge"
+    [class.status-confirmed]="tx.paymentStatus === 'Confirmed'"
+    [class.status-pending]="tx.paymentStatus === 'Pending'"
+    [class.status-cancelled]="tx.paymentStatus === 'Cancelled'"
+    [class.status-failed]="tx.paymentStatus === 'Failed'">
+    {{ paymentStatusLabel(tx.paymentStatus) }}
   </span>
 </td>
                     <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
@@ -210,7 +247,20 @@ export class AdminTransactionsComponent implements OnInit {
   purchaseSourceLabel(source: string): string {
     return source === 'TelefonieseAankoop' ? 'Telefoniese Aankoop' : 'PayFast';
   }
-
+paymentStatusLabel(status: string): string {
+  switch (status) {
+    case 'Confirmed':
+      return 'Bevestig';
+    case 'Pending':
+      return 'Hangend';
+    case 'Cancelled':
+      return 'Gekanselleer';
+    case 'Failed':
+      return 'Misluk';
+    default:
+      return status;
+  }
+}
   ngOnInit() {
     this.admin.getTransactions().subscribe({
       next: (rows) => {
