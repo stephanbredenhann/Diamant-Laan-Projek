@@ -178,7 +178,31 @@ public class AdminController : ControllerBase
 
         return Ok(transactions);
     }
+[HttpDelete("transactions/{id}")]
+public async Task<IActionResult> DeleteTransaction(int id)
+{
+    var purchase = await _db.Purchases
+        .Include(p => p.PurchaseSquares)
+        .FirstOrDefaultAsync(p => p.Id == id);
 
+    if (purchase == null)
+        return NotFound();
+
+    if (purchase.PaymentStatus == PaymentStatus.Confirmed)
+    {
+        return BadRequest(new
+        {
+            message = "Bevestigde aankope kan nie verwyder word nie."
+        });
+    }
+
+    _db.PurchaseSquares.RemoveRange(purchase.PurchaseSquares);
+    _db.Purchases.Remove(purchase);
+
+    await _db.SaveChangesAsync();
+
+    return NoContent();
+}
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
