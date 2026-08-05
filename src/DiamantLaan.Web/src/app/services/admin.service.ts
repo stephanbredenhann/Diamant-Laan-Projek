@@ -75,7 +75,9 @@ export class AdminService {
       })
     });
   }
-
+deleteTransaction(id: number) {
+  return this.http.delete(`/api/admin/transactions/${id}`);
+}
   getStats() {
     return this.http.get<any>('/api/admin/stats');
   }
