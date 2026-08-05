@@ -345,4 +345,25 @@ paymentStatusLabel(status: string): string {
       this.downloadingId = null;
     }
   }
+  deleteTransaction(tx: AdminTransaction) {
+  const confirmed = confirm(
+    `Verwyder transaksie #${tx.id}?\n\n` +
+    `Koper: ${tx.userName}\n` +
+    `Status: ${this.paymentStatusLabel(tx.paymentStatus)}\n\n` +
+    `Hierdie aksie kan nie ongedaan gemaak word nie.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  this.admin.deleteTransaction(tx.id).subscribe({
+    next: () => {
+      this.transactions = this.transactions.filter(t => t.id !== tx.id);
+    },
+    error: () => {
+      alert('Kon nie transaksie verwyder nie.');
+    }
+  });
+}
 }
