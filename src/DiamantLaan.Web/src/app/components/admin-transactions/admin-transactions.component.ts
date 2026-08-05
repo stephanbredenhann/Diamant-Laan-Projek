@@ -83,14 +83,23 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                     <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
                     <td class="ids">{{ tx.squareIds.join(', ') }}</td>
                     <td class="action-col">
-                      <button
-                        type="button"
-                        class="btn btn-outline btn-sm"
-                        [disabled]="downloadingId === tx.id"
-                        (click)="downloadReceipt(tx)">
-                        {{ downloadingId === tx.id ? 'Besig...' : 'Laai Kwitansie' }}
-                      </button>
-                    </td>
+  <button
+    type="button"
+    class="btn btn-outline btn-sm"
+    [disabled]="downloadingId === tx.id"
+    (click)="downloadReceipt(tx)">
+    {{ downloadingId === tx.id ? 'Besig...' : 'Laai Kwitansie' }}
+  </button>
+
+  @if (tx.paymentStatus !== 'Confirmed') {
+    <button
+      type="button"
+      class="btn btn-danger btn-sm"
+      (click)="deleteTransaction(tx)">
+      Verwyder
+    </button>
+  }
+</td>
                   </tr>
                 }
                 @if (sortedTransactions.length === 0) {
