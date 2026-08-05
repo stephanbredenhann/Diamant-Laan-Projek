@@ -205,6 +205,22 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
     td { color: var(--color-muted); }
     .numeric { text-align: right; }
     .action-col { text-align: center; white-space: nowrap; }
+    .btn-danger {
+  margin-left: 0.5rem;
+  background: #c62828;
+  color: #fff;
+  border: 1px solid #c62828;
+}
+
+.btn-danger:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
     .ids { max-width: 160px; word-break: break-word; }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .muted { color: var(--color-muted); }
