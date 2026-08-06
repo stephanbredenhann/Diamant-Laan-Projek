@@ -31,28 +31,11 @@ import { SettingsService } from '../../services/settings.service';
 
       <div class="hero-content">
         <div class="hero-inner">
-          <!-- Left text block -->
-          <div class="hero-text">
-            <p class="hero-label">ORANIA</p>
-            <h1 class="hero-title">
-              <span class="hero-title-black">Stads</span><span class="hero-title-orange">bou</span><span class="hero-title-black">fonds</span>
-            </h1>
-            <div class="title-underline" aria-hidden="true">
-              <span class="title-underline--black"></span>
-              <span class="title-underline--orange"></span>
-            </div>
-            <p class="hero-subtitle">
-              van grondpad tot <span class="hero-subtitle-accent">teerpad</span>
-            </p>
-          </div>
+          
 
           <!-- Right OB logo -->
           <div class="hero-logo">
-            <img
-              src="ob-logo.png"
-              alt="Orania Beweging"
-              class="hero-ob-logo"
-            />
+            
           </div>
         </div>
 
@@ -166,8 +149,8 @@ import { SettingsService } from '../../services/settings.service';
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 15%;
-      transform: scale(1.05);
+      object-position: center 10%;
+      transform: scale(1.00);
       transform-origin: center 30%;
       z-index: 0;
     }
