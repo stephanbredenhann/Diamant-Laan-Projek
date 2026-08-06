@@ -166,8 +166,8 @@ import { SettingsService } from '../../services/settings.service';
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 30%;
-      transform: scale(1.1);
+      object-position: center 15%;
+      transform: scale(1.05);
       transform-origin: center 30%;
       z-index: 0;
     }
