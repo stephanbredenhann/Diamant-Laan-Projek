@@ -572,7 +572,12 @@ import { SettingsService } from '../../services/settings.service';
         flex-direction: column;
         text-align: center;
       }
-
+.hero-bg {
+        content: url('hero-bg-mobile.png');
+        transform: none;
+        object-fit: cover;
+        object-position: center center;
+    }
       .hero-ob-logo {
         max-height: 150px;
         max-width: 210px;
