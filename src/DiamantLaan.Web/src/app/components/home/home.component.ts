@@ -576,7 +576,6 @@ import { SettingsService } from '../../services/settings.service';
         text-align: center;
       }
 
-    }
       .hero-ob-logo {
         max-height: 150px;
         max-width: 210px;
