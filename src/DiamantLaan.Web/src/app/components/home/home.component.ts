@@ -19,7 +19,10 @@ import { SettingsService } from '../../services/settings.service';
   imports: [CommonModule, RouterLink],
   template: `
     <section class="hero">
-      <img src="hero-bg-01.svg" alt="" class="hero-bg" aria-hidden="true" />
+      <picture>
+  <source media="(max-width: 768px)" srcset="hero-bg-mobile.png">
+  <img src="hero-bg-01.svg" alt="" class="hero-bg" aria-hidden="true" />
+</picture>
 
       <!-- Cloud layer -->
       <div class="cloud-layer" [class.cloud-layer--ready]="cloudsReady" aria-hidden="true">
@@ -572,11 +575,7 @@ import { SettingsService } from '../../services/settings.service';
         flex-direction: column;
         text-align: center;
       }
-.hero-bg {
-        content: url('hero-bg-mobile.png');
-        transform: none;
-        object-fit: cover;
-        object-position: center center;
+
     }
       .hero-ob-logo {
         max-height: 150px;
