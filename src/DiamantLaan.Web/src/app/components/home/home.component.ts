@@ -19,7 +19,7 @@ import { SettingsService } from '../../services/settings.service';
   imports: [CommonModule, RouterLink],
   template: `
     <section class="hero">
-      <img src="hero-bg.jpeg" alt="" class="hero-bg" aria-hidden="true" />
+      <img src="hero-bg.svg" alt="" class="hero-bg" aria-hidden="true" />
 
       <!-- Cloud layer -->
       <div class="cloud-layer" [class.cloud-layer--ready]="cloudsReady" aria-hidden="true">
