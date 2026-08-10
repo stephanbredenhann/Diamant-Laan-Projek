@@ -1,8 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
-import { PurchaseService } from '../../services/purchase.service';
-import { CertificateCardComponent } from '../shared/certificate-card/certificate-card.component';
+import { PurchaseService, PurchaseTransaction } from '../../services/purchase.service';
+import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 
 @Component({
   selector: 'app-certificate',
@@ -12,9 +14,7 @@ import { CertificateCardComponent } from '../shared/certificate-card/certificate
     <div class="container">
       <app-certificate-card
         [ownerName]="ownerName"
-        [squares]="squares"
-        [blockCount]="blockCount"
-        [totalSpent]="totalSpent">
+        [squares]="squares">
         <a routerLink="/my-blokke" class="btn btn-outline">Terug na My Blokke</a>
       </app-certificate-card>
     </div>
@@ -28,27 +28,35 @@ export class CertificateComponent implements OnInit {
   private purchase = inject(PurchaseService);
 
   ownerName = '';
-  squares: { id: number; status: number }[] = [];
-  blockCount = 0;
-  totalSpent = 0;
+  squares: CertificateSquare[] = [];
 
   ngOnInit() {
     const user = this.auth.currentUser();
     if (user) {
       this.ownerName = `${user.firstName} ${user.lastName}`.trim();
     }
-    this.purchase.getMySquares().subscribe(s => {
-      this.squares = s.sort((a, b) => a.id - b.id);
-      this.blockCount = this.squares.length;
-    });
-    this.purchase.getMySummary().subscribe({
-      next: summary => {
-        this.blockCount = summary.blockCount;
-        this.totalSpent = summary.totalSpent;
-      },
-      error: () => {
-        this.totalSpent = this.blockCount * 500;
+
+    // The squares endpoint carries no date, so pair it with the transactions to stamp each
+    // certificate with the day that block was actually bought. A failure there is not worth
+    // blocking the certificate over — the date row just stays blank, as it was before.
+    forkJoin({
+      squares: this.purchase.getMySquares(),
+      transactions: this.purchase.getMyTransactions().pipe(catchError(() => of([] as PurchaseTransaction[]))),
+    }).subscribe(({ squares, transactions }) => {
+      const boughtOn = new Map<number, string>();
+      for (const transaction of transactions) {
+        for (const id of transaction.squareIds) {
+          const seen = boughtOn.get(id);
+          // Blocks can in principle appear more than once; the first purchase is the true one.
+          if (!seen || transaction.purchaseDate < seen) {
+            boughtOn.set(id, transaction.purchaseDate);
+          }
+        }
       }
+
+      this.squares = [...squares]
+        .sort((a, b) => a.id - b.id)
+        .map(square => ({ ...square, purchaseDate: boughtOn.get(square.id) }));
     });
   }
 }

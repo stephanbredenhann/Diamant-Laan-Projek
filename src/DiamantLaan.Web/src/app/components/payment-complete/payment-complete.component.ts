@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService, GuestPurchase, GuestPurchaseRef } from '../../services/purchase.service';
-import { CertificateCardComponent } from '../shared/certificate-card/certificate-card.component';
+import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 
 type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
@@ -110,9 +110,7 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
         @case ('certificate') {
           <app-certificate-card
             [ownerName]="certificateName"
-            [squares]="certificateSquares"
-            [blockCount]="squareCount"
-            [totalSpent]="amount">
+            [squares]="certificateSquares">
             <button type="button" class="btn btn-outline" (click)="finish()">Terug na tuisblad</button>
           </app-certificate-card>
           @if (hasEmail) {
@@ -295,7 +293,7 @@ export class PaymentCompleteComponent implements OnInit {
   amount = 0;
   squareCount = 0;
   certificateName = '';
-  certificateSquares: { id: number }[] = [];
+  certificateSquares: CertificateSquare[] = [];
   readonly blokLabel = blokLabel;
 
   private ref?: GuestPurchaseRef;
@@ -393,7 +391,7 @@ export class PaymentCompleteComponent implements OnInit {
     this.amount = p.amount;
     this.hasEmail = !!p.email;
     this.squareCount = p.squares.length;
-    this.certificateSquares = p.squares.map(id => ({ id }));
+    this.certificateSquares = p.squares.map(id => ({ id, purchaseDate: p.purchaseDate }));
     this.certificateName = p.certificateName ?? '';
 
     // Someone who signed in on the way back can have the purchase attached to that account.
