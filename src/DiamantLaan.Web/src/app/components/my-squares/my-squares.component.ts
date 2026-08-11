@@ -20,7 +20,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
         @if (squares.length > 0) {
           <p class="summary">{{ squares.length }} {{ blokLabel(squares.length) }} gekoop — <strong>R{{ totalSpent | number:'1.0-0' }}</strong> totaal</p>
           <div class="header-actions">
-            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien DEMO Sertifikaat</a>
+            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien My Sertifikate</a>
             <app-share-button
               label="Deel my bydrae"
               [url]="siteUrl"
