@@ -16,26 +16,27 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">Oewerpad-teerprojek</p>
+        <p class="eyebrow hero-eyebrow">Orania-Teerprojek</p>
         <h1 class="display hero-title">
-          Bou die volgende <span class="accent">meter</span> van Oewerpad.
+          Bou die volgende <span class="accent">m²</span> van die Oewerpad.
         </h1>
         <p class="hero-sub">
-          Finansier 1 m² teerpad vir <strong>R500</strong> en ontvang erkenning as ’n Stadsbouer.
-          Ons kan jou blokkie kies, of jy kan self die kaart oopmaak.
+          Elke m² wat geborg word, sluit vir Orania nuwe moontlikhede oop.
+          Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en dra Orania na die volgende vlak.
         </p>
         <div class="hero-actions">
           <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
-            Bou 1 m² vir R500
+            Borg jou m²
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
         </div>
         <ul class="reassurance">
-          <li>Geen rekening nodig</li>
+          <li>Geen registrasie</li>
           <li>Veilige betaling</li>
-          <li>Stadsbouer-erkenning</li>
+          <li>Bydraersertifikaat</li>
+          <li>Ontwikkel Orania</li>
         </ul>
       </div>
 
@@ -64,21 +65,22 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
     <section class="section" id="waarom">
       <div class="container-wide why-grid">
         <div>
-          <p class="eyebrow">Waarom hierdie projek</p>
-          <h2 class="display section-title">Nie net ’n donasie nie. ’n Meetbare deel van die pad.</h2>
+          <p class="eyebrow">Waarom hierdie projek?</p>
+          <h2 class="display section-title">Nie net ’n donasie nie. ’n Belegging in ’n Afrikanertoekoms.</h2>
           <p class="lead">
-            Oewerpad se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
-            op te deel, kan elke ondersteuner presies verstaan hoe sy of haar bydrae by die groter
-            doel inpas.
+            Die Oewerpad (Diamantlaan) se teerwerk is ’n groot infrastruktuurprojek.
+            Orania is ’n privaat Afrikanergemeenskap wat geen staatstoelae ontvang nie.
+            Dit beteken dat elke sentimeter wat hier ontwikkel word, self gedoen word.
+            Deur hierdie reuse projek in m² op te deel, kan elke bydraer presies sien waar sy of haar bydrae by die groter prentjie inpas.
           </p>
           <div class="feature-pair">
             <article>
-              <h3>Duidelike koste</h3>
-              <p>Elke volle vierkante meter word teen R500 aangebied.</p>
+              <h3>Duidelike doelwit</h3>
+              <p>Ons bou ’n toekoms vir Afrikaners, en ons doen dit self!</p>
             </article>
             <article>
               <h3>Sigbare vordering</h3>
-              <p>Volg finansiering en die werklike boufases op een plek.</p>
+              <p>Deur reuse projekte in kleiner segmente te verdeel, kan ons sien presies waar ons vordering maak. Só ook met hierdie pad, waar jy presies kan sien waar jou m² ’n verskil maak.</p>
             </article>
           </div>
           <a routerLink="/projek" class="text-link">Lees die volledige projekplan →</a>
@@ -95,9 +97,9 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
     <section class="section chalk" id="hoe-dit-werk">
       <div class="container-wide">
-        <p class="eyebrow">Hoe dit werk</p>
-        <h2 class="display section-title">Van bedrag tot sertifikaat.</h2>
-        <p class="lead narrow">Die hele proses neem omtrent twee minute.</p>
+        <p class="eyebrow">Vier eenvoudige stappe</p>
+        <h2 class="display section-title">Verstaan elke stap.</h2>
+        <p class="lead narrow">Vier eenvoudige stappe om jou bydrae te lewer.</p>
 
         <div class="steps">
           @for (step of steps; track step.number; let last = $last) {
@@ -124,10 +126,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <div class="container-wide recog-grid">
         <div>
           <p class="eyebrow">Erkenning</p>
-          <h2 class="display section-title">Jou naam. Jou blokkie. Jou deel aan die stad.</h2>
+          <h2 class="display section-title">Jou naam. Jou blokkie. Jou bydrae vir ewig sigbaar.</h2>
           <p class="lead">
-            Die Stadsbouer-belofte word sigbaar vóór betaling. Ondersteuners kan kies hoe hul
-            erkenning vertoon moet word.
+            Elkeen wat bydra ontvang erkenning in die vorm van ’n Stadsbouersertifikaat.
+            Jou sertifikaat vertoon jou naam en die unieke nommers van die blokkies wat jy geborg het.
+            Met nog baie projekte op die horison, gaan hierdie sertifikate eindelik versamelstukke wees.
           </p>
         </div>
         <div class="cert-preview surface-card">
@@ -145,11 +148,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <div class="container cta-inner">
         <div>
           <p class="eyebrow" style="color: rgba(255,255,255,0.65)">Jou volgende stap</p>
-          <h2 class="display">Bou die volgende meter saam met ons.</h2>
-          <p>Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.</p>
+          <h2 class="display">Bou die volgende m² saam met ons.</h2>
+          <p>Kies jou spesiale nommer voordat dit te laat is!</p>
         </div>
         <a routerLink="/bou" class="btn btn-on-orange">
-          Kies jou bydrae
+          Borg jou m²
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
@@ -523,26 +526,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     {
       number: '01',
       icon: 'ruler',
-      title: 'Kies jou hoeveelheid',
-      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik: R500 per m².',
+      title: 'Hoeveelheid',
+      body: 'Kies hoeveel m² jy wil borg.',
     },
     {
       number: '02',
       icon: 'map-pin',
-      title: 'Ons ken die blokkies toe',
-      body: 'Ons kies beskikbare blokkies vir jou. Wil jy self ’n plek kies, kan jy die kaart oopmaak.',
+      title: 'Kies jou blokkie',
+      body: 'Kies presies watter blokkie m² jy wil borg, of laat ons vir jou kies.',
     },
     {
       number: '03',
       icon: 'shield',
-      title: 'Betaal veilig deur PayFast',
-      body: 'Jy sien jou totaal, betaal by PayFast en kom terug na die webwerf. Jy hoef nie ’n rekening te hê nie.',
+      title: 'Betaal',
+      body: 'Voltooi die transaksie deur aanlyn te betaal.',
     },
     {
       number: '04',
       icon: 'award',
-      title: 'Kry jou sertifikaat',
-      body: 'Laai jou Stadsbouer-sertifikaat af. Skep ’n rekening om later die werk op jou stuk pad te volg.',
+      title: 'Erkenning',
+      body: 'Ontvang jou sertifikaat. Opsioneel: kies om die projek aktief te volg en jou sertifikaat op sosiale media te deel.',
     },
   ];
 

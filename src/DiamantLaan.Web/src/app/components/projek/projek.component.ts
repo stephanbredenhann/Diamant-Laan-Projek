@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
 
@@ -11,11 +11,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Die projek · Oewerpad-teerprojek</p>
-        <h1 class="display page-hero-title">Wat ons bou, en hoe dit werk.</h1>
+        <p class="eyebrow page-hero-eyebrow">Die projek · Orania bou ’n pad</p>
+        <h1 class="display page-hero-title">Wat gebou word en hoe dit werk.</h1>
         <p class="page-hero-body">
-          Oewerpad is vandag ’n grondpad. Ons teer dit stuk vir stuk, en elke vierkante
-          meter word deur ’n ondersteuner gefinansier.
+          Die Oewerpad is ’n belangrike roete wat tans nog ’n grondpad is.
+          Met eie Afrikanerhande en duisende ondersteuners, kan ons hierdie pad na ’n volgende vlak neem.
         </p>
       </div>
     </section>
@@ -23,12 +23,13 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
     <section class="section chalk">
       <div class="container-wide why-grid">
         <div>
-          <p class="eyebrow">Waarom Oewerpad</p>
+          <p class="eyebrow">Waarom die Oewerpad?</p>
           <h2 class="display section-title">Van grondpad na teerpad.</h2>
           <p class="lead">
-            ’n Grondpad word stof in die somer en modder in die reën, en dit kos elke jaar geld
-            om te herstel. Teer los dit permanent op. Deur die werk in vierkante meter op te deel,
-            kan enigiemand ’n stuk daarvan finansier, en presies sien waar dit is.
+            Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer sien.
+            Dit is ’n besonder belangrike roete vir toeriste wat gastehuise, die hotel, restaurant of rivier wil gaan besoek.
+            Dit is dikwels een van die roetes wat die meeste deur toeriste gery word en dit is daarom van kardinale belang om die pad te teer.
+            Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.
           </p>
 
           <div class="scope-grid">
@@ -58,24 +59,41 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <div class="container">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Die feite</p>
-            <h2 class="display section-title">Lorem ipsum dolor sit amet.</h2>
-            <!-- PLACEHOLDER: awaiting the confirmed project facts from the client. -->
+            <p class="eyebrow">Die inisiatief</p>
+            <h2 class="display section-title">Waar die projek vandaan kom.</h2>
             <p class="lead">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua.
+              Die Oewerpad is al lankal as een van die belangrikste en besigste roetes in Orania geïdentifiseer.
+              Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne.
+              Geen staatstoelae beteken dat Oraniërs alles wat hulle graag wil hê, self moet befonds.
+              Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree.
+              Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is alles boublokke vir ’n vrye Afrikanertuiste.
+              In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie.
+              Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners.
+              Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner tans in Suid-Afrika, en meer as dit, binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan beleef.
             </p>
+            <p class="lead">
+              Die stryd begin egter reeds vandag.
+              ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds niks nie.
+            </p>
+            <p class="lead">
+              Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid.
+              Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is.
+              Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:
+            </p>
+            <p class="inisiatief-slot">Deur self te bou!</p>
           </div>
         </div>
 
-        <div class="fact-grid">
-          @for (fact of factCards; track fact.label) {
-            <article class="fact-card">
-              <span class="display fact-value">{{ fact.value }}</span>
-              <h3>{{ fact.label }}</h3>
-              <p>{{ fact.note }}</p>
-            </article>
-          }
+        <div class="foto-strook-wrap">
+          <button type="button" class="foto-nav foto-nav-prev" (click)="rolFoto(-1)" aria-label="Vorige foto">‹</button>
+          <div class="foto-strook" #fotoStrook>
+            @for (foto of fotos; track foto.src) {
+              <figure class="foto-slide">
+                <img [src]="foto.src" [alt]="foto.alt" />
+              </figure>
+            }
+          </div>
+          <button type="button" class="foto-nav foto-nav-next" (click)="rolFoto(1)" aria-label="Volgende foto">›</button>
         </div>
       </div>
     </section>
@@ -226,38 +244,57 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
     .section-head { margin-bottom: 2.5rem; }
 
-    .fact-grid {
-      display: grid;
-      gap: 1px;
-      background: rgba(26, 26, 26, 0.1);
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 720px) {
-      .fact-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    .fact-card {
-      background: var(--bg-chalk);
-      padding: 2rem 1.75rem;
-    }
-    .fact-value {
-      display: block;
-      font-size: clamp(1.75rem, 3vw, 2.5rem);
-      color: var(--route-blue);
-      margin-bottom: 0.75rem;
-    }
-    .fact-card h3 {
+    .inisiatief-slot {
       font-family: var(--font-display);
-      font-size: var(--fs-lg);
-      font-weight: 700;
-      margin: 0 0 0.5rem;
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 800;
       color: var(--ink);
+      margin: 0 0 0.5rem;
     }
-    .fact-card p {
+
+    .foto-strook-wrap {
+      position: relative;
+    }
+    .foto-strook {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .foto-strook::-webkit-scrollbar { display: none; }
+    .foto-slide {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
       margin: 0;
-      color: var(--text-muted);
-      font-size: var(--fs-sm);
-      line-height: 1.5;
     }
+    .foto-slide img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+      box-shadow: var(--shadow-lg);
+    }
+    .foto-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      width: 2.75rem;
+      height: 2.75rem;
+      min-height: 2.75rem;
+      padding: 0;
+      border: 0;
+      background: var(--tar);
+      color: #fff;
+      font-size: 1.75rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .foto-nav:hover { background: #2a2018; }
+    .foto-nav-prev { left: 0.75rem; }
+    .foto-nav-next { right: 0.75rem; }
 
     .scope-icon {
       display: inline-grid;
@@ -320,39 +357,39 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
   `],
 })
 export class ProjekComponent {
+  @ViewChild('fotoStrook') fotoStrook?: ElementRef<HTMLDivElement>;
+
+  readonly fotos = [
+    { src: 'diamant_laan_foto.jpg', alt: 'Oewerpad, grondpad wat teerwerk nodig het' },
+    { src: 'hero-bg.jpeg', alt: 'Oewerpad in Orania' },
+  ];
+
   readonly scopeCards: { icon: IconName; title: string; body: string }[] = [
     {
       icon: 'road',
-      title: 'Een pad, in blokke verdeel',
-      body: 'Oewerpad is in vierkante meter opgedeel. Elke blokkie het ’n nommer en ’n plek op die kaart.',
+      title: 'Besige roete',
+      body: 'As een van die paaie wat die meeste verkeer in Orania geniet, is dit belangrik om die infrastruktuur tot ’n volgende vlak te ontwikkel.',
     },
     {
       icon: 'wallet',
-      title: 'R500 per vierkante meter',
-      body: 'Een prys, vir almal dieselfde. Jy kies self hoeveel vierkante meter jy wil finansier.',
+      title: 'Ekonomiese impak',
+      body: 'Beter padinfrastruktuur verlaag voertuig- en instandhoudingskoste, verbeter reistye en maak dit makliker vir toeriste om by Orania se instellings aan te doen.',
     },
     {
       icon: 'map-pin',
-      title: 'Jy sien presies waar',
-      body: 'Jy kan jou blokkies se ligging op die kaart sien.',
+      title: 'Bou die stad',
+      body: 'Orania moet ontwikkel. Dinge gebeur nie vanself nie. Stap vir stap en stukkie vir stukkie moet ons verbeter, opgradeer en groei. Hoegehalte harde infrastruktuur in ’n eie Afrikanergemeenskap is die bewys van waartoe ons in staat is.',
     },
     {
       icon: 'award',
-      title: 'Erkenning as Stadsbouer',
-      body: 'Elke ondersteuner kry ’n sertifikaat met sy of haar naam en bloknommer daarop.',
+      title: 'Vele hande, ligte werk',
+      body: 'Hierdie is ’n groot en ’n duur projek. Deur dit in blokkies op te deel en te skarefinansier, word die groot taak makliker gemaak.',
     },
   ];
 
-  /**
-   * PLACEHOLDER CONTENT — awaiting the confirmed project facts from the client.
-   * Replace each entry with the real figure before this page goes live.
-   */
-  readonly factCards = [
-    { value: 'Lorem ipsum', label: 'Dolor sit amet', note: 'Consectetur adipiscing elit, sed do eiusmod tempor incididunt.' },
-    { value: 'Ut labore', label: 'Et dolore magna', note: 'Aliqua enim ad minim veniam, quis nostrud exercitation ullamco.' },
-    { value: 'Laboris nisi', label: 'Ut aliquip ex ea', note: 'Commodo consequat duis aute irure dolor in reprehenderit.' },
-    { value: 'In voluptate', label: 'Velit esse cillum', note: 'Dolore eu fugiat nulla pariatur excepteur sint occaecat.' },
-    { value: 'Cupidatat', label: 'Non proident sunt', note: 'In culpa qui officia deserunt mollit anim id est laborum.' },
-    { value: 'Sed ut', label: 'Perspiciatis unde', note: 'Omnis iste natus error sit voluptatem accusantium doloremque.' },
-  ];
+  rolFoto(rigting: -1 | 1) {
+    const el = this.fotoStrook?.nativeElement;
+    if (!el) return;
+    el.scrollBy({ left: rigting * el.clientWidth, behavior: 'smooth' });
+  }
 }
