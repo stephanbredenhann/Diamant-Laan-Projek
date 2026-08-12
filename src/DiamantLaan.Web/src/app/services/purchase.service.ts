@@ -26,6 +26,11 @@ export interface GuestPurchase {
   email: string | null;
 }
 
+export interface ShareLink {
+  url: string;
+  path: string;
+}
+
 export interface PurchaseTransaction {
   id: number;
   purchaseDate: string;
@@ -168,6 +173,18 @@ export class PurchaseService {
 
   getMySummary() {
     return this.http.get<{ blockCount: number; totalSpent: number }>('/api/my-squares/summary');
+  }
+
+  getShareLink() {
+    return this.http.get<ShareLink>('/api/my-squares/share-link');
+  }
+
+  createShareLink() {
+    return this.http.post<ShareLink>('/api/my-squares/share-link', {});
+  }
+
+  deleteShareLink() {
+    return this.http.delete<void>('/api/my-squares/share-link');
   }
 
   getMyTransactions() {

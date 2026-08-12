@@ -25,6 +25,16 @@
   --highlight:      var(--ob-yellow);
   --done:           #5A6A32;
 
+  /* === Block states on the picker map ===
+     Each carries white or ink numerals at AA or better. Green and red alone
+     would not separate for a red-green colour-blind visitor, so a chosen block
+     also gets a heavy border and a tick; an unavailable one carries no number
+     at all. */
+  --blok-beskikbaar:   #D4C4A8;
+  --blok-gekies:       var(--done);   /* 5.2:1 with white numerals */
+  --blok-verkoop:      #B3261E;       /* 6.4:1 with white numerals */
+  --blok-onbeskikbaar: var(--ob-black);
+
   /* === Ink & Text === */
   --ink:        #1A1A1A;
   --text-body:  #1A1A1A;

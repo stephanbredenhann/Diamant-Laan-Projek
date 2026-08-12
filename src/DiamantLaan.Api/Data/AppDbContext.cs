@@ -134,6 +134,10 @@ public class AppDbContext : IdentityDbContext<User>
         builder.Entity<User>()
             .Property(u => u.PhoneCountryCode)
             .HasDefaultValue("+27");
+
+        builder.Entity<User>()
+            .HasIndex(u => u.ShareToken)
+            .IsUnique();
     }
 
     public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)

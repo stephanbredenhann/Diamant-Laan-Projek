@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'kaart', loadComponent: () => import('./components/map/map.component').then(m => m.MapComponent) },
   { path: 'bou', loadComponent: () => import('./components/bou/stap1/bou-stap1.component').then(m => m.BouStap1Component) },
   { path: 'bou/kies', loadComponent: () => import('./components/bou/stap2/bou-stap2.component').then(m => m.BouStap2Component) },
+  { path: 'bou/kaart', loadComponent: () => import('./components/bou/kaart/bou-kaart.component').then(m => m.BouKaartComponent) },
   { path: 'registreer', loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent) },
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'wagwoord-vergeet', loadComponent: () => import('./components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },

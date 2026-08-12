@@ -1,41 +1,51 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
 import { SquareStatus } from '../../models/square';
 import { StatusBadgeComponent } from '../shared/status-badge/status-badge.component';
 import { ImageLightboxComponent } from '../shared/image-lightbox/image-lightbox.component';
 import { ShareButtonComponent } from '../shared/share-button/share-button.component';
+import { IconComponent } from '../shared/icon/icon.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
+
+const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
 
 @Component({
   selector: 'app-my-squares',
   standalone: true,
-  imports: [CommonModule, RouterLink, StatusBadgeComponent, ImageLightboxComponent, ShareButtonComponent],
+  imports: [CommonModule, RouterLink, StatusBadgeComponent, ImageLightboxComponent, ShareButtonComponent, IconComponent],
   template: `
     <div class="container">
       <div class="page-header">
         <p class="eyebrow">My rekening</p>
-        <h2 class="display page-title">My blokke</h2>
+        <h1 class="display page-title">My blokke</h1>
         @if (squares.length > 0) {
           <p class="summary">{{ meterFrase(squares.length) }} geborg: <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
           <div class="header-actions">
-            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien my sertifikate</a>
+            <a routerLink="/my-blokke/sertifikaat" class="btn btn-primary btn-xl cert-link">
+              <app-icon name="award" [size]="22" />
+              Sien my sertifikate
+            </a>
             <app-share-button
               label="Deel my bydrae"
-              [url]="siteUrl"
+              [url]="shareUrl"
               [text]="shareText"
+              [deferShare]="true"
+              [showRevoke]="!!publicShareUrl"
+              (shareRequested)="onShareRequested()"
+              (revokeRequested)="onRevokePublicLink()"
             />
           </div>
         }
       </div>
       @if (squares.length === 0) {
         <div class="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <h3>Jy het nog geen vierkante meter gekoop nie</h3>
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <h2>Jy het nog geen vierkante meter gekoop nie</h2>
           <p>Kies ’n hoeveelheid en ons ken die blokkies aan jou toe. Dit neem net ’n minuut.</p>
-          <a routerLink="/bou" class="btn btn-primary">Bou jou eerste m²</a>
+          <a routerLink="/bou" class="btn btn-primary btn-xl">Bou jou eerste m²</a>
         </div>
       } @else {
         <div class="grid">
@@ -50,7 +60,7 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
                 <div class="sq-badges">
                   @if (sq.imageCount && sq.imageCount > 0) {
                     <span class="image-indicator" title="Vorderingsfoto beskikbaar">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     </span>
                   }
                   <app-status-badge [status]="sq.status"></app-status-badge>
@@ -77,60 +87,99 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
       [squareId]="lightboxSquareId"
       (closed)="closeLightbox()"
     />
+
+    @if (consentOpen) {
+      <div class="prompt-backdrop" (click)="closeConsent()">
+        <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-consent-title" (click)="$event.stopPropagation()">
+          <h3 id="share-consent-title">Deel jou bydrae in die openbaar?</h3>
+          <p>
+            As jy instem, kry jy ’n skakel wat jou voornaam en hoeveel meter jy geborg het wys.
+            Enigeen met die skakel kan dit sien. Jou e-pos en telefoonnommer bly privaat.
+          </p>
+          @if (consentError) {
+            <p class="consent-error">{{ consentError }}</p>
+          }
+          <div class="prompt-actions">
+            <button type="button" class="btn btn-primary" [disabled]="consentBusy" (click)="confirmPublicShare()">Ja, skep my skakel</button>
+            <button type="button" class="btn btn-outline" [disabled]="consentBusy" (click)="shareGeneric()">Nee, deel net die projek</button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
-    .container { padding: 2.5rem 1.5rem 4rem; max-width: 900px; }
-    .page-header { margin-bottom: 2rem; }
+    :host { display: block; }
+    .container { padding: 3rem 1.5rem 5rem; max-width: 1120px; }
+    .page-header { margin-bottom: 2.5rem; }
+    .page-header .eyebrow { font-size: var(--fs-sm); }
     .page-title {
-      font-size: clamp(2.5rem, 6vw, 3.5rem);
-      margin: 0.35rem 0 0.5rem;
-      color: var(--color-text);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      margin: 0.5rem 0 0.75rem;
+      color: var(--ink);
     }
     .summary {
-      font-size: var(--fs-base);
+      font-size: var(--fs-lg);
+      line-height: 1.65;
       color: var(--text-muted);
+      max-width: 40rem;
     }
-    .summary strong { color: var(--color-terracotta); }
+    .summary strong { color: var(--action-strong); }
     .header-actions {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-      margin-top: 0.75rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+      align-items: stretch;
     }
-    .cert-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+    .header-actions .cert-link,
+    .header-actions app-share-button {
+      min-height: var(--tap-large);
+    }
+    .header-actions app-share-button {
+      display: flex;
+    }
+    .header-actions ::ng-deep .share-wrap,
+    .header-actions ::ng-deep .share-btn {
+      flex: 1;
       width: 100%;
-      min-height: var(--tap-min);
+      height: 100%;
+      min-height: var(--tap-large);
     }
-    .btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-sm); min-height: var(--tap-min); }
     .empty-state {
       text-align: center;
-      padding: 4rem 2rem;
+      padding: 4.5rem 2rem;
       background: var(--color-surface);
       border: 2px dashed var(--color-border);
       border-radius: var(--radius);
       color: var(--text-muted);
     }
-    .empty-state svg { stroke: var(--color-sand); margin-bottom: 1rem; }
-    .empty-state h3 {
-      font-family: var(--font-heading);
-      font-size: var(--fs-xl);
-      color: var(--color-text);
-      margin-bottom: 0.375rem;
+    .empty-state svg { stroke: var(--color-sand); margin-bottom: 1.25rem; }
+    .empty-state h2 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      color: var(--ink);
+      margin-bottom: 0.75rem;
     }
-    .empty-state p { font-size: var(--fs-base); margin-bottom: 1.25rem; }
+    .empty-state p {
+      font-size: var(--fs-lg);
+      line-height: 1.65;
+      max-width: 28rem;
+      margin: 0 auto 1.75rem;
+    }
+    .empty-state .btn-xl { max-width: 22rem; margin: 0 auto; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    @media (min-width: 800px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
     }
     .sq-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
-      padding: 1rem 1.25rem;
+      padding: 1.75rem 2rem;
+      box-shadow: var(--shadow-sm);
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .sq-card:hover {
@@ -141,12 +190,14 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.625rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
     }
     .sq-badges {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     .image-indicator {
       display: flex;
@@ -159,48 +210,99 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
       border-color: var(--color-terracotta);
     }
     .sq-id {
-      font-family: var(--font-heading);
-      font-weight: 600;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--fs-2xl);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    :host ::ng-deep .status-badge {
       font-size: var(--fs-base);
-      color: var(--color-text);
+      padding: 0.5rem 1.1rem;
     }
     .sq-progress { margin-top: 0.25rem; }
     .progress-bar {
-      height: 4px;
+      height: 0.85rem;
       background: var(--color-sand-light);
       border-radius: 2px;
       overflow: hidden;
     }
     .progress-fill {
       height: 100%;
+      min-width: 0.25rem;
       background: var(--color-olive);
       border-radius: 2px;
       transition: width 0.4s ease;
     }
     .sq-coords {
-      font-size: var(--fs-sm);
+      font-size: var(--fs-base);
+      line-height: 1.5;
       color: var(--text-muted);
-      margin-top: 0.5rem;
-      font-family: monospace;
+      margin-top: 0.85rem;
+      font-variant-numeric: tabular-nums;
     }
-    @media (max-width: 480px) {
-      .grid { grid-template-columns: 1fr; }
-      .header-actions { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .header-actions { grid-template-columns: 1fr; max-width: none; }
+    }
+    .prompt-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(61, 43, 31, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 1000;
+    }
+    .prompt-dialog {
+      width: min(100%, 36rem);
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      padding: 2.25rem;
+      box-shadow: var(--shadow);
+    }
+    .prompt-dialog h3 {
+      font-family: var(--font-heading);
+      font-size: var(--fs-2xl);
+      margin: 0 0 1rem;
+    }
+    .prompt-dialog p {
+      color: var(--text-muted);
+      font-size: var(--fs-lg);
+      line-height: 1.65;
+      margin-bottom: 0.75rem;
+    }
+    .consent-error { color: #b33; }
+    .prompt-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
     }
   `]
 })
 export class MySquaresComponent implements OnInit {
+  @ViewChild(ShareButtonComponent) shareBtn?: ShareButtonComponent;
   private purchase = inject(PurchaseService);
   squares: { id: number; status: SquareStatus; imageCount?: number }[] = [];
   totalSpent = 0;
   lightboxOpen = false;
   lightboxSquareId: number | null = null;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  publicShareUrl: string | null = null;
+  consentOpen = false;
+  consentBusy = false;
+  consentError = '';
   readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
 
   get shareText(): string {
     return `Ek het ${meterFrase(this.squares.length)} geborg op Diamant Laan!`;
+  }
+
+  get shareUrl(): string {
+    return this.publicShareUrl || this.siteUrl;
   }
 
   ngOnInit() {
@@ -213,6 +315,93 @@ export class MySquaresComponent implements OnInit {
       next: summary => this.totalSpent = summary.totalSpent,
       error: () => this.totalSpent = this.squares.length * 500
     });
+  }
+
+  onShareRequested() {
+    if (this.publicShareUrl) {
+      void this.shareBtn?.performShare(this.publicShareUrl);
+      return;
+    }
+    this.purchase.getShareLink().subscribe({
+      next: dto => {
+        this.publicShareUrl = this.publicUrlFromDto(dto);
+        this.clearDeclinedGenericShare();
+        void this.shareBtn?.performShare(this.publicShareUrl);
+      },
+      error: () => {
+        if (this.declinedGenericShare()) {
+          void this.shareBtn?.performShare(this.siteUrl);
+          return;
+        }
+        this.consentError = '';
+        this.consentOpen = true;
+      }
+    });
+  }
+
+  confirmPublicShare() {
+    this.consentBusy = true;
+    this.consentError = '';
+    this.purchase.createShareLink().subscribe({
+      next: dto => {
+        this.publicShareUrl = this.publicUrlFromDto(dto);
+        this.clearDeclinedGenericShare();
+        this.consentBusy = false;
+        this.consentOpen = false;
+        void this.shareBtn?.performShare(this.publicShareUrl);
+      },
+      error: () => {
+        this.consentBusy = false;
+        this.consentError = 'Die skakel kon nie geskep word nie. Probeer weer.';
+      }
+    });
+  }
+
+  shareGeneric() {
+    this.rememberDeclinedGenericShare();
+    this.consentOpen = false;
+    void this.shareBtn?.performShare(this.siteUrl);
+  }
+
+  closeConsent() {
+    if (this.consentBusy) return;
+    this.consentOpen = false;
+  }
+
+  onRevokePublicLink() {
+    this.purchase.deleteShareLink().subscribe({
+      next: () => {
+        this.publicShareUrl = null;
+        this.clearDeclinedGenericShare();
+      }
+    });
+  }
+
+  private publicUrlFromDto(dto: { url: string; path?: string }): string {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    if (dto.path) return origin + dto.path;
+    try {
+      const parsed = new URL(dto.url);
+      return origin + parsed.pathname;
+    } catch {
+      return dto.url;
+    }
+  }
+
+  private declinedGenericShare(): boolean {
+    try {
+      return localStorage.getItem(SHARE_GENERIC_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private rememberDeclinedGenericShare() {
+    try { localStorage.setItem(SHARE_GENERIC_KEY, '1'); } catch { /* ignore */ }
+  }
+
+  private clearDeclinedGenericShare() {
+    try { localStorage.removeItem(SHARE_GENERIC_KEY); } catch { /* ignore */ }
   }
 
   openImages(sq: { id: number; imageCount?: number }) {

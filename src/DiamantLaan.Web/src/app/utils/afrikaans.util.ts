@@ -30,7 +30,12 @@ export function meterKort(count: number): string {
   return `${count} m²`;
 }
 
+/** A space as the thousands separator, per Afrikaans convention: "2 500". */
+export function nommer(value: number): string {
+  return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 /** Rand with a space as the thousands separator, per Afrikaans convention: "R2 500". */
 export function randBedrag(amount: number): string {
-  return `R${Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
+  return `R${nommer(amount)}`;
 }

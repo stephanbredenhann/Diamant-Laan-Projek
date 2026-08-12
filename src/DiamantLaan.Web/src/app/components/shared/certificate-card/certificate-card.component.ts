@@ -274,7 +274,7 @@ export function formatBlockRanges(ids: number[]): string {
     .toggle-btn {
       padding: 0.5rem 1.25rem;
       border: 1px solid var(--color-border);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       background: var(--color-surface);
       color: var(--color-muted);
       font-size: 0.875rem;

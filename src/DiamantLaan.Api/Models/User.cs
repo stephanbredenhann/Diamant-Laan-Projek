@@ -21,6 +21,11 @@ public class User : IdentityUser
 
     public bool IsAnonymized { get; set; }
     public DateTime? AnonymizedAt { get; set; }
+
+    /// <summary>
+    /// Opaque token for the public /deel/{token} page. Null until the donor opts in.
+    /// </summary>
+    public string? ShareToken { get; set; }
     public string PhoneCountryCode { get; set; } = "+27";
     public ICollection<Square> Squares { get; set; } = new List<Square>();
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();

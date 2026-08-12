@@ -45,7 +45,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           <h2>Kies beskikbare blokkies vir my</h2>
           <p>
             Die stelsel kies outomaties die korrekte aantal beskikbare vierkante meter.
-            Geen zoom, sleep of blokkienommer is nodig nie.
+            Jy hoef geen kaart of blokkienommer te gebruik nie.
           </p>
           @if (besig()) {
             <span class="option-status">Besig...</span>
@@ -68,8 +68,8 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           </div>
           <h2>Kies self op die kaart</h2>
           <p>
-            Maak ’n vereenvoudigde roetekaart oop en kies presies
-            {{ meterFrase(aantal()) }}.
+            Kies eers ’n groep blokke, dan ’n kleiner groep, en dan die
+            {{ meterFrase(aantal()) }} self. Niks om te sleep of te zoem nie.
           </p>
           <span class="option-cta">Maak kaart oop →</span>
         </button>
@@ -225,9 +225,6 @@ export class BouStap2Component implements OnInit {
   }
 
   ekKiesSelf() {
-    // The flag marks this as the wizard's optional step 2 rather than a plain
-    // visit to the map, so leftover session state can never make the standalone
-    // map claim to be part of a build that is already finished.
-    this.router.navigate(['/kaart'], { queryParams: { bou: 1 } });
+    this.router.navigate(['/bou/kaart']);
   }
 }

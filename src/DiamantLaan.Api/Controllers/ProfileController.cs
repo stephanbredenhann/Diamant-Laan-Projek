@@ -162,6 +162,7 @@ public class ProfileController : ControllerBase
         var anonymizedEmail = $"deleted-{user.Id}@anonymized.invalid";
         user.IsAnonymized = true;
         user.AnonymizedAt = DateTime.UtcNow;
+        user.ShareToken = null;
         user.FirstName = "Onaktiewe";
         user.LastName = "rekening";
         user.PhoneNumber = null;

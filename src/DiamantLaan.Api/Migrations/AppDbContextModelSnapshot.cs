@@ -494,6 +494,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ShareToken")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
 
@@ -509,6 +512,9 @@ namespace DiamantLaan.Api.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("ShareToken")
+                        .IsUnique();
 
                     b.ToTable("AspNetUsers", (string)null);
                 });

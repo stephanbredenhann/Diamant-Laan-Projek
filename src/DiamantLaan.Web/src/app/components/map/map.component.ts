@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
@@ -9,44 +9,17 @@ import { AuthService } from '../../services/auth.service';
 import { Square, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
-import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule, BouStepBarComponent],
+  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule],
   template: `
     <div class="map-page">
-      @if (fromWizard) {
-        <div class="wizard-banner">
-          <div class="container">
-            <div class="wizard-banner-top">
-              <div>
-                <p class="eyebrow">Stap 2 van 3 · Opsionele kaart</p>
-                <h1 class="wizard-title">Oewerpad · Kies jou blokkies</h1>
-                <p class="wizard-lead">
-                  Die projekroete is uitgelig. Kies beskikbare blokkies; jy kan enige tyd teruggaan
-                  na outomatiese toekenning.
-                </p>
-              </div>
-              <div class="wizard-actions">
-                <a routerLink="/bou/kies" class="btn btn-outline btn-terug">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-                  </svg>
-                  Gaan terug
-                </a>
-              </div>
-            </div>
-            <app-bou-step-bar [active]="2" />
-          </div>
-        </div>
-      }
       <div class="map-header">
         <div class="container">
           <div class="controls-disclosure">
-            @if (!fromWizard) {
             <div class="map-header-toolbar">
               <div class="view-toggle">
                 <button
@@ -86,10 +59,8 @@ import { blokLabel } from '../../utils/afrikaans.util';
               </button>
             </div>
             <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir ’n spesifieke bloknommer</p>
-            }
-            @if (controlsExpanded() || fromWizard) {
+            @if (controlsExpanded()) {
               <div id="map-pill-controls" class="map-pill-controls-group" role="region" aria-label="Blokke-kies en soek">
-                @if (!fromWizard) {
                 <div class="auto-pick-section">
                   <span class="auto-pick-label">Outomatiese keuse</span>
                   <p class="auto-pick-hint">Kies hoeveel blokke jy wil hê, dan druk die knoppie.</p>
@@ -133,7 +104,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
                     <div class="msg error">{{ pickError() }}</div>
                   }
                 </div>
-                }
                 <div class="search-block-section">
                   <span class="auto-pick-label">Soek ’n spesifieke blok</span>
                   <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek. Klik dan op die blokkie om dit te kies.</p>
@@ -229,36 +199,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
   `,
   styles: [`
     .map-page { padding-bottom: 2rem; }
-    .wizard-banner {
-      background: var(--bg-chalk);
-      border-bottom: 1px solid var(--border-soft);
-      padding: 1.75rem 0 0.5rem;
-    }
-    .wizard-banner-top {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-    .wizard-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.75rem, 4vw, 2.75rem);
-      font-weight: 800;
-      line-height: 1;
-      margin: 0.35rem 0 0.5rem;
-    }
-    .wizard-lead {
-      color: var(--text-muted);
-      max-width: 36rem;
-      font-size: 1.05rem;
-    }
-    .wizard-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.5rem;
-    }
     .map-header {
       background: var(--color-surface);
       border-bottom: 1px solid var(--color-border);
@@ -648,7 +588,6 @@ export class MapComponent implements OnInit {
   private purchase = inject(PurchaseService);
   auth = inject(AuthService);
   private router = inject(Router);
-  private route = inject(ActivatedRoute);
 
   @ViewChild('customCountInput') customCountInput?: ElementRef<HTMLInputElement>;
   @ViewChild('searchBlockInput') searchBlockInput?: ElementRef<HTMLInputElement>;
@@ -670,9 +609,6 @@ export class MapComponent implements OnInit {
   readonly pickPresets = [1, 2, 5, 10] as const;
   private readonly maxBlockId = SEGMENTS[SEGMENTS.length - 1].endId;
   readonly blokLabel = blokLabel;
-  // Set when the donor arrived here from the /bou wizard's "Ek kies self" option,
-  // so checkout() can send them back to the wizard's confirm step instead of /betaal.
-  fromWizard = false;
 
   totalAmount = computed(() => this.selectedIds().size * 500);
   selectedIdsArray = computed(() => Array.from(this.selectedIds()));
@@ -685,23 +621,6 @@ export class MapComponent implements OnInit {
     this.road.getSquares().subscribe(data => this.squares = data);
     if (this.auth.currentUser()) {
       this.purchase.getMySquares().subscribe(s => this.mySquareIds.set(s.map(x => x.id)));
-    }
-
-    // Pre-apply the count chosen in the /bou wizard's step 1, so a donor who
-    // picked "Ek kies self" doesn't have to re-enter it here.
-    const n = this.purchase.bouAantal;
-    if (n !== null && this.route.snapshot.queryParamMap.has('bou')) {
-      this.fromWizard = true;
-      this.controlsExpanded.set(true);
-      // Picking is about what is still free, so start on the availability layer
-      // rather than the build-progress one.
-      this.viewMode.set('availability');
-      if ((this.pickPresets as readonly number[]).includes(n)) {
-        this.setPreset(n as 1 | 2 | 5 | 10);
-      } else {
-        this.setCustomMode();
-        this.customCount = n;
-      }
     }
   }
 
@@ -823,8 +742,6 @@ export class MapComponent implements OnInit {
     if (this.selectedIds().size === 0) return;
     const ids = Array.from(this.selectedIds());
     this.purchase.pendingSquareIds = ids;
-    // A wizard visitor lands back on the wizard's confirm step; everyone else
-    // keeps the existing /betaal destination (which now itself redirects there).
-    this.router.navigate([this.fromWizard ? '/bou/bevestig' : '/betaal']);
+    this.router.navigate(['/bou/bevestig']);
   }
 }

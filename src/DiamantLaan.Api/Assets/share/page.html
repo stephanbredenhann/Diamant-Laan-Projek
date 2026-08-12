@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="af">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <meta name="description" content="{{DESCRIPTION}}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="{{DESCRIPTION}}">
+  <meta property="og:locale" content="af_ZA">
+  <meta property="og:url" content="{{PAGE_URL}}">
+  <meta property="og:image" content="{{IMAGE_URL}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #F58220;
+      --orange-strong: #B85A08;
+      --ink: #1A1A1A;
+      --muted: #55606E;
+      --cream: #FDF8F0;
+      --surface: #FFFFFF;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: "Source Sans 3", "Source Sans Pro", sans-serif;
+      font-size: 1.125rem;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    h1 {
+      font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.25rem, 6vw, 3.25rem);
+      line-height: 1.1;
+      margin: 0 0 1.25rem;
+    }
+    img.card {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--orange-strong);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      border-radius: 4px;
+    }
+    .btn:hover { background: #9E4A00; }
+    .home {
+      display: block;
+      margin-top: 1.25rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>{{HEADING}}</h1>
+    <img class="card" src="{{IMAGE_URL}}" width="1200" height="630" alt="{{HEADING}}">
+    <a class="btn" href="{{BOU_URL}}">Borg ook ’n vierkante meter</a>
+    <a class="home" href="{{HOME_URL}}">Terug na Diamant Laan</a>
+  </main>
+</body>
+</html>
