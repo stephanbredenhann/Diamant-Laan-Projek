@@ -5,17 +5,12 @@ import { Subject, catchError, filter, of, switchMap, takeUntil, tap } from 'rxjs
 import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
 import { randBedrag } from '../../utils/afrikaans.util';
-
-interface AmountCard {
-  meters: number | null;
-  title: string;
-  subtitle: string;
-}
+import { IconComponent, IconName } from '../shared/icon/icon.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, IconComponent],
   template: `
     <section class="hero">
       <img src="diamant_laan_foto.jpg" alt="Diamantlaan wat van grondpad na teerpad verander" class="hero-img" />
@@ -36,7 +31,6 @@ interface AmountCard {
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
-          <a routerLink="/hoe-dit-werk" class="hero-quiet">Kyk hoe dit werk</a>
         </div>
         <ul class="reassurance">
           <li>Geen rekening nodig</li>
@@ -48,20 +42,26 @@ interface AmountCard {
       @if (showStatsSection) {
         <div class="hero-stat-float" id="stats-section">
           <div class="stat-dark">
-            <strong class="tabular">{{ fundedMeters }} m²</strong>
+            <strong class="tabular">{{ fundedMeters }}<span class="stat-doel">/{{ totalSquares }} m²</span></strong>
             <span>Reeds gefinansier</span>
           </div>
           @if (showTotalRaised) {
             <div class="stat-orange">
-              <strong class="tabular">{{ randBedrag(totalRaised) }}</strong>
+              <strong class="tabular">{{ randBedrag(totalRaised) }}<span class="stat-doel">/{{ randBedrag(randDoel) }}</span></strong>
               <span>Ingesamel</span>
             </div>
           }
         </div>
       }
+
+      <button type="button" class="scroll-cue" (click)="rolAf()" aria-label="Rol af vir meer">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
     </section>
 
-    <section class="section">
+    <section class="section" id="waarom">
       <div class="container-wide why-grid">
         <div>
           <p class="eyebrow">Waarom hierdie projek</p>
@@ -93,48 +93,28 @@ interface AmountCard {
       </div>
     </section>
 
-    <section class="section chalk">
+    <section class="section chalk" id="hoe-dit-werk">
       <div class="container-wide">
-        <p class="eyebrow">Vier eenvoudige stappe</p>
-        <h2 class="display section-title">Verstaan elke stap voordat jy begin.</h2>
-        <p class="lead narrow">
-          Die vloei vra eers hoeveel jy wil bydra. Die kaart verskyn net wanneer jy self ’n presiese plek wil kies.
-        </p>
-        <div class="steps-grid">
-          @for (step of steps; track step.n) {
-            <article class="step-card">
-              <span class="step-n">{{ step.n }}</span>
-              <h3>{{ step.title }}</h3>
-              <p>{{ step.body }}</p>
-            </article>
-          }
-        </div>
-      </div>
-    </section>
+        <p class="eyebrow">Hoe dit werk</p>
+        <h2 class="display section-title">Van bedrag tot sertifikaat.</h2>
+        <p class="lead narrow">Die hele proses neem omtrent twee minute.</p>
 
-    <section class="section">
-      <div class="container-wide">
-        <p class="eyebrow">Kies jou bydrae</p>
-        <h2 class="display section-title">Begin by die bedrag, nie by die kaart nie.</h2>
-        <p class="lead narrow">
-          Elke opsie vertel jou onmiddellik hoeveel vierkante meter jy help finansier.
-        </p>
-        <div class="amount-grid">
-          @for (card of amountCards; track card.title) {
-            <a
-              class="amount-card"
-              [routerLink]="['/bou']"
-              [queryParams]="card.meters ? { aantal: card.meters } : {}"
-            >
-              @if (card.meters) {
-                <span class="display amount-m">{{ card.meters }} m²</span>
-              } @else {
-                <span class="amount-eie">Eie keuse</span>
-              }
-              <strong>{{ card.title }}</strong>
-              <span>{{ card.subtitle }}</span>
-              <em>{{ card.meters ? randBedrag(card.meters * 500) : 'R500 × m²' }}</em>
-            </a>
+        <div class="steps">
+          @for (step of steps; track step.number; let last = $last) {
+            <article class="surface-card step-card">
+              <div class="step-icon">
+                <app-icon [name]="step.icon" [size]="34" />
+                <span class="step-badge" aria-hidden="true">{{ step.number }}</span>
+              </div>
+              <div class="step-body">
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.body }}</p>
+              </div>
+              <span class="display step-ghost" aria-hidden="true">{{ step.number }}</span>
+            </article>
+            @if (!last) {
+              <div class="step-connector" aria-hidden="true">↓</div>
+            }
           }
         </div>
       </div>
@@ -149,7 +129,6 @@ interface AmountCard {
             Die Stadsbouer-belofte word sigbaar vóór betaling. Ondersteuners kan kies hoe hul
             erkenning vertoon moet word.
           </p>
-          <a routerLink="/hoe-dit-werk" class="text-link">Sien alle erkenningsopsies →</a>
         </div>
         <div class="cert-preview surface-card">
           <img src="stadsboufonds-logo-orange.png" alt="" width="64" height="64" />
@@ -232,12 +211,6 @@ interface AmountCard {
       margin-bottom: 1.5rem;
     }
     .hero-cta { width: auto; box-shadow: var(--shadow-cta); }
-    .hero-quiet {
-      color: rgba(255,255,255,0.85);
-      font-weight: 700;
-      text-decoration: none;
-    }
-    .hero-quiet:hover { color: #fff; text-decoration: underline; }
     .reassurance {
       display: flex;
       flex-wrap: wrap;
@@ -274,6 +247,14 @@ interface AmountCard {
       font-weight: 800;
       line-height: 1;
     }
+    .stat-dark strong span.stat-doel, .stat-orange strong span.stat-doel {
+      display: inline;
+      font-size: 1.1rem;
+      margin: 0;
+      opacity: 0.7;
+      text-transform: none;
+      letter-spacing: 0;
+    }
     .stat-dark span, .stat-orange span {
       display: block;
       margin-top: 0.35rem;
@@ -282,6 +263,31 @@ interface AmountCard {
       letter-spacing: 0.12em;
       text-transform: uppercase;
       opacity: 0.75;
+    }
+
+    .scroll-cue {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      background: rgba(0, 0, 0, 0.35);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 999px;
+      color: #fff;
+      width: 3.25rem;
+      height: 3.25rem;
+      min-height: 0;
+      padding: 0;
+      animation: cue-bob 1.8s ease-in-out infinite;
+    }
+    .scroll-cue:hover { background: rgba(0, 0, 0, 0.55); border-color: #fff; }
+    @keyframes cue-bob {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, 8px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-cue { animation: none; }
     }
 
     .section { padding: 5rem 0; }
@@ -350,80 +356,74 @@ interface AmountCard {
       color: var(--text-muted);
     }
 
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-    .step-card {
-      background: var(--surface);
-      border: 1px solid var(--border-soft);
-      padding: 1.5rem;
-      min-height: 14rem;
-    }
-    .step-n {
-      font-family: var(--font-display);
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: var(--action);
-      line-height: 1;
-      display: block;
-      margin-bottom: 1.5rem;
-    }
-    .step-card h3 {
-      font-family: var(--font-display);
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
-    }
-    .step-card p { color: var(--text-muted); font-size: 1rem; }
-
-    .amount-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-    .amount-card {
+    .steps {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      padding: 1.5rem;
+      gap: 0;
+      max-width: 52rem;
+      margin: 2rem auto 0;
+    }
+    .step-card {
+      display: grid;
+      gap: 1.25rem;
+      align-items: center;
+      padding: 1.75rem;
+    }
+    @media (min-width: 700px) {
+      .step-card {
+        grid-template-columns: 5.5rem 1fr auto;
+        padding: 2rem;
+      }
+    }
+    .step-icon {
+      position: relative;
+      width: 5rem;
+      height: 5rem;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--action);
       background: var(--surface);
-      border: 2px solid var(--border-soft);
-      text-decoration: none;
-      color: var(--ink);
-      min-height: 12rem;
-      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      color: var(--action-strong);
     }
-    .amount-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--action);
-      box-shadow: var(--shadow-cta);
-      text-decoration: none;
+    .step-badge {
+      position: absolute;
+      top: -0.65rem;
+      right: -0.65rem;
+      background: var(--tar);
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.2rem 0.55rem;
+    }
+    .step-body h3 {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      margin: 0 0 0.5rem;
       color: var(--ink);
     }
-    .amount-m {
-      font-size: 3rem;
+    .step-body p {
+      margin: 0;
+      color: var(--text-muted);
+      line-height: 1.55;
+      max-width: 36rem;
+    }
+    .step-ghost {
+      font-size: 3.5rem;
+      color: color-mix(in srgb, var(--action) 18%, transparent);
+      line-height: 1;
+      display: none;
+    }
+    @media (min-width: 700px) {
+      .step-ghost { display: block; }
+    }
+    .step-connector {
+      text-align: center;
       color: var(--action);
-      line-height: 0.9;
-    }
-    .amount-eie {
-      font-family: var(--font-display);
-      font-size: 1.75rem;
-      font-weight: 800;
-    }
-    .amount-card strong {
-      font-family: var(--font-display);
-      font-size: 1.2rem;
-    }
-    .amount-card span { color: var(--text-muted); font-size: 0.95rem; }
-    .amount-card em {
-      margin-top: auto;
-      font-style: normal;
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: 1.35rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      padding: 0.35rem 0;
     }
 
     .recog-grid {
@@ -486,7 +486,6 @@ interface AmountCard {
 
     @media (max-width: 960px) {
       .why-grid, .recog-grid { grid-template-columns: 1fr; }
-      .steps-grid, .amount-grid { grid-template-columns: 1fr 1fr; }
       .hero-stat-float {
         position: static;
         margin: 1.5rem 1.5rem 0;
@@ -495,7 +494,7 @@ interface AmountCard {
       .hero { align-items: flex-start; padding-top: 5rem; flex-direction: column; }
     }
     @media (max-width: 560px) {
-      .steps-grid, .amount-grid, .feature-pair { grid-template-columns: 1fr; }
+      .feature-pair { grid-template-columns: 1fr; }
       .hero-stat-float { flex-direction: column; }
     }
   `]
@@ -509,25 +508,46 @@ export class HomeComponent implements OnInit, OnDestroy {
   showTotalRaised = true;
   progress = 0;
   totalRaised = 0;
+  fundedMeters = 0;
+  /** The whole road is saleable; 4200 is only a fallback until /stats answers. */
+  totalSquares = 4200;
 
   readonly randBedrag = randBedrag;
 
-  readonly amountCards: AmountCard[] = [
-    { meters: 1, title: 'Een vierkante meter', subtitle: 'Word ’n Stadsbouer' },
-    { meters: 2, title: 'Twee vierkante meter', subtitle: 'Bou saam as ’n gesin' },
-    { meters: 5, title: 'Vyf vierkante meter', subtitle: 'Maak ’n groter merk' },
-    { meters: null, title: 'Kies enige hoeveelheid', subtitle: 'Vir groter bydraes en ondernemings' },
+  /** Rand goal follows the square count, so R500/m² stays the single source. */
+  get randDoel(): number {
+    return this.totalSquares * 500;
+  }
+
+  readonly steps: { number: string; icon: IconName; title: string; body: string }[] = [
+    {
+      number: '01',
+      icon: 'ruler',
+      title: 'Kies jou hoeveelheid',
+      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik — R500 per m².',
+    },
+    {
+      number: '02',
+      icon: 'map-pin',
+      title: 'Ons ken die blokkies toe',
+      body: 'Ons kies beskikbare blokkies vir jou. Wil jy self ’n plek kies, kan jy die kaart oopmaak.',
+    },
+    {
+      number: '03',
+      icon: 'shield',
+      title: 'Betaal veilig deur PayFast',
+      body: 'Jy sien jou totaal, betaal by PayFast en kom terug na die webwerf. Jy hoef nie ’n rekening te hê nie.',
+    },
+    {
+      number: '04',
+      icon: 'award',
+      title: 'Kry jou sertifikaat',
+      body: 'Laai jou Stadsbouer-sertifikaat af. Skep ’n rekening om later die werk op jou stuk pad te volg.',
+    },
   ];
 
-  readonly steps = [
-    { n: '01', title: 'Kies hoeveel jy wil bou', body: 'Kies 1, 2, 5 of enige ander aantal vierkante meter teen R500 per m².' },
-    { n: '02', title: 'Laat ons kies—of kies self', body: 'Ons kan beskikbare blokkies onmiddellik toeken. Die detailkaart bly ’n opsionele keuse.' },
-    { n: '03', title: 'Betaal veilig', body: 'Voltooi die bydrae as ’n gas. Geen rekening is nodig voor betaling nie.' },
-    { n: '04', title: 'Word ’n Stadsbouer', body: 'Ontvang erkenning, volg die projek en sien hoe die meter waartoe jy bygedra het vorder.' },
-  ];
-
-  get fundedMeters(): number {
-    return Math.round(this.totalRaised / 500);
+  rolAf() {
+    document.getElementById('waarom')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   ngOnInit() {
@@ -540,13 +560,15 @@ export class HomeComponent implements OnInit, OnDestroy {
         }),
         filter(settings => settings.showStatsSection),
         switchMap(() => this.road.getStats().pipe(
-          catchError(() => of({ progress: 0, totalRaised: 0 }))
+          catchError(() => of({ progress: 0, totalRaised: 0, fundedSquares: 0, totalSquares: this.totalSquares }))
         )),
         takeUntil(this.destroy$)
       )
       .subscribe(stats => {
         this.progress = stats.progress;
         this.totalRaised = stats.totalRaised;
+        this.fundedMeters = stats.fundedSquares;
+        if (stats.totalSquares) this.totalSquares = stats.totalSquares;
       });
   }
 

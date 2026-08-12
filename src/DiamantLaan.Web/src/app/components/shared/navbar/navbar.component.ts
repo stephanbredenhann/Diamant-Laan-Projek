@@ -27,7 +27,7 @@ import { AuthService } from '../../../services/auth.service';
 
         <div class="navbar-links" [class.open]="menuOpen()">
           <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">Die projek</a>
-          <a routerLink="/hoe-dit-werk" routerLinkActive="active" (click)="menuOpen.set(false)">Hoe dit werk</a>
+          <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">Hoe dit werk</a>
           <a routerLink="/vordering" routerLinkActive="active" (click)="menuOpen.set(false)">Vordering</a>
           <a routerLink="/vrae" routerLinkActive="active" (click)="menuOpen.set(false)">Vrae</a>
           @if (auth.currentUser(); as user) {

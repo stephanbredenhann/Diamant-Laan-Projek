@@ -24,7 +24,7 @@ import { filter } from 'rxjs';
           <div>
             <p class="footer-heading">Verken</p>
             <a routerLink="/projek">Die projek</a>
-            <a routerLink="/hoe-dit-werk">Hoe dit werk</a>
+            <a routerLink="/" fragment="hoe-dit-werk">Hoe dit werk</a>
             <a routerLink="/vordering">Vordering</a>
             <a routerLink="/vrae">Vrae</a>
           </div>

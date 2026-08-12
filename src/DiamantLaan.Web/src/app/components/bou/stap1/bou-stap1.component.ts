@@ -27,10 +27,9 @@ const MAX_EIE = 50;
             of self die detailkaart oopmaak.
           </p>
         </div>
-        <a routerLink="/" class="back-home">← Terug na tuis</a>
       </div>
 
-      <app-bou-step-bar [active]="1" />
+      <app-bou-step-bar [active]="1" [nextEnabled]="kanGaanVoort()" />
 
       <div class="layout">
         <div>
@@ -96,6 +95,12 @@ const MAX_EIE = 50;
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </button>
+          <a routerLink="/" class="btn btn-outline btn-terug">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Gaan terug
+          </a>
         </aside>
       </div>
     </div>
@@ -107,14 +112,6 @@ const MAX_EIE = 50;
       justify-content: space-between;
       gap: 1rem;
       align-items: flex-start;
-    }
-    .back-home {
-      font-weight: 700;
-      color: var(--route-blue);
-      text-decoration: none;
-      min-height: var(--tap-min);
-      display: inline-flex;
-      align-items: center;
     }
     .layout {
       display: grid;
@@ -172,11 +169,11 @@ const MAX_EIE = 50;
       color: var(--ink);
       margin-top: auto;
     }
-    .choice-eie { grid-column: span 2; }
     .choice-eie-label {
       font-family: var(--font-display);
-      font-size: 1.75rem;
+      font-size: 2.5rem;
       font-weight: 800;
+      line-height: 0.95;
       color: var(--ink);
     }
     .eie-panel {
@@ -232,6 +229,17 @@ const MAX_EIE = 50;
       font-size: 1rem;
     }
     .summary-card .btn-primary { width: 100%; }
+    /* The card sits on --tar, so the blue outline would fall below AA there. */
+    .summary-card .btn-terug {
+      margin-top: 0.75rem;
+      width: 100%;
+      border-color: rgba(255, 255, 255, 0.55);
+      color: #fff;
+    }
+    .summary-card .btn-terug:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; }
       .summary-card { position: static; }

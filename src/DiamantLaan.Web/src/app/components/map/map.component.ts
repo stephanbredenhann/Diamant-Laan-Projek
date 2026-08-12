@@ -31,8 +31,12 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 </p>
               </div>
               <div class="wizard-actions">
-                <a routerLink="/bou/kies" class="btn btn-outline">← Kies vir my</a>
-                <a routerLink="/bou" class="back-qty">Terug na hoeveelheid</a>
+                <a routerLink="/bou/kies" class="btn btn-outline btn-terug">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                  </svg>
+                  Gaan terug
+                </a>
               </div>
             </div>
             <app-bou-step-bar [active]="2" />
@@ -254,11 +258,6 @@ import { blokLabel } from '../../utils/afrikaans.util';
       flex-direction: column;
       align-items: flex-end;
       gap: 0.5rem;
-    }
-    .back-qty {
-      font-weight: 700;
-      color: var(--route-blue);
-      text-decoration: none;
     }
     .map-header {
       background: var(--color-surface);

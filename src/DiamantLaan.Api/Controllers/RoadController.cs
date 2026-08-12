@@ -73,12 +73,11 @@ public class RoadController : ControllerBase
     .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
     .SumAsync(p => (double?)p.Amount) ?? 0;
 
-        // Only squares inside the saleable range can ever be funded, so the funding
-        // percentage is measured against those rather than against every seeded row.
+        // Every square may be sold — the MinPickId floor only limits which ones we
+        // hand out automatically — so the funded count spans the whole road.
         var saleableTotal = await _db.Squares
             .CountAsync(s => s.Id >= MinPickId && s.Id <= MaxSaleableId);
-        var fundedSquares = await _db.Squares
-            .CountAsync(s => s.OwnerId != null && s.Id >= MinPickId && s.Id <= MaxSaleableId);
+        var fundedSquares = await _db.Squares.CountAsync(s => s.OwnerId != null);
 
         var byPhase = await _db.Squares
             .GroupBy(s => s.Status)

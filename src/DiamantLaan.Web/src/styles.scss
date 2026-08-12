@@ -107,6 +107,16 @@
   padding: 0;
 }
 
+html {
+  /* Covers both the router's anchorScrolling and any scrollIntoView call. */
+  scroll-behavior: smooth;
+  /* Keep the sticky navbar off the top of whatever section we land on. */
+  scroll-padding-top: 5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 body {
   font-family: var(--font-body);
   font-size: var(--fs-base);
@@ -215,6 +225,14 @@ button, .btn {
 .btn-outline:hover {
   background: rgba(3, 78, 162, 0.08);
   color: var(--accent-hover);
+}
+
+/* Wizard "Gaan terug" — same weight and geometry as the primary action so it is
+   easy to hit, but outlined so "Gaan voort" stays the obvious next move. */
+.btn-terug {
+  font-size: var(--fs-xl);
+  min-height: var(--tap-large);
+  padding: 1rem 2.5rem;
 }
 
 .btn-success {

@@ -6,7 +6,8 @@ import { adminGuard } from './guards/admin.guard';
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent) },
   { path: 'projek', loadComponent: () => import('./components/projek/projek.component').then(m => m.ProjekComponent) },
-  { path: 'hoe-dit-werk', loadComponent: () => import('./components/hoe-dit-werk/hoe-dit-werk.component').then(m => m.HoeDitWerkComponent) },
+  // The page folded into the landing page; old bookmarks still land somewhere sane.
+  { path: 'hoe-dit-werk', redirectTo: '/', pathMatch: 'full' },
   { path: 'vordering', loadComponent: () => import('./components/vordering/vordering.component').then(m => m.VorderingComponent) },
   { path: 'vrae', loadComponent: () => import('./components/vrae/vrae.component').then(m => m.VraeComponent) },
   { path: 'kaart', loadComponent: () => import('./components/map/map.component').then(m => m.MapComponent) },

@@ -25,7 +25,6 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
             Ons kan beskikbare blokkies onmiddellik toeken, of jy kan self die detailkaart oopmaak.
           </p>
         </div>
-        <a routerLink="/bou" class="back-link">← Terug na hoeveelheid</a>
       </div>
 
       <app-bou-step-bar [active]="2" />
@@ -79,6 +78,15 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
       @if (fout()) {
         <p class="error-alert">{{ fout() }}</p>
       }
+
+      <div class="terug-row">
+        <a routerLink="/bou" class="btn btn-outline btn-terug">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Gaan terug
+        </a>
+      </div>
     </div>
   `,
   styles: [`
@@ -89,14 +97,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
       gap: 1rem;
       align-items: flex-start;
     }
-    .back-link {
-      font-weight: 700;
-      color: var(--route-blue);
-      text-decoration: none;
-      min-height: var(--tap-min);
-      display: inline-flex;
-      align-items: center;
-    }
+    .terug-row { margin-top: 2rem; }
     .options {
       display: grid;
       gap: 1rem;

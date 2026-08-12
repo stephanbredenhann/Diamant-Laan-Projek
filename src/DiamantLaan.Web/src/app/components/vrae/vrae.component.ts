@@ -37,6 +37,17 @@ interface FaqItem {
             </details>
           }
         </div>
+
+        <div class="vra-ons surface-card">
+          <h3 class="display">Het jy enige ander vrae vir ons?</h3>
+          <p>Stuur gerus ’n e-pos. Ons help graag.</p>
+          <a href="mailto:inligting&#64;orania.co.za" class="btn btn-primary btn-terug">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
+            </svg>
+            inligting&#64;orania.co.za
+          </a>
+        </div>
       </div>
     </section>
 
@@ -146,6 +157,25 @@ interface FaqItem {
       font-size: var(--fs-base);
       line-height: 1.65;
     }
+
+    .vra-ons {
+      margin-top: 2.5rem;
+      padding: 2rem;
+      text-align: center;
+      border-top: 4px solid var(--action);
+    }
+    .vra-ons h3 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      margin: 0 0 0.5rem;
+      color: var(--ink);
+    }
+    .vra-ons p {
+      margin: 0 0 1.5rem;
+      color: var(--text-muted);
+      font-size: var(--fs-lg);
+    }
+    /* Long address must not blow out the button on a narrow phone. */
+    .vra-ons .btn { max-width: 100%; word-break: break-word; }
 
     .cta-inner {
       display: flex;
