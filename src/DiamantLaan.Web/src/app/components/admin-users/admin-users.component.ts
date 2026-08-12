@@ -159,7 +159,7 @@ interface Buyer {
             Dit lyk of hierdie gebruiker se sertifikaat baie lank gaan wees. Sal jy ’n korter weergawe verkies?
           </p>
           <p class="prompt-hint">
-            Die korter weergawe wys net die totaal bestee en aantal blokke — nie elke blok afsonderlik nie.
+            Die korter weergawe wys net die totaal bestee en aantal blokke, nie elke blok afsonderlik nie.
           </p>
           <div class="prompt-actions">
             <button type="button" class="btn btn-primary" [disabled]="!!downloadingUserId" (click)="downloadPdf('short')">Ja, korter weergawe</button>

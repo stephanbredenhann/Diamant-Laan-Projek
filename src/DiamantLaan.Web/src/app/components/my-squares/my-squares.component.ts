@@ -19,7 +19,7 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
         <p class="eyebrow">My rekening</p>
         <h2 class="display page-title">My blokke</h2>
         @if (squares.length > 0) {
-          <p class="summary">{{ meterFrase(squares.length) }} geborg — <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
+          <p class="summary">{{ meterFrase(squares.length) }} geborg: <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
           <div class="header-actions">
             <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien my sertifikate</a>
             <app-share-button

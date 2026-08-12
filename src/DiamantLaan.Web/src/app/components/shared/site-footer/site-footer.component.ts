@@ -19,7 +19,7 @@ import { filter } from 'rxjs';
                 <strong>Stadsboufonds</strong>
               </span>
             </a>
-            <p>Help Diamantlaan teer — een vierkante meter op ’n slag.</p>
+            <p>Help Oewerpad teer, een vierkante meter op ’n slag.</p>
           </div>
           <div>
             <p class="footer-heading">Verken</p>

@@ -70,7 +70,7 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
             <h2>Is jy seker?</h2>
             <p class="lead">
               Sonder ’n rekening kan ons nie jou vierkante meter aan jou koppel nie. Jy sal nie kan sien
-              wanneer dit geteer word nie, en jou sertifikaat kan net nóú afgelaai word — daarna nie weer nie.
+              wanneer dit geteer word nie, en jou sertifikaat kan net nóú afgelaai word, daarna nie weer nie.
             </p>
             <p class="muted">Jou bydrae bly natuurlik staan, dit gaan nie verlore nie.</p>
             <div class="actions">

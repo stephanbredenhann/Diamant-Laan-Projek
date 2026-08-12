@@ -24,7 +24,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
             <div class="wizard-banner-top">
               <div>
                 <p class="eyebrow">Stap 2 van 3 · Opsionele kaart</p>
-                <h1 class="wizard-title">Diamantlaan · Kies jou blokkies</h1>
+                <h1 class="wizard-title">Oewerpad · Kies jou blokkies</h1>
                 <p class="wizard-lead">
                   Die projekroete is uitgelig. Kies beskikbare blokkies; jy kan enige tyd teruggaan
                   na outomatiese toekenning.

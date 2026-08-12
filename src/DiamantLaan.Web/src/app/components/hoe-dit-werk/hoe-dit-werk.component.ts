@@ -11,11 +11,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Hoe dit werk · Diamantlaan-teerprojek</p>
+        <p class="eyebrow page-hero-eyebrow">Hoe dit werk · Oewerpad-teerprojek</p>
         <h1 class="display page-hero-title">Vier stappe. Geen kaartkennis nodig nie.</h1>
         <p class="page-hero-body">
           Kies hoeveel vierkante meter jy wil finansier, betaal, en kry jou sertifikaat.
-          Jy hoef nie met die kaart te werk nie — ons ken die blokkies vir jou toe.
+          Jy hoef nie met die kaart te werk nie, ons ken die blokkies vir jou toe.
         </p>
       </div>
     </section>
@@ -62,7 +62,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           <p class="eyebrow optional-eyebrow">Opsioneel</p>
           <h2 class="display route-title">Kies self op die kaart.</h2>
           <p>
-            Wil jy ’n spesifieke blokkie hê — langs ’n bekende punt, of naby mekaar as ’n gesin?
+            Wil jy ’n spesifieke blokkie hê, langs ’n bekende punt, of naby mekaar as ’n gesin?
             Maak die kaart oop en soek die bloknommer. Jou hoeveelheid is reeds ingevul.
           </p>
         </article>
@@ -75,7 +75,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           <span class="after-icon"><app-icon name="award" [size]="30" /></span>
           <h3>Stadsbouer-erkenning</h3>
           <p>
-            Persoon, gesin, onderneming of privaat — onderhewig aan die finale projekbeleid.
+            Persoon, gesin, onderneming of privaat, onderhewig aan die finale projekbeleid.
             Ná betaling ontvang jy erkenning as Stadsbouer.
           </p>
         </article>
@@ -335,7 +335,7 @@ export class HoeDitWerkComponent {
       number: '01',
       icon: 'ruler',
       title: 'Kies jou hoeveelheid',
-      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik — R500 per m².',
+      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik: R500 per m².',
     },
     {
       number: '02',

@@ -323,7 +323,7 @@ export class BouStap1Component implements OnInit {
     if (!Number.isFinite(n) || n < 1) {
       this.eieFout.set('Voer ’n geldige aantal in.');
     } else if (n > this.maxEie) {
-      this.eieFout.set(`Maksimum ${this.maxEie} vierkante meter op hierdie skerm — kies self op die kaart vir meer.`);
+      this.eieFout.set(`Maksimum ${this.maxEie} vierkante meter op hierdie skerm. Kies self op die kaart vir meer.`);
     } else {
       this.eieFout.set(null);
     }

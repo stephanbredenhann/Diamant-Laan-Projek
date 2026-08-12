@@ -15,7 +15,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Vordering · Diamantlaan-teerprojek</p>
+        <p class="eyebrow page-hero-eyebrow">Vordering · Oewerpad-teerprojek</p>
         <h1 class="display page-hero-title">Hoe ver is ons?</h1>
         <p class="page-hero-body">
           Hier wys ons twee dinge: hoeveel geld reeds ingesamel is, en hoeveel van die pad
@@ -118,7 +118,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
         <p class="phase-note">
           Sodra werk op jou eie blokkies begin, sien jy dit onder
-          <a routerLink="/my-blokke">My blokke</a> — met foto’s van die werk waar dit beskikbaar is.
+          <a routerLink="/my-blokke">My blokke</a>, met foto’s van die werk waar dit beskikbaar is.
         </p>
       </div>
     </section>

@@ -11,10 +11,10 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Die projek · Diamantlaan-teerprojek</p>
+        <p class="eyebrow page-hero-eyebrow">Die projek · Oewerpad-teerprojek</p>
         <h1 class="display page-hero-title">Wat ons bou, en hoe dit werk.</h1>
         <p class="page-hero-body">
-          Diamantlaan is vandag ’n grondpad. Ons teer dit stuk vir stuk, en elke vierkante
+          Oewerpad is vandag ’n grondpad. Ons teer dit stuk vir stuk, en elke vierkante
           meter word deur ’n ondersteuner gefinansier.
         </p>
       </div>
@@ -23,12 +23,12 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
     <section class="section chalk">
       <div class="container-wide why-grid">
         <div>
-          <p class="eyebrow">Waarom Diamantlaan</p>
+          <p class="eyebrow">Waarom Oewerpad</p>
           <h2 class="display section-title">Van grondpad na teerpad.</h2>
           <p class="lead">
             ’n Grondpad word stof in die somer en modder in die reën, en dit kos elke jaar geld
             om te herstel. Teer los dit permanent op. Deur die werk in vierkante meter op te deel,
-            kan enigiemand ’n stuk daarvan finansier — en presies sien waar dit is.
+            kan enigiemand ’n stuk daarvan finansier, en presies sien waar dit is.
           </p>
 
           <div class="scope-grid">
@@ -44,7 +44,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
         <aside class="callout-panel">
           <div class="callout-media">
-            <img src="diamant_laan_foto.jpg" alt="Diamantlaan — grondpad wat teerwerk nodig het" />
+            <img src="diamant_laan_foto.jpg" alt="Oewerpad, grondpad wat teerwerk nodig het" />
             <div class="price-chip">
               <span class="display price-chip-value">R500</span>
               <p>Per volle vierkante meter.</p>
@@ -324,7 +324,7 @@ export class ProjekComponent {
     {
       icon: 'road',
       title: 'Een pad, in blokke verdeel',
-      body: 'Diamantlaan is in vierkante meter opgedeel. Elke blokkie het ’n nommer en ’n plek op die kaart.',
+      body: 'Oewerpad is in vierkante meter opgedeel. Elke blokkie het ’n nommer en ’n plek op die kaart.',
     },
     {
       icon: 'wallet',

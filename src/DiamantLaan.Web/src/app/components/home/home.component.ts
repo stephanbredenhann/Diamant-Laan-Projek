@@ -18,16 +18,16 @@ interface AmountCard {
   imports: [CommonModule, RouterLink],
   template: `
     <section class="hero">
-      <img src="diamant_laan_foto.jpg" alt="Diamantlaan wat van grondpad na teerpad verander" class="hero-img" />
+      <img src="diamant_laan_foto.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">Diamantlaan-teerprojek</p>
+        <p class="eyebrow hero-eyebrow">Oewerpad-teerprojek</p>
         <h1 class="display hero-title">
-          Bou die volgende <span class="accent">meter</span> van Diamantlaan.
+          Bou die volgende <span class="accent">meter</span> van Oewerpad.
         </h1>
         <p class="hero-sub">
           Finansier 1 m² teerpad vir <strong>R500</strong> en ontvang erkenning as ’n Stadsbouer.
-          Ons kan jou blokkie kies—of jy kan self die kaart oopmaak.
+          Ons kan jou blokkie kies, of jy kan self die kaart oopmaak.
         </p>
         <div class="hero-actions">
           <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
@@ -67,7 +67,7 @@ interface AmountCard {
           <p class="eyebrow">Waarom hierdie projek</p>
           <h2 class="display section-title">Nie net ’n donasie nie. ’n Meetbare deel van die pad.</h2>
           <p class="lead">
-            Diamantlaan se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
+            Oewerpad se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
             op te deel, kan elke ondersteuner presies verstaan hoe sy of haar bydrae by die groter
             doel inpas.
           </p>
@@ -156,7 +156,7 @@ interface AmountCard {
           <p class="eyebrow">Erkenning as</p>
           <h3 class="display">STADSBOUER</h3>
           <p class="cert-name">JOU NAAM</p>
-          <p>Vir die finansiering van 1 m² van die Diamantlaan-teerprojek.</p>
+          <p>Vir die finansiering van 1 m² van die Oewerpad-teerprojek.</p>
           <span class="work-stamp stamp">1 m²</span>
         </div>
       </div>
@@ -521,7 +521,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   readonly steps = [
     { n: '01', title: 'Kies hoeveel jy wil bou', body: 'Kies 1, 2, 5 of enige ander aantal vierkante meter teen R500 per m².' },
-    { n: '02', title: 'Laat ons kies—of kies self', body: 'Ons kan beskikbare blokkies onmiddellik toeken. Die detailkaart bly ’n opsionele keuse.' },
+    { n: '02', title: 'Laat ons kies, of kies self', body: 'Ons kan beskikbare blokkies onmiddellik toeken. Die detailkaart bly ’n opsionele keuse.' },
     { n: '03', title: 'Betaal veilig', body: 'Voltooi die bydrae as ’n gas. Geen rekening is nodig voor betaling nie.' },
     { n: '04', title: 'Word ’n Stadsbouer', body: 'Ontvang erkenning, volg die projek en sien hoe die meter waartoe jy bygedra het vorder.' },
   ];
