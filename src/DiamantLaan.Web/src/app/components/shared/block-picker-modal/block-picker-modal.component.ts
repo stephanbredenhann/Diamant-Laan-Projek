@@ -90,13 +90,13 @@ import { blokLabel } from '../../../utils/afrikaans.util';
     }
     .picker-header h3 {
       font-family: var(--font-heading);
-      font-size: 1.125rem;
+      font-size: var(--fs-xl);
       color: var(--color-text);
       margin: 0 0 0.25rem;
     }
     .picker-hint {
-      font-size: 0.8125rem;
-      color: var(--color-muted);
+      font-size: var(--fs-base);
+      color: var(--text-muted);
       margin: 0;
     }
     .picker-search {
@@ -109,11 +109,11 @@ import { blokLabel } from '../../../utils/afrikaans.util';
       flex: 1;
       max-width: 200px;
       padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
     }
     .search-error {
       padding: 0 1.5rem 0.5rem;
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       color: #DC2626;
       margin: 0;
     }
@@ -133,7 +133,7 @@ import { blokLabel } from '../../../utils/afrikaans.util';
       border-top: 1px solid var(--color-border);
     }
     .selection-count {
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
       font-weight: 600;
       color: var(--color-text);
     }
@@ -142,7 +142,7 @@ import { blokLabel } from '../../../utils/afrikaans.util';
       gap: 0.5rem;
       flex-wrap: wrap;
     }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-sm); min-height: var(--tap-min); }
     @media (max-width: 640px) {
       .picker-dialog { max-height: 100vh; border-radius: 0; width: 100%; }
       .picker-map { min-height: 280px; }
@@ -207,7 +207,7 @@ export class BlockPickerModalComponent implements OnInit {
     this.searchError.set(null);
     const id = Math.floor(Number(this.searchBlockNumber));
     if (!Number.isFinite(id) || id < 1 || id > this.maxBlockId) {
-      this.searchError.set("Voer 'n geldige bloknommer in.");
+      this.searchError.set('Voer ’n geldige bloknommer in.');
       setTimeout(() => this.searchInput?.nativeElement.focus());
       return;
     }

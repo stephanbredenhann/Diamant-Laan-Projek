@@ -36,7 +36,7 @@ import { CommonModule } from '@angular/common';
       gap: 0.375rem;
       width: 100%;
     }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-sm); min-height: var(--tap-min); }
     .share-menu {
       position: absolute;
       top: calc(100% + 0.375rem);
@@ -45,17 +45,19 @@ import { CommonModule } from '@angular/common';
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       box-shadow: var(--shadow);
-      min-width: 160px;
+      min-width: 190px;
       z-index: 100;
       overflow: hidden;
     }
     .share-menu a,
     .share-menu button {
-      display: block;
+      display: flex;
+      align-items: center;
       width: 100%;
+      min-height: var(--tap-min);
       padding: 0.625rem 1rem;
       text-align: left;
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       color: var(--color-text);
       background: none;
       border: none;

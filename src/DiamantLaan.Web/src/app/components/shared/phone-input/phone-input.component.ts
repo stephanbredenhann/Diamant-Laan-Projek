@@ -24,6 +24,7 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
         </button>
       </div>
       <input
+        [id]="phoneName"
         type="tel"
         class="phone-number"
         [ngModel]="phoneNumber"
@@ -100,14 +101,14 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
       background: var(--color-surface);
       color: var(--color-text);
       font-family: var(--font-body);
-      font-size: 0.9375rem;
+      font-size: var(--fs-lg);
       cursor: pointer;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .country-trigger:focus-visible {
-      border-color: var(--ob-orange);
-      box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
+      border-color: var(--action);
+      box-shadow: 0 0 0 4px rgba(3, 78, 162, 0.15);
     }
     .country-code {
       overflow: hidden;
@@ -116,7 +117,7 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
     }
     .caret {
       flex-shrink: 0;
-      font-size: 0.7rem;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .phone-number {
@@ -164,7 +165,7 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
       background: transparent;
       color: var(--color-text);
       font-family: var(--font-body);
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
       text-align: left;
       cursor: pointer;
     }

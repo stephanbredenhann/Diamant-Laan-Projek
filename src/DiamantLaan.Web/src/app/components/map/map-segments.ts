@@ -24,7 +24,7 @@ export const SEGMENTS: SegmentDef[] = [
     rows: 130, cols: 6, cellW: 6, cellH: 6,
   },
   {
-    name: 'Draai Links 100m',
+    name: 'Draai links 100m',
     startId: 781, endId: 1380,
     length: 100,
     x: 1040, y: 800, width: 600, height: 36,
@@ -38,7 +38,7 @@ export const SEGMENTS: SegmentDef[] = [
     rows: 6, cols: 170, cellW: 6, cellH: 6,
   },
   {
-    name: 'Draai Regs',
+    name: 'Draai regs',
     startId: 2401, endId: 2460,
     length: 10,
     x: 20, y: 836, width: 60, height: 36,

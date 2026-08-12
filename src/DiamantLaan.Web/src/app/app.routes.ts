@@ -5,7 +5,13 @@ import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent) },
+  { path: 'projek', loadComponent: () => import('./components/projek/projek.component').then(m => m.ProjekComponent) },
+  { path: 'hoe-dit-werk', loadComponent: () => import('./components/hoe-dit-werk/hoe-dit-werk.component').then(m => m.HoeDitWerkComponent) },
+  { path: 'vordering', loadComponent: () => import('./components/vordering/vordering.component').then(m => m.VorderingComponent) },
+  { path: 'vrae', loadComponent: () => import('./components/vrae/vrae.component').then(m => m.VraeComponent) },
   { path: 'kaart', loadComponent: () => import('./components/map/map.component').then(m => m.MapComponent) },
+  { path: 'bou', loadComponent: () => import('./components/bou/stap1/bou-stap1.component').then(m => m.BouStap1Component) },
+  { path: 'bou/kies', loadComponent: () => import('./components/bou/stap2/bou-stap2.component').then(m => m.BouStap2Component) },
   { path: 'registreer', loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent) },
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
   { path: 'wagwoord-vergeet', loadComponent: () => import('./components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
@@ -15,9 +21,10 @@ export const routes: Routes = [
   { path: 'my-blokke', loadComponent: () => import('./components/my-squares/my-squares.component').then(m => m.MySquaresComponent), canActivate: [authGuard, mustChangePasswordGuard] },
   { path: 'my-blokke/sertifikaat', loadComponent: () => import('./components/certificate/certificate.component').then(m => m.CertificateComponent), canActivate: [authGuard, mustChangePasswordGuard] },
   { path: 'my-transaksies', loadComponent: () => import('./components/my-transactions/my-transactions.component').then(m => m.MyTransactionsComponent), canActivate: [authGuard, mustChangePasswordGuard] },
-  // Public so guests can check out; the password-change guard is anonymous-safe and still
-  // redirects a signed-in user who has to change their password first.
-  { path: 'betaal', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [mustChangePasswordGuard] },
+  { path: 'bou/bevestig', loadComponent: () => import('./components/payment/payment.component').then(m => m.PaymentComponent), canActivate: [mustChangePasswordGuard] },
+  { path: 'betaling', redirectTo: '/bou/bevestig' },
+  { path: 'betaal', redirectTo: '/bou/bevestig' },
+  { path: 'dankie', redirectTo: '/betalings/klaar' },
   {
     path: 'admin',
     loadComponent: () => import('./components/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
@@ -32,7 +39,6 @@ export const routes: Routes = [
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
     ]
   },
-  // Public so that a guest can finish a checkout without ever signing up.
   { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [mustChangePasswordGuard] },
   { path: 'betalings/kanselleer', loadComponent: () => import('./components/payment-cancel/payment-cancel.component').then(m => m.PaymentCancelComponent), canActivate: [mustChangePasswordGuard] },
   { path: 'betalings/klaar', loadComponent: () => import('./components/payment-complete/payment-complete.component').then(m => m.PaymentCompleteComponent), canActivate: [mustChangePasswordGuard] },

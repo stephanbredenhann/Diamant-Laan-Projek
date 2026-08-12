@@ -110,7 +110,7 @@ public class PurchaseController : ControllerBase
             return NotFound();
 
         if (purchase.PaymentStatus != PaymentStatus.Pending)
-            return BadRequest(new { message = "Aankoop is nie in 'n hangende status nie." });
+            return BadRequest(new { message = "Aankoop is nie in ’n hangende status nie." });
 
         var user = await _db.Users.FindAsync(userId);
         if (user == null)
@@ -221,7 +221,7 @@ public class PurchaseController : ControllerBase
             return NotFound();
 
         if (purchase.PaymentStatus != PaymentStatus.Pending)
-            return BadRequest(new { message = "Aankoop is nie in 'n hangende status nie." });
+            return BadRequest(new { message = "Aankoop is nie in ’n hangende status nie." });
 
         // PayFast only reads the display fields. The shadow user has no email of its own,
         // so hand it whatever the guest volunteered at checkout.
@@ -262,7 +262,7 @@ public class PurchaseController : ControllerBase
 
         var name = dto.Name.Trim();
         if (name.Length < 2)
-            return BadRequest(new { message = "Voer asseblief 'n naam in." });
+            return BadRequest(new { message = "Voer asseblief ’n naam in." });
 
         await _guests.SetCertificateNameAsync(purchase, name);
 
@@ -286,7 +286,7 @@ public class PurchaseController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var merged = await _guests.MergeIntoUserAsync(purchase, userId);
         if (!merged)
-            return BadRequest(new { message = "Hierdie aankoop is reeds aan 'n rekening gekoppel." });
+            return BadRequest(new { message = "Hierdie aankoop is reeds aan ’n rekening gekoppel." });
 
         return Ok(new { purchaseId = purchase.Id });
     }

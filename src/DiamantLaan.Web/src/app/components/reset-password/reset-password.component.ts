@@ -12,12 +12,13 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
+          <p class="eyebrow">Rekening</p>
           @if (step === 1) {
-            <h2>Voer herstelkode in</h2>
-            <p>Voer die 6-karakter kode in wat per e-pos gestuur is.</p>
+            <h2 class="display auth-title">Voer herstelkode in</h2>
+            <p>Voer die kode van 6 karakters in wat ons per e-pos gestuur het.</p>
           } @else {
-            <h2>Kies nuwe wagwoord</h2>
-            <p>Kies 'n nuwe wagwoord vir jou rekening.</p>
+            <h2 class="display auth-title">Kies nuwe wagwoord</h2>
+            <p>Kies ’n nuwe wagwoord vir jou rekening.</p>
           }
         </div>
 
@@ -26,8 +27,8 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
         @if (step === 1) {
           <form (ngSubmit)="nextStep()">
             <div class="form-group">
-              <label>Herstelkode</label>
-              <input
+              <label for="otp">Herstelkode</label>
+              <input id="otp"
                 type="text"
                 class="otp-input"
                 [(ngModel)]="otp"
@@ -48,19 +49,19 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
         } @else {
           <form (ngSubmit)="submit()">
             <div class="form-group">
-              <label>Nuwe wagwoord</label>
-              <input type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+              <label for="newPassword">Nuwe wagwoord</label>
+              <input id="newPassword" type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
               <ul class="pw-checklist">
                 <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-                <li [class.ok]="checks().hasNumber">'n Nommer</li>
-                <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
-                <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
-                <li [class.ok]="checks().hasLower">'n Kleinletter</li>
+                <li [class.ok]="checks().hasNumber">’n Nommer</li>
+                <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
+                <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
+                <li [class.ok]="checks().hasLower">’n Kleinletter</li>
               </ul>
             </div>
             <div class="form-group">
-              <label>Bevestig wagwoord</label>
-              <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+              <label for="confirmPassword">Bevestig wagwoord</label>
+              <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
             </div>
             @if (error) {
               <div class="error-alert">{{ error }}</div>
@@ -82,9 +83,13 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     </div>
   `,
   styles: [`
+    .auth-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.5rem 0 0.75rem;
+    }
     .email-display {
       margin: 0 0 1.25rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
       color: var(--text-muted);
       word-break: break-all;
     }
@@ -92,7 +97,7 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       letter-spacing: 0.35rem;
       text-transform: uppercase;
-      font-size: 1.25rem;
+      font-size: var(--fs-xl);
     }
     .pw-checklist {
       list-style: none;
@@ -100,7 +105,7 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
       padding: 0;
       display: grid;
       gap: 0.2rem;
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .pw-checklist li::before { content: '○ '; }
@@ -110,6 +115,7 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
       display: flex;
       gap: 0.75rem;
     }
+    .btn-row .btn { min-height: var(--tap-min); }
     .btn-row .btn-primary { flex: 1; }
     .success-alert {
       background: #E8ECD8;
@@ -118,10 +124,12 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
       border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
     }
     @media (max-width: 480px) {
       .auth-card { margin: 1.5rem auto 2rem; padding: 1.5rem 1.25rem; }
+      .btn-row { flex-direction: column; }
+      .btn-row .btn { width: 100%; }
     }
   `]
 })
@@ -154,7 +162,7 @@ export class ResetPasswordComponent implements OnInit {
   nextStep() {
     this.error = '';
     if (this.otp.trim().length !== 6) {
-      this.error = 'Voer die volledige 6-karakter kode in.';
+      this.error = 'Voer die volledige kode van 6 karakters in.';
       return;
     }
     this.step = 2;

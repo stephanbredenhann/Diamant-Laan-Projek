@@ -1,202 +1,169 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService, PayFastForm, GuestPurchaseRef } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
-import { blokLabel } from '../../utils/afrikaans.util';
+import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 import { validateEmail } from '../../utils/validation.util';
+import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 
+/**
+ * Step 3 — Erkenning / betalingsvoorskou. PayFast handoff unchanged.
+ */
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, FormsModule],
+  imports: [RouterLink, FormsModule, BouStepBarComponent],
   template: `
-    <div class="container">
-      <div class="gateway-card">
-        <h2>Betaling</h2>
-        <p class="summary">
-          {{ squareIds.length }} {{ blokLabel(squareIds.length) }} gekies —
-          <strong>R{{ totalAmount | number:'1.0-0' }}</strong>
-          <span class="per-block">(R500 per blok)</span>
-        </p>
+    <div class="container-wide bou-shell">
+      <div class="header-row">
+        <div>
+          <p class="eyebrow page-eyebrow">Stap 3 van 3 · Betalingsvoorskou</p>
+          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
+          <h1 class="page-title">Bevestig jou bourekord.</h1>
+          <p class="page-lead">
+            @if (isGuest) {
+              Jy gaan as ’n gas voort. Ná betaling kan jy ’n rekening skep om sertifikate en vordering te bestuur.
+            } @else {
+              Bevestig jou bydrae. Jy word na PayFast gestuur om veilig te betaal.
+            }
+          </p>
+        </div>
+        <span class="work-stamp stamp">STADSBOUER-TOEKENNING</span>
+      </div>
+
+      <app-bou-step-bar [active]="3" />
+
+      <form class="checkout-card ledger-paper surface-card" (ngSubmit)="submitPayment()">
+        <div class="totals">
+          <div>
+            <p class="eyebrow">Hoeveelheid</p>
+            <p class="big">{{ squareIds.length }} <span>m²</span></p>
+          </div>
+          <div>
+            <p class="eyebrow">Totaal</p>
+            <p class="big accent">{{ randBedrag(totalAmount) }}</p>
+          </div>
+        </div>
+        <p class="per-meter">{{ meterFrase(squareIds.length) }} · R500 per vierkante meter</p>
 
         @if (isGuest) {
           <div class="guest-box">
             <p class="guest-note">
-              Jy koop sonder 'n rekening. Na jou betaling kan jy kies om een te skep, of net jou
-              sertifikaat aflaai.
+              Jou e-pos word gebruik vir bevestiging, jou sertifikaat en die opsionele rekening-skakel.
             </p>
-            <label for="guest-email">E-pos <span class="required-mark" aria-hidden="true">*</span></label>
-            <input
-              id="guest-email"
-              type="email"
-              name="guestEmail"
-              autocomplete="email"
-              required
-              placeholder="jou@epos.co.za"
-              [class.invalid]="emailError"
-              (blur)="checkEmail()"
-              [(ngModel)]="guestEmail">
-            <p class="guest-hint">
-              Ons het jou e-posadres nodig om jou betaling te bevestig en vir jou 'n skakel te stuur
-              waarmee jy later 'n rekening kan skep. Ons stuur niks anders nie.
-            </p>
-            @if (emailError) {
-              <p class="field-error">{{ emailError }}</p>
-            }
+            <div class="form-group">
+              <label for="guest-email">E-pos <span class="required-mark" aria-hidden="true">*</span></label>
+              <input
+                id="guest-email"
+                type="email"
+                name="guestEmail"
+                autocomplete="email"
+                required
+                placeholder="jou@epos.co.za"
+                [class.invalid]="emailError"
+                (blur)="checkEmail()"
+                [(ngModel)]="guestEmail">
+              @if (emailError) {
+                <p class="error-alert">{{ emailError }}</p>
+              }
+            </div>
           </div>
         }
 
-        <div class="gateway-box">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-          <p class="gateway-text">PayFast</p>
-          <p class="gateway-hint">Jy sal veilig na PayFast gestuur word om die betaling te voltooi.</p>
+        <div class="redirect-notice">
+          <p>
+            Wanneer jy op <strong>Betaal veilig</strong> druk, gaan jy na PayFast se webwerf.
+            Daarna kom jy terug na hierdie projek.
+          </p>
         </div>
 
         @if (error) {
           <div class="error-alert">{{ error }}</div>
         }
 
-        <div class="actions">
-          <a routerLink="/kaart" class="btn btn-outline">Terug</a>
-          <!-- Always clickable so that a missing or malformed email explains itself. -->
-          <button class="btn btn-primary" (click)="submitPayment()" [disabled]="loading">
-            @if (loading) {
-              <span class="btn-spinner"></span>
-              Besig
-            } @else {
-              Volgende
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            }
-          </button>
-        </div>
-      </div>
+        <button type="submit" class="btn btn-primary btn-xl btn-full" [disabled]="loading">
+          @if (loading) {
+            <span class="btn-spinner"></span>
+            Besig...
+          } @else {
+            Betaal veilig
+          }
+        </button>
+        <a routerLink="/bou/kies" class="btn btn-outline btn-xl btn-full terug-btn">Terug</a>
+      </form>
     </div>
   `,
   styles: [`
-    .container { padding: 2rem 1.5rem; }
-    .gateway-card {
-      max-width: 460px;
-      margin: 2rem auto;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 2.5rem 2rem;
-      box-shadow: var(--shadow);
-    }
-    h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-      text-align: center;
-      margin-bottom: 0.75rem;
-    }
-    .summary {
-      text-align: center;
-      font-size: 0.9375rem;
-      color: var(--color-muted);
-      margin-bottom: 1.75rem;
-    }
-    .summary strong { color: var(--color-terracotta); }
-    .per-block { display: block; font-size: 0.8125rem; margin-top: 0.25rem; }
-    .guest-box {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
-      background: var(--color-cream);
-    }
-    .guest-note {
-      font-size: 0.875rem;
-      color: var(--color-text);
-      margin-bottom: 1rem;
-    }
-    .guest-box label {
-      display: block;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: var(--color-text);
-      margin-bottom: 0.375rem;
-    }
-    .guest-box .required-mark {
-      color: var(--color-terracotta);
-    }
-    .guest-box input {
-      width: 100%;
-      padding: 0.625rem 0.75rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font: inherit;
-      font-size: 0.9375rem;
-      background: var(--color-surface);
-      color: var(--color-text);
-    }
-    .guest-hint {
-      font-size: 0.75rem;
-      color: var(--color-muted);
-      margin-top: 0.5rem;
-    }
-    .field-error {
-      font-size: 0.75rem;
-      color: #DC2626;
-      margin-top: 0.5rem;
-    }
-    .guest-box input.invalid {
-      border-color: #DC2626;
-    }
-    .gateway-box {
-      border: 2px dashed var(--color-border);
-      border-radius: var(--radius);
-      padding: 2rem 1.5rem;
-      margin-bottom: 1.75rem;
-      background: var(--color-cream);
-      text-align: center;
-    }
-    .gateway-box svg {
-      stroke: var(--color-muted);
-      margin-bottom: 0.75rem;
-    }
-    .gateway-text {
-      font-family: var(--font-heading);
-      font-size: 1.0625rem;
-      font-weight: 600;
-      color: var(--color-muted);
-      margin-bottom: 0.25rem;
-    }
-    .gateway-hint {
-      font-size: 0.8125rem;
-      color: var(--color-muted-light);
-    }
-    .error-alert {
-      background: #FEF2F2;
-      color: #DC2626;
-      font-size: 0.8125rem;
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-sm);
-      margin-bottom: 1rem;
-      border: 1px solid #FECACA;
-    }
-    .actions {
+    .header-row {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
       gap: 1rem;
-      justify-content: center;
+      align-items: flex-start;
     }
-    .actions .btn { flex: 1; }
+    .stamp {
+      align-self: flex-start;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+    .checkout-card {
+      max-width: 44rem;
+      padding: 2rem;
+    }
+    .totals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .big {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .big span { font-size: 1.25rem; color: var(--text-muted); }
+    .big.accent { color: var(--action); }
+    .per-meter {
+      color: var(--text-muted);
+      margin-bottom: 1.75rem;
+    }
+    .guest-box { margin-bottom: 1.5rem; }
+    .guest-note {
+      font-size: var(--fs-base);
+      color: var(--text-body);
+      margin-bottom: 1rem;
+    }
+    .required-mark { color: var(--action); }
+    input.invalid { border-color: #A61B1B; }
+    .redirect-notice {
+      background: color-mix(in srgb, var(--route-blue) 6%, white);
+      border: 1px solid color-mix(in srgb, var(--route-blue) 18%, transparent);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .terug-btn {
+      margin-top: 0.75rem;
+      text-align: center;
+    }
     .btn-spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.35);
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.35);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       flex-shrink: 0;
+      display: inline-block;
+      margin-right: 0.5rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    @media (max-width: 480px) {
-      .gateway-card { padding: 1.5rem 1.25rem; }
-      .actions { flex-direction: column; }
+    @media (max-width: 600px) {
+      .totals { grid-template-columns: 1fr; }
+      .big { font-size: 2.75rem; }
     }
   `]
 })
@@ -214,7 +181,9 @@ export class PaymentComponent implements OnInit {
   isGuest = false;
   private createdPurchaseId?: number;
   private guestRef?: GuestPurchaseRef;
-  readonly blokLabel = blokLabel;
+  readonly meterFrase = meterFrase;
+  readonly randBedrag = randBedrag;
+  stepAnnouncement = 'Stap 3 van 3: Bevestig jou bourekord';
 
   ngOnInit() {
     this.isGuest = !this.auth.currentUser();
@@ -224,7 +193,7 @@ export class PaymentComponent implements OnInit {
       this.squareIds = ids;
       this.totalAmount = this.squareIds.length * 500;
     } else {
-      this.router.navigate(['/kaart']);
+      this.router.navigate(['/bou']);
     }
   }
 
@@ -257,7 +226,6 @@ export class PaymentComponent implements OnInit {
     });
   }
 
-  /** Guests must give an email address; it is the only way back to a purchase without an account. */
   checkEmail() {
     this.emailError = this.isGuest ? validateEmail(this.guestEmail) ?? '' : '';
   }
@@ -280,7 +248,6 @@ export class PaymentComponent implements OnInit {
     this.purchase.createGuestPurchase(this.squareIds, email).subscribe({
       next: (res) => {
         this.guestRef = { purchaseId: res.purchaseId, token: res.token };
-        // Persist immediately, because the token is the only way back to this purchase after PayFast.
         this.purchase.guestPurchase = this.guestRef;
         this.requestGuestPayFastForm(this.guestRef);
       },

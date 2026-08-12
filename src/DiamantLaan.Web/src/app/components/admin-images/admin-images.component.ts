@@ -20,13 +20,13 @@ interface ImageCardState extends AdminProgressImage {
   imports: [CommonModule, AlertComponent],
   template: `
     <div class="admin-content">
-      <p class="gallery-hint">Nuwe foto's word op die Kaart-oortjie bygevoeg.</p>
+      <p class="gallery-hint">Nuwe foto’s word op die Kaart-oortjie bygevoeg.</p>
       <app-alert [message]="message" [type]="isError ? 'error' : 'success'"></app-alert>
 
       @if (loading) {
-        <p class="muted">Laai foto's...</p>
+        <p class="muted">Laai foto’s...</p>
       } @else if (cards.length === 0) {
-        <p class="empty">Geen vorderingsfoto's opgelaai nie.</p>
+        <p class="empty">Geen vorderingsfoto’s opgelaai nie.</p>
       } @else {
         <div class="image-grid">
           @for (card of cards; track card.id) {
@@ -241,7 +241,7 @@ export class AdminImagesComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        this.message = 'Kon nie foto\'s laai nie.';
+        this.message = 'Kon nie foto’s laai nie.';
         this.isError = true;
         this.loading = false;
       }

@@ -15,8 +15,8 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
   template: `
     <div class="admin-content">
       <div class="form-card">
-        <h3>Telefoniese Aankoop</h3>
-        <p class="hint">Voltooi 'n aankoop namens iemand (bv. telefoniese bestelling).</p>
+        <h3>Telefoniese aankoop</h3>
+        <p class="hint">Voltooi ’n aankoop namens iemand (bv. telefoniese bestelling).</p>
 
         <form (ngSubmit)="submit()" class="admin-form">
           <div class="grid">
@@ -34,7 +34,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
             <input id="email" type="email" [(ngModel)]="email" name="email" required>
           </div>
           <div class="field">
-            <label>Foonnommer</label>
+            <label for="phoneNumber">Foonnommer</label>
             <app-phone-input
               [(countryCode)]="phoneCountryCode"
               [(phoneNumber)]="phoneNumber"
@@ -45,7 +45,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
           </div>
           <div class="field checkbox">
             <label>
-              <input type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
+              <input id="isOraniaResident" type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
               Inwoner van Orania?
             </label>
           </div>
@@ -85,14 +85,14 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
             </div>
           }
           <div class="field">
-            <label for="proof">Bewys van Betaling (PDF, opsioneel)</label>
+            <label for="proof">Bewys van betaling (PDF, opsioneel)</label>
             <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
           </div>
 
           <app-alert [message]="message" [type]="isError ? 'error' : 'success'"></app-alert>
 
           <button type="submit" class="btn btn-primary" [disabled]="loading">
-            {{ loading ? 'Besig...' : 'Voltooi Aankoop' }}
+            {{ loading ? 'Besig...' : 'Voltooi aankoop' }}
           </button>
         </form>
       </div>

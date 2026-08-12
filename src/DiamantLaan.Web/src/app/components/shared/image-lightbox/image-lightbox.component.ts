@@ -12,9 +12,9 @@ import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/squa
       <div class="lightbox-backdrop" (click)="close()">
         <div class="lightbox" (click)="$event.stopPropagation()">
           @if (loading) {
-            <div class="lightbox-loading">Laai beelde...</div>
+            <div class="lightbox-loading">Laai foto’s...</div>
           } @else if (images.length === 0) {
-            <div class="lightbox-empty">Geen beelde beskikbaar nie.</div>
+            <div class="lightbox-empty">Geen foto’s beskikbaar nie.</div>
           } @else {
             <div class="lightbox-body">
               <div class="image-frame">
@@ -36,7 +36,7 @@ import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/squa
                     type="button"
                     [disabled]="currentIndex === 0"
                     (click)="prev()"
-                    aria-label="Vorige beeld"
+                    aria-label="Vorige foto"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
@@ -45,7 +45,7 @@ import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/squa
                     type="button"
                     [disabled]="currentIndex >= images.length - 1"
                     (click)="next()"
-                    aria-label="Volgende beeld"
+                    aria-label="Volgende foto"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>

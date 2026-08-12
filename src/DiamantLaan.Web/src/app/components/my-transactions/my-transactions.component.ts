@@ -5,7 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PurchaseService, PurchaseTransaction } from '../../services/purchase.service';
 import { ReceiptCardComponent, ReceiptData } from '../shared/receipt-card/receipt-card.component';
 import { downloadElementAsPdf } from '../../utils/pdf-export.util';
-import { blokLabel } from '../../utils/afrikaans.util';
+import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 
 type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amount';
 
@@ -16,7 +16,8 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
   template: `
     <div class="container">
       <div class="page-header">
-        <h2>My Transaksies</h2>
+        <p class="eyebrow">My rekening</p>
+        <h2 class="display page-title">My transaksies</h2>
         <p class="hint">Jou bevestigde aankope en kwitansies.</p>
       </div>
 
@@ -45,12 +46,12 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                     Aantal <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
                   </th>
                   <th (click)="sortBy('amountPerBlock')" class="numeric" [class.sorted]="sortKey === 'amountPerBlock'">
-                    Bedrag per blok <span class="sort-icon">{{ sortIcon('amountPerBlock') }}</span>
+                    Bedrag per m² <span class="sort-icon">{{ sortIcon('amountPerBlock') }}</span>
                   </th>
                   <th (click)="sortBy('amount')" class="numeric" [class.sorted]="sortKey === 'amount'">
                     Totaal <span class="sort-icon">{{ sortIcon('amount') }}</span>
                   </th>
-                  <th>Blok ID's</th>
+                  <th>Blok-ID’s</th>
                   <th class="action-col">Kwitansie</th>
                 </tr>
               </thead>
@@ -59,9 +60,9 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                   <tr>
                     <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
                     <td>#{{ tx.id }}</td>
-                    <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
-                    <td class="numeric">R{{ tx.amountPerBlock | number:'1.0-0' }}</td>
-                    <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
+                    <td class="numeric">{{ meterFrase(tx.squareCount) }}</td>
+                    <td class="numeric">{{ randBedrag(tx.amountPerBlock) }}</td>
+                    <td class="numeric">{{ randBedrag(tx.amount) }}</td>
                     <td class="ids">{{ tx.squareIds.join(', ') }}</td>
                     <td class="action-col">
                       <button
@@ -69,7 +70,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                         class="btn btn-outline btn-sm"
                         [disabled]="downloadingId === tx.id"
                         (click)="downloadReceipt(tx)">
-                        {{ downloadingId === tx.id ? 'Besig...' : 'Laai Kwitansie' }}
+                        {{ downloadingId === tx.id ? 'Besig...' : 'Laai kwitansie af' }}
                       </button>
                     </td>
                   </tr>
@@ -94,12 +95,11 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
   styles: [`
     .container { padding: 2rem 1.5rem 4rem; }
     .page-header { margin-bottom: 1.5rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      margin: 0 0 0.25rem;
+    .page-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.35rem 0 0.5rem;
     }
-    .hint { color: var(--color-muted); margin: 0; font-size: 0.875rem; }
+    .hint { color: var(--text-muted); margin: 0; font-size: var(--fs-base); }
     .table-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -108,37 +108,38 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
       box-shadow: var(--shadow-sm);
     }
     .table-scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
     th, td {
-      padding: 0.625rem 0.75rem;
+      padding: 0.75rem 0.875rem;
       text-align: left;
       border-bottom: 1px solid var(--color-border);
     }
     th {
       font-family: var(--font-heading);
       font-weight: 600;
-      color: var(--color-muted);
+      color: var(--text-muted);
       cursor: pointer;
       white-space: nowrap;
       user-select: none;
+      min-height: var(--tap-min);
     }
     th.action-col { cursor: default; }
-    th.action-col:hover { color: var(--color-muted); }
+    th.action-col:hover { color: var(--text-muted); }
     th.sorted { color: var(--color-text); }
     th:hover:not(.action-col) { color: var(--color-terracotta); }
-    .sort-icon { font-size: 0.625rem; margin-left: 0.125rem; opacity: 0.4; }
+    .sort-icon { font-size: var(--fs-sm); margin-left: 0.125rem; opacity: 0.4; }
     th.sorted .sort-icon { opacity: 1; color: var(--color-terracotta); }
-    td { color: var(--color-muted); }
+    td { color: var(--text-muted); }
     .numeric { text-align: right; }
     .action-col { text-align: center; white-space: nowrap; }
     .ids { max-width: 180px; word-break: break-word; }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
-    .muted { color: var(--color-muted); }
+    .btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-sm); min-height: var(--tap-min); }
+    .muted { color: var(--text-muted); }
     .error-msg {
-      color: #b33;
-      font-size: 0.8125rem;
+      color: #A61B1B;
+      font-size: var(--fs-base);
       margin-top: 0.75rem;
-      padding: 0.5rem 0.75rem;
+      padding: 0.75rem 1rem;
       background: #fdf0f0;
       border: 1px solid #f0c0c0;
       border-radius: var(--radius-sm);
@@ -146,7 +147,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
     .empty-state {
       text-align: center;
       padding: 2rem 1rem;
-      color: var(--color-muted);
+      color: var(--text-muted);
     }
     .empty-state h3 {
       font-family: var(--font-heading);
@@ -177,7 +178,8 @@ export class MyTransactionsComponent implements OnInit {
   sortKey: SortKey = 'purchaseDate';
   sortDir: 'asc' | 'desc' = 'desc';
 
-  readonly blokLabel = blokLabel;
+  readonly meterFrase = meterFrase;
+  readonly randBedrag = randBedrag;
 
   ngOnInit() {
     this.purchase.getMyTransactions().subscribe({

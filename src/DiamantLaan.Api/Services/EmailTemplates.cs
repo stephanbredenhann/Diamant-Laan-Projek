@@ -31,7 +31,7 @@ public static class EmailTemplates
             <div style="font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; line-height: 1.6; max-width: 560px;">
               <h2 style="color: #034EA2; margin-bottom: 0.5rem;">Welkom by die Diamant Laan Projek</h2>
               <p>Hallo {name},</p>
-              <p>Jou aankoop is suksesvol verwerk. Ons het 'n rekening vir jou geskep met die e-posadres <strong>{encodedEmail}</strong>.</p>
+              <p>Jou aankoop is suksesvol verwerk. Ons het ’n rekening vir jou geskep met die e-posadres <strong>{encodedEmail}</strong>.</p>
               <p>Jou tydelike wagwoord is:</p>
               <p style="font-size: 1.5rem; letter-spacing: 0.15rem; font-weight: 700; color: #034EA2; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">{password}</p>
               <p style="color: #6B7280; font-size: 0.875rem;">Jy sal gevra word om jou wagwoord te verander wanneer jy vir die eerste keer aanmeld.</p>
@@ -56,12 +56,12 @@ public static class EmailTemplates
               <h2 style="color: #034EA2; margin-bottom: 0.5rem;">Dankie vir jou bydrae tot Diamant Laan</h2>
               <p>Hallo daar,</p>
               <p>Jou betaling is bevestig. Jy het <strong>{blockCount}</strong> {blocks} geborg, R{total} in totaal.</p>
-              <p>Jy het sonder 'n rekening gekoop. As jy later van plan verander, kan jy met hierdie skakel een skep en jou blokke daaraan koppel:</p>
-              <p><a href="{url}" style="display:inline-block; background:#F58220; color:#1A1A1A; text-decoration:none; padding:0.6rem 1.1rem; border-radius:8px; font-weight:600;">Skep 'n rekening</a></p>
-              <p>Met 'n rekening kan jy:</p>
+              <p>Jy het sonder ’n rekening gekoop. As jy later van plan verander, kan jy met hierdie skakel een skep en jou blokke daaraan koppel:</p>
+              <p><a href="{url}" style="display:inline-block; background:#F58220; color:#1A1A1A; text-decoration:none; padding:0.6rem 1.1rem; border-radius:8px; font-weight:600;">Skep ’n rekening</a></p>
+              <p>Met ’n rekening kan jy:</p>
               <ul>
                 <li>Die vordering van elke blok volg, van nog nie begin nie tot klaar geteer</li>
-                <li>Foto's sien van die werk op jou blokke</li>
+                <li>Foto’s sien van die werk op jou blokke</li>
                 <li>Jou sertifikaat enige tyd weer aflaai</li>
                 <li>Al jou aankope op een plek hou</li>
               </ul>
@@ -97,7 +97,7 @@ public static class EmailTemplates
 
         sb.Append("</ul>");
         if (hasPhotos)
-            sb.Append("<p>Daar is vorderingsfoto's beskikbaar. Besoek die webwerf om hulle te sien.</p>");
+            sb.Append("<p>Daar is vorderingsfoto’s beskikbaar. Besoek die webwerf om hulle te sien.</p>");
         else
             sb.Append("<p>Besoek die webwerf om die nuutste vordering op jou blokke te sien.</p>");
 

@@ -7,7 +7,7 @@ import { StatusBadgeComponent } from '../shared/status-badge/status-badge.compon
 import { ImageLightboxComponent } from '../shared/image-lightbox/image-lightbox.component';
 import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
-import { blokLabel } from '../../utils/afrikaans.util';
+import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-my-squares',
@@ -16,11 +16,12 @@ import { blokLabel } from '../../utils/afrikaans.util';
   template: `
     <div class="container">
       <div class="page-header">
-        <h2>My Blokke</h2>
+        <p class="eyebrow">My rekening</p>
+        <h2 class="display page-title">My blokke</h2>
         @if (squares.length > 0) {
-          <p class="summary">{{ squares.length }} {{ blokLabel(squares.length) }} gekoop — <strong>R{{ totalSpent | number:'1.0-0' }}</strong> totaal</p>
+          <p class="summary">{{ meterFrase(squares.length) }} geborg — <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
           <div class="header-actions">
-            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien My Sertifikate</a>
+            <a routerLink="/my-blokke/sertifikaat" class="btn btn-outline btn-sm cert-link">Sien my sertifikate</a>
             <app-share-button
               label="Deel my bydrae"
               [url]="siteUrl"
@@ -32,9 +33,9 @@ import { blokLabel } from '../../utils/afrikaans.util';
       @if (squares.length === 0) {
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <h3>Nog geen blokke gekoop nie</h3>
-          <p>Gaan na die kaart om jou eerste vierkante meter te borg.</p>
-          <a routerLink="/kaart" class="btn btn-primary">Sien Kaart & Koop</a>
+          <h3>Jy het nog geen vierkante meter gekoop nie</h3>
+          <p>Kies ’n hoeveelheid en ons ken die blokkies aan jou toe. Dit neem net ’n minuut.</p>
+          <a routerLink="/bou" class="btn btn-primary">Bou jou eerste m²</a>
         </div>
       } @else {
         <div class="grid">
@@ -80,15 +81,14 @@ import { blokLabel } from '../../utils/afrikaans.util';
   styles: [`
     .container { padding: 2.5rem 1.5rem 4rem; max-width: 900px; }
     .page-header { margin-bottom: 2rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
+    .page-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.35rem 0 0.5rem;
       color: var(--color-text);
-      margin-bottom: 0.375rem;
     }
     .summary {
-      font-size: 0.9375rem;
-      color: var(--color-muted);
+      font-size: var(--fs-base);
+      color: var(--text-muted);
     }
     .summary strong { color: var(--color-terracotta); }
     .header-actions {
@@ -102,24 +102,25 @@ import { blokLabel } from '../../utils/afrikaans.util';
       align-items: center;
       justify-content: center;
       width: 100%;
+      min-height: var(--tap-min);
     }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-sm); min-height: var(--tap-min); }
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
       background: var(--color-surface);
       border: 2px dashed var(--color-border);
       border-radius: var(--radius);
-      color: var(--color-muted);
+      color: var(--text-muted);
     }
     .empty-state svg { stroke: var(--color-sand); margin-bottom: 1rem; }
     .empty-state h3 {
       font-family: var(--font-heading);
-      font-size: 1.125rem;
+      font-size: var(--fs-xl);
       color: var(--color-text);
       margin-bottom: 0.375rem;
     }
-    .empty-state p { font-size: 0.875rem; margin-bottom: 1.25rem; }
+    .empty-state p { font-size: var(--fs-base); margin-bottom: 1.25rem; }
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -160,7 +161,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .sq-id {
       font-family: var(--font-heading);
       font-weight: 600;
-      font-size: 0.9375rem;
+      font-size: var(--fs-base);
       color: var(--color-text);
     }
     .sq-progress { margin-top: 0.25rem; }
@@ -177,8 +178,8 @@ import { blokLabel } from '../../utils/afrikaans.util';
       transition: width 0.4s ease;
     }
     .sq-coords {
-      font-size: 0.75rem;
-      color: var(--color-muted);
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
       margin-top: 0.5rem;
       font-family: monospace;
     }
@@ -195,10 +196,11 @@ export class MySquaresComponent implements OnInit {
   lightboxOpen = false;
   lightboxSquareId: number | null = null;
   siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  readonly blokLabel = blokLabel;
+  readonly meterFrase = meterFrase;
+  readonly randBedrag = randBedrag;
 
   get shareText(): string {
-    return `Ek het ${this.squares.length} ${blokLabel(this.squares.length)} geborg op Diamant Laan!`;
+    return `Ek het ${meterFrase(this.squares.length)} geborg op Diamant Laan!`;
   }
 
   ngOnInit() {

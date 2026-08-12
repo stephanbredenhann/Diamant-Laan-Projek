@@ -85,7 +85,7 @@ type DailyChartMode = 'daily' | 'cumulative';
 
         <div class="stats-grid">
           <div class="stat-card wide">
-            <div class="stat-label">Inkomste Vordering</div>
+            <div class="stat-label">Inkomstevordering</div>
             <div class="progress-bar">
               <div class="progress-fill" [style.width.%]="revenuePercent"></div>
             </div>
@@ -98,7 +98,7 @@ type DailyChartMode = 'daily' | 'cumulative';
             <div class="stat-value">
               {{ stats.soldSquares | number:'1.0-0' }}<small> / {{ stats.totalSquares | number:'1.0-0' }}</small>
             </div>
-            <div class="stat-label">Blokke Verkoop</div>
+            <div class="stat-label">Blokke verkoop</div>
             <div class="mini-progress">
               <div class="mini-progress-fill" [style.width.%]="salesPercent"></div>
             </div>
@@ -113,14 +113,14 @@ type DailyChartMode = 'daily' | 'cumulative';
           </div>
           <div class="stat-card">
             <div class="stat-value">{{ projectedCompletionLabel }}</div>
-            <div class="stat-label">Geskatte Uitverkoop</div>
+            <div class="stat-label">Geskatte uitverkoop</div>
           </div>
         </div>
 
         <div class="charts-timeseries">
           <div class="chart-card">
             <div class="chart-header">
-              <h3>Daglikse Verkope</h3>
+              <h3>Daaglikse verkope</h3>
               <div class="chart-toggle">
                 <button
                   type="button"
@@ -146,7 +146,7 @@ type DailyChartMode = 'daily' | 'cumulative';
           </div>
           <div class="chart-card">
             <div class="chart-header">
-              <h3>Blokke Verkoop</h3>
+              <h3>Blokke verkoop</h3>
               <div class="chart-toggle">
                 <button
                   type="button"
@@ -174,7 +174,7 @@ type DailyChartMode = 'daily' | 'cumulative';
 
         <div class="charts-row">
           <div class="chart-card">
-            <h3>Status Verdeling</h3>
+            <h3>Statusverdeling</h3>
             <canvas baseChart
               [data]="statusChartData"
               [options]="donutChartOptions"
@@ -191,7 +191,7 @@ type DailyChartMode = 'daily' | 'cumulative';
             </canvas>
           </div>
           <div class="chart-card">
-            <h3>Bewegingslede vs Nie-Lede</h3>
+            <h3>Bewegingslede vs nie-lede</h3>
             <p class="chart-subtitle">Blokke gekoop</p>
             <canvas baseChart
               [data]="bewegingChartData"
@@ -232,7 +232,7 @@ type DailyChartMode = 'daily' | 'cumulative';
                     Blokke <span class="sort-icon">{{ sortIcon('squares') }}</span>
                   </th>
                   <th (click)="sortBy('totalSpent')" class="numeric" [class.sorted]="sortKey === 'totalSpent'">
-                    Totaal Bestee <span class="sort-icon">{{ sortIcon('totalSpent') }}</span>
+                    Totaal bestee <span class="sort-icon">{{ sortIcon('totalSpent') }}</span>
                   </th>
                 </tr>
               </thead>
@@ -260,7 +260,7 @@ type DailyChartMode = 'daily' | 'cumulative';
 
         <div class="table-card">
           <div class="table-header">
-            <h3>Geregistreer Sonder Aankoop</h3>
+            <h3>Geregistreer sonder aankoop</h3>
             <div class="table-actions pdf-hide">
               <input type="text" [(ngModel)]="nonPurchaserSearch" (input)="applyNonPurchaserFilters()" placeholder="Soek naam of e-pos...">
               <button class="btn btn-outline btn-sm" (click)="downloadNonPurchaserCsv()">Laai af as CSV</button>
@@ -837,7 +837,7 @@ export class AdminStatsComponent implements OnInit {
   }
 
   downloadCsv() {
-    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Bewegingslid', 'Blokke', 'Totaal Bestee'];
+    const headers = ['Naam', 'E-pos', 'Foonnommer', 'Inwoner van Orania', 'Bewegingslid', 'Blokke', 'Totaal bestee'];
     const rows = this.filteredBuyers.map(b => [
       b.name,
       b.email,
@@ -912,7 +912,7 @@ export class AdminStatsComponent implements OnInit {
     this.dailyChartData = {
       labels: dailyLabels,
       datasets: [{
-        label: this.dailyChartMode === 'cumulative' ? 'Kumulatiewe Verkope (R)' : 'Verkope (R)',
+        label: this.dailyChartMode === 'cumulative' ? 'Kumulatiewe verkope (R)' : 'Verkope (R)',
         data: revenueData,
         borderColor: '#C67B5C',
         backgroundColor: 'rgba(198, 123, 92, 0.2)',
@@ -938,7 +938,7 @@ export class AdminStatsComponent implements OnInit {
     this.squaresChartData = {
       labels: dailyLabels,
       datasets: [{
-        label: this.squaresChartMode === 'cumulative' ? 'Kumulatiewe Blokke' : 'Blokke Verkoop',
+        label: this.squaresChartMode === 'cumulative' ? 'Kumulatiewe blokke' : 'Blokke verkoop',
         data: squaresData,
         borderColor: '#6B7B3C',
         backgroundColor: 'rgba(107, 123, 60, 0.2)',

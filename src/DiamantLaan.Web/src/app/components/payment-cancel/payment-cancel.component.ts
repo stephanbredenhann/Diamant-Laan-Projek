@@ -8,22 +8,25 @@ import { PurchaseService } from '../../services/purchase.service';
   imports: [RouterLink],
   template: `
     <div class="container">
-      <div class="gateway-card">
+      <div class="gateway-card auth-card">
         @if (loading) {
           <div class="spinner"></div>
-          <h2>Besig om te kanselleer</h2>
+          <p class="eyebrow">Betaling</p>
+          <h2 class="display auth-title">Besig om te kanselleer</h2>
           <p class="summary">Ons stel jou blokkies weer beskikbaar...</p>
         } @else if (error) {
-          <h2>Kon nie kanselleer nie</h2>
+          <p class="eyebrow">Betaling</p>
+          <h2 class="display auth-title">Kon nie kanselleer nie</h2>
           <p class="summary">{{ error }}</p>
           <div class="actions">
-            <a routerLink="/kaart" class="btn btn-outline">Terug na kaart</a>
+            <a routerLink="/bou" class="btn btn-outline">Begin weer</a>
             <button class="btn btn-primary" (click)="retryCancel()">Probeer weer</button>
           </div>
         } @else {
-          <h2>Betaling gekanselleer</h2>
+          <p class="eyebrow">Betaling</p>
+          <h2 class="display auth-title">Betaling gekanselleer</h2>
           <p class="summary">Jy het die betaling gekanselleer. Jou blokkies is weer beskikbaar.</p>
-          <a routerLink="/kaart" class="btn btn-primary btn-wide">Terug na kaart</a>
+          <a routerLink="/bou" class="btn btn-primary btn-wide">Probeer weer</a>
         }
       </div>
     </div>
@@ -33,22 +36,15 @@ import { PurchaseService } from '../../services/purchase.service';
     .gateway-card {
       max-width: 460px;
       margin: 2rem auto;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 2.5rem 2rem;
-      box-shadow: var(--shadow);
       text-align: center;
     }
-    h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-      margin-bottom: 0.75rem;
+    .auth-title {
+      font-size: clamp(2.25rem, 5vw, 3rem);
+      margin: 0.35rem 0 0.75rem;
     }
     .summary {
-      font-size: 0.9375rem;
-      color: var(--color-muted);
+      font-size: var(--fs-lg);
+      color: var(--text-muted);
       margin-bottom: 1.75rem;
     }
     .btn-wide { min-width: 220px; }
@@ -63,7 +59,7 @@ import { PurchaseService } from '../../services/purchase.service';
       width: 40px;
       height: 40px;
       border: 3px solid var(--color-border);
-      border-top-color: var(--color-terracotta);
+      border-top-color: var(--action);
       border-radius: 50%;
       margin: 0 auto 1.25rem;
       animation: spin 0.8s linear infinite;
@@ -88,7 +84,10 @@ export class PaymentCancelComponent implements OnInit {
   ngOnInit() {
     this.purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
     if (!this.purchaseId) {
-      this.router.navigate(['/kaart']);
+      // Nothing to cancel — a stray visit. Drop any half-finished build state and
+      // send them home rather than onto the raw map.
+      this.purchase.clearBouVloei();
+      this.router.navigate(['/']);
       return;
     }
     this.doCancel();
@@ -111,8 +110,7 @@ export class PaymentCancelComponent implements OnInit {
       next: () => {
         this.loading = false;
         this.error = '';
-        this.purchase.pendingSquareIds = [];
-        this.purchase.guestPurchase = null;
+        this.purchase.clearBouVloei();
       },
       error: (err) => {
         this.loading = false;

@@ -111,7 +111,7 @@ public class AuthController : ControllerBase
             // so tell the frontend to send them through login and claim the purchase afterwards.
             return Conflict(new
             {
-                message = "Hierdie e-posadres het reeds 'n rekening. Meld aan om jou blokke daaraan te koppel.",
+                message = "Hierdie e-posadres het reeds ’n rekening. Meld aan om jou blokke daaraan te koppel.",
                 requiresLogin = true
             });
         }
@@ -206,7 +206,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         await _passwordResetOtps.RequestAsync(dto.Email.Trim());
-        return Ok(new { message = "As die e-pos bestaan, is 'n herstelkode gestuur." });
+        return Ok(new { message = "As die e-pos bestaan, is ’n herstelkode gestuur." });
     }
 
     [HttpPost("reset-password")]

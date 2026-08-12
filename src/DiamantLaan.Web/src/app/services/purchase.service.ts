@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 
 const PENDING_IDS_KEY = 'pendingSquareIds';
 const GUEST_PURCHASE_KEY = 'guestPurchase';
+const BOU_AANTAL_KEY = 'bouAantal';
 
 export interface PayFastForm {
   actionUrl: string;
@@ -71,6 +72,36 @@ export class PurchaseService {
     } else {
       sessionStorage.setItem(GUEST_PURCHASE_KEY, JSON.stringify(ref));
     }
+  }
+
+  /**
+   * How many square metres the donor chose in step 1 of the /bou wizard.
+   * The map reads this to decide whether it is being shown as an optional
+   * wizard step (banner + step bar) or as the standalone map page.
+   */
+  get bouAantal(): number | null {
+    const raw = sessionStorage.getItem(BOU_AANTAL_KEY);
+    const n = raw ? Math.floor(Number(raw)) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  set bouAantal(count: number | null) {
+    if (count == null || count < 1) {
+      sessionStorage.removeItem(BOU_AANTAL_KEY);
+    } else {
+      sessionStorage.setItem(BOU_AANTAL_KEY, String(count));
+    }
+  }
+
+  /**
+   * Wipes every trace of an in-flight build. Call this at each terminal point of
+   * the flow — paid, claimed, cancelled, abandoned. Without it the wizard state
+   * outlives the purchase and the map keeps claiming to be "Stap 2 van 3".
+   */
+  clearBouVloei() {
+    this.pendingSquareIds = [];
+    this.guestPurchase = null;
+    this.bouAantal = null;
   }
 
   createPurchase(squareIds: number[]) {

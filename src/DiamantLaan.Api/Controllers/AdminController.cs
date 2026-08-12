@@ -319,7 +319,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
             return NotFound(new { message = "Gebruiker nie gevind nie." });
 
         if (await _userManager.IsInRoleAsync(user, "Admin"))
-            return BadRequest(new { message = "Gebruiker is reeds 'n admin." });
+            return BadRequest(new { message = "Gebruiker is reeds ’n admin." });
 
         var result = await _userManager.AddToRoleAsync(user, "Admin");
         if (!result.Succeeded)
@@ -327,7 +327,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
         await _audit.LogAsync(User, "MakeAdmin", $"Promoted {dto.Email} to Admin");
 
-        return Ok(new { message = $"{dto.Email} is nou 'n admin." });
+        return Ok(new { message = $"{dto.Email} is nou ’n admin." });
     }
 
     [HttpPost("manual-purchase")]
@@ -335,7 +335,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
     public async Task<IActionResult> ManualPurchase([FromForm] ManualPurchaseDto dto, IFormFile? proofOfPayment)
     {
         if (proofOfPayment != null && !FileUploadService.IsPdf(proofOfPayment))
-            return BadRequest(new { message = "Bewys van betaling moet 'n geldige PDF wees." });
+            return BadRequest(new { message = "Bewys van betaling moet ’n geldige PDF wees." });
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -481,7 +481,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
             return BadRequest(new { message = "Bewys van betaling mag nie groter as 10 MB wees nie." });
 
         if (!FileUploadService.IsPdf(proofOfPayment))
-            return BadRequest(new { message = "Bewys van betaling moet 'n geldige PDF wees." });
+            return BadRequest(new { message = "Bewys van betaling moet ’n geldige PDF wees." });
 
         var purchase = await _db.Purchases.FindAsync(id);
         if (purchase == null)
@@ -565,10 +565,10 @@ public async Task<IActionResult> DeleteTransaction(int id)
     public async Task<IActionResult> UploadProgressImage([FromForm] ProgressImageUploadDto dto, IFormFile image)
     {
         if (image == null || image.Length == 0)
-            return BadRequest(new { message = "Geen beeld opgelaai nie." });
+            return BadRequest(new { message = "Geen foto opgelaai nie." });
 
         if (!FileUploadService.IsImage(image))
-            return BadRequest(new { message = "Beeld moet 'n geldige JPEG, PNG of WebP wees." });
+            return BadRequest(new { message = "Foto moet ’n geldige JPEG, PNG of WebP wees." });
 
         var squareIds = dto.SquareIds.Distinct().ToList();
         var conflictingIds = await GetConflictingSquareIdsAsync(squareIds, dto.Status);
@@ -585,7 +585,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
             skippedCount = conflictingIds.Count;
             squareIds = squareIds.Except(conflictingIds).ToList();
             if (squareIds.Count == 0)
-                return BadRequest(new { message = "Alle gekose blokke het reeds 'n foto vir hierdie status." });
+                return BadRequest(new { message = "Alle gekose blokke het reeds ’n foto vir hierdie status." });
         }
 
         var squares = await _db.Squares
@@ -644,10 +644,10 @@ public async Task<IActionResult> DeleteTransaction(int id)
     public async Task<IActionResult> ReplaceProgressImage(int id, IFormFile image)
     {
         if (image == null || image.Length == 0)
-            return BadRequest(new { message = "Geen beeld opgelaai nie." });
+            return BadRequest(new { message = "Geen foto opgelaai nie." });
 
         if (!FileUploadService.IsImage(image))
-            return BadRequest(new { message = "Beeld moet 'n geldige JPEG, PNG of WebP wees." });
+            return BadRequest(new { message = "Foto moet ’n geldige JPEG, PNG of WebP wees." });
 
         var progressImage = await _db.ProgressImages.FindAsync(id);
         if (progressImage == null)
@@ -671,7 +671,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
         await _audit.LogAsync(User, "ReplaceProgressImage", $"Replaced image #{id}");
 
-        return Ok(new { id = progressImage.Id, message = "Beeld vervang." });
+        return Ok(new { id = progressImage.Id, message = "Foto vervang." });
     }
 
     [HttpDelete("squares/images/{id}")]
@@ -688,7 +688,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
         await _audit.LogAsync(User, "DeleteProgressImage", $"Deleted image #{id}");
 
-        return Ok(new { message = "Beeld verwyder." });
+        return Ok(new { message = "Foto verwyder." });
     }
 
     private static (string? PhoneNumber, string PhoneCountryCode, string? PhoneDisplay) FormatPhoneFields(User user)

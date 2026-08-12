@@ -10,7 +10,8 @@ import { RouterLink } from '@angular/router';
     <article class="privacy-content">
       <p class="privacy-back"><a routerLink="/">← Terug na tuisblad</a></p>
 
-      <h1>Privaatheidsbeleid</h1>
+      <p class="eyebrow">Inligting</p>
+      <h1 class="display page-title">Privaatheidsbeleid</h1>
       <p class="privacy-meta">Laas bygewerk: 9 Julie 2026</p>
 
       <p>
@@ -146,7 +147,7 @@ import { RouterLink } from '@angular/router';
         </ul>
         <p>
           E-posse oor blokvordering is opsioneel. Jy kan hulle afskakel onder
-          <strong>My Profiel</strong>. Wagwoordherstel- en rekeningwelkom-e-posse is nodig
+          <strong>My profiel</strong>. Wagwoordherstel- en rekeningwelkom-e-posse is nodig
           om die diens te lewer en kan nie afgeskakel word nie.
         </p>
       </section>
@@ -247,11 +248,11 @@ import { RouterLink } from '@angular/router';
 
     .privacy-back {
       margin: 0 0 1.5rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
     }
 
     .privacy-back a {
-      color: var(--ob-orange);
+      color: var(--action);
       text-decoration: none;
       font-weight: 500;
     }
@@ -260,17 +261,18 @@ import { RouterLink } from '@angular/router';
       text-decoration: underline;
     }
 
-    h1 {
-      font-family: var(--font-heading);
-      font-size: clamp(1.75rem, 4vw, 2.25rem);
-      font-weight: 700;
+    h1.page-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      font-weight: 800;
       color: var(--text-body);
-      margin: 0 0 0.5rem;
+      margin: 0.35rem 0 0.5rem;
+      line-height: 0.95;
     }
 
     .privacy-meta {
       color: var(--text-muted);
-      font-size: 0.875rem;
+      font-size: var(--fs-sm);
       margin: 0 0 1.75rem;
     }
 
@@ -280,7 +282,7 @@ import { RouterLink } from '@angular/router';
 
     h2 {
       font-family: var(--font-heading);
-      font-size: 1.125rem;
+      font-size: var(--fs-xl);
       font-weight: 700;
       color: var(--text-body);
       margin: 0 0 0.75rem;
@@ -288,7 +290,7 @@ import { RouterLink } from '@angular/router';
 
     p, li {
       font-family: var(--font-body);
-      font-size: 1rem;
+      font-size: var(--fs-base);
       line-height: 1.7;
       color: var(--text-body);
       margin: 0 0 0.75rem;
@@ -304,11 +306,11 @@ import { RouterLink } from '@angular/router';
     }
 
     a {
-      color: var(--ob-orange);
+      color: var(--action);
     }
 
     a:focus-visible {
-      outline: 2px solid var(--ob-orange);
+      outline: 2px solid var(--action);
       outline-offset: 2px;
     }
   `]

@@ -17,25 +17,25 @@ public static partial class PasswordValidator
 
         if (!password.Any(char.IsDigit))
         {
-            error = "Wagwoord moet 'n nommer bevat.";
+            error = "Wagwoord moet ’n nommer bevat.";
             return false;
         }
 
         if (!SpecialCharRegex().IsMatch(password))
         {
-            error = "Wagwoord moet 'n spesiale karakter bevat.";
+            error = "Wagwoord moet ’n spesiale karakter bevat.";
             return false;
         }
 
         if (!password.Any(char.IsUpper))
         {
-            error = "Wagwoord moet 'n hoofletter bevat.";
+            error = "Wagwoord moet ’n hoofletter bevat.";
             return false;
         }
 
         if (!password.Any(char.IsLower))
         {
-            error = "Wagwoord moet 'n kleinletter bevat.";
+            error = "Wagwoord moet ’n kleinletter bevat.";
             return false;
         }
 

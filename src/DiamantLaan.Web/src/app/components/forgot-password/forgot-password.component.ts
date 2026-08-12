@@ -11,13 +11,14 @@ import { AuthService } from '../../services/auth.service';
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2>Wagwoord vergeet</h2>
-          <p>Voer jou e-pos in. As die rekening bestaan, stuur ons 'n 6-karakter kode.</p>
+          <p class="eyebrow">Rekening</p>
+          <h2 class="display auth-title">Wagwoord vergeet</h2>
+          <p>Voer jou e-pos in. As die rekening bestaan, stuur ons ’n kode van 6 karakters.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
+            <label for="email">E-pos</label>
+            <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>
@@ -34,6 +35,10 @@ import { AuthService } from '../../services/auth.service';
     </div>
   `,
   styles: [`
+    .auth-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.5rem 0 0.75rem;
+    }
     .success-alert {
       background: #E8ECD8;
       color: #5A6A32;
@@ -41,7 +46,7 @@ import { AuthService } from '../../services/auth.service';
       border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
     }
     @media (max-width: 480px) {
       .auth-card { margin: 1.5rem auto 2rem; padding: 1.5rem 1.25rem; }

@@ -13,14 +13,14 @@ public static partial class EmailValidator
 
         if (string.IsNullOrWhiteSpace(email))
         {
-            error = "Voer 'n geldige e-posadres in.";
+            error = "Voer ’n geldige e-posadres in.";
             return false;
         }
 
         var trimmed = email.Trim();
         if (trimmed.Length > MaxLength || !EmailRegex().IsMatch(trimmed))
         {
-            error = "Voer 'n geldige e-posadres in.";
+            error = "Voer ’n geldige e-posadres in.";
             return false;
         }
 

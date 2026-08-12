@@ -12,24 +12,25 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2>Verander jou wagwoord</h2>
-          <p>Om veiligheidsredes moet jy 'n nuwe wagwoord kies voordat jy voortgaan.</p>
+          <p class="eyebrow">Rekening</p>
+          <h2 class="display auth-title">Verander jou wagwoord</h2>
+          <p>Om veiligheidsredes moet jy ’n nuwe wagwoord kies voordat jy voortgaan.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label>Nuwe wagwoord</label>
-            <input type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+            <label for="newPassword">Nuwe wagwoord</label>
+            <input id="newPassword" type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
             <ul class="pw-checklist">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-              <li [class.ok]="checks().hasNumber">'n Nommer</li>
-              <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
-              <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
-              <li [class.ok]="checks().hasLower">'n Kleinletter</li>
+              <li [class.ok]="checks().hasNumber">’n Nommer</li>
+              <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
+              <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
+              <li [class.ok]="checks().hasLower">’n Kleinletter</li>
             </ul>
           </div>
           <div class="form-group">
-            <label>Bevestig wagwoord</label>
-            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+            <label for="confirmPassword">Bevestig wagwoord</label>
+            <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
           </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>
@@ -42,13 +43,17 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
     </div>
   `,
   styles: [`
+    .auth-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.5rem 0 0.75rem;
+    }
     .pw-checklist {
       list-style: none;
       margin: 0.5rem 0 0;
       padding: 0;
       display: grid;
       gap: 0.2rem;
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .pw-checklist li::before { content: '○ '; }

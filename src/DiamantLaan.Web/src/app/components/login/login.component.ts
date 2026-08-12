@@ -12,17 +12,18 @@ import { PurchaseService } from '../../services/purchase.service';
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2>Meld aan</h2>
-          <p>Welkom terug! Meld aan om jou blokke te bestuur.</p>
+          <p class="eyebrow">Vir terugkerende ondersteuners</p>
+          <h2 class="display auth-title">Meld aan</h2>
+          <p>Jy hoef nie aan te meld om ’n vierkante meter te finansier nie. ’n Rekening help net om vorige bydraes, sertifikate en opdaterings later te bestuur.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
+            <label for="email">E-pos</label>
+            <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           <div class="form-group">
-            <label>Wagwoord</label>
-            <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord">
+            <label for="password">Wagwoord</label>
+            <input id="password" type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord">
           </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>
@@ -34,7 +35,7 @@ import { PurchaseService } from '../../services/purchase.service';
         <p class="auth-link"><a routerLink="/wagwoord-vergeet">Wagwoord vergeet?</a></p>
 
         <div class="auth-register-promo">
-          <p class="auth-register-promo__title">Nog nie 'n rekening nie?</p>
+          <p class="auth-register-promo__title">Nog nie ’n rekening nie?</p>
           <p class="auth-register-promo__text">Sluit aan en begin bou.</p>
           <a routerLink="/registreer" class="btn btn-outline btn-block">Registreer</a>
         </div>
@@ -42,26 +43,29 @@ import { PurchaseService } from '../../services/purchase.service';
     </div>
   `,
   styles: [`
+    .auth-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.5rem 0 0.75rem;
+    }
     .auth-register-promo {
       margin-top: 1.5rem;
       padding: 1.25rem 1rem;
-      background: var(--bg-warm);
+      background: var(--bg-chalk);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
       text-align: center;
     }
 
     .auth-register-promo__title {
-      font-family: var(--font-heading);
-      font-size: 1rem;
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
       font-weight: 700;
       color: var(--color-text);
       margin: 0 0 0.35rem;
     }
 
     .auth-register-promo__text {
-      font-size: 0.875rem;
-      color: var(--color-muted);
+      font-size: var(--fs-base);
+      color: var(--text-muted);
       margin: 0 0 1rem;
     }
 

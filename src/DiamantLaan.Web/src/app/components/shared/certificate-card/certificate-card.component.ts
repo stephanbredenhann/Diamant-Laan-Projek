@@ -178,7 +178,7 @@ export function formatBlockRanges(ids: number[]): string {
       </div>
 
       @if (squares.length === 0) {
-        <p class="empty">Geen blokke gevind nie.</p>
+        <p class="empty">Geen vierkante meter gevind nie.</p>
       }
 
       @if (downloadError) {
@@ -291,21 +291,21 @@ export function formatBlockRanges(ids: number[]): string {
       justify-content: center;
       gap: 1rem;
     }
-    .nav-label { font-size: 0.875rem; color: var(--color-muted); }
+    .nav-label { font-size: var(--fs-base); color: var(--text-muted); }
     /*
      * width/height alone leaves these ovals: the global button rule's 1.75rem side padding
      * outruns the width, so the box stretches. Zeroing the padding is what makes them circles.
      */
     .nav-btn {
       flex: 0 0 auto;
-      width: 2.25rem;
-      height: 2.25rem;
+      width: var(--tap-min);
+      height: var(--tap-min);
       padding: 0;
       border: 1px solid var(--color-border);
       border-radius: 50%;
       background: var(--color-surface);
       color: var(--color-text);
-      font-size: 1.25rem;
+      font-size: var(--fs-xl);
       line-height: 1;
     }
     .nav-btn:hover:not(:disabled) {
@@ -320,11 +320,16 @@ export function formatBlockRanges(ids: number[]): string {
       justify-content: center;
       flex-wrap: wrap;
     }
-    .empty { text-align: center; color: var(--color-muted); }
+    .actions .btn-primary { min-height: var(--tap-large); font-size: var(--fs-lg); }
+    @media (max-width: 480px) {
+      .actions { flex-direction: column; }
+      .actions .btn { width: 100%; }
+    }
+    .empty { text-align: center; color: var(--text-muted); font-size: var(--fs-base); }
     .download-error {
       text-align: center;
-      color: var(--color-warning);
-      font-size: 0.875rem;
+      color: #A61B1B;
+      font-size: var(--fs-base);
     }
   `]
 })
@@ -421,7 +426,10 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
   bodyText(view?: SheetView): string {
     if (!view) return '';
-    return `${blokLabel(view.count)} no. ${view.blocks} aangekoop het ter ondersteuning van die teer van die Oewerpad in Orania.`;
+    // NOTE: "Oewerpad" is the only mention of that road in the codebase; every other
+    // screen calls this the Diamantlaan-teerprojek. Confirm with the client which
+    // road the certificate should name before this goes to donors.
+    return `het ${blokLabel(view.count)} nr. ${view.blocks} aangekoop ter ondersteuning van die teer van die Oewerpad in Orania.`;
   }
 
   /** Only the summary can outgrow the design's sentence, so only it is ever scaled down. */

@@ -10,11 +10,12 @@ import { takeWhile } from 'rxjs/operators';
   imports: [RouterLink],
   template: `
     <div class="container">
-      <div class="gateway-card">
+      <div class="gateway-card auth-card">
         @switch (state) {
           @case ('pending') {
             <div class="spinner"></div>
-            <h2>Wag op betalingsbevestiging</h2>
+            <p class="eyebrow">Betaling</p>
+            <h2 class="display auth-title">Wag op bevestiging</h2>
             <p class="summary">Ons wag vir PayFast om die betaling te bevestig. Moenie hierdie bladsy toemaak nie.</p>
             @if (attempts > 1) {
               <p class="attempts">Kontroleer besig... (poging {{ attempts }}/{{ maxAttempts }})</p>
@@ -29,22 +30,25 @@ import { takeWhile } from 'rxjs/operators';
             <div class="success-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <h2>Betaling Suksesvol!</h2>
-            <p class="summary">Jou aankoop is bevestig.</p>
-            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">Gaan na My Blokke</a>
+            <p class="eyebrow">Betaling</p>
+            <h2 class="display auth-title">Betaling suksesvol</h2>
+            <p class="summary">Dankie — jou aankoop is bevestig en jou vierkante meter is nou joune.</p>
+            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">Gaan na my blokke</a>
           }
           @case ('timeout') {
-            <h2>Bevestiging neem langer as gewoonlik</h2>
-            <p class="summary">Ons kon nie die betalingstatus betyds bevestig nie. Indien jou betaling deurgegaan het, sal dit binnekort opgedateer word. Kyk gerus by <strong>My Blokke</strong>.</p>
+            <p class="eyebrow">Betaling</p>
+            <h2 class="display auth-title">Bevestiging neem langer</h2>
+            <p class="summary">Ons kon nie die betalingstatus betyds bevestig nie. As jou betaling deurgegaan het, sal dit binnekort wys. Kyk gerus later weer by <strong>My blokke</strong>.</p>
             <div class="actions">
-              <a routerLink="/kaart" class="btn btn-outline">Terug na kaart</a>
-              <a routerLink="/my-blokke" class="btn btn-primary">Gaan na My Blokke</a>
+              <a routerLink="/" class="btn btn-outline">Terug na tuisblad</a>
+              <a routerLink="/my-blokke" class="btn btn-primary">Gaan na my blokke</a>
             </div>
           }
           @case ('failed') {
-            <h2>Betaling het misluk</h2>
+            <p class="eyebrow">Betaling</p>
+            <h2 class="display auth-title">Betaling het misluk</h2>
             <p class="summary">Die betaling is nie voltooi nie. Probeer asseblief weer.</p>
-            <a routerLink="/kaart" class="btn btn-primary btn-wide">Terug na kaart</a>
+            <a routerLink="/bou" class="btn btn-primary btn-wide">Probeer weer</a>
           }
         }
       </div>
@@ -55,28 +59,21 @@ import { takeWhile } from 'rxjs/operators';
     .gateway-card {
       max-width: 460px;
       margin: 2rem auto;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      padding: 2.5rem 2rem;
-      box-shadow: var(--shadow);
       text-align: center;
     }
-    h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-      margin-bottom: 0.75rem;
+    .auth-title {
+      font-size: clamp(2.25rem, 5vw, 3rem);
+      margin: 0.35rem 0 0.75rem;
     }
     .summary {
-      font-size: 0.9375rem;
-      color: var(--color-muted);
+      font-size: var(--fs-lg);
+      color: var(--text-muted);
       margin-bottom: 1.75rem;
     }
-    .summary strong { color: var(--color-terracotta); }
+    .summary strong { color: var(--action); }
     .attempts {
-      font-size: 0.75rem;
-      color: var(--color-muted-light);
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
       margin-top: -1rem;
       margin-bottom: 1.5rem;
     }
@@ -92,7 +89,7 @@ import { takeWhile } from 'rxjs/operators';
       width: 40px;
       height: 40px;
       border: 3px solid var(--color-border);
-      border-top-color: var(--color-terracotta);
+      border-top-color: var(--action);
       border-radius: 50%;
       margin: 0 auto 1.25rem;
       animation: spin 0.8s linear infinite;
@@ -176,6 +173,7 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
         this.consecutiveErrors = 0;
         if (p.paymentStatus === 'Confirmed') {
           this.state = 'success';
+          this.purchase.bouAantal = null;
           this.purchase.pendingSquareIds = [];
           if (this.guestRef) {
             // Guests carry on to the "create an account?" step rather than My Blocks.

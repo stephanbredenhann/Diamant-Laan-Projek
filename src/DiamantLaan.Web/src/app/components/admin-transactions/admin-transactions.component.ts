@@ -56,7 +56,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                   <th (click)="sortBy('amount')" class="numeric" [class.sorted]="sortKey === 'amount'">
                     Totaal <span class="sort-icon">{{ sortIcon('amount') }}</span>
                   </th>
-                  <th>Blok ID's</th>
+                  <th>Blok-ID’s</th>
                   <th class="action-col">Kwitansie</th>
                 </tr>
               </thead>
@@ -88,7 +88,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
     class="btn btn-outline btn-sm"
     [disabled]="downloadingId === tx.id"
     (click)="downloadReceipt(tx)">
-    {{ downloadingId === tx.id ? 'Besig...' : 'Laai Kwitansie' }}
+    {{ downloadingId === tx.id ? 'Besig...' : 'Laai kwitansie af' }}
   </button>
 
   @if (tx.paymentStatus !== 'Confirmed') {
@@ -265,7 +265,7 @@ export class AdminTransactionsComponent implements OnInit {
   readonly blokLabel = blokLabel;
 
   purchaseSourceLabel(source: string): string {
-    return source === 'TelefonieseAankoop' ? 'Telefoniese Aankoop' : 'PayFast';
+    return source === 'TelefonieseAankoop' ? 'Telefoniese aankoop' : 'PayFast';
   }
 paymentStatusLabel(status: string): string {
   switch (status) {

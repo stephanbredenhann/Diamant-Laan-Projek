@@ -1,686 +1,546 @@
 import { CommonModule } from '@angular/common';
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  QueryList,
-  ViewChildren,
-  inject,
-} from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subject, catchError, filter, of, switchMap, takeUntil, tap } from 'rxjs';
 import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
+import { randBedrag } from '../../utils/afrikaans.util';
+
+interface AmountCard {
+  meters: number | null;
+  title: string;
+  subtitle: string;
+}
+
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
     <section class="hero">
-      <picture>
-  <source media="(max-width: 768px)" srcset="hero-bg-mobile.png">
-  <img src="hero-bg-01.svg" alt="" class="hero-bg" aria-hidden="true" />
-</picture>
-
-      <!-- Cloud layer -->
-      <div class="cloud-layer" [class.cloud-layer--ready]="cloudsReady" aria-hidden="true">
-        <img src="clouds/cloud-1.png" class="cloud cloud--1" alt="" loading="eager" decoding="async" />
-        <img src="clouds/cloud-2.png" class="cloud cloud--2" alt="" loading="eager" decoding="async" />
-        <img src="clouds/cloud-3.png" class="cloud cloud--3" alt="" loading="eager" decoding="async" />
-        <img src="clouds/cloud-5.png" class="cloud cloud--wide cloud--5" alt="" loading="eager" decoding="async" />
-      </div>
-
-      <div class="hero-content">
-        <div class="hero-inner">
-          
-
-          <!-- Right OB logo -->
-          <div class="hero-logo">
-            
-          </div>
-        </div>
-
-        <!-- Bottom-center pill CTA -->
-        <div class="hero-cta">
-          <a routerLink="/kaart" class="pill-cta">
-            Begin&nbsp;<span class="pill-cta-em">Bou</span>!
-          </a>
-     
-          <a class="scroll-cue" (click)="scrollToStats($event)" aria-label="Sien meer, blaai af na statistieke">
-            <svg class="scroll-chevron" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9" />
+      <img src="diamant_laan_foto.jpg" alt="Diamantlaan wat van grondpad na teerpad verander" class="hero-img" />
+      <div class="hero-scrim" aria-hidden="true"></div>
+      <div class="container hero-content">
+        <p class="eyebrow hero-eyebrow">Diamantlaan-teerprojek</p>
+        <h1 class="display hero-title">
+          Bou die volgende <span class="accent">meter</span> van Diamantlaan.
+        </h1>
+        <p class="hero-sub">
+          Finansier 1 m² teerpad vir <strong>R500</strong> en ontvang erkenning as ’n Stadsbouer.
+          Ons kan jou blokkie kies—of jy kan self die kaart oopmaak.
+        </p>
+        <div class="hero-actions">
+          <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
+            Bou 1 m² vir R500
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
-            <span class="scroll-label">Sien meer</span>
           </a>
+          <a routerLink="/hoe-dit-werk" class="hero-quiet">Kyk hoe dit werk</a>
         </div>
+        <ul class="reassurance">
+          <li>Geen rekening nodig</li>
+          <li>Veilige betaling</li>
+          <li>Stadsbouer-erkenning</li>
+        </ul>
       </div>
+
+      @if (showStatsSection) {
+        <div class="hero-stat-float" id="stats-section">
+          <div class="stat-dark">
+            <strong class="tabular">{{ fundedMeters }} m²</strong>
+            <span>Reeds gefinansier</span>
+          </div>
+          @if (showTotalRaised) {
+            <div class="stat-orange">
+              <strong class="tabular">{{ randBedrag(totalRaised) }}</strong>
+              <span>Ingesamel</span>
+            </div>
+          }
+        </div>
+      }
     </section>
 
-    @if (showStatsSection) {
-      <section id="stats-section" class="stats-section">
-        <div class="container">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value stat-value--accent">{{ progress }}<small>%</small></div>
-              <div class="stat-label">Voltooi</div>
-            </div>
-
-            @if (showTotalRaised) {
-              <div class="stat-card">
-                <div class="stat-value">R{{ totalRaised | number:'1.0-0' }}</div>
-                <div class="stat-label">Ingesamel</div>
-              </div>
-            }
-
-            <div class="stat-card">
-              <div class="stat-value stat-value--accent">R500</div>
-              <div class="stat-label">Per m²</div>
-            </div>
+    <section class="section">
+      <div class="container-wide why-grid">
+        <div>
+          <p class="eyebrow">Waarom hierdie projek</p>
+          <h2 class="display section-title">Nie net ’n donasie nie. ’n Meetbare deel van die pad.</h2>
+          <p class="lead">
+            Diamantlaan se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
+            op te deel, kan elke ondersteuner presies verstaan hoe sy of haar bydrae by die groter
+            doel inpas.
+          </p>
+          <div class="feature-pair">
+            <article>
+              <h3>Duidelike koste</h3>
+              <p>Elke volle vierkante meter word teen R500 aangebied.</p>
+            </article>
+            <article>
+              <h3>Sigbare vordering</h3>
+              <p>Volg finansiering en die werklike boufases op een plek.</p>
+            </article>
           </div>
+          <a routerLink="/projek" class="text-link">Lees die volledige projekplan →</a>
         </div>
-      </section>
-    }
-
-    <section class="how-it-works">
-      <div class="container">
-        <h2 class="section-heading">Bou jou blokkie</h2>
-        <div class="steps">
-          <div class="step" #stepEl>
-            <div class="step-icon" aria-hidden="true">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div class="step-body">
-              <h3>Kies jou koördinate</h3>
-              <p>Gebruik die kaart om enige beskikbare vierkante meter te kies wat jy wil bou.</p>
-            </div>
-          </div>
-          <div class="step" #stepEl>
-            <div class="step-icon" aria-hidden="true">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/>
-              </svg>
-            </div>
-            <div class="step-body">
-              <h3>Bou met jou bydrae</h3>
-              <p>Bou 'n vierkante meter teen R 500. Elke meter bring ons nader aan 'n geteerde pad.</p>
-            </div>
-          </div>
-          <div class="step" #stepEl>
-            <div class="step-icon" aria-hidden="true">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                <polyline points="17 6 23 6 23 12"/>
-              </svg>
-            </div>
-            <div class="step-body">
-              <h3>Volg die vordering</h3>
-              <p>Kyk hoe jou blok vanuit 'n grondpad tot teerpad verander. Sien die impak wat jy maak.</p>
-            </div>
+        <div class="why-media">
+          <img src="diamant_laan_foto.jpg" alt="’n Vierkante meter word op die padbasis afgemeet" />
+          <div class="meter-badge">
+            <span class="display">1 m²</span>
+            <small>R500</small>
           </div>
         </div>
       </div>
     </section>
 
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <p class="footer-copy">&copy; 2026 <a href="https://www.stephanbredenhann.dev" target="_blank" rel="noopener">Stephan Bredenhann</a> &middot; <a routerLink="/privaatheid">Privaatheidsbeleid</a></p>
+    <section class="section chalk">
+      <div class="container-wide">
+        <p class="eyebrow">Vier eenvoudige stappe</p>
+        <h2 class="display section-title">Verstaan elke stap voordat jy begin.</h2>
+        <p class="lead narrow">
+          Die vloei vra eers hoeveel jy wil bydra. Die kaart verskyn net wanneer jy self ’n presiese plek wil kies.
+        </p>
+        <div class="steps-grid">
+          @for (step of steps; track step.n) {
+            <article class="step-card">
+              <span class="step-n">{{ step.n }}</span>
+              <h3>{{ step.title }}</h3>
+              <p>{{ step.body }}</p>
+            </article>
+          }
+        </div>
       </div>
-    </footer>
+    </section>
+
+    <section class="section">
+      <div class="container-wide">
+        <p class="eyebrow">Kies jou bydrae</p>
+        <h2 class="display section-title">Begin by die bedrag, nie by die kaart nie.</h2>
+        <p class="lead narrow">
+          Elke opsie vertel jou onmiddellik hoeveel vierkante meter jy help finansier.
+        </p>
+        <div class="amount-grid">
+          @for (card of amountCards; track card.title) {
+            <a
+              class="amount-card"
+              [routerLink]="['/bou']"
+              [queryParams]="card.meters ? { aantal: card.meters } : {}"
+            >
+              @if (card.meters) {
+                <span class="display amount-m">{{ card.meters }} m²</span>
+              } @else {
+                <span class="amount-eie">Eie keuse</span>
+              }
+              <strong>{{ card.title }}</strong>
+              <span>{{ card.subtitle }}</span>
+              <em>{{ card.meters ? randBedrag(card.meters * 500) : 'R500 × m²' }}</em>
+            </a>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="section chalk">
+      <div class="container-wide recog-grid">
+        <div>
+          <p class="eyebrow">Erkenning</p>
+          <h2 class="display section-title">Jou naam. Jou blokkie. Jou deel aan die stad.</h2>
+          <p class="lead">
+            Die Stadsbouer-belofte word sigbaar vóór betaling. Ondersteuners kan kies hoe hul
+            erkenning vertoon moet word.
+          </p>
+          <a routerLink="/hoe-dit-werk" class="text-link">Sien alle erkenningsopsies →</a>
+        </div>
+        <div class="cert-preview surface-card">
+          <img src="stadsboufonds-logo-orange.png" alt="" width="64" height="64" />
+          <p class="eyebrow">Erkenning as</p>
+          <h3 class="display">STADSBOUER</h3>
+          <p class="cert-name">JOU NAAM</p>
+          <p>Vir die finansiering van 1 m² van die Diamantlaan-teerprojek.</p>
+          <span class="work-stamp stamp">1 m²</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container cta-inner">
+        <div>
+          <p class="eyebrow" style="color: rgba(255,255,255,0.65)">Jou volgende stap</p>
+          <h2 class="display">Bou die volgende meter saam met ons.</h2>
+          <p>Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.</p>
+        </div>
+        <a routerLink="/bou" class="btn btn-on-orange">
+          Kies jou bydrae
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      </div>
+    </section>
   `,
   styles: [`
-    :host {
-      display: block;
-    }
+    :host { display: block; }
 
-    /* ===== HERO ===== */
     .hero {
       position: relative;
-      min-height: 100vh;
-      min-height: 100dvh;
-      background: var(--surface);
+      min-height: min(92vh, 820px);
+      display: flex;
+      align-items: flex-end;
+      padding: 4rem 0 5rem;
       overflow: hidden;
+      background: var(--tar);
     }
-
-    .hero-bg {
+    .hero-img {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 10%;
-      transform: scale(1.00);
-      transform-origin: center 30%;
-      z-index: 0;
-    }
-
-    /* ===== CLOUD LAYER ===== */
-    .cloud-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 15%;
-      z-index: 1;
-      pointer-events: none;
-      overflow: hidden;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-
-    .cloud-layer--ready {
-      opacity: 1;
-    }
-
-    .cloud {
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      top: auto;
-      height: 110%;
-      width: auto;
       opacity: 0.55;
-      mix-blend-mode: screen;
-      will-change: transform;
-      animation: cloud-drift linear infinite;
-      animation-fill-mode: backwards;
     }
-
-    .cloud--wide {
-      height: 150%;
-      opacity: 0.35;
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(25,18,14,0.92) 0%, rgba(25,18,14,0.55) 55%, rgba(25,18,14,0.25) 100%);
     }
-
-    .cloud--1 {
-      animation-duration: 600s;
-      animation-delay: -120s;
-    }
-
-    .cloud--2 {
-      height: 100%;
-      animation-duration: 450s;
-      animation-delay: -270s;
-    }
-
-    .cloud--3 {
-      height: 90%;
-      animation-duration: 320s;
-      animation-delay: -160s;
-    }
-
-    .cloud--5 {
-      animation-duration: 900s;
-      animation-delay: -225s;
-    }
-
-    @keyframes cloud-drift {
-      from { transform: translateX(calc(-100% - 5vw)); }
-      to   { transform: translateX(calc(100vw + 5vw)); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .cloud { animation: none; }
-    }
-
-    /* ===== HERO CONTENT ===== */
     .hero-content {
       position: relative;
-      z-index: 3;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 100dvh;
-      padding: 5.5rem 1.5rem 3rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .hero-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      width: 100%;
-      gap: 2rem;
-      flex: 1;
-    }
-
-    /* Left text block */
-    .hero-text {
-      flex: 1;
-    }
-
-    .hero-label {
-      font-family: var(--font-heading);
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: var(--ob-orange);
-      margin-bottom: 0.5rem;
-    }
-
-    .hero-title {
-      font-family: var(--font-heading);
-      font-size: clamp(2.5rem, 7vw, 4.5rem);
-      font-weight: 900;
-      line-height: 0.95;
-      letter-spacing: -2px;
-    }
-
-    .hero-title-black { color: var(--text-body); }
-    .hero-title-orange { color: var(--ob-orange); }
-
-    /* Dual underline bar */
-    .title-underline {
-      display: flex;
-      width: 100%;
-      max-width: 280px;
-      height: 6px;
-      margin: 0.75rem 0 1rem;
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .title-underline--black  { flex: 1.15; background: var(--text-body); }
-    .title-underline--orange { flex: 1;    background: var(--ob-orange); }
-
-    .hero-subtitle {
-      font-family: var(--font-heading);
-      font-size: clamp(1.125rem, 2.8vw, 1.625rem);
-      font-weight: 600;
-      color: var(--text-body);
-    }
-
-    .hero-subtitle-accent { color: var(--ob-orange); }
-    .hero-subtitle-muted { color: var(--text-body); }
-
-    /* Right OB logo */
-    .hero-logo {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      margin-top: 0.5rem;
-    }
-
-    .hero-ob-logo {
-      height: auto;
-      max-height: 210px;
-      width: auto;
-      max-width: 270px;
-      object-fit: contain;
-    }
-
-    /* Bottom-center CTA pill */
-    .hero-cta {
-      margin-top: auto;
+      z-index: 1;
+      max-width: 40rem;
+      color: #fff;
       padding-bottom: 2rem;
+    }
+    .hero-eyebrow { color: #9ec0e0; }
+    .hero-title {
+      color: #fff;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      margin: 0.75rem 0 1rem;
+    }
+    .hero-title .accent { color: var(--action); }
+    .hero-sub {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.82);
+      margin-bottom: 1.75rem;
+    }
+    .hero-sub strong { color: #fff; }
+    .hero-actions {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .pill-cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--ob-orange);
-      color: #FFFFFF;
-      font-family: var(--font-heading);
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      padding: 0.875rem 2.5rem;
-      border-radius: 999px;
-      text-decoration: none;
-      box-shadow: 0 4px 14px rgba(245, 130, 32, 0.35);
-      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-    }
-
-    .pill-cta:hover {
-      background: #D96E10;
-      color: #FFFFFF;
-      box-shadow: 0 6px 20px rgba(245, 130, 32, 0.45);
-      transform: translateY(-1px);
-    }
-
-    .pill-cta:focus-visible {
-      outline: 3px solid var(--ob-blue);
-      outline-offset: 2px;
-    }
-
-    .pill-cta-em {
-      font-weight: 900;
-    }
-
-    /* Scroll cue — no container, white icon + label */
-    .scroll-cue {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.1rem;
-      margin-top: 1.2rem;
-      padding: 0.3rem 1.08rem 0.35rem;
-      background: transparent;
-      color: #FFFFFF;
-      text-decoration: none;
-      border: none;
-      transition: opacity 0.2s ease, transform 0.15s ease;
-    }
-
-    .scroll-cue:hover {
-      color: #FFFFFF;
-      opacity: 0.85;
-      transform: translateY(-1px);
-      cursor: pointer;
-    }
-
-    .scroll-cue:focus-visible {
-      outline: 3px solid var(--ob-blue);
-      outline-offset: 2px;
-    }
-
-    .scroll-chevron {
-      animation: scroll-bounce 2s ease-in-out infinite;
-    }
-
-    @keyframes scroll-bounce {
-      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(6px); }
-      60% { transform: translateY(3px); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .scroll-chevron { animation: none; }
-    }
-
-    .scroll-label {
-      font-family: var(--font-body);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-
-    /* ===== STATS SECTION ===== */
-    .stats-section {
-      background: var(--bg-warm);
-      padding: 5rem 0 4rem;
-    }
-
-    .stats-grid {
-      display: flex;
-      gap: 1.5rem;
-      justify-content: center;
       flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .hero-cta { width: auto; box-shadow: var(--shadow-cta); }
+    .hero-quiet {
+      color: rgba(255,255,255,0.85);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .hero-quiet:hover { color: #fff; text-decoration: underline; }
+    .reassurance {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      list-style: none;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .reassurance li::before {
+      content: '✓ ';
+      color: var(--action);
+      font-weight: 800;
     }
 
-    .stat-card {
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-soft);
-      padding: 1.75rem 2rem;
-      text-align: center;
-      flex: 1;
-      min-width: 180px;
+    .hero-stat-float {
+      position: absolute;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 2;
+      display: flex;
+      box-shadow: var(--shadow-lg);
     }
-
-    .stat-value {
-      font-family: var(--font-heading);
+    .stat-dark, .stat-orange {
+      padding: 1.1rem 1.4rem;
+      min-width: 9rem;
+    }
+    .stat-dark { background: var(--tar); color: #fff; }
+    .stat-orange { background: var(--action-strong); color: #fff; }
+    .stat-dark strong, .stat-orange strong {
+      display: block;
+      font-family: var(--font-display);
       font-size: 2rem;
       font-weight: 800;
-      color: var(--text-body);
-      line-height: 1.2;
+      line-height: 1;
     }
-
-    .stat-value--accent {
-      color: var(--ob-orange);
-    }
-
-    .stat-value small {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    .stat-label {
-      font-family: var(--font-heading);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      color: var(--text-muted);
+    .stat-dark span, .stat-orange span {
+      display: block;
+      margin-top: 0.35rem;
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-top: 0.5rem;
+      opacity: 0.75;
     }
 
-    /* ===== HOW-IT-WORKS SECTION ===== */
-    .how-it-works {
-      background: var(--surface);
-      padding: 4rem 0 5rem;
+    .section { padding: 5rem 0; }
+    .section.chalk { background: var(--bg-chalk); }
+    .section-title {
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      margin: 0.75rem 0 1rem;
+      max-width: 18ch;
     }
-
-    .section-heading {
-      font-family: var(--font-heading);
-      font-size: 1.75rem;
-      font-weight: 800;
-      color: var(--text-body);
-      text-align: center;
-      margin-bottom: 2.5rem;
+    .lead {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 40rem;
+      margin-bottom: 1.5rem;
     }
-
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      padding: 1.75rem 2rem;
-      background: var(--bg-warm);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-soft);
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-
-    .step.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .step:nth-child(1).visible { transition-delay: 0ms; }
-    .step:nth-child(2).visible { transition-delay: 120ms; }
-    .step:nth-child(3).visible { transition-delay: 240ms; }
-
-    .step-icon {
-      flex-shrink: 0;
-      width: 56px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--ob-orange);
-      color: #FFFFFF;
-      border-radius: 50%;
-    }
-
-    .step-body h3 {
-      font-family: var(--font-heading);
-      font-size: 1.25rem;
+    .lead.narrow { max-width: 36rem; }
+    .text-link {
       font-weight: 700;
-      color: var(--text-body);
+      color: var(--route-blue);
+      text-decoration: none;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 3rem;
+      align-items: center;
+    }
+    .feature-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .feature-pair h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .feature-pair p { color: var(--text-muted); font-size: 1rem; }
+    .why-media { position: relative; }
+    .why-media img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+    }
+    .meter-badge {
+      position: absolute;
+      left: 1rem;
+      bottom: 1rem;
+      background: #fff;
+      padding: 0.85rem 1rem;
+      box-shadow: var(--shadow);
+    }
+    .meter-badge .display {
+      display: block;
+      font-size: 2.5rem;
+      color: var(--action);
+      line-height: 1;
+    }
+    .meter-badge small {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      padding: 1.5rem;
+      min-height: 14rem;
+    }
+    .step-n {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--action);
+      line-height: 1;
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+    .step-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
       margin-bottom: 0.5rem;
     }
+    .step-card p { color: var(--text-muted); font-size: 1rem; }
 
-    .step-body p {
-      font-family: var(--font-body);
-      font-size: 1rem;
-      color: var(--text-muted);
-      line-height: 1.65;
+    .amount-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
     }
-
-    /* ===== FOOTER ===== */
-    .site-footer {
-      background: var(--ob-blue);
-      padding: 3rem 0;
-      text-align: center;
-    }
-
-    .footer-inner {
+    .amount-card {
       display: flex;
       flex-direction: column;
+      gap: 0.35rem;
+      padding: 1.5rem;
+      background: var(--surface);
+      border: 2px solid var(--border-soft);
+      text-decoration: none;
+      color: var(--ink);
+      min-height: 12rem;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .amount-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--action);
+      box-shadow: var(--shadow-cta);
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .amount-m {
+      font-size: 3rem;
+      color: var(--action);
+      line-height: 0.9;
+    }
+    .amount-eie {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 800;
+    }
+    .amount-card strong {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+    }
+    .amount-card span { color: var(--text-muted); font-size: 0.95rem; }
+    .amount-card em {
+      margin-top: auto;
+      font-style: normal;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.35rem;
+    }
+
+    .recog-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
       align-items: center;
     }
-
-    .footer-copy {
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #FFFFFF;
-      margin: 0;
+    .cert-preview {
+      text-align: center;
+      padding: 2.5rem 2rem;
+    }
+    .cert-preview .display {
+      font-size: 3rem;
+      margin: 0.5rem 0;
+    }
+    .cert-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+    .stamp {
+      margin-top: 1.25rem;
+      padding: 0.4rem 0.75rem;
+      font-size: 1.25rem;
     }
 
-    .footer-copy a {
-      color: #FFFFFF;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+    .cta-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2rem;
+      align-items: center;
     }
-    .footer-copy a:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.8);
-      outline-offset: 2px;
+    .cta-band .display {
+      color: #fff;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      max-width: 16ch;
+      margin: 0.5rem 0 0.75rem;
     }
-
-    /* ===== RESPONSIVE ===== */
-    @media (min-width: 768px) {
-      .hero-content {
-        padding-left: 2rem;
-        padding-right: 2rem;
-      }
+    .btn-on-orange {
+      background: #fff;
+      color: var(--action);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.2rem;
+      min-height: var(--tap-large);
+      padding: 1rem 1.75rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
-
-    @media (max-width: 768px) {
-      .hero-content {
-        padding-top: 4.5rem;
-      }
-
-      .hero-inner {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .hero-ob-logo {
-        max-height: 150px;
-        max-width: 210px;
-      }
-
-      .hero-logo {
-        margin-top: 0;
-        order: -1;
-      }
-
-      .hero-text {
-        text-align: left;
-        width: 100%;
-      }
-
-      .hero-label {
-        font-size: 0.875rem;
-      }
-
-      .stats-grid {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .step {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .step-body {
-        text-align: center;
-      }
+    .btn-on-orange:hover {
+      background: var(--bg-chalk);
+      color: var(--action-hover);
     }
 
-    @media (max-width: 480px) {
-      .hero-title {
-        font-size: 2.25rem;
+    @media (max-width: 960px) {
+      .why-grid, .recog-grid { grid-template-columns: 1fr; }
+      .steps-grid, .amount-grid { grid-template-columns: 1fr 1fr; }
+      .hero-stat-float {
+        position: static;
+        margin: 1.5rem 1.5rem 0;
+        width: calc(100% - 3rem);
       }
-
-      .section-heading {
-        font-size: 1.375rem;
-      }
-
-      .stat-value {
-        font-size: 1.75rem;
-      }
+      .hero { align-items: flex-start; padding-top: 5rem; flex-direction: column; }
     }
-
-    @media (prefers-reduced-motion: reduce) {
-      .step {
-        opacity: 1;
-        transform: none;
-        transition: none;
-      }
+    @media (max-width: 560px) {
+      .steps-grid, .amount-grid, .feature-pair { grid-template-columns: 1fr; }
+      .hero-stat-float { flex-direction: column; }
     }
-  `],
+  `]
 })
-export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChildren('stepEl') stepElements!: QueryList<ElementRef<HTMLElement>>;
-
+export class HomeComponent implements OnInit, OnDestroy {
   private road = inject(RoadService);
   private settingsService = inject(SettingsService);
+  private destroy$ = new Subject<void>();
 
   showStatsSection = true;
   showTotalRaised = true;
   progress = 0;
   totalRaised = 0;
-  cloudsReady = false;
 
-  private static readonly CLOUD_ASSETS = [
-    'clouds/cloud-1.png',
-    'clouds/cloud-2.png',
-    'clouds/cloud-3.png',
-    'clouds/cloud-5.png',
+  readonly randBedrag = randBedrag;
+
+  readonly amountCards: AmountCard[] = [
+    { meters: 1, title: 'Een vierkante meter', subtitle: 'Word ’n Stadsbouer' },
+    { meters: 2, title: 'Twee vierkante meter', subtitle: 'Bou saam as ’n gesin' },
+    { meters: 5, title: 'Vyf vierkante meter', subtitle: 'Maak ’n groter merk' },
+    { meters: null, title: 'Kies enige hoeveelheid', subtitle: 'Vir groter bydraes en ondernemings' },
   ];
 
-  private intersectionObserver?: IntersectionObserver;
-  private reducedMotion = false;
-  private destroy$ = new Subject<void>();
+  readonly steps = [
+    { n: '01', title: 'Kies hoeveel jy wil bou', body: 'Kies 1, 2, 5 of enige ander aantal vierkante meter teen R500 per m².' },
+    { n: '02', title: 'Laat ons kies—of kies self', body: 'Ons kan beskikbare blokkies onmiddellik toeken. Die detailkaart bly ’n opsionele keuse.' },
+    { n: '03', title: 'Betaal veilig', body: 'Voltooi die bydrae as ’n gas. Geen rekening is nodig voor betaling nie.' },
+    { n: '04', title: 'Word ’n Stadsbouer', body: 'Ontvang erkenning, volg die projek en sien hoe die meter waartoe jy bygedra het vorder.' },
+  ];
 
-  scrollToStats(event: Event) {
-    event.preventDefault();
-    const el = document.getElementById('stats-section');
-    el?.scrollIntoView({ behavior: 'smooth' });
+  get fundedMeters(): number {
+    return Math.round(this.totalRaised / 500);
   }
 
   ngOnInit() {
-    this.preloadClouds();
-
     this.settingsService.getHomeStatsSettings()
       .pipe(
-        catchError(() => {
-          console.error('Kon nie tuisblad instellings laai nie.');
-          return of({ showStatsSection: true, showTotalRaised: true });
-        }),
+        catchError(() => of({ showStatsSection: true, showTotalRaised: true })),
         tap(settings => {
           this.showStatsSection = settings.showStatsSection;
           this.showTotalRaised = settings.showTotalRaised;
         }),
         filter(settings => settings.showStatsSection),
         switchMap(() => this.road.getStats().pipe(
-          catchError(() => {
-            console.error('Kon nie pad statistieke laai nie.');
-            return of({ progress: 0, totalRaised: 0 });
-          })
+          catchError(() => of({ progress: 0, totalRaised: 0 }))
         )),
         takeUntil(this.destroy$)
       )
@@ -690,68 +550,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  ngAfterViewInit() {
-    if (typeof window === 'undefined') return;
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.setupScrollAnimations();
-  }
-
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-    this.intersectionObserver?.disconnect();
-  }
-
-  private preloadClouds() {
-    if (typeof window === 'undefined') {
-      this.cloudsReady = true;
-      return;
-    }
-
-    Promise.all(
-      HomeComponent.CLOUD_ASSETS.map(
-        src =>
-          new Promise<void>((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve();
-            img.onerror = () => reject();
-            img.src = src;
-          })
-      )
-    )
-      .then(() => {
-        this.cloudsReady = true;
-      })
-      .catch(() => {
-        this.cloudsReady = true;
-      });
-  }
-
-  private setupScrollAnimations() {
-    if (typeof IntersectionObserver === 'undefined') {
-      this.stepElements?.forEach(el => el.nativeElement.classList.add('visible'));
-      return;
-    }
-
-    if (this.reducedMotion) {
-      this.stepElements?.forEach(el => el.nativeElement.classList.add('visible'));
-      return;
-    }
-
-    this.intersectionObserver = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            this.intersectionObserver?.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    this.stepElements?.forEach(el => {
-      this.intersectionObserver?.observe(el.nativeElement);
-    });
   }
 }

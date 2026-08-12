@@ -104,7 +104,7 @@ describe('RegisterComponent', () => {
 
     component.submit();
 
-    expect(component.passwordError).toBe("Wagwoord moet 'n spesiale karakter bevat.");
+    expect(component.passwordError).toBe("Wagwoord moet ’n spesiale karakter bevat.");
   });
 
   it('clears the mismatch message once the two fields agree again', () => {

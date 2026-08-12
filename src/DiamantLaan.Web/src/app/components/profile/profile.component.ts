@@ -22,7 +22,8 @@ import {
   template: `
     <div class="container profile-page">
       <div class="page-header">
-        <h2>My Profiel</h2>
+        <p class="eyebrow">My rekening</p>
+        <h2 class="display page-title">My profiel</h2>
         <p class="summary">{{ changesRemaining }} van {{ maxChanges }} veranderinge oor vir die volgende 12 uur</p>
       </div>
 
@@ -37,22 +38,22 @@ import {
             <form (ngSubmit)="saveProfile()">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Voornaam</label>
-                  <input type="text" [(ngModel)]="firstName" name="firstName" required>
+                  <label for="firstName">Voornaam</label>
+                  <input id="firstName" type="text" [(ngModel)]="firstName" name="firstName" required>
                   @if (firstNameError) {
                     <p class="field-error">{{ firstNameError }}</p>
                   }
                 </div>
                 <div class="form-group">
-                  <label>Van</label>
-                  <input type="text" [(ngModel)]="lastName" name="lastName" required>
+                  <label for="lastName">Van</label>
+                  <input id="lastName" type="text" [(ngModel)]="lastName" name="lastName" required>
                   @if (lastNameError) {
                     <p class="field-error">{{ lastNameError }}</p>
                   }
                 </div>
               </div>
               <div class="form-group">
-                <label>Foonnommer</label>
+                <label for="phoneNumber">Foonnommer</label>
                 <app-phone-input
                   [(countryCode)]="phoneCountryCode"
                   [(phoneNumber)]="phoneNumber"
@@ -63,9 +64,9 @@ import {
               </div>
               <div class="form-group toggle-group">
                 <label class="toggle">
-                  <input type="checkbox" [(ngModel)]="receiveBlockProgressEmails" name="receiveBlockProgressEmails">
+                  <input id="receiveBlockProgressEmails" type="checkbox" [(ngModel)]="receiveBlockProgressEmails" name="receiveBlockProgressEmails">
                   <span class="toggle-ui" aria-hidden="true"></span>
-                  <span class="toggle-label">Ontvang eposse oor die vordering van my blokke</span>
+                  <span class="toggle-label">Ontvang e-posse oor die vordering van my vierkante meter</span>
                 </label>
               </div>
               @if (profileMessage) {
@@ -81,15 +82,15 @@ import {
             <h3>E-posadres</h3>
             <form (ngSubmit)="saveEmail()">
               <div class="form-group">
-                <label>Nuwe e-pos</label>
-                <input type="email" [(ngModel)]="email" name="email" required autocomplete="email">
+                <label for="email">Nuwe e-pos</label>
+                <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email">
                 @if (emailError) {
                   <p class="field-error">{{ emailError }}</p>
                 }
               </div>
               <div class="form-group">
-                <label>Huidige wagwoord</label>
-                <input type="password" [(ngModel)]="emailCurrentPassword" name="emailCurrentPassword" required autocomplete="current-password">
+                <label for="emailCurrentPassword">Huidige wagwoord</label>
+                <input id="emailCurrentPassword" type="password" [(ngModel)]="emailCurrentPassword" name="emailCurrentPassword" required autocomplete="current-password">
               </div>
               @if (emailMessage) {
                 <app-alert [type]="emailMessageType" [message]="emailMessage" />
@@ -104,23 +105,23 @@ import {
             <h3>Wagwoord</h3>
             <form (ngSubmit)="savePassword()">
               <div class="form-group">
-                <label>Huidige wagwoord</label>
-                <input type="password" [(ngModel)]="currentPassword" name="currentPassword" required autocomplete="current-password">
+                <label for="currentPassword">Huidige wagwoord</label>
+                <input id="currentPassword" type="password" [(ngModel)]="currentPassword" name="currentPassword" required autocomplete="current-password">
               </div>
               <div class="form-group">
-                <label>Nuwe wagwoord</label>
-                <input type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+                <label for="newPassword">Nuwe wagwoord</label>
+                <input id="newPassword" type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
                 <ul class="pw-checklist">
                   <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-                  <li [class.ok]="checks().hasNumber">'n Nommer</li>
-                  <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
-                  <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
-                  <li [class.ok]="checks().hasLower">'n Kleinletter</li>
+                  <li [class.ok]="checks().hasNumber">’n Nommer</li>
+                  <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
+                  <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
+                  <li [class.ok]="checks().hasLower">’n Kleinletter</li>
                 </ul>
               </div>
               <div class="form-group">
-                <label>Bevestig nuwe wagwoord</label>
-                <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+                <label for="confirmPassword">Bevestig nuwe wagwoord</label>
+                <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
               </div>
               @if (passwordMessage) {
                 <app-alert [type]="passwordMessageType" [message]="passwordMessage" />
@@ -134,8 +135,8 @@ import {
           <section class="card danger-card">
             <h3>Verwyder rekening</h3>
             <p class="danger-copy">
-              Jou blokke bly besit en onbeskikbaar, maar word as &ldquo;Onaktiewe rekening&rdquo; gewys.
-              Jy sal nie weer met hierdie rekening kan aanmeld nie.
+              Jou vierkante meter bly joune en onbeskikbaar vir ander, maar word gewys as
+              &ldquo;Onaktiewe rekening&rdquo;. Jy sal nie weer met hierdie rekening kan aanmeld nie.
             </p>
             <button type="button" class="btn btn-outline danger" (click)="openDeleteModal()">
               Verwyder rekening
@@ -156,7 +157,8 @@ import {
         >
           <h3 id="delete-account-title">Verwyder rekening?</h3>
           <p>
-            Tik jou wagwoord om te bevestig. Jou blokke bly verkoop en verskyn as &ldquo;Onaktiewe rekening&rdquo;.
+            Tik jou wagwoord om te bevestig. Jou vierkante meter bly verkoop en verskyn as
+            &ldquo;Onaktiewe rekening&rdquo;.
           </p>
           <div class="form-group">
             <label for="deletePassword">Huidige wagwoord</label>
@@ -196,13 +198,11 @@ import {
       display: block;
     }
     .page-header { margin: 1.5rem 0 1.25rem; }
-    .page-header h2 {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      color: var(--color-text);
-      margin-bottom: 0.375rem;
+    .page-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.35rem 0 0.5rem;
     }
-    .summary { color: var(--text-muted); font-size: 0.875rem; }
+    .summary { color: var(--text-muted); font-size: var(--fs-base); }
     .cards {
       display: grid;
       gap: 1.25rem;
@@ -220,7 +220,7 @@ import {
     }
     .card h3 {
       font-family: var(--font-heading);
-      font-size: 1rem;
+      font-size: var(--fs-lg);
       font-weight: 600;
       color: var(--color-text);
       margin-bottom: 1rem;
@@ -239,7 +239,7 @@ import {
     }
     .field-error {
       margin-top: 0.35rem;
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       color: #DC2626;
     }
     .toggle-group { margin-top: 0.25rem; }
@@ -251,7 +251,7 @@ import {
       cursor: pointer;
       text-transform: none;
       letter-spacing: normal;
-      font-size: 0.875rem;
+      font-size: var(--fs-lg);
       color: var(--color-text);
     }
     .toggle input {
@@ -303,7 +303,7 @@ import {
       padding: 0;
       display: grid;
       gap: 0.2rem;
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .pw-checklist li::before { content: '○ '; }
@@ -312,7 +312,7 @@ import {
     .danger-card h3 { color: #B91C1C; }
     .danger-copy {
       color: var(--text-muted);
-      font-size: 0.875rem;
+      font-size: var(--fs-base);
       margin-bottom: 1rem;
       line-height: 1.5;
     }
@@ -350,7 +350,7 @@ import {
     }
     .prompt-dialog p {
       color: var(--color-muted);
-      font-size: 0.9375rem;
+      font-size: var(--fs-base);
       margin-bottom: 0.75rem;
     }
     .prompt-actions {
@@ -364,6 +364,8 @@ import {
       .card { padding: 1.25rem 1rem; }
       .prompt-backdrop { padding: 1rem; }
       .prompt-dialog { padding: 1.25rem; }
+      .prompt-actions { flex-direction: column; }
+      .prompt-actions .btn { width: 100%; }
     }
   `]
 })

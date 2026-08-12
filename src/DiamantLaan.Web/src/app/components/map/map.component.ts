@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
@@ -9,17 +9,40 @@ import { AuthService } from '../../services/auth.service';
 import { Square, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
+import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule],
+  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule, BouStepBarComponent],
   template: `
     <div class="map-page">
+      @if (fromWizard) {
+        <div class="wizard-banner">
+          <div class="container">
+            <div class="wizard-banner-top">
+              <div>
+                <p class="eyebrow">Stap 2 van 3 · Opsionele kaart</p>
+                <h1 class="wizard-title">Diamantlaan · Kies jou blokkies</h1>
+                <p class="wizard-lead">
+                  Die projekroete is uitgelig. Kies beskikbare blokkies; jy kan enige tyd teruggaan
+                  na outomatiese toekenning.
+                </p>
+              </div>
+              <div class="wizard-actions">
+                <a routerLink="/bou/kies" class="btn btn-outline">← Kies vir my</a>
+                <a routerLink="/bou" class="back-qty">Terug na hoeveelheid</a>
+              </div>
+            </div>
+            <app-bou-step-bar [active]="2" />
+          </div>
+        </div>
+      }
       <div class="map-header">
         <div class="container">
           <div class="controls-disclosure">
+            @if (!fromWizard) {
             <div class="map-header-toolbar">
               <div class="view-toggle">
                 <button
@@ -40,7 +63,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 [attr.aria-expanded]="controlsExpanded()"
                 aria-controls="map-pill-controls"
               >
-                <span class="controls-toggle-label">Kies vir my en Soek</span>
+                <span class="controls-toggle-label">Kies vir my en soek</span>
                 <svg
                   class="controls-chevron"
                   [class.rotated]="controlsExpanded()"
@@ -58,9 +81,11 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 </svg>
               </button>
             </div>
-            <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir 'n spesifieke bloknommer</p>
-            @if (controlsExpanded()) {
+            <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir ’n spesifieke bloknommer</p>
+            }
+            @if (controlsExpanded() || fromWizard) {
               <div id="map-pill-controls" class="map-pill-controls-group" role="region" aria-label="Blokke-kies en soek">
+                @if (!fromWizard) {
                 <div class="auto-pick-section">
                   <span class="auto-pick-label">Outomatiese keuse</span>
                   <p class="auto-pick-hint">Kies hoeveel blokke jy wil hê, dan druk die knoppie.</p>
@@ -104,9 +129,10 @@ import { blokLabel } from '../../utils/afrikaans.util';
                     <div class="msg error">{{ pickError() }}</div>
                   }
                 </div>
+                }
                 <div class="search-block-section">
-                  <span class="auto-pick-label">Soek n spesifiek blok</span>
-                  <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek.</p>
+                  <span class="auto-pick-label">Soek ’n spesifieke blok</span>
+                  <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek. Klik dan op die blokkie om dit te kies.</p>
                   <div class="auto-pick-panel search-block-panel">
                     <input
                       #searchBlockInput
@@ -157,7 +183,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
         />
         <div class="sidebar">
           <div class="sidebar-card">
-            <h3>Jou Keuse</h3>
+            <h3>Jou keuse</h3>
             <div class="selection-summary">
               <div class="selection-count">
                 <span class="count">{{ selectedIds().size }}</span>
@@ -171,20 +197,20 @@ import { blokLabel } from '../../utils/afrikaans.util';
             </div>
             @if (selectedIds().size > 0) {
               <button class="btn btn-outline btn-full btn-sm" (click)="clearSelection()">
-                Maak Keuses Skoon ({{ selectedIds().size }})
+                Maak keuses skoon ({{ selectedIds().size }})
               </button>
               <button class="btn btn-primary btn-full" (click)="checkout()">
-                Gaan na Betaling
+                Gaan na betaling
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
             }
             @if (!auth.currentUser()) {
               <div class="login-nudge">
-                <p>Jy kan sonder 'n rekening koop. <a routerLink="/meld-aan">Meld aan</a> om jou blokke se vordering te volg.</p>
+                <p>Jy kan sonder ’n rekening koop. <a routerLink="/meld-aan">Meld aan</a> om jou blokke se vordering te volg.</p>
               </div>
             }
             <div class="my-squares-mini">
-              <h4>My Blokke</h4>
+              <h4>My blokke</h4>
               @if (mySquareIds().length === 0) {
                 <p class="empty">Nog geen blokke gekoop nie.</p>
               }
@@ -199,6 +225,41 @@ import { blokLabel } from '../../utils/afrikaans.util';
   `,
   styles: [`
     .map-page { padding-bottom: 2rem; }
+    .wizard-banner {
+      background: var(--bg-chalk);
+      border-bottom: 1px solid var(--border-soft);
+      padding: 1.75rem 0 0.5rem;
+    }
+    .wizard-banner-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .wizard-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 800;
+      line-height: 1;
+      margin: 0.35rem 0 0.5rem;
+    }
+    .wizard-lead {
+      color: var(--text-muted);
+      max-width: 36rem;
+      font-size: 1.05rem;
+    }
+    .wizard-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+    .back-qty {
+      font-weight: 700;
+      color: var(--route-blue);
+      text-decoration: none;
+    }
     .map-header {
       background: var(--color-surface);
       border-bottom: 1px solid var(--color-border);
@@ -224,22 +285,30 @@ import { blokLabel } from '../../utils/afrikaans.util';
       border: none;
       border-radius: 0;
     }
-    .map-header-toolbar .controls-toggle {
+    /* One shared look for every segmented map control, so the toolbar, the
+       view toggle, the amount pills and the action button stay in step. */
+    .map-header-toolbar .controls-toggle,
+    .view-toggle button,
+    .pick-custom-segment,
+    .pick-action-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      padding: 0.5rem 1.25rem;
-      font-size: 0.8125rem;
+      padding: 0.625rem 1.25rem;
+      font-size: var(--fs-base);
       font-weight: 600;
       border: none;
-      border-left: 1px solid var(--color-border);
       border-radius: 0;
       background: var(--color-surface);
       color: var(--color-muted);
       font-family: var(--font-heading);
       cursor: pointer;
+      white-space: nowrap;
       transition: background 0.15s, color 0.15s;
+    }
+    .map-header-toolbar .controls-toggle {
+      border-left: 1px solid var(--color-border);
     }
     .map-header-toolbar .controls-toggle:hover {
       background: rgba(3, 78, 162, 0.06);
@@ -261,7 +330,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .controls-toggle-hint {
       margin-top: 0.375rem;
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--color-muted);
       text-align: center;
       max-width: 28rem;
@@ -292,13 +361,13 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .auto-pick-label {
       display: block;
       font-family: var(--font-heading);
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       font-weight: 600;
       color: var(--color-text);
       margin-bottom: 0.25rem;
     }
     .auto-pick-hint {
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--color-muted);
       margin-bottom: 0.5rem;
     }
@@ -325,9 +394,9 @@ import { blokLabel } from '../../utils/afrikaans.util';
       background: var(--color-surface);
       color: var(--color-text);
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       font-weight: 600;
-      line-height: 1.25rem;
+      line-height: 1.5rem;
       outline: none;
       -moz-appearance: textfield;
     }
@@ -350,43 +419,21 @@ import { blokLabel } from '../../utils/afrikaans.util';
       border-radius: var(--radius-sm);
       overflow: hidden;
     }
-    .view-toggle button {
-      padding: 0.5rem 1.25rem;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 0;
-      background: var(--color-surface);
-      color: var(--color-muted);
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-    }
     .view-toggle button + button,
     .view-toggle button + .pick-custom-segment,
     .view-toggle .pick-custom-segment {
       border-left: 1px solid var(--color-border);
     }
+    /* --action-strong, not --action: plain orange carries white text at only
+       2.6:1, which fails WCAG AA. The darker tone reaches 4.7:1. */
     .view-toggle button.active,
     .pick-custom-segment.active {
-      background: var(--ob-orange);
-      color: #fff;
+      background: var(--action-strong);
+      color: var(--on-action);
     }
     .view-toggle button:disabled {
       opacity: 0.7;
       cursor: not-allowed;
-    }
-    .pick-custom-segment {
-      padding: 0.5rem 1.25rem;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      background: var(--color-surface);
-      color: var(--color-muted);
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
     }
     .pick-custom-segment.active {
       padding: 0.5rem 0.75rem;
@@ -417,21 +464,14 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .pick-action-btn {
       flex-shrink: 0;
-      padding: 0.5rem 1.5rem;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      border: none;
+      padding: 0.625rem 1.5rem;
       border-left: 1px solid var(--color-border);
-      border-radius: 0;
-      background: var(--ob-orange);
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.15s;
-      white-space: nowrap;
+      background: var(--action-strong);
+      color: var(--on-action);
     }
     .pick-action-btn:hover:not(:disabled) {
-      background: var(--color-primary-hover);
-      color: #fff;
+      background: var(--action-strong-hover);
+      color: var(--on-action);
     }
     .pick-action-btn:disabled {
       opacity: 0.7;
@@ -441,7 +481,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     .search-block-section .msg.error {
       margin-top: 0.5rem;
     }
-    .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--color-muted); }
+    .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--color-muted); }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
     .dot.free { background: #D4C4A8; }
     .dot.sold { background: #C67B5C; }
@@ -463,7 +503,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
     }
     .sidebar-card h3 {
       font-family: var(--font-heading);
-      font-size: 0.9375rem;
+      font-size: var(--fs-lg);
       color: var(--color-text);
       margin-bottom: 1rem;
     }
@@ -609,6 +649,7 @@ export class MapComponent implements OnInit {
   private purchase = inject(PurchaseService);
   auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   @ViewChild('customCountInput') customCountInput?: ElementRef<HTMLInputElement>;
   @ViewChild('searchBlockInput') searchBlockInput?: ElementRef<HTMLInputElement>;
@@ -630,6 +671,9 @@ export class MapComponent implements OnInit {
   readonly pickPresets = [1, 2, 5, 10] as const;
   private readonly maxBlockId = SEGMENTS[SEGMENTS.length - 1].endId;
   readonly blokLabel = blokLabel;
+  // Set when the donor arrived here from the /bou wizard's "Ek kies self" option,
+  // so checkout() can send them back to the wizard's confirm step instead of /betaal.
+  fromWizard = false;
 
   totalAmount = computed(() => this.selectedIds().size * 500);
   selectedIdsArray = computed(() => Array.from(this.selectedIds()));
@@ -642,6 +686,23 @@ export class MapComponent implements OnInit {
     this.road.getSquares().subscribe(data => this.squares = data);
     if (this.auth.currentUser()) {
       this.purchase.getMySquares().subscribe(s => this.mySquareIds.set(s.map(x => x.id)));
+    }
+
+    // Pre-apply the count chosen in the /bou wizard's step 1, so a donor who
+    // picked "Ek kies self" doesn't have to re-enter it here.
+    const n = this.purchase.bouAantal;
+    if (n !== null && this.route.snapshot.queryParamMap.has('bou')) {
+      this.fromWizard = true;
+      this.controlsExpanded.set(true);
+      // Picking is about what is still free, so start on the availability layer
+      // rather than the build-progress one.
+      this.viewMode.set('availability');
+      if ((this.pickPresets as readonly number[]).includes(n)) {
+        this.setPreset(n as 1 | 2 | 5 | 10);
+      } else {
+        this.setCustomMode();
+        this.customCount = n;
+      }
     }
   }
 
@@ -700,7 +761,7 @@ export class MapComponent implements OnInit {
     if (this.pickCustomMode()) {
       resolvedCount = Math.floor(Number(this.customCount));
       if (!Number.isFinite(resolvedCount) || resolvedCount < 1) {
-        this.pickError.set('Voer \'n geldige aantal in.');
+        this.pickError.set('Voer ’n geldige aantal in.');
         return;
       }
     } else {
@@ -740,7 +801,7 @@ export class MapComponent implements OnInit {
 
     const id = Math.floor(Number(this.searchBlockNumber));
     if (!Number.isFinite(id) || id < 1 || id > this.maxBlockId) {
-      this.searchError.set('Voer \'n geldige bloknommer in.');
+      this.searchError.set('Voer ’n geldige bloknommer in.');
       setTimeout(() => this.searchBlockInput?.nativeElement.focus());
       return;
     }
@@ -763,6 +824,8 @@ export class MapComponent implements OnInit {
     if (this.selectedIds().size === 0) return;
     const ids = Array.from(this.selectedIds());
     this.purchase.pendingSquareIds = ids;
-    this.router.navigate(['/betaal']);
+    // A wizard visitor lands back on the wizard's confirm step; everyone else
+    // keeps the existing /betaal destination (which now itself redirects there).
+    this.router.navigate([this.fromWizard ? '/bou/bevestig' : '/betaal']);
   }
 }

@@ -12,15 +12,24 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
   imports: [RouterLink, CertificateCardComponent],
   template: `
     <div class="container">
+      <div class="page-header">
+        <p class="eyebrow">My rekening</p>
+        <h2 class="display page-title">Sertifikaat</h2>
+      </div>
       <app-certificate-card
         [ownerName]="ownerName"
         [squares]="squares">
-        <a routerLink="/my-blokke" class="btn btn-outline">Terug na My Blokke</a>
+        <a routerLink="/my-blokke" class="btn btn-outline">Terug na my blokke</a>
       </app-certificate-card>
     </div>
   `,
   styles: [`
     .container { padding: 2rem 1.5rem 4rem; max-width: 800px; }
+    .page-header { margin-bottom: 1.5rem; }
+    .page-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.35rem 0 0;
+    }
   `]
 })
 export class CertificateComponent implements OnInit {

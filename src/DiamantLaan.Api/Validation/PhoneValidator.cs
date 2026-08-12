@@ -38,14 +38,14 @@ public static partial class PhoneValidator
             {
                 if (digits.Length != 10)
                 {
-                    error = "Foonnommer moet 9 syfers wees sonder 'n voorafgaande nul, of 10 syfers met een.";
+                    error = "Foonnommer moet 9 syfers wees sonder ’n voorafgaande nul, of 10 syfers met een.";
                     return false;
                 }
                 digits = digits[1..];
             }
             else if (digits.Length != 9)
             {
-                error = "Foonnommer moet 9 syfers wees sonder 'n voorafgaande nul, of 10 syfers met een.";
+                error = "Foonnommer moet 9 syfers wees sonder ’n voorafgaande nul, of 10 syfers met een.";
                 return false;
             }
         }

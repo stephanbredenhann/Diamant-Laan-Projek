@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { blokLabel } from '../../../utils/afrikaans.util';
+import { meterFrase, randBedrag } from '../../../utils/afrikaans.util';
 
 export interface ReceiptData {
   purchaseId: number;
@@ -37,19 +37,19 @@ export interface ReceiptData {
       </div>
       <div>
         <dt>Aantal</dt>
-        <dd>{{ data.squareCount }} {{ blokLabel(data.squareCount) }}</dd>
+        <dd>{{ meterFrase(data.squareCount) }}</dd>
       </div>
       <div>
-        <dt>Blok ID's</dt>
+        <dt>Blok-ID’s</dt>
         <dd>{{ data.squareIds.join(', ') }}</dd>
       </div>
       <div>
-        <dt>Bedrag per blok</dt>
-        <dd>R{{ data.amountPerBlock | number:'1.0-0' }}</dd>
+        <dt>Bedrag per m²</dt>
+        <dd>{{ randBedrag(data.amountPerBlock) }}</dd>
       </div>
       <div>
         <dt>Totaal bedrag</dt>
-        <dd><strong>R{{ data.amount | number:'1.0-0' }}</strong></dd>
+        <dd><strong>{{ randBedrag(data.amount) }}</strong></dd>
       </div>
       <div>
         <dt>Betalingstatus</dt>
@@ -85,9 +85,9 @@ export interface ReceiptData {
     }
     .subtitle {
       text-align: center;
-      color: #666;
+      color: var(--text-muted, #55606E);
       margin: 0 0 1.5rem;
-      font-size: 0.9375rem;
+      font-size: 1.125rem;
     }
     .receipt-details {
       display: grid;
@@ -103,26 +103,27 @@ export interface ReceiptData {
     }
     dt {
       font-weight: 600;
-      font-size: 0.8125rem;
-      color: #666;
+      font-size: 1rem;
+      color: var(--text-muted, #55606E);
       margin: 0;
     }
     dd {
       margin: 0;
-      font-size: 0.875rem;
+      font-size: 1.125rem;
       color: #1a1a1a;
       word-break: break-word;
     }
     .footer {
       margin: 1.5rem 0 0;
       text-align: center;
-      font-size: 0.8125rem;
-      color: #666;
+      font-size: 1rem;
+      color: var(--text-muted, #55606E);
     }
   `]
 })
 export class ReceiptCardComponent {
   @Input({ required: true }) data!: ReceiptData;
 
-  readonly blokLabel = blokLabel;
+  readonly meterFrase = meterFrase;
+  readonly randBedrag = randBedrag;
 }

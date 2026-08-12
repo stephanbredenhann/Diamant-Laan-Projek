@@ -177,7 +177,7 @@ public class GuestPurchaseService
     {
         var user = await _userManager.FindByIdAsync(purchase.UserId);
         if (user == null || !user.IsGuest)
-            return IdentityResult.Failed(new IdentityError { Description = "Hierdie aankoop is reeds aan 'n rekening gekoppel." });
+            return IdentityResult.Failed(new IdentityError { Description = "Hierdie aankoop is reeds aan ’n rekening gekoppel." });
 
         user.UserName = details.Email;
         user.Email = details.Email;

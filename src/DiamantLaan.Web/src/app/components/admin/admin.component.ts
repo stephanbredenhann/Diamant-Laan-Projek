@@ -80,7 +80,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
               <div class="conflict-prompt">
                 <p>
                   {{ imageConflictPrompt.conflictingCount }} van {{ imageConflictPrompt.totalSelected }}
-                  gekose blokke het reeds 'n foto vir {{ STATUS_LABELS[pendingImageStatus!] }}.
+                  gekose blokke het reeds ’n foto vir {{ STATUS_LABELS[pendingImageStatus!] }}.
                 </p>
                 <div class="conflict-actions">
                   <button class="btn btn-primary btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(true)">
@@ -129,7 +129,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
         </div>
       } @else {
         <div class="controls">
-          <p class="select-hint">Kies blokke op die kaart om status of 'n foto by te werk.</p>
+          <p class="select-hint">Kies blokke op die kaart om status of ’n foto by te werk.</p>
         </div>
       }
 
@@ -217,7 +217,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
         </div>
         @if (viewMode() === 'photos') {
           <label class="photo-status-picker">
-            <span class="photo-status-label">Foto status</span>
+            <span class="photo-status-label">Fotostatus</span>
             <select
               class="photo-status-select"
               [ngModel]="photoViewStatus()"
@@ -459,7 +459,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       border-left: 1px solid var(--color-border);
     }
     .view-toggle button.active {
-      background: var(--ob-orange);
+      background: var(--action-strong);
       color: #fff;
     }
     .photo-status-picker {
@@ -702,7 +702,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.searchError = '';
     const id = Math.floor(Number(this.searchBlockNumber));
     if (!Number.isFinite(id) || id < 1 || id > this.maxBlockId) {
-      this.searchError = 'Voer \'n geldige bloknommer in.';
+      this.searchError = 'Voer ’n geldige bloknommer in.';
       return;
     }
 
@@ -782,7 +782,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     const imageStatus = this.effectiveImageStatus();
     if (imageStatus === null) {
-      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel \'n nuwe status.';
+      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel ’n nuwe status.';
       this.isError = true;
       this.saving = false;
       return;
@@ -828,7 +828,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     const imageStatus = this.pendingImageStatus ?? this.effectiveImageStatus();
     if (imageStatus === null) {
-      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel \'n nuwe status.';
+      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel ’n nuwe status.';
       this.isError = true;
       this.saving = false;
       return;
@@ -910,9 +910,9 @@ export class AdminComponent implements OnInit, OnDestroy {
     const label = blokLabel(res.squareCount);
     let msg = `Foto opgelaai vir ${res.squareCount} ${label}.`;
     if (res.skippedCount && res.skippedCount > 0) {
-      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.skippedCount} het reeds 'n foto en is oorgeslaan).`;
+      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.skippedCount} het reeds ’n foto en is oorgeslaan).`;
     } else if (res.replacedCount && res.replacedCount > 0) {
-      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.replacedCount} bestaande foto's vervang).`;
+      msg = `Foto opgelaai vir ${res.squareCount} ${label} (${res.replacedCount} bestaande foto’s vervang).`;
     }
     return msg;
   }

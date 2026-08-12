@@ -21,28 +21,29 @@ import {
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2>Registreer</h2>
-          <p>Sluit aan by die gemeenskap en help om Diamant Laan te teer.</p>
+          <p class="eyebrow">Opsioneel</p>
+          <h2 class="display auth-title">Registreer</h2>
+          <p>’n Rekening is heeltemal opsioneel. Dit help net om vorige bydraes, sertifikate en opdaterings later te bestuur.</p>
         </div>
         @if (guestRef) {
           <div class="guest-banner">
             <strong>Jou aankoop word aan hierdie rekening gekoppel.</strong>
-            <span>Sodra jy registreer, verskyn jou blokke onder My Blokke.</span>
+            <span>Sodra jy registreer, sien jy jou vierkante meter onder ‘My blokke’.</span>
           </div>
         }
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
-              <label>Voornaam</label>
-              <input type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam"
+              <label for="firstName">Voornaam</label>
+              <input id="firstName" type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam"
                      [class.invalid]="firstNameError" (blur)="checkFirstName()">
               @if (firstNameError) {
                 <p class="field-error">{{ firstNameError }}</p>
               }
             </div>
             <div class="form-group">
-              <label>Van</label>
-              <input type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van"
+              <label for="lastName">Van</label>
+              <input id="lastName" type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van"
                      [class.invalid]="lastNameError" (blur)="checkLastName()">
               @if (lastNameError) {
                 <p class="field-error">{{ lastNameError }}</p>
@@ -50,38 +51,38 @@ import {
             </div>
           </div>
           <div class="form-group">
-            <label>E-pos</label>
-            <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za"
+            <label for="email">E-pos</label>
+            <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za"
                    [class.invalid]="emailError" (blur)="checkEmail()">
             @if (emailError) {
               <p class="field-error">{{ emailError }}</p>
             }
           </div>
           <div class="form-group">
-            <label>Wagwoord</label>
-            <input type="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies 'n wagwoord"
+            <label for="password">Wagwoord</label>
+            <input id="password" type="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies ’n wagwoord"
                    [class.invalid]="passwordError" (blur)="checkPassword()">
             <ul class="pw-checklist" aria-live="polite">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-              <li [class.ok]="checks().hasNumber">'n Nommer</li>
-              <li [class.ok]="checks().hasSpecial">'n Spesiale karakter</li>
-              <li [class.ok]="checks().hasUpper">'n Hoofletter</li>
-              <li [class.ok]="checks().hasLower">'n Kleinletter</li>
+              <li [class.ok]="checks().hasNumber">’n Nommer</li>
+              <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
+              <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
+              <li [class.ok]="checks().hasLower">’n Kleinletter</li>
             </ul>
             @if (passwordError) {
               <p class="field-error">{{ passwordError }}</p>
             }
           </div>
           <div class="form-group">
-            <label>Bevestig wagwoord</label>
-            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
+            <label for="confirmPassword">Bevestig wagwoord</label>
+            <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
                    [class.invalid]="confirmPasswordError" (blur)="checkConfirmPassword()">
             @if (confirmPasswordError) {
               <p class="field-error">{{ confirmPasswordError }}</p>
             }
           </div>
           <div class="form-group">
-            <label>Foonnommer</label>
+            <label for="phoneNumber">Foonnommer</label>
             <!-- Expanded from the two-way form so the error can clear as they correct it. -->
             <app-phone-input
               [countryCode]="phoneCountryCode"
@@ -109,7 +110,7 @@ import {
             <div class="error-alert">{{ error }}</div>
           }
           @if (requiresLogin) {
-            <p class="auth-link"><a [routerLink]="'/meld-aan'">Meld aan met daardie e-posadres</a> om jou blokke te koppel.</p>
+            <p class="auth-link"><a [routerLink]="'/meld-aan'">Meld aan met daardie e-posadres</a> om jou vierkante meter te koppel.</p>
           }
           <!-- Deliberately always clickable: a disabled button cannot explain what is wrong,
                and browser autofill regularly leaves one field the form does not accept. -->
@@ -117,11 +118,15 @@ import {
             {{ loading ? 'Besig...' : 'Registreer' }}
           </button>
         </form>
-        <p class="auth-link">Reeds 'n rekening? <a routerLink="/meld-aan">Meld hier aan</a></p>
+        <p class="auth-link">Reeds ’n rekening? <a routerLink="/meld-aan">Meld hier aan</a></p>
       </div>
     </div>
   `,
   styles: [`
+    .auth-title {
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      margin: 0.5rem 0 0.75rem;
+    }
     .form-row {
       display: flex;
       gap: 1rem;
@@ -131,7 +136,7 @@ import {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.875rem;
+      font-size: var(--fs-lg);
       color: var(--color-text);
       cursor: pointer;
       text-transform: none;
@@ -148,13 +153,13 @@ import {
       background: var(--color-cream);
       padding: 0.875rem 1rem;
       margin-bottom: 1.25rem;
-      font-size: 0.8125rem;
-      color: var(--color-muted);
+      font-size: var(--fs-base);
+      color: var(--text-muted);
     }
     .guest-banner strong { color: var(--color-text); }
     .field-error {
       margin-top: 0.35rem;
-      font-size: 0.8125rem;
+      font-size: var(--fs-base);
       color: #DC2626;
     }
     input.invalid {
@@ -169,7 +174,7 @@ import {
       padding: 0;
       display: grid;
       gap: 0.2rem;
-      font-size: 0.75rem;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
     }
     .pw-checklist li::before {
@@ -325,12 +330,13 @@ export class RegisterComponent implements OnInit {
       next: () => {
         if (this.guestRef) {
           // The guest purchase now belongs to this account outright.
-          this.purchase.guestPurchase = null;
-          this.purchase.pendingSquareIds = [];
+          this.purchase.clearBouVloei();
           this.router.navigate(['/my-blokke']);
           return;
         }
-        this.router.navigate(['/kaart']);
+        // No purchase attached yet, so send them to step 1 of the build flow
+        // rather than the raw map, which is the optional advanced route.
+        this.router.navigate(['/bou']);
       },
       error: (err) => {
         this.error = err.error?.message || 'Registrasie het misluk.';

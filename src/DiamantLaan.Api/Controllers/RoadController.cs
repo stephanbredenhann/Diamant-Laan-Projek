@@ -14,6 +14,10 @@ public class RoadController : ControllerBase
 
     public RoadController(AppDbContext db) => _db = db;
 
+    /// <summary>Squares outside this range are road shoulders and are never sold.</summary>
+    private const int MinPickId = 200;
+    private const int MaxSaleableId = 4200;
+
     [HttpGet("squares")]
     public async Task<IActionResult> GetSquares()
     {
@@ -34,8 +38,6 @@ public class RoadController : ControllerBase
     [HttpGet("pick-squares")]
     public async Task<IActionResult> PickSquares([FromQuery] int count)
     {
-        const int MinPickId = 200;
-        const int MaxSaleableId = 4200;
         const int MaxPickCount = 4000;
 
         if (count < 1)
@@ -57,6 +59,10 @@ public class RoadController : ControllerBase
         return Ok(new { squareIds });
     }
 
+    /// <summary>
+    /// Public headline numbers for the home and progress pages: how much has been
+    /// funded, and how much of the road actually sits in each build phase.
+    /// </summary>
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
@@ -67,6 +73,34 @@ public class RoadController : ControllerBase
     .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
     .SumAsync(p => (double?)p.Amount) ?? 0;
 
-        return Ok(new { progress, totalRaised });
+        // Only squares inside the saleable range can ever be funded, so the funding
+        // percentage is measured against those rather than against every seeded row.
+        var saleableTotal = await _db.Squares
+            .CountAsync(s => s.Id >= MinPickId && s.Id <= MaxSaleableId);
+        var fundedSquares = await _db.Squares
+            .CountAsync(s => s.OwnerId != null && s.Id >= MinPickId && s.Id <= MaxSaleableId);
+
+        var byPhase = await _db.Squares
+            .GroupBy(s => s.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        int phase(SquareStatus st) => byPhase.FirstOrDefault(x => x.Status == st)?.Count ?? 0;
+
+        return Ok(new
+        {
+            progress,
+            totalRaised,
+            totalSquares = total,
+            saleableSquares = saleableTotal,
+            fundedSquares,
+            phases = new
+            {
+                nogNieBeginNie = phase(SquareStatus.NogNieBeginNie),
+                voorberei = phase(SquareStatus.Voorberei),
+                besigOmTeTeer = phase(SquareStatus.BesigOmTeTeer),
+                klaarGeteer = phase(SquareStatus.KlaarGeteer)
+            }
+        });
     }
 }

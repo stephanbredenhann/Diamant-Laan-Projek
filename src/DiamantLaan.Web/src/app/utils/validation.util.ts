@@ -21,10 +21,10 @@ export function getPasswordChecks(password: string): PasswordChecks {
 export function validatePassword(password: string): string | null {
   const c = getPasswordChecks(password);
   if (!c.minLength) return 'Wagwoord moet minstens 8 karakters lank wees.';
-  if (!c.hasNumber) return "Wagwoord moet 'n nommer bevat.";
-  if (!c.hasSpecial) return "Wagwoord moet 'n spesiale karakter bevat.";
-  if (!c.hasUpper) return "Wagwoord moet 'n hoofletter bevat.";
-  if (!c.hasLower) return "Wagwoord moet 'n kleinletter bevat.";
+  if (!c.hasNumber) return "Wagwoord moet ’n nommer bevat.";
+  if (!c.hasSpecial) return "Wagwoord moet ’n spesiale karakter bevat.";
+  if (!c.hasUpper) return "Wagwoord moet ’n hoofletter bevat.";
+  if (!c.hasLower) return "Wagwoord moet ’n kleinletter bevat.";
   return null;
 }
 
@@ -67,10 +67,10 @@ export function validatePhone(localNumber: string, countryCode: string): string 
     if (digits.startsWith('0')) {
       return digits.length === 10
         ? null
-        : "Foonnommer moet 9 syfers wees sonder 'n voorafgaande nul, of 10 syfers met een.";
+        : "Foonnommer moet 9 syfers wees sonder ’n voorafgaande nul, of 10 syfers met een.";
     }
     if (digits.length === 9) return null;
-    return "Foonnommer moet 9 syfers wees sonder 'n voorafgaande nul, of 10 syfers met een.";
+    return "Foonnommer moet 9 syfers wees sonder ’n voorafgaande nul, of 10 syfers met een.";
   }
 
   const countryDigits = code.replace(/\D/g, '');
@@ -111,14 +111,14 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateEmail(email: string): string | null {
   const trimmed = email.trim();
-  if (!trimmed) return "Voer 'n geldige e-posadres in.";
-  if (trimmed.length > 254) return "Voer 'n geldige e-posadres in.";
-  if ((trimmed.match(/@/g) || []).length !== 1) return "Voer 'n geldige e-posadres in.";
+  if (!trimmed) return "Voer ’n geldige e-posadres in.";
+  if (trimmed.length > 254) return "Voer ’n geldige e-posadres in.";
+  if ((trimmed.match(/@/g) || []).length !== 1) return "Voer ’n geldige e-posadres in.";
 
   const [localPart, domain] = trimmed.split('@');
-  if (!localPart || !domain) return "Voer 'n geldige e-posadres in.";
-  if (!domain.includes('.')) return "Voer 'n geldige e-posadres in.";
-  if (!EMAIL_REGEX.test(trimmed)) return "Voer 'n geldige e-posadres in.";
+  if (!localPart || !domain) return "Voer ’n geldige e-posadres in.";
+  if (!domain.includes('.')) return "Voer ’n geldige e-posadres in.";
+  if (!EMAIL_REGEX.test(trimmed)) return "Voer ’n geldige e-posadres in.";
 
   return null;
 }
