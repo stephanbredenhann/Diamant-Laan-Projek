@@ -426,9 +426,6 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
   bodyText(view?: SheetView): string {
     if (!view) return '';
-    // NOTE: "Oewerpad" is the only mention of that road in the codebase; every other
-    // screen calls this the Diamantlaan-teerprojek. Confirm with the client which
-    // road the certificate should name before this goes to donors.
     return `het ${blokLabel(view.count)} nr. ${view.blocks} aangekoop ter ondersteuning van die teer van die Oewerpad in Orania.`;
   }
 

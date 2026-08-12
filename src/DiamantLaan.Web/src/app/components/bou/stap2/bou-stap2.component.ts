@@ -21,7 +21,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Kies jou toekenning</h1>
           <p class="page-lead">
-            Jy help bou aan {{ meterFrase(aantal()) }} — {{ randBedrag(aantal() * 500) }}.
+            Jy help bou aan {{ meterFrase(aantal()) }}: {{ randBedrag(aantal() * 500) }}.
             Ons kan beskikbare blokkies onmiddellik toeken, of jy kan self die detailkaart oopmaak.
           </p>
         </div>

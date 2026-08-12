@@ -15,7 +15,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Vordering · Diamantlaan-teerprojek</p>
+        <p class="eyebrow page-hero-eyebrow">Vordering · Oewerpad-teerprojek</p>
         <h1 class="display page-hero-title">Hoe ver is ons?</h1>
         <p class="page-hero-body">
           Hier wys ons twee dinge: hoeveel geld reeds ingesamel is, en hoeveel van die pad
@@ -35,7 +35,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           }
           <div class="stat-cell">
             <span class="display stat-value">{{ fundedSquares }}</span>
-            <span class="eyebrow stat-label">m² gefinansier</span>
+            <span class="eyebrow stat-label">m² geborg</span>
           </div>
           <div class="stat-cell">
             <span class="display stat-value">{{ klaarGeteer }}</span>
@@ -54,13 +54,13 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
         <h2 class="display section-title">Geld ingesamel, en pad geteer.</h2>
         <p class="lead">
           Die twee gaan nie op dieselfde tempo nie. Geld word eers ingesamel; die teerwerk
-          volg in fases sodra ’n stuk pad ten volle gefinansier is.
+          volg in fases sodra ’n stuk pad ten volle geborg is.
         </p>
 
         <div class="twin-grid">
           <article class="surface-card twin-card">
             <div class="twin-head">
-              <p class="eyebrow">Gefinansier</p>
+              <p class="eyebrow">Geborg</p>
               <span class="display twin-accent">{{ fundedPercent }}%</span>
             </div>
             <div class="bar-track" role="progressbar" [attr.aria-valuenow]="fundedPercent" aria-valuemin="0" aria-valuemax="100">
@@ -118,7 +118,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
         <p class="phase-note">
           Sodra werk op jou eie blokkies begin, sien jy dit onder
-          <a routerLink="/my-blokke">My blokke</a> — met foto’s van die werk waar dit beskikbaar is.
+          <a routerLink="/my-blokke">My blokke</a>, met foto’s van die werk waar dit beskikbaar is.
         </p>
       </div>
     </section>

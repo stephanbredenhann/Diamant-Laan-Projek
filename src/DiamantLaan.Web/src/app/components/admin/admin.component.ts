@@ -782,7 +782,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     const imageStatus = this.effectiveImageStatus();
     if (imageStatus === null) {
-      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel ’n nuwe status.';
+      this.message = 'Gekose blokke het verskillende statusse. Kies blokke met dieselfde status, of stel ’n nuwe status.';
       this.isError = true;
       this.saving = false;
       return;
@@ -828,7 +828,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     const imageStatus = this.pendingImageStatus ?? this.effectiveImageStatus();
     if (imageStatus === null) {
-      this.message = 'Gekose blokke het verskillende statusse — kies blokke met dieselfde status, of stel ’n nuwe status.';
+      this.message = 'Gekose blokke het verskillende statusse. Kies blokke met dieselfde status, of stel ’n nuwe status.';
       this.isError = true;
       this.saving = false;
       return;

@@ -13,16 +13,16 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
   imports: [CommonModule, RouterLink, IconComponent],
   template: `
     <section class="hero">
-      <img src="diamant_laan_foto.jpg" alt="Diamantlaan wat van grondpad na teerpad verander" class="hero-img" />
+      <img src="diamant_laan_foto.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">Diamantlaan-teerprojek</p>
+        <p class="eyebrow hero-eyebrow">Oewerpad-teerprojek</p>
         <h1 class="display hero-title">
-          Bou die volgende <span class="accent">meter</span> van Diamantlaan.
+          Bou die volgende <span class="accent">meter</span> van Oewerpad.
         </h1>
         <p class="hero-sub">
           Finansier 1 m² teerpad vir <strong>R500</strong> en ontvang erkenning as ’n Stadsbouer.
-          Ons kan jou blokkie kies—of jy kan self die kaart oopmaak.
+          Ons kan jou blokkie kies, of jy kan self die kaart oopmaak.
         </p>
         <div class="hero-actions">
           <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
@@ -43,7 +43,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
         <div class="hero-stat-float" id="stats-section">
           <div class="stat-dark">
             <strong class="tabular">{{ fundedMeters }}<span class="stat-doel">/{{ totalSquares }} m²</span></strong>
-            <span>Reeds gefinansier</span>
+            <span>Reeds geborg</span>
           </div>
           @if (showTotalRaised) {
             <div class="stat-orange">
@@ -67,7 +67,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           <p class="eyebrow">Waarom hierdie projek</p>
           <h2 class="display section-title">Nie net ’n donasie nie. ’n Meetbare deel van die pad.</h2>
           <p class="lead">
-            Diamantlaan se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
+            Oewerpad se teerwerk is ’n groot infrastruktuurprojek. Deur die werk in vierkante meter
             op te deel, kan elke ondersteuner presies verstaan hoe sy of haar bydrae by die groter
             doel inpas.
           </p>
@@ -135,7 +135,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           <p class="eyebrow">Erkenning as</p>
           <h3 class="display">STADSBOUER</h3>
           <p class="cert-name">JOU NAAM</p>
-          <p>Vir die finansiering van 1 m² van die Diamantlaan-teerprojek.</p>
+          <p>Vir die finansiering van 1 m² van die Oewerpad-teerprojek.</p>
           <span class="work-stamp stamp">1 m²</span>
         </div>
       </div>
@@ -524,7 +524,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       number: '01',
       icon: 'ruler',
       title: 'Kies jou hoeveelheid',
-      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik — R500 per m².',
+      body: 'Kies 1, 2, 5 of jou eie aantal vierkante meter. Jy sien die totaal dadelik: R500 per m².',
     },
     {
       number: '02',

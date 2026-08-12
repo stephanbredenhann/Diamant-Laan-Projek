@@ -21,7 +21,7 @@ import { blokLabel } from '../../../utils/afrikaans.util';
       >
         <div class="picker-header">
           <h3 id="block-picker-title">Kies blokke op die kaart</h3>
-          <p class="picker-hint">Beskikbaarheid-aansig — soek of klik/sleep om blokke te kies.</p>
+          <p class="picker-hint">Beskikbaarheid-aansig, soek of klik/sleep om blokke te kies.</p>
         </div>
 
         <div class="picker-search">

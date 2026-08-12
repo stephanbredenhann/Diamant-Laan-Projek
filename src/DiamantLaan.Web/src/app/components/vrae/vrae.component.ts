@@ -15,7 +15,7 @@ interface FaqItem {
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Vrae · Diamantlaan-teerprojek</p>
+        <p class="eyebrow page-hero-eyebrow">Vrae · Oewerpad-teerprojek</p>
         <h1 class="display page-hero-title">Antwoorde vóór die besluit, nie ná die betaling nie.</h1>
         <p class="page-hero-body">
           Duidelike antwoorde oor koste, eienaarskap, betaling, erkenning en projekbeleid verwyder
@@ -211,7 +211,7 @@ export class VraeComponent {
     {
       question: 'Wat finansier my R500?',
       answer:
-        'Jou R500 finansier presies 1 volle vierkante meter teerpad in die Diamantlaan-teerprojek. Dit is ’n meetbare bydrae — nie ’n vae skenking nie.',
+        'Jou R500 finansier presies 1 volle vierkante meter teerpad in die Oewerpad-teerprojek. Dit is ’n meetbare bydrae, nie ’n vae skenking nie.',
     },
     {
       question: 'Moet ek self ’n blokkie kies?',
@@ -221,7 +221,7 @@ export class VraeComponent {
     {
       question: 'Kan ek meer as een m² finansier?',
       answer:
-        'Ja. Jy kan 1, 2, 5 of ’n eie hoeveelheid vierkante meter finansier — teen R500 per volle m².',
+        'Ja. Jy kan 1, 2, 5 of ’n eie hoeveelheid vierkante meter finansier, teen R500 per volle m².',
     },
     {
       question: 'Moet ek ’n rekening hê?',
@@ -231,7 +231,7 @@ export class VraeComponent {
     {
       question: 'Hoe word ek as Stadsbouer erken?',
       answer:
-        'Sodra jou betaling ontvang is, ontvang jy ’n Stadsbouer-sertifikaat. Erkenning kan as persoon, gesin, onderneming of privaat ondersteuner verskyn — volgens die projek se erkenningsopsies.',
+        'Sodra jou betaling ontvang is, ontvang jy ’n Stadsbouer-sertifikaat. Erkenning kan as persoon, gesin, onderneming of privaat ondersteuner verskyn, volgens die projek se erkenningsopsies.',
     },
     {
       question: 'Is betaling veilig?',
