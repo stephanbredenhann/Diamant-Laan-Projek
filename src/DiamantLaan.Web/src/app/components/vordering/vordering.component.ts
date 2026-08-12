@@ -35,7 +35,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           }
           <div class="stat-cell">
             <span class="display stat-value">{{ fundedSquares }}</span>
-            <span class="eyebrow stat-label">m² gefinansier</span>
+            <span class="eyebrow stat-label">m² geborg</span>
           </div>
           <div class="stat-cell">
             <span class="display stat-value">{{ klaarGeteer }}</span>
@@ -54,13 +54,13 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
         <h2 class="display section-title">Geld ingesamel, en pad geteer.</h2>
         <p class="lead">
           Die twee gaan nie op dieselfde tempo nie. Geld word eers ingesamel; die teerwerk
-          volg in fases sodra ’n stuk pad ten volle gefinansier is.
+          volg in fases sodra ’n stuk pad ten volle geborg is.
         </p>
 
         <div class="twin-grid">
           <article class="surface-card twin-card">
             <div class="twin-head">
-              <p class="eyebrow">Gefinansier</p>
+              <p class="eyebrow">Geborg</p>
               <span class="display twin-accent">{{ fundedPercent }}%</span>
             </div>
             <div class="bar-track" role="progressbar" [attr.aria-valuenow]="fundedPercent" aria-valuemin="0" aria-valuemax="100">

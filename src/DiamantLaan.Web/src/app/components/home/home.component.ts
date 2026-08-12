@@ -49,7 +49,7 @@ interface AmountCard {
         <div class="hero-stat-float" id="stats-section">
           <div class="stat-dark">
             <strong class="tabular">{{ fundedMeters }} m²</strong>
-            <span>Reeds gefinansier</span>
+            <span>Reeds geborg</span>
           </div>
           @if (showTotalRaised) {
             <div class="stat-orange">

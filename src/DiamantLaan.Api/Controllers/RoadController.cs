@@ -66,21 +66,21 @@ public class RoadController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        var total = await _db.Squares.CountAsync();
-        var klaarCount = await _db.Squares.CountAsync(s => s.Status == SquareStatus.KlaarGeteer);
+        // The DB seeds extra rows (up to Id 4500) as headroom beyond the current road,
+        // and MinPickId only restricts auto-assign ("pick for me"), not the road itself.
+        // Every other headline number is scoped to the actual saleable road: 1..MaxSaleableId.
+        var total = await _db.Squares.CountAsync(s => s.Id <= MaxSaleableId);
+        var klaarCount = await _db.Squares.CountAsync(s => s.Status == SquareStatus.KlaarGeteer && s.Id <= MaxSaleableId);
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;
         var totalRaised = await _db.Purchases
     .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
     .SumAsync(p => (double?)p.Amount) ?? 0;
 
-        // Only squares inside the saleable range can ever be funded, so the funding
-        // percentage is measured against those rather than against every seeded row.
-        var saleableTotal = await _db.Squares
-            .CountAsync(s => s.Id >= MinPickId && s.Id <= MaxSaleableId);
         var fundedSquares = await _db.Squares
-            .CountAsync(s => s.OwnerId != null && s.Id >= MinPickId && s.Id <= MaxSaleableId);
+            .CountAsync(s => s.OwnerId != null && s.Id <= MaxSaleableId);
 
         var byPhase = await _db.Squares
+            .Where(s => s.Id <= MaxSaleableId)
             .GroupBy(s => s.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -92,7 +92,7 @@ public class RoadController : ControllerBase
             progress,
             totalRaised,
             totalSquares = total,
-            saleableSquares = saleableTotal,
+            saleableSquares = total,
             fundedSquares,
             phases = new
             {
