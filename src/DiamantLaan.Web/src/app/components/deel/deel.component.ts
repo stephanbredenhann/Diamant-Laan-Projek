@@ -38,7 +38,7 @@ interface PublicCertificate {
 
         <div class="cta">
           <a routerLink="/bou" class="btn btn-primary btn-xl">Borg ook ’n m²</a>
-          <a routerLink="/" class="terug">Meer oor Diamant Laan</a>
+          <a routerLink="/" class="terug">Meer oor die projek</a>
         </div>
       } @else if (laai) {
         <p class="boodskap">Besig om te laai...</p>
