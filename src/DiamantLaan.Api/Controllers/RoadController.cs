@@ -14,7 +14,7 @@ public class RoadController : ControllerBase
 
     public RoadController(AppDbContext db) => _db = db;
 
-    private const int MaxSaleableId = 4200;
+    private const int MaxSaleableId = 4000;
 
     [HttpGet("squares")]
     public async Task<IActionResult> GetSquares()

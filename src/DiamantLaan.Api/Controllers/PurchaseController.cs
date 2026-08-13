@@ -18,7 +18,7 @@ namespace DiamantLaan.Api.Controllers;
 public class PurchaseController : ControllerBase
 {
     private const int MaxConcurrentPendingPurchases = 3;
-    private const int MaxSaleableSquareId = 4200;
+    private const int MaxSaleableSquareId = 4000;
     private const decimal PricePerSquare = 500m;
 
     private readonly AppDbContext _db;

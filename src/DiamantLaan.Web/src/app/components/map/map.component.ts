@@ -114,7 +114,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                       name="searchBlockNumber"
                       class="search-block-input"
                       min="1"
-                      max="4200"
+                      max="4000"
                       placeholder="Bloknommer"
                       [(ngModel)]="searchBlockNumber"
                       (keydown.enter)="searchBlock()"

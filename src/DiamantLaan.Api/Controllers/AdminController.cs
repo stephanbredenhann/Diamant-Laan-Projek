@@ -242,7 +242,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        const int saleableSquares = 4200;
+        const int saleableSquares = 4000;
         var saleableQuery = _db.Squares.Where(s => s.Id >= 1 && s.Id <= saleableSquares);
 
         var total = await saleableQuery.CountAsync();
@@ -390,7 +390,7 @@ public async Task<IActionResult> DeleteTransaction(int id)
             if (squares.Any(s => s.OwnerId != null))
                 return BadRequest(new { message = "Sommige blokke is reeds verkoop." });
 
-            if (squares.Any(s => s.Id < 1 || s.Id > 4200))
+            if (squares.Any(s => s.Id < 1 || s.Id > 4000))
                 return BadRequest(new { message = "Ongeldige blokke gekies." });
 
             var amount = squares.Count * 500m;
