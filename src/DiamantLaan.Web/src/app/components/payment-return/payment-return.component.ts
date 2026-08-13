@@ -32,7 +32,7 @@ import { takeWhile } from 'rxjs/operators';
             </div>
             <p class="eyebrow">Betaling</p>
             <h2 class="display auth-title">Betaling suksesvol</h2>
-            <p class="summary">Dankie, jou aankoop is bevestig en jou vierkante meter is nou joune.</p>
+            <p class="summary">Dankie, jou borg is bevestig. Jou m² is nou aan jou toegeken.</p>
             <a routerLink="/my-blokke" class="btn btn-primary btn-wide">Gaan na my blokke</a>
           }
           @case ('timeout') {

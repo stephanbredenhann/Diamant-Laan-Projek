@@ -16,44 +16,39 @@ import { TPipe } from '../../i18n/t.pipe';
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">{{ 'Vordering · Oewerpad-teerprojek' | t }}</p>
-        <h1 class="display page-hero-title">{{ 'Hoe ver is ons?' | t }}</h1>
+        <p class="eyebrow page-hero-eyebrow">{{ 'Vordering · Orania-teerpad' | t }}</p>
+        <h1 class="display page-hero-title">{{ 'Hoe vorder die projek?' | t }}</h1>
         <p class="page-hero-body">
-          {{ 'Hier wys ons twee dinge: hoeveel geld reeds ingesamel is, en hoeveel van die pad werklik al geteer is. Die syfers kom regstreeks uit die stelsel.' | t }}
+          {{ 'Hier wys ons jou hoe ver die projek vorder. Kom loer elke week wat gaan aan!' | t }}
         </p>
       </div>
     </section>
 
-    @if (showStatsSection) {
-      <section class="stats-band" [attr.aria-label]="'Finansiële vordering' | t">
-        <div class="container stats-grid">
-          @if (showTotalRaised) {
-            <div class="stat-cell">
-              <span class="display stat-value">{{ randBedrag(totalRaised) }}</span>
-              <span class="eyebrow stat-label">{{ 'Ingesamel' | t }}</span>
-            </div>
-          }
-          <div class="stat-cell">
-            <span class="display stat-value">{{ fundedSquares }}</span>
-            <span class="eyebrow stat-label">{{ 'm² geborg' | t }}</span>
-          </div>
-          <div class="stat-cell">
-            <span class="display stat-value">{{ klaarGeteer }}</span>
-            <span class="eyebrow stat-label">{{ 'm² klaar geteer' | t }}</span>
-          </div>
-        </div>
-        <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-fill" [style.width.%]="progress"></div>
-        </div>
-      </section>
-    }
-
     <section class="section chalk">
       <div class="container">
+        @if (showStatsSection) {
+          <div class="stats-row" id="stats-section" [attr.aria-label]="'Finansiële vordering' | t">
+            <div class="stat-dark">
+              <strong class="tabular">{{ fundedSquares }}</strong>
+              <span>{{ 'm² geborg' | t }}</span>
+            </div>
+            @if (showTotalRaised) {
+              <div class="stat-orange">
+                <strong class="tabular">{{ randBedrag(totalRaised) }}</strong>
+                <span>{{ 'Ingesamel' | t }}</span>
+              </div>
+            }
+            <div class="stat-dark">
+              <strong class="tabular">{{ klaarGeteer }}</strong>
+              <span>{{ 'm² klaar geteer' | t }}</span>
+            </div>
+          </div>
+        }
+
         <p class="eyebrow">{{ 'Waar ons staan' | t }}</p>
-        <h2 class="display section-title">{{ 'Geld ingesamel, en pad geteer.' | t }}</h2>
+        <h2 class="display section-title">{{ 'Wat is befonds en wat is gedoen?' | t }}</h2>
         <p class="lead">
-          {{ 'Die twee gaan nie op dieselfde tempo nie. Geld word eers ingesamel; die teerwerk volg in fases sodra ’n stuk pad ten volle geborg is.' | t }}
+          {{ 'Hier kan jy duidelik sien hoeveel m² is al geborg, en hoeveel van die pad is al geteer.' | t }}
         </p>
 
         <div class="twin-grid">
@@ -93,9 +88,9 @@ import { TPipe } from '../../i18n/t.pipe';
     <section class="section white">
       <div class="container">
         <p class="eyebrow">{{ 'Die pad self' | t }}</p>
-        <h2 class="display section-title">{{ 'Elke vierkante meter se stand.' | t }}</h2>
+        <h2 class="display section-title">{{ 'Blokkie vir blokkie' | t }}</h2>
         <p class="lead">
-          {{ 'Elke blokkie op die kaart is in een van vier fases. Dit is die werklike telling, nou net soos dit in die stelsel staan.' | t }}
+          {{ 'Elke blokkie m² is tans in een van vier fases:' | t }}
         </p>
 
         <div class="phase-cards">
@@ -114,9 +109,10 @@ import { TPipe } from '../../i18n/t.pipe';
           }
         </div>
 
+        <h3 class="phase-note-kop">{{ 'Jy kan die vordering op die bouwerk van jou eie blokkie volg.' | t }}</h3>
         <p class="phase-note">
-          {{ 'Sodra werk op jou eie blokkies begin, sien jy dit onder' | t }}
-          <a routerLink="/my-blokke">{{ 'My blokke' | t }}</a>{{ ', met foto’s van die werk waar dit beskikbaar is.' | t }}
+          {{ 'Sodra jy jou blokkies gekoop het, en op die webblad ingeteken is, kan jy na die vordering van jou blokke gaan kyk deur op die' | t }}
+          <a routerLink="/my-blokke">{{ 'My blokke' | t }}</a>{{ ' knoppie te klik. Daar sal ook foto’s van die vordering verskyn.' | t }}
         </p>
       </div>
     </section>
@@ -125,10 +121,10 @@ import { TPipe } from '../../i18n/t.pipe';
       <div class="container cta-inner">
         <div>
           <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
-          <h2 class="display">{{ 'Help ons die volgende stuk teer.' | t }}</h2>
-          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
+          <h2 class="display">{{ 'Raak nou betrokke!' | t }}</h2>
+          <p>{{ 'Ontvang erkenning vir elke m² wat jy borg. Handel die proses binne minute af!' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg 1 m² vir R500' | t }}</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg jou m²' | t }}</a>
       </div>
     </section>
   `,
@@ -174,43 +170,38 @@ import { TPipe } from '../../i18n/t.pipe';
       margin: 0;
     }
 
-    .stats-band {
-      background: var(--surface);
-      border-bottom: 1px solid rgba(26, 26, 26, 0.1);
+    .stats-row {
+      display: flex;
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 3.5rem;
+      width: 100%;
     }
-    .stats-grid {
-      display: grid;
-      gap: 1px;
-      background: rgba(26, 26, 26, 0.1);
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 640px) {
-      .stats-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    .stat-cell {
-      background: var(--surface);
+    .stat-dark, .stat-orange {
+      flex: 1;
+      padding: 1.1rem 1.4rem;
+      min-width: 0;
       text-align: center;
-      padding: 2rem 1.25rem;
     }
-    .stat-value {
+    .stat-dark { background: var(--tar); color: #fff; }
+    .stat-orange { background: var(--action-strong); color: #fff; }
+    .stat-dark strong, .stat-orange strong {
       display: block;
-      font-size: clamp(2rem, 4vw, 2.75rem);
-      color: var(--ink);
-      margin-bottom: 0.5rem;
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
     }
-    .stat-label {
-      color: var(--text-muted);
+    .stat-dark span, .stat-orange span {
       display: block;
+      margin-top: 0.35rem;
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.75;
     }
-    .progress-track {
-      height: 0.65rem;
-      background: var(--surface-alt);
-    }
-    .progress-fill {
-      height: 100%;
-      min-width: 0.25rem;
-      background: var(--action);
-      transition: width 0.4s ease;
+    @media (max-width: 560px) {
+      .stats-row { flex-direction: column; }
     }
 
     .section { padding: 4.5rem 0; }
@@ -241,9 +232,14 @@ import { TPipe } from '../../i18n/t.pipe';
     .twin-head {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       gap: 1rem;
       margin-bottom: 1.5rem;
+    }
+    .twin-head .eyebrow {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      letter-spacing: 0.06em;
+      line-height: 1;
     }
     .twin-accent {
       font-size: 2.5rem;
@@ -340,8 +336,15 @@ import { TPipe } from '../../i18n/t.pipe';
       color: var(--ink);
     }
     .phase-count .eyebrow { color: var(--text-muted); }
+    .phase-note-kop {
+      font-family: var(--font-display);
+      font-size: var(--fs-xl);
+      font-weight: 700;
+      color: var(--ink);
+      margin: 2.5rem 0 0.5rem;
+      max-width: 44rem;
+    }
     .phase-note {
-      margin-top: 2rem;
       color: var(--text-muted);
       max-width: 44rem;
     }
@@ -424,25 +427,25 @@ export class VorderingComponent implements OnInit, OnDestroy {
     return [
       {
         title: 'Nog nie begin nie',
-        body: 'Grondpad soos dit vandag is. Nog geen werk op hierdie stuk nie.',
+        body: 'Nog geen werk is op hierdie deel gedoen nie.',
         count: this.nogNieBeginNie,
-        icon: 'road',
+        icon: 'dirt-road',
       },
       {
         title: 'Voorberei',
-        body: 'Die grondwerk en dreinering vir hierdie stuk is aan die gang of klaar.',
+        body: 'Basiese voorbereiding is al gedoen, maar is nog nie geteer nie.',
         count: this.voorberei,
         icon: 'calendar',
       },
       {
         title: 'Besig om te teer',
-        body: 'Die teerwerk is tans op hierdie stuk pad aan die gang.',
+        body: 'Die span is tans besig om hierdie deel te teer!',
         count: this.besigOmTeTeer,
-        icon: 'camera',
+        icon: 'road',
       },
       {
         title: 'Klaar geteer',
-        body: 'Klaar. Hierdie vierkante meter is geteer en in gebruik.',
+        body: 'Hierdie blokkie is afgehandel!',
         count: this.klaarGeteer,
         icon: 'check-circle',
       },

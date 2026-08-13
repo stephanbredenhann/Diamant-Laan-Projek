@@ -11,7 +11,6 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { blokLabel } from '../../../utils/afrikaans.util';
 
 /**
  * The certificate artwork is the client's Canva design, exported to `sertifikaat-agtergrond.png`
@@ -23,18 +22,18 @@ import { blokLabel } from '../../../utils/afrikaans.util';
 const SHEET_W = 794;
 const SHEET_H = 1123;
 
-const NAME_BOX = { left: 116.7551, top: 477.4423, width: 560.1905, height: 79.6667, fontSize: 66.6667 };
-const BODY_BOX = { left: 146.3550, top: 574.7090, width: 500.9908, height: 82.0852, fontSize: 21.3334 };
+const NAME_BOX = { left: 148.6520, top: 476.0433, width: 500.9908, height: 79.6667, fontSize: 66.6667 };
+const BODY_BOX = { left: 148.6520, top: 574.7090, width: 500.9908, height: 82.0852, fontSize: 21.3334 };
 
 /**
- * The date row is drawn into the artwork as an orange rule (x 311.6→467.2 at y 968.4) with two
- * slashes over it, centred near x 365 and x 416. These three boxes are the gaps between them, so
- * the day/month/year sit on the rule the way they would if someone had written them in.
+ * The date row is drawn into the artwork as an orange rule (x 314→469 at y 941.5) with two
+ * slashes over it, at x 362.5 and x 413. These three boxes are the gaps between them, so the
+ * day/month/year sit on the rule the way they would if someone had written them in.
  */
-const DATE_ROW = { top: 947, height: 20 };
-const DATE_DAY = { left: 311.5664, width: 48 };
-const DATE_MONTH = { left: 370, width: 41 };
-const DATE_YEAR = { left: 421, width: 46 };
+const DATE_ROW = { top: 920, height: 20 };
+const DATE_DAY = { left: 314, width: 48 };
+const DATE_MONTH = { left: 372, width: 41 };
+const DATE_YEAR = { left: 423, width: 46 };
 
 /** Smallest the name may shrink to before we let it wrap onto a second line instead. */
 const MIN_NAME_FIT = 0.42;
@@ -128,7 +127,7 @@ export function formatBlockRanges(ids: number[]): string {
   imports: [CommonModule],
   template: `
     <div class="cert-page">
-      @if (squares.length > 1) {
+      @if (squares.length > 1 && !viewOnly) {
         <div class="view-toggle" role="group" aria-label="Kies sertifikaat weergawe">
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'summary'"
                   [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Opsomming</button>
@@ -168,7 +167,7 @@ export function formatBlockRanges(ids: number[]): string {
 
       <div class="actions">
         <ng-content></ng-content>
-        @if (squares.length > 0) {
+        @if (squares.length > 0 && !viewOnly) {
           <button
             type="button"
             class="btn btn-primary"
@@ -348,6 +347,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   @Input() ownerName = '';
   /** `purchaseDate` is the ISO date the block was bought; without it the date row stays blank. */
   @Input() squares: CertificateSquare[] = [];
+  /**
+   * Someone else's certificate, on the public share link: the summary sheet and nothing else.
+   * No paging through their individual blocks, and no PDF. The owner takes their own copy.
+   */
+  @Input() viewOnly = false;
 
   mode: 'summary' | 'block' = 'summary';
   downloading = false;
@@ -443,9 +447,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     }
   }
 
+  /** The design's own sentence, with the placeholder filled in. The summary only pluralises it. */
   bodyText(view?: SheetView): string {
     if (!view) return '';
-    return `het ${blokLabel(view.count)} nr. ${view.blocks} aangekoop ter ondersteuning van die teer van die Oewerpad in Orania.`;
+    const nommer = view.count === 1 ? 'nommer' : 'nommers';
+    return `blok ${nommer} ${view.blocks} geborg het ter ondersteuning van die teer van die Oewerpad in Orania.`;
   }
 
   /** Only the summary can outgrow the design's sentence, so only it is ever scaled down. */

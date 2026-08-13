@@ -18,7 +18,7 @@ public class ShareOgImageService
 
     public byte[] Render(string? firstName, int meterCount)
     {
-        var text = ShareCopy.ImageSentence(firstName, meterCount);
+        var text = ShareCopy.Sentence(firstName, meterCount);
 
         using var image = Image.Load<Rgba32>(BaseJpeg.Value);
         if (image.Width != Width || image.Height != Height)

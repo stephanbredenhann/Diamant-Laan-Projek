@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild, inject, input, output, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoadService } from '../../../services/road.service';
 import { Square } from '../../../models/square';
@@ -169,9 +169,8 @@ export class BlockPickerModalComponent implements OnInit {
   readonly blokLabel = blokLabel;
   readonly maxBlockId = SEGMENTS[SEGMENTS.length - 1].endId;
 
-  selectedIdsArray(): number[] {
-    return Array.from(this.selectedIds());
-  }
+  /** Computed, not a method: a fresh array per tick re-styles the whole map. */
+  readonly selectedIdsArray = computed(() => Array.from(this.selectedIds()));
 
   ngOnInit() {
     this.selectedIds.set(new Set(this.initialIds()));

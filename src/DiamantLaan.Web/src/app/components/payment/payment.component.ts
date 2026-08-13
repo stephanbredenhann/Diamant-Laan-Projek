@@ -18,15 +18,11 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Betalingsvoorskou</p>
+          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Betaal</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Bevestig jou bourekord.</h1>
+          <h1 class="page-title">Borg jou m²</h1>
           <p class="page-lead">
-            @if (isGuest) {
-              Jy gaan as ’n gas voort. Ná betaling kan jy ’n rekening skep om sertifikate en vordering te bestuur.
-            } @else {
-              Bevestig jou bydrae. Jy word na PayFast gestuur om veilig te betaal.
-            }
+            Voltooi die transaksie. Bevestig al die inligting is korrek, en klik op “Betaal”.
           </p>
         </div>
         <span class="work-stamp stamp">STADSBOUER-TOEKENNING</span>
@@ -62,8 +58,9 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
 
         <div class="redirect-notice">
           <p>
-            Wanneer jy op <strong>Betaal veilig</strong> druk, gaan jy na PayFast se webwerf.
-            Daarna kom jy terug na hierdie projek.
+            Wanneer jy op <strong>Betaal</strong> klik, gaan jy na ’n betalingskerm op PayFast
+            geneem word. Voltooi die transaksie en wag om outomaties terug na hierdie blad
+            geneem te word.
           </p>
         </div>
 
@@ -76,7 +73,7 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
             <span class="btn-spinner"></span>
             Besig...
           } @else {
-            Betaal veilig
+            Betaal
           }
         </button>
         <a routerLink="/bou/kies" class="btn btn-outline btn-xl btn-full terug-btn">
@@ -269,7 +266,7 @@ export class PaymentComponent implements OnInit {
   private guestRef?: GuestPurchaseRef;
   readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
-  stepAnnouncement = 'Stap 3 van 4: Bevestig jou bourekord';
+  stepAnnouncement = 'Stap 3 van 4: Borg jou m²';
 
   ngOnInit() {
     this.isGuest = !this.auth.currentUser();

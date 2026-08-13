@@ -45,6 +45,9 @@ export const routes: Routes = [
   { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [mustChangePasswordGuard] },
   { path: 'betalings/kanselleer', loadComponent: () => import('./components/payment-cancel/payment-cancel.component').then(m => m.PaymentCancelComponent), canActivate: [mustChangePasswordGuard] },
   { path: 'betalings/klaar', loadComponent: () => import('./components/payment-complete/payment-complete.component').then(m => m.PaymentCompleteComponent), canActivate: [mustChangePasswordGuard] },
+  // Public sponsor link. Crawlers never get here: SharePageController answers them with the
+  // Open Graph shell and hands everyone else this app.
+  { path: 'deel/:token', data: { kaal: true }, loadComponent: () => import('./components/deel/deel.component').then(m => m.DeelComponent) },
   { path: 'privaatheid', loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent) },
   { path: '**', redirectTo: '' }
 ];

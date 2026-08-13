@@ -22,9 +22,24 @@ public class SharePageController : ControllerBase
         _pages = pages;
     }
 
+    /// <summary>
+    /// Link previews (WhatsApp, Facebook, ...) do not run JavaScript, so they get a server-rendered
+    /// shell that carries nothing but the Open Graph tags. People get the Angular app, which draws
+    /// the real certificate with the same component the owner sees. An unlisted crawler falls
+    /// through to the app and shows the site's generic preview, which is a dull card, not a break.
+    /// </summary>
+    private static readonly string[] PreviewBots =
+    [
+        "facebookexternalhit", "facebookcatalog", "whatsapp", "twitterbot", "linkedinbot",
+        "slackbot", "telegrambot", "discordbot", "pinterest", "redditbot", "applebot",
+        "skypeuripreview", "vkshare", "embedly", "googlebot", "bingbot", "developers.google.com/+/web/snippet"
+    ];
+
     [HttpGet("{token}")]
     public async Task<IActionResult> Page(string token)
     {
+        if (!IsPreviewBot()) return File("~/index.html", "text/html");
+
         var origin = Origin();
         var share = await _shareLinks.FindPublicAsync(token);
         if (share == null)
@@ -59,6 +74,29 @@ public class SharePageController : ControllerBase
         if (ControllerContext.HttpContext != null)
             Response.Headers.CacheControl = "public, max-age=3600";
         return File(jpeg, "image/jpeg");
+    }
+
+    /// <summary>The certificate data behind a public link. Anonymous by design: the token is the key.</summary>
+    [HttpGet("/api/deel/{token}/sertifikaat")]
+    public async Task<IActionResult> Certificate(string token)
+    {
+        var cert = await _shareLinks.FindCertificateAsync(token);
+        if (cert == null) return NotFound();
+
+        return Ok(new
+        {
+            name = cert.Name,
+            firstName = cert.FirstName,
+            blocks = cert.Blocks,
+            purchaseDate = cert.PurchaseDate?.ToString("yyyy-MM-dd")
+        });
+    }
+
+    private bool IsPreviewBot()
+    {
+        var agent = ControllerContext.HttpContext?.Request.Headers.UserAgent.ToString();
+        return !string.IsNullOrEmpty(agent)
+            && PreviewBots.Any(b => agent.Contains(b, StringComparison.OrdinalIgnoreCase));
     }
 
     private string Origin() =>

@@ -9,7 +9,7 @@ public class SharePageRenderer
 
     public string Render(string firstName, int meterCount, string pageUrl, string imageUrl, string homeUrl, string bouUrl)
     {
-        var heading = ShareCopy.PageTitle(firstName, meterCount);
+        var heading = ShareCopy.Sentence(firstName, meterCount);
         var encodedHeading = WebUtility.HtmlEncode(heading);
         return Template.Value
             .Replace("{{TITLE}}", encodedHeading, StringComparison.Ordinal)

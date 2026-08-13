@@ -247,7 +247,9 @@ public class AdminSaveUndoService
         await _db.SaveChangesAsync(cancellationToken);
         await _blockNotifications.CancelPendingAsync(owners, cancellationToken);
 
-        open.ConsumedAt = DateTime.UtcNow;
+        // Deleted, not stamped consumed: a used snapshot can never be undone again, so keeping
+        // the row only grew the table forever. Images it references are already handled above.
+        _db.AdminSaveSnapshots.Remove(open);
         await _db.SaveChangesAsync(cancellationToken);
 
         return (true, null);

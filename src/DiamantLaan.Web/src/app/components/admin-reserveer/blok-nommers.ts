@@ -19,7 +19,8 @@ export interface BlokNommersUitslag {
  * Commas, spaces and newlines all separate. A hyphen inside a piece makes it a range.
  */
 export function ontleedBlokNommers(teks: string, maxId: number): BlokNommersUitslag {
-  const stukke = teks.split(/[\s,]+/).filter(s => s.length > 0);
+  // Collapse spaces around a hyphen first, so "300 - 302" stays one range.
+  const stukke = teks.replace(/\s*-\s*/g, '-').split(/[\s,]+/).filter(s => s.length > 0);
   if (stukke.length === 0) return { ids: [], fout: 'Voer eers bloknommers in.' };
 
   const gevind = new Set<number>();

@@ -23,7 +23,6 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
             <ul class="pw-checklist">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
               <li [class.ok]="checks().hasNumber">’n Nommer</li>
-              <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
               <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
               <li [class.ok]="checks().hasLower">’n Kleinletter</li>
             </ul>

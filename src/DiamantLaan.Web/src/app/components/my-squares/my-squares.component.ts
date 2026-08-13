@@ -8,7 +8,7 @@ import { ImageLightboxComponent } from '../shared/image-lightbox/image-lightbox.
 import { ShareButtonComponent } from '../shared/share-button/share-button.component';
 import { IconComponent } from '../shared/icon/icon.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
-import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
+import { randBedrag } from '../../utils/afrikaans.util';
 
 const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
 
@@ -19,10 +19,10 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
   template: `
     <div class="container">
       <div class="page-header">
-        <p class="eyebrow">My rekening</p>
+        <p class="eyebrow">Stap 4 uit 4 · Erkenning</p>
         <h1 class="display page-title">My blokke</h1>
         @if (squares.length > 0) {
-          <p class="summary">{{ meterFrase(squares.length) }} geborg: <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
+          <p class="summary">{{ squares.length }}m² geborg, <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
           <div class="header-actions">
             <a routerLink="/my-blokke/sertifikaat" class="btn btn-primary btn-xl cert-link">
               <app-icon name="award" [size]="22" />
@@ -93,8 +93,9 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
         <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-consent-title" (click)="$event.stopPropagation()">
           <h3 id="share-consent-title">Deel jou bydrae in die openbaar?</h3>
           <p>
-            As jy instem, kry jy ’n skakel wat jou voornaam en hoeveel meter jy geborg het wys.
-            Enigeen met die skakel kan dit sien. Jou e-pos en telefoonnommer bly privaat.
+            As jy instem, kry jy ’n skakel wat jou sertifikaat wys: die naam daarop, jou blok
+            nommers en hoeveel m² jy geborg het. Enigeen met die skakel kan dit sien.
+            Jou e-pos en telefoonnommer bly privaat.
           </p>
           @if (consentError) {
             <p class="consent-error">{{ consentError }}</p>
@@ -294,11 +295,10 @@ export class MySquaresComponent implements OnInit {
   consentOpen = false;
   consentBusy = false;
   consentError = '';
-  readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
 
   get shareText(): string {
-    return `Ek het ${meterFrase(this.squares.length)} geborg op Diamant Laan!`;
+    return `Ek het ${this.squares.length} m² geborg vir die Oewerpad in Orania!`;
   }
 
   get shareUrl(): string {
@@ -314,6 +314,12 @@ export class MySquaresComponent implements OnInit {
     this.purchase.getMySummary().subscribe({
       next: summary => this.totalSpent = summary.totalSpent,
       error: () => this.totalSpent = this.squares.length * 500
+    });
+    // Pre-fetch so the share tap can call navigator.share synchronously.
+    // iOS/Android drop the user gesture if we await an HTTP call first.
+    this.purchase.getShareLink().subscribe({
+      next: dto => this.publicShareUrl = this.publicUrlFromDto(dto),
+      error: () => { /* no link yet — the consent flow creates one */ }
     });
   }
 

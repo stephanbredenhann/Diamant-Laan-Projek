@@ -2,11 +2,10 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../../services/purchase.service';
-import { meterFrase, randBedrag } from '../../../utils/afrikaans.util';
+import { randBedrag } from '../../../utils/afrikaans.util';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
 
 const PRYS_PER_METER = 500;
-const MAX_EIE = 50;
 
 /**
  * Step 1 of the donation wizard — amount selection (Bydrae).
@@ -19,12 +18,12 @@ const MAX_EIE = 50;
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 1 van 4 · Jou bydrae</p>
+          <p class="eyebrow page-eyebrow">Stap 1 van 4 · Hoeveelheid</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Hoeveel meter wil jy help bou?</h1>
+          <h1 class="page-title">Hoeveel blokkies m² gaan jy borg?</h1>
           <p class="page-lead">
-            Begin by die hoeveelheid. Jy kan daarna kies of ons die blokkies outomaties toeken,
-            of self die detailkaart oopmaak.
+            Elke blokkie m² het sy eie unieke nommer. Borg meer as een om verskeie
+            sertifikate te versamel.
           </p>
         </div>
       </div>
@@ -42,7 +41,6 @@ const MAX_EIE = 50;
                 (click)="kiesPreset(opt)"
               >
                 <span class="choice-number">{{ opt }} <small>m²</small></span>
-                <span class="choice-caption">{{ presetCaption(opt) }}</span>
                 <span class="choice-price">{{ randBedrag(opt * prysPerMeter) }}</span>
               </button>
             }
@@ -53,8 +51,7 @@ const MAX_EIE = 50;
               (click)="kiesEie()"
             >
               <span class="choice-eie-label">Eie hoeveelheid</span>
-              <span class="choice-caption">Kies tussen 1 en {{ maxEie }} m²</span>
-              <span class="choice-price">{{ randBedrag(prysPerMeter) }} × m²</span>
+              <span class="choice-caption">Besluit self hoeveel jy wil borg</span>
             </button>
           </div>
 
@@ -68,7 +65,6 @@ const MAX_EIE = 50;
                   type="number"
                   name="eieAantal"
                   min="1"
-                  [max]="maxEie"
                   inputmode="numeric"
                   aria-label="Aantal vierkante meter"
                   [ngModel]="eieWaarde()"
@@ -88,7 +84,7 @@ const MAX_EIE = 50;
           <p class="eyebrow">Hoeveelheid</p>
           <p class="summary-meters">{{ gekoseAantal() || '—' }} <span>m²</span></p>
           <p class="summary-total">{{ gekoseAantal() ? randBedrag(totaalBedrag()) : 'R0' }}</p>
-          <p class="summary-note">{{ meterFrase(gekoseAantal() || 0) }} teen R500 per m².</p>
+          <p class="summary-note">R500 per m²</p>
           <button type="button" class="btn btn-primary btn-xl" (click)="gaanVoort()" [disabled]="!kanGaanVoort()">
             Gaan voort
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -265,6 +261,32 @@ const MAX_EIE = 50;
       .eie-panel { margin-top: 1rem; padding: 1rem; }
       .stepper { grid-template-columns: 3.5rem 1fr 3.5rem; margin: 0.75rem 0; }
       .summary-card { padding: 1.25rem; }
+      .summary-head { display: grid; grid-template-columns: 1fr 1fr; align-items: baseline; gap: 1rem; }
+      .summary-meters { font-size: 2.75rem; margin: 0.35rem 0 0; }
+      .summary-total { font-size: 2.25rem; }
+      .summary-note { margin: 0.5rem 0 1rem; }
+    }
+    /* Phones: two cards per row leaves ~150px each, which crushes the big
+       numbers. One card per row instead, number left, wording right. */
+    @media (max-width: 600px) {
+      .choices { grid-template-columns: 1fr; gap: 0.75rem; }
+      .choice-btn {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 1rem;
+        align-items: center;
+        min-height: 0;
+        padding: 1rem 1.25rem;
+      }
+      .choice-number { grid-row: span 2; font-size: 2.75rem; }
+      .choice-number small { font-size: 1.25rem; }
+      .choice-caption { align-self: end; }
+      .choice-price { align-self: start; margin-top: 0; }
+      .choice-eie { grid-template-columns: 1fr; row-gap: 0.15rem; }
+      .choice-eie-label { font-size: 1.75rem; }
+      .eie-panel { margin-top: 1rem; padding: 1rem; }
+      .stepper { grid-template-columns: 3.5rem 1fr 3.5rem; margin: 0.75rem 0; }
+      .summary-card { padding: 1.25rem; }
       .summary-meters { font-size: 2.75rem; margin: 0.35rem 0 0; }
       .summary-total { font-size: 2.25rem; }
       .summary-note { margin: 0.5rem 0 1rem; }
@@ -277,23 +299,21 @@ export class BouStap1Component implements OnInit {
   private purchase = inject(PurchaseService);
 
   readonly presets = [1, 2, 5] as const;
-  readonly maxEie = MAX_EIE;
   readonly prysPerMeter = PRYS_PER_METER;
-  readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
 
   private preset = signal<number>(1);
   eieModus = signal(false);
   eieWaarde = signal<number | null>(null);
   eieFout = signal<string | null>(null);
-  stepAnnouncement = 'Stap 1 van 4: Hoeveel meter wil jy help bou?';
+  stepAnnouncement = 'Stap 1 van 4: Hoeveel blokkies m² gaan jy borg?';
 
   ngOnInit() {
     const raw = this.route.snapshot.queryParamMap.get('aantal');
     if (!raw) return;
 
     const n = Math.floor(Number(raw));
-    if (!Number.isFinite(n) || n < 1 || n > MAX_EIE) return;
+    if (!Number.isFinite(n) || n < 1) return;
 
     if ((this.presets as readonly number[]).includes(n)) {
       this.kiesPreset(n);
@@ -314,17 +334,11 @@ export class BouStap1Component implements OnInit {
 
   kanGaanVoort = computed(() => this.gekoseAantal() > 0 && !this.eieFout());
 
-  presetCaption(n: number): string {
-    if (n === 1) return 'Word ’n Stadsbouer';
-    if (n === 2) return 'Bou saam as ’n gesin';
-    return 'Maak ’n groter merk';
-  }
-
   private geldigeEieWaarde(): number | null {
     const raw = this.eieWaarde();
     if (raw === null) return null;
     const n = Math.floor(Number(raw));
-    if (!Number.isFinite(n) || n < 1 || n > MAX_EIE) return null;
+    if (!Number.isFinite(n) || n < 1) return null;
     return n;
   }
 
@@ -342,7 +356,7 @@ export class BouStap1Component implements OnInit {
 
   veranderEie(delta: number) {
     const current = this.geldigeEieWaarde() ?? 1;
-    this.eieWaarde.set(Math.min(this.maxEie, Math.max(1, current + delta)));
+    this.eieWaarde.set(Math.max(1, current + delta));
     this.opEieVerander(this.eieWaarde());
   }
 
@@ -355,9 +369,9 @@ export class BouStap1Component implements OnInit {
     }
     if (!Number.isFinite(n) || n < 1) {
       this.eieFout.set('Voer ’n geldige aantal in.');
-    } else if (n > this.maxEie) {
-      this.eieFout.set(`Maksimum ${this.maxEie} vierkante meter op hierdie skerm. Kies self op die kaart vir meer.`);
     } else {
+      // No upper limit here on purpose: availability is the real ceiling, and the
+      // API says so in step 2 if there are not enough blocks left.
       this.eieFout.set(null);
     }
   }

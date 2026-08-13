@@ -1,8 +1,6 @@
-using System.Text.RegularExpressions;
-
 namespace DiamantLaan.Api.Validation;
 
-public static partial class PasswordValidator
+public static class PasswordValidator
 {
     public const int MinLength = 8;
 
@@ -21,12 +19,6 @@ public static partial class PasswordValidator
             return false;
         }
 
-        if (!SpecialCharRegex().IsMatch(password))
-        {
-            error = "Wagwoord moet ’n spesiale karakter bevat.";
-            return false;
-        }
-
         if (!password.Any(char.IsUpper))
         {
             error = "Wagwoord moet ’n hoofletter bevat.";
@@ -41,7 +33,4 @@ public static partial class PasswordValidator
 
         return true;
     }
-
-    [GeneratedRegex(@"[^a-zA-Z0-9]")]
-    private static partial Regex SpecialCharRegex();
 }

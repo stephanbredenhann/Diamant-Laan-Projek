@@ -2,7 +2,6 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { RoadService } from '../../../services/road.service';
 import { PurchaseService } from '../../../services/purchase.service';
-import { meterFrase, randBedrag } from '../../../utils/afrikaans.util';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
 
 
@@ -17,12 +16,12 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 2 · Hoe wil jy jou blokkies kies?</p>
+          <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou blokkie</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Kies jou toekenning</h1>
+          <h1 class="page-title">Hoe wil jy jou blokkie kies?</h1>
           <p class="page-lead">
-            Jy help bou aan {{ meterFrase(aantal()) }}: {{ randBedrag(aantal() * 500) }}.
-            Ons kan beskikbare blokkies onmiddellik toeken, of jy kan self die detailkaart oopmaak.
+            Jou twee opsies: laat die stelsel self blokkies aan jou toeken, of gaan soek
+            presies op die pad watter m² jy wil borg!
           </p>
         </div>
       </div>
@@ -40,13 +39,10 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <span class="option-badge">Aanbevole</span>
+            <span class="option-badge">Aanbeveel</span>
           </div>
           <h2>Kies beskikbare blokkies vir my</h2>
-          <p>
-            Die stelsel kies outomaties die korrekte aantal beskikbare vierkante meter.
-            Jy hoef geen kaart of blokkienommer te gebruik nie.
-          </p>
+          <p>Die stelsel kies outomaties die korrekte aantal beskikbare m² vir jou.</p>
           @if (besig()) {
             <span class="option-status">Besig...</span>
           } @else {
@@ -64,13 +60,10 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
               <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
               <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
             </svg>
-            <span class="option-badge quiet">Vir ondersteuners wat plek wil kies</span>
+            <span class="option-badge quiet">Maak die kaart oop</span>
           </div>
-          <h2>Kies self op die kaart</h2>
-          <p>
-            Die blokke word honderd op ’n slag gewys. Blaai tot waar jy wil wees en
-            kies die {{ meterFrase(aantal()) }} self. Niks om te sleep of te zoem nie.
-          </p>
+          <h2>Kies self op kaart</h2>
+          <p>Kyk waar die pad gebou word en kies self watter m² jy wil borg.</p>
           <span class="option-cta">Maak kaart oop →</span>
         </button>
       </div>
@@ -196,10 +189,7 @@ export class BouStap2Component implements OnInit {
   aantal = signal(0);
   besig = signal(false);
   fout = signal<string | null>(null);
-  stepAnnouncement = 'Stap 2 van 4: Hoe wil jy jou blokkies kies?';
-
-  readonly meterFrase = meterFrase;
-  readonly randBedrag = randBedrag;
+  stepAnnouncement = 'Stap 2 van 4: Hoe wil jy jou blokkie kies?';
 
   ngOnInit() {
     const n = this.purchase.bouAantal;

@@ -75,10 +75,10 @@ public class AdminController : ControllerBase
         if (squares.Count != dto.SquareIds.Count)
             return BadRequest(new { message = "Sommige blokke bestaan nie." });
 
+        // Moving a status backwards is allowed on purpose: admins need to correct a block
+        // that was marked too far ahead. Only forward jumps of more than one phase are blocked.
         foreach (var square in squares)
         {
-            if (square.Status == SquareStatus.KlaarGeteer && dto.Status != SquareStatus.KlaarGeteer)
-                return BadRequest(new { message = $"Blok #{square.Id} is reeds klaar geteer." });
             if ((int)dto.Status > (int)square.Status + 1)
                 return BadRequest(new { message = $"Kan nie blok #{square.Id} van {square.Status} na {dto.Status} skuif nie." });
         }

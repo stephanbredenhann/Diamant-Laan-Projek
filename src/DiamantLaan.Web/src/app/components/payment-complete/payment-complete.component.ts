@@ -5,7 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PurchaseService, GuestPurchase, GuestPurchaseRef } from '../../services/purchase.service';
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
-import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
+import { randBedrag } from '../../utils/afrikaans.util';
 
 type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
@@ -47,22 +47,23 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
               <h2 class="display auth-title">Dankie, Stadsbouer.</h2>
             }
             <p class="lead">
-              Jy het <strong>{{ meterFrase(squareCount) }}</strong> pad in Orania geborg,
-              <strong>{{ randBedrag(amount) }}</strong> in totaal. Hierdie stuk pad word nou vir jou opgeteken.
+              Jy het <strong>{{ squareCount }}m²</strong> vir die nuwe pad in Orania geborg.
+              Met jou totale bydrae van <strong>{{ randBedrag(amount) }}</strong>, kan ons nou
+              hierdie stukkie teer. Dankie!
             </p>
 
             <div class="pros">
-              <h3>Wil jy ’n rekening skep?</h3>
+              <h3>Ons beveel dit ten sterkste aan om ’n rekening te skep.</h3>
               <p class="pros-intro">Met ’n rekening kan jy:</p>
               <ul>
-                <li>Die vordering van jou vierkante meter volg, van <em>nog nie begin nie</em> tot <em>klaar geteer</em></li>
-                <li>Foto’s sien van die werk op jóú stuk pad</li>
-                <li>E-posopdaterings kry sodra die werk vorder</li>
-                <li>Jou sertifikaat enige tyd weer aflaai</li>
-                <li>Al jou aankope en kwitansies op een plek hou</li>
-                <li>Later weer koop sonder om jou besonderhede weer in te tik</li>
+                <li>Die vordering van jou m² aktief volg.</li>
+                <li>Foto’s sien van hoe die werk op jou blokkie vorder.</li>
+                <li>Opdaterings van hoe die werk vorder, ontvang.</li>
+                <li>Enige tyd toegang tot jou digitale sertifikaat ontvang.</li>
+                <li>Kwitansies van jou borgskap aflaai.</li>
+                <li>Later weer ’n m² borg, sonder om deur die hele proses te gaan.</li>
               </ul>
-              <p class="pros-note">Dit neem net ’n minuut, en jou vierkante meter word dadelik aan die rekening gekoppel.</p>
+              <p class="pros-note">Klik hier om jou rekening binne 30 sekondes te skep!</p>
             </div>
 
             <div class="actions">
@@ -74,15 +75,20 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
         @case ('confirm') {
           <div class="card">
-            <h2>Is jy seker?</h2>
+            <h2>Hou ingedagte!</h2>
             <p class="lead">
-              Sonder ’n rekening kan ons nie jou vierkante meter aan jou koppel nie. Jy sal nie kan sien
-              wanneer dit geteer word nie, en jou sertifikaat kan net nóú afgelaai word, daarna nie weer nie.
+              Sonder ’n rekening kan ons nie jou m² aan jou koppel nie. Ons gaan jou nie kan inlig
+              wanneer jou blokkie geteer word nie. Jy sal ook net een keer jou sertifikaat kan
+              aflaai. Daarna is dit nie meer beskikbaar nie.
             </p>
-            <p class="muted">Jou bydrae bly natuurlik staan, dit gaan nie verlore nie.</p>
+            <p class="muted">
+              Jou bydrae bly natuurlik staan en gaan nie verlore nie. Die rekening is net nodig sodat
+              ons jou bydrae aan jou persoonlike m² kan koppel, en jy die vordering daarvan kan volg.
+            </p>
+            <p class="muted">Ons raai dit ten sterkste aan om jou rekening te skep!</p>
             <div class="actions">
-              <button type="button" class="btn btn-primary" (click)="createAccount()">Skep tog ’n rekening</button>
-              <button type="button" class="btn btn-outline" (click)="confirmDecline()">Nee, gaan voort sonder rekening</button>
+              <button type="button" class="btn btn-primary" (click)="createAccount()">Skep ’n rekening</button>
+              <button type="button" class="btn btn-outline" (click)="confirmDecline()">Nee, gaan voort sonder ’n rekening</button>
             </div>
           </div>
         }
@@ -91,8 +97,8 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
           <div class="card card--name">
             <h2>Naam op jou sertifikaat</h2>
             <p class="lead">
-              Dit is die belangrikste stap: watter naam moet op jou sertifikaat verskyn?
-              Dit is die naam wat gedruk word, so maak seker dit is reg.
+              Die naam wat jy hier invul gaan verskyn op jou sertifikaat. Maak asseblief
+              doodseker dit is reg ingevul:
             </p>
             <div class="form-group form-group--name">
               <label for="cert-name">Naam vir sertifikaat</label>
@@ -327,7 +333,6 @@ export class PaymentCompleteComponent implements OnInit {
   squareCount = 0;
   certificateName = '';
   certificateSquares: CertificateSquare[] = [];
-  readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
 
   private ref?: GuestPurchaseRef;

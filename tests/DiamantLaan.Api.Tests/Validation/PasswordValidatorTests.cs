@@ -10,11 +10,17 @@ public class PasswordValidatorTests
     [InlineData("nouppercase1!")]
     [InlineData("NOLOWERCASE1!")]
     [InlineData("NoNumber!!")]
-    [InlineData("NoSpecial1A")]
     public void IsValid_RejectsWeakPasswords(string password)
     {
         Assert.False(PasswordValidator.IsValid(password, out var error));
         Assert.False(string.IsNullOrWhiteSpace(error));
+    }
+
+    [Fact]
+    public void IsValid_AcceptsPasswordWithoutSpecialCharacter()
+    {
+        Assert.True(PasswordValidator.IsValid("NoSpecial1A", out var error));
+        Assert.Null(error);
     }
 
     [Fact]

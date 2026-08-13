@@ -16,10 +16,10 @@ interface FaqItem {
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">{{ 'Vrae · Oewerpad-teerprojek' | t }}</p>
-        <h1 class="display page-hero-title">{{ 'Antwoorde vóór die besluit, nie ná die betaling nie.' | t }}</h1>
+        <p class="eyebrow page-hero-eyebrow">{{ 'Vrae · Orania bou ’n pad' | t }}</p>
+        <h1 class="display page-hero-title">{{ 'Vrae en antwoorde oor die Oewerpad-projek' | t }}</h1>
         <p class="page-hero-body">
-          {{ 'Duidelike antwoorde oor koste, eienaarskap, betaling, erkenning en projekbeleid verwyder onsekerheid voordat iemand begin bou.' | t }}
+          {{ 'Gereelde vrae word hieronder beantwoord. Stuur gerus vir ons ’n e-pos indien jou vraag nie hier beantwoord word nie.' | t }}
         </p>
       </div>
     </section>
@@ -27,7 +27,7 @@ interface FaqItem {
     <section class="section chalk">
       <div class="container container-narrow">
         <p class="eyebrow">{{ 'Gereelde vrae' | t }}</p>
-        <h2 class="display section-title">{{ 'Wat mense die meeste wil weet.' | t }}</h2>
+        <h2 class="display section-title">{{ 'Gereelde vrae oor dié projek:' | t }}</h2>
 
         <div class="faq-list">
           @for (item of faqs; track item.question) {
@@ -39,8 +39,7 @@ interface FaqItem {
         </div>
 
         <div class="vra-ons surface-card">
-          <h3 class="display">{{ 'Het jy enige ander vrae vir ons?' | t }}</h3>
-          <p>{{ 'Stuur gerus ’n e-pos. Ons help graag.' | t }}</p>
+          <h3 class="display">{{ 'Indien jou vraag nie hier beantwoord is nie, stuur gerus vir ons ’n e-pos:' | t }}</h3>
           <a href="mailto:inligting&#64;orania.co.za" class="btn btn-primary btn-terug">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
@@ -55,10 +54,10 @@ interface FaqItem {
       <div class="container cta-inner">
         <div>
           <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
-          <h2 class="display">{{ 'Het jy jou antwoord? Kies nou jou hoeveelheid.' | t }}</h2>
-          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
+          <h2 class="display">{{ 'Raak nou betrokke!' | t }}</h2>
+          <p>{{ 'Ontvang erkenning vir elke m² wat jy borg. Handel die proses binne minute af!' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg 1 m² vir R500' | t }}</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg jou m²' | t }}</a>
       </div>
     </section>
   `,
@@ -165,14 +164,9 @@ interface FaqItem {
       border-top: 4px solid var(--action);
     }
     .vra-ons h3 {
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
-      margin: 0 0 0.5rem;
-      color: var(--ink);
-    }
-    .vra-ons p {
+      font-size: clamp(1.5rem, 3.5vw, 2.25rem);
       margin: 0 0 1.5rem;
-      color: var(--text-muted);
-      font-size: var(--fs-lg);
+      color: var(--ink);
     }
     /* Long address must not blow out the button on a narrow phone. */
     .vra-ons .btn { max-width: 100%; word-break: break-word; }
@@ -211,32 +205,22 @@ export class VraeComponent {
     {
       question: 'Wat finansier my R500?',
       answer:
-        'Jou R500 finansier presies 1 volle vierkante meter teerpad in die Oewerpad-teerprojek. Dit is ’n meetbare bydrae, nie ’n vae skenking nie.',
+        'Jou R500 finansier presies een m² van die nuwe teerpad in Diamantlaan. Dit word direk aan hierdie projek gewy.',
     },
     {
-      question: 'Moet ek self ’n blokkie kies?',
+      question: 'Kan ek meer as een m² borg?',
       answer:
-        'Nee. Outomatiese toekenning is die vinnigste roete: jy kies net die hoeveelheid en ons ken beskikbare blokkies aan jou toe. Die kaart is ’n opsionele manier om ’n spesifieke plek te kies.',
+        'Ja, jy kan borg soveel jy wil! Indien jy as ’n geskenk vir familie of vriende wil borg, kan jy ook so maak en dan elkeen se naam op hul eie sertifikaat skryf.',
     },
     {
-      question: 'Kan ek meer as een m² finansier?',
+      question: 'Hoe word ek as ’n Stadsbouer erken?',
       answer:
-        'Ja. Jy kan 1, 2, 5 of ’n eie hoeveelheid vierkante meter finansier, teen R500 per volle m².',
+        'Sodra die transaksie finaliseer is, word jou sertifikaat met jou unieke blokkie beskikbaar gestel. Jy kan dit aflaai, deel op sosiale media en selfs laat druk om te raam. Verdere erkenning sal in die toekoms langs die pad aangebring word.',
     },
     {
-      question: 'Moet ek ’n rekening hê?',
+      question: 'Kan ek slegs aanlyn betaal?',
       answer:
-        'Nee. Jy kan as gas betaal. Ná betaling kan jy opsioneel ’n rekening skep om sertifikate, blokkies en opdaterings later te bestuur.',
-    },
-    {
-      question: 'Hoe word ek as Stadsbouer erken?',
-      answer:
-        'Sodra jou betaling ontvang is, ontvang jy ’n Stadsbouer-sertifikaat. Erkenning kan as persoon, gesin, onderneming of privaat ondersteuner verskyn, volgens die projek se erkenningsopsies.',
-    },
-    {
-      question: 'Is betaling veilig?',
-      answer:
-        'Ja. Alle betalings word veilig deur PayFast verwerk, ’n vertroude Suid-Afrikaanse betalingsverskaffer. Jy sien eers ’n opsomming van jou totaal voordat jy na PayFast gestuur word.',
+        'Nee, jy kan ons direk kontak indien jy nie deur die webblad wil borg nie, of sommer die Orania Beweging se kantore in Orania kom besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.',
     },
     {
       question: 'Koop ek die grond of padoppervlak?',

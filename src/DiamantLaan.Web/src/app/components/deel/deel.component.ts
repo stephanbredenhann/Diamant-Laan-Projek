@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CertificateCardComponent } from '../shared/certificate-card/certificate-card.component';
+import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 
 interface PublicCertificate {
   name: string;
@@ -33,7 +33,7 @@ interface PublicCertificate {
         </div>
 
         <div class="sheet-wrap">
-          <app-certificate-card [ownerName]="c.name" [squares]="squares" />
+          <app-certificate-card [ownerName]="c.name" [squares]="squares" [viewOnly]="true" />
         </div>
 
         <div class="cta">
@@ -70,10 +70,11 @@ export class DeelComponent implements OnInit {
   cert: PublicCertificate | null = null;
   laai = true;
 
-  /** The public sheet is always the summary, so no per-block names and one shared date. */
-  get squares() {
-    return (this.cert?.blocks ?? []).map(id => ({ id, purchaseDate: this.cert!.purchaseDate }));
-  }
+  /**
+   * Built once, not derived in a getter: the card re-fits itself on every `squares` change, and a
+   * getter hands it a new array on every change-detection pass, which spins the page to a halt.
+   */
+  squares: CertificateSquare[] = [];
 
   ngOnInit() {
     const token = this.route.snapshot.paramMap.get('token');
@@ -82,7 +83,12 @@ export class DeelComponent implements OnInit {
       return;
     }
     this.http.get<PublicCertificate>(`/api/deel/${encodeURIComponent(token)}/sertifikaat`).subscribe({
-      next: cert => { this.cert = cert; this.laai = false; },
+      next: cert => {
+        this.cert = cert;
+        // The public sheet is always the summary: no per-block names, one shared date.
+        this.squares = cert.blocks.map(id => ({ id, purchaseDate: cert.purchaseDate }));
+        this.laai = false;
+      },
       error: () => { this.laai = false; }
     });
   }

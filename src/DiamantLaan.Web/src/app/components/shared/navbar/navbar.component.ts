@@ -289,6 +289,18 @@ import { TPipe } from '../../../i18n/t.pipe';
         gap: 0.35rem;
       }
 
+      /* Muting it only makes sense on desktop, where it sits in the corner. In
+         the drawer it is just another row and has to stay readable. */
+      .btn-lang {
+        display: flex;
+        justify-content: center;
+        margin: 0 1.25rem 0.75rem;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+        opacity: 1;
+        gap: 0.35rem;
+      }
+
       .backdrop {
         display: block;
         position: fixed;

@@ -25,9 +25,12 @@ import { TPipe } from '../../i18n/t.pipe';
       <div class="container-wide why-grid">
         <div>
           <p class="eyebrow">{{ 'Waarom die Oewerpad?' | t }}</p>
-          <h2 class="display section-title">{{ 'Van grondpad na teerpad.' | t }}</h2>
+          <h2 class="display section-title">{{ 'Van grondpad tot teerpad.' | t }}</h2>
           <p class="lead">
-            {{ 'Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer sien. Dit is ’n besonder belangrike roete vir toeriste wat gastehuise, die hotel, restaurant of rivier wil gaan besoek. Dit is dikwels een van die roetes wat die meeste deur toeriste gery word en dit is daarom van kardinale belang om die pad te teer. Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.' | t }}
+            {{ 'Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer geniet. Dit is ’n besonders belangrike roete vir besoekers wat gastehuise, die hotel, restaurant of rivier gaan besoek. Dit is dikwels een van die eerste roetes wat deur besoekers gery word en eerste indrukke maak saak.' | t }}
+          </p>
+          <p class="lead">
+            {{ 'Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.' | t }}
           </p>
 
           <div class="scope-grid">
@@ -60,16 +63,22 @@ import { TPipe } from '../../i18n/t.pipe';
             <p class="eyebrow">{{ 'Die inisiatief' | t }}</p>
             <h2 class="display section-title">{{ 'Waar die projek vandaan kom.' | t }}</h2>
             <p class="lead">
-              {{ 'Die Oewerpad is al lankal as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Geen staatstoelae beteken dat Oraniërs alles wat hulle graag wil hê, self moet befonds. Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is alles boublokke vir ’n vrye Afrikanertuiste. In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner tans in Suid-Afrika, en meer as dit, binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan beleef.' | t }}
+              {{ 'Die Oewerpad is lankal reeds as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder enige staatstoelae beteken dit dat Oraniërs alles wat hulle graag wil hê, self moet befonds.' | t }}
             </p>
             <p class="lead">
-              {{ 'Die stryd begin egter reeds vandag. ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds niks nie.' | t }}
+              {{ 'Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is die boublokke vir ’n vrye Afrikanertuiste. In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner wat tans in Suid-Afrika woon, maar óók binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan erf.' | t }}
+            </p>
+            <p class="lead">
+              {{ 'Die stryd begin reeds vandag. ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds geen skaduwee nie.' | t }}
             </p>
             <p class="lead">
               {{ 'Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid. Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:' | t }}
             </p>
             <p class="inisiatief-slot">{{ 'Deur self te bou!' | t }}</p>
           </div>
+          <aside class="inisiatief-foto">
+            <img src="orania-welkom.jpg" [alt]="'Welkom in Orania-bord langs die pad' | t" />
+          </aside>
         </div>
 
         <app-foto-slider />
@@ -80,10 +89,10 @@ import { TPipe } from '../../i18n/t.pipe';
       <div class="container cta-inner">
         <div>
           <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
-          <h2 class="display">{{ 'Help om die plan in pad te verander.' | t }}</h2>
-          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
+          <h2 class="display">{{ 'Raak nou betrokke!' | t }}</h2>
+          <p>{{ 'Ontvang erkenning vir elke m² wat jy borg. Handel die proses binne minute af!' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg 1 m² vir R500' | t }}</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg jou m²' | t }}</a>
       </div>
     </section>
   `,
@@ -220,7 +229,24 @@ import { TPipe } from '../../i18n/t.pipe';
       }
     }
 
-    .section-head { margin-bottom: 2.5rem; }
+    .section-head {
+      display: grid;
+      gap: 3rem;
+      align-items: start;
+      margin-bottom: 2.5rem;
+    }
+    .inisiatief-foto { display: none; }
+    @media (min-width: 960px) {
+      .section-head { grid-template-columns: 1.15fr 0.85fr; gap: 3.5rem; }
+      .inisiatief-foto { display: block; }
+    }
+    .inisiatief-foto img {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      display: block;
+      box-shadow: var(--shadow-lg);
+    }
 
     .inisiatief-slot {
       font-family: var(--font-display);
@@ -300,17 +326,17 @@ export class ProjekComponent {
     {
       icon: 'wallet',
       title: 'Ekonomiese impak',
-      body: 'Beter padinfrastruktuur verlaag voertuig- en instandhoudingskoste, verbeter reistye en maak dit makliker vir toeriste om by Orania se instellings aan te doen.',
+      body: 'Beter padinfrastruktuur verlaag voertuig- en instandhoudingskoste, verbeter reistye en skep ’n goeie ervaring wanneer besoekers by een van Orania se gewildste besoekpunte aandoen.',
     },
     {
       icon: 'map-pin',
       title: 'Bou die stad',
-      body: 'Orania moet ontwikkel. Dinge gebeur nie vanself nie. Stap vir stap en stukkie vir stukkie moet ons verbeter, opgradeer en groei. Hoegehalte harde infrastruktuur in ’n eie Afrikanergemeenskap is die bewys van waartoe ons in staat is.',
+      body: 'Orania ontwikkel en dit gebeur nie vanself nie. Stap vir stap, stukkie vir stukkie moet ons self Orania verbeter, opgradeer en laat groei. Indrukwekkende infrastruktuur in ’n eie Afrikanergemeenskap is die fisiese bewys van dit waartoe ons in staat is.',
     },
     {
-      icon: 'award',
+      icon: 'hammer',
       title: 'Vele hande, ligte werk',
-      body: 'Hierdie is ’n groot en ’n duur projek. Deur dit in blokkies op te deel en te skarefinansier, word die groot taak makliker gemaak.',
+      body: 'Hierdie is ’n belangrike en ’n duur projek. Deur dit in blokkies op te deel maak ons dit moontlik vir elkeen om sy deel te doen. So deel ons almal die verantwoordelikheid om hierdie groot visie haalbaar te maak.',
     },
   ];
 }

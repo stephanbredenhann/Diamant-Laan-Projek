@@ -98,8 +98,45 @@ public class ShareLinkService
         return new PublicShare(row.FirstName, count, token);
     }
 
+    /// <summary>
+    /// What the public page needs to draw the visitor's copy of the summary certificate: the same
+    /// name and blocks the owner's own sheet prints. Dated with the latest purchase, matching the
+    /// summary sheet in certificate-card.component.ts.
+    /// </summary>
+    public async Task<PublicCertificate?> FindCertificateAsync(string token, CancellationToken ct = default)
+    {
+        if (!IsToken(token)) return null;
+
+        var user = await _db.Users.AsNoTracking()
+            .Where(u => u.ShareToken == token && !u.IsAnonymized)
+            .Select(u => new { u.Id, u.FirstName, u.LastName, u.CertificateName })
+            .FirstOrDefaultAsync(ct);
+        if (user == null) return null;
+
+        var blocks = await _db.Squares.AsNoTracking()
+            .Where(s => s.OwnerId == user.Id)
+            .OrderBy(s => s.Id)
+            .Select(s => s.Id)
+            .ToListAsync(ct);
+        if (blocks.Count == 0) return null;
+
+        var date = await _db.Purchases.AsNoTracking()
+            .Where(p => p.UserId == user.Id)
+            .OrderByDescending(p => p.PurchaseDate)
+            .Select(p => (DateTime?)p.PurchaseDate)
+            .FirstOrDefaultAsync(ct);
+
+        var name = string.IsNullOrWhiteSpace(user.CertificateName)
+            ? $"{user.FirstName} {user.LastName}".Trim()
+            : user.CertificateName!;
+
+        return new PublicCertificate(name, ShareCopy.DisplayName(user.FirstName), blocks, date);
+    }
+
     public static bool IsToken(string? token) =>
         token is { Length: 32 } && token.All(c => char.IsAsciiHexDigit(c));
 
     public readonly record struct PublicShare(string FirstName, int MeterCount, string Token);
+
+    public record PublicCertificate(string Name, string FirstName, IReadOnlyList<int> Blocks, DateTime? PurchaseDate);
 }

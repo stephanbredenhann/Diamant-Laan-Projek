@@ -285,4 +285,32 @@ public class AdminSaveUndoServiceTests
             try { Directory.Delete(root, true); } catch { /* ignore */ }
         }
     }
+
+    // The bug this guards: undo used to stamp ConsumedAt and leave the row, so the table
+    // grew by one row per undo and nothing ever cleaned it up.
+    [Fact]
+    public async Task Undo_DeletesSnapshotInsteadOfLeavingItBehind()
+    {
+        var (undo, _, db, root) = CreateServices();
+        await using var _ = db;
+        try
+        {
+            db.Squares.Add(new Square { Id = 1, Status = SquareStatus.Voorberei });
+            await db.SaveChangesAsync();
+
+            await undo.BeginOrReplaceAsync(
+                "admin1",
+                "batch-a",
+                new[] { new SquareStatusChange(1, (int)SquareStatus.NogNieBeginNie) },
+                Array.Empty<string>());
+
+            var (ok, err) = await undo.UndoActiveAsync();
+            Assert.True(ok, err);
+            Assert.Empty(await db.AdminSaveSnapshots.ToListAsync());
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { /* ignore */ }
+        }
+    }
 }

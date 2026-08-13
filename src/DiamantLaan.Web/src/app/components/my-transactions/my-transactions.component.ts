@@ -5,7 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PurchaseService, PurchaseTransaction } from '../../services/purchase.service';
 import { ReceiptCardComponent, ReceiptData } from '../shared/receipt-card/receipt-card.component';
 import { downloadElementAsPdf } from '../../utils/pdf-export.util';
-import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
+import { randBedrag } from '../../utils/afrikaans.util';
 
 type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amount';
 
@@ -18,7 +18,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
       <div class="page-header">
         <p class="eyebrow">My rekening</p>
         <h2 class="display page-title">My transaksies</h2>
-        <p class="hint">Jou bevestigde aankope en kwitansies.</p>
+        <p class="hint">Jou bevestigde borgskappe en kwitansies</p>
       </div>
 
       <div class="table-card">
@@ -40,7 +40,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                     Datum <span class="sort-icon">{{ sortIcon('purchaseDate') }}</span>
                   </th>
                   <th (click)="sortBy('id')" [class.sorted]="sortKey === 'id'">
-                    Aankoop # <span class="sort-icon">{{ sortIcon('id') }}</span>
+                    Transaksie # <span class="sort-icon">{{ sortIcon('id') }}</span>
                   </th>
                   <th (click)="sortBy('squareCount')" class="numeric" [class.sorted]="sortKey === 'squareCount'">
                     Aantal <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
@@ -51,7 +51,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                   <th (click)="sortBy('amount')" class="numeric" [class.sorted]="sortKey === 'amount'">
                     Totaal <span class="sort-icon">{{ sortIcon('amount') }}</span>
                   </th>
-                  <th>Blok-ID’s</th>
+                  <th>Blok-nommer</th>
                   <th class="action-col">Kwitansie</th>
                 </tr>
               </thead>
@@ -60,7 +60,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                   <tr>
                     <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
                     <td>#{{ tx.id }}</td>
-                    <td class="numeric">{{ meterFrase(tx.squareCount) }}</td>
+                    <td class="numeric">{{ tx.squareCount }}m²</td>
                     <td class="numeric">{{ randBedrag(tx.amountPerBlock) }}</td>
                     <td class="numeric">{{ randBedrag(tx.amount) }}</td>
                     <td class="ids">{{ tx.squareIds.join(', ') }}</td>
@@ -178,7 +178,6 @@ export class MyTransactionsComponent implements OnInit {
   sortKey: SortKey = 'purchaseDate';
   sortDir: 'asc' | 'desc' = 'desc';
 
-  readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
 
   ngOnInit() {

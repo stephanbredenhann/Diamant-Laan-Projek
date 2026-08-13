@@ -29,6 +29,25 @@ public class ShareLinkTests
             ["App:PublicUrl"] = "https://diamantlaan.example"
         }).Build();
 
+    private static SharePageController SharePage(AppDbContext db, string? userAgent = null)
+    {
+        var controller = new SharePageController(
+            new ShareLinkService(db, Config()),
+            new ShareOgImageService(),
+            new SharePageRenderer());
+        var http = new DefaultHttpContext
+        {
+            Request =
+            {
+                Scheme = "https",
+                Host = new HostString("share.example")
+            }
+        };
+        if (userAgent is not null) http.Request.Headers.UserAgent = userAgent;
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
+        return controller;
+    }
+
     private static MySquaresController SquaresController(AppDbContext db, string userId)
     {
         var controller = new MySquaresController(db, new ShareLinkService(db, Config()));
@@ -131,26 +150,13 @@ public class ShareLinkTests
         user.ShareToken = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         await db.SaveChangesAsync();
 
-        var page = new SharePageController(
-            new ShareLinkService(db, Config()),
-            new ShareOgImageService(),
-            new SharePageRenderer());
-        page.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                Request =
-                {
-                    Scheme = "https",
-                    Host = new HostString("share.example")
-                }
-            }
-        };
+        var page = SharePage(db, "facebookexternalhit/1.1");
 
         var result = await page.Page(user.ShareToken);
         var content = Assert.IsType<ContentResult>(result);
         Assert.Equal(200, content.StatusCode ?? 200);
-        Assert.Contains("5 vierkante meter", content.Content);
+        // HtmlEncode turns the ² into a numeric entity.
+        Assert.Contains("5 m&#178; geborg vir die Oewerpad in Orania!", content.Content);
         Assert.Contains("&lt;script&gt;Jan", content.Content);
         Assert.DoesNotContain("<script>Jan", content.Content);
         Assert.Contains("https://share.example/deel/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/og.jpg?m=5", content.Content);
@@ -158,13 +164,57 @@ public class ShareLinkTests
     }
 
     [Fact]
+    public async Task PublicPage_ServesTheAppToBrowsers_SoAngularDrawsTheCertificate()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 5);
+        user.ShareToken = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        await db.SaveChangesAsync();
+
+        var page = SharePage(db, "Mozilla/5.0 (Linux; Android 14) Chrome/126");
+
+        var file = Assert.IsType<VirtualFileResult>(await page.Page(user.ShareToken));
+        Assert.Equal("~/index.html", file.FileName);
+    }
+
+    [Fact]
+    public async Task Certificate_ReturnsNameBlocksAndDate()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 3);
+        user.ShareToken = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        user.CertificateName = "Jan van der Merwe";
+        db.Purchases.Add(new Purchase { UserId = user.Id, Amount = 1500, PurchaseDate = new DateTime(2026, 3, 4, 22, 30, 0, DateTimeKind.Utc) });
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken));
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+
+        Assert.Contains("\"name\":\"Jan van der Merwe\"", json);
+        Assert.Contains("\"blocks\":[1,2,3]", json);
+        Assert.Contains("\"purchaseDate\":\"2026-03-04\"", json);
+    }
+
+    [Fact]
+    public async Task Certificate_404_AfterRevoke()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db);
+        user.ShareToken = "ffffffffffffffffffffffffffffffff";
+        await db.SaveChangesAsync();
+
+        Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken));
+
+        await SquaresController(db, "u1").DeleteShareLink();
+
+        Assert.IsType<NotFoundResult>(await SharePage(db).Certificate(user.ShareToken));
+    }
+
+    [Fact]
     public async Task PublicPage_UnknownToken_Returns404Html()
     {
         await using var db = CreateDb();
-        var page = new SharePageController(
-            new ShareLinkService(db, Config()),
-            new ShareOgImageService(),
-            new SharePageRenderer());
+        var page = SharePage(db, "facebookexternalhit/1.1");
 
         var result = await page.Page("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
         var content = Assert.IsType<ContentResult>(result);
@@ -223,10 +273,7 @@ public class ShareLinkTests
         user.IsAnonymized = true;
         await db.SaveChangesAsync();
 
-        var page = new SharePageController(
-            new ShareLinkService(db, Config()),
-            new ShareOgImageService(),
-            new SharePageRenderer());
+        var page = SharePage(db, "facebookexternalhit/1.1");
         var result = await page.Page(user.ShareToken);
         var content = Assert.IsType<ContentResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, content.StatusCode);

@@ -3,7 +3,6 @@ import { ALL_COUNTRY_CODES } from '../data/country-codes';
 export interface PasswordChecks {
   minLength: boolean;
   hasNumber: boolean;
-  hasSpecial: boolean;
   hasUpper: boolean;
   hasLower: boolean;
 }
@@ -12,7 +11,6 @@ export function getPasswordChecks(password: string): PasswordChecks {
   return {
     minLength: password.length >= 8,
     hasNumber: /\d/.test(password),
-    hasSpecial: /[^a-zA-Z0-9]/.test(password),
     hasUpper: /[A-Z]/.test(password),
     hasLower: /[a-z]/.test(password),
   };
@@ -22,7 +20,6 @@ export function validatePassword(password: string): string | null {
   const c = getPasswordChecks(password);
   if (!c.minLength) return 'Wagwoord moet minstens 8 karakters lank wees.';
   if (!c.hasNumber) return "Wagwoord moet ’n nommer bevat.";
-  if (!c.hasSpecial) return "Wagwoord moet ’n spesiale karakter bevat.";
   if (!c.hasUpper) return "Wagwoord moet ’n hoofletter bevat.";
   if (!c.hasLower) return "Wagwoord moet ’n kleinletter bevat.";
   return null;

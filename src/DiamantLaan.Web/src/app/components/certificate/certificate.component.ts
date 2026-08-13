@@ -324,8 +324,8 @@ export class CertificateComponent implements OnInit {
     const verskil = this.blocks.filter(b => b.name.trim() !== this.summaryName.trim()).length;
     if (verskil === 0) return this.summaryName;
     return verskil === 1
-      ? `${this.summaryName}, met 1 blok onder ’n ander naam`
-      : `${this.summaryName}, met ${verskil} blokke onder ander name`;
+      ? `${this.summaryName}, met 1 blok op ’n ander naam`
+      : `${this.summaryName}, met ${verskil} blokke op ander name`;
   }
 
   /**

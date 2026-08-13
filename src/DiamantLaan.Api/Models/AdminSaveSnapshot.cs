@@ -6,6 +6,10 @@ public class AdminSaveSnapshot
     public string UndoBatchId { get; set; } = string.Empty;
     public string AdminUserId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// No longer written: a consumed snapshot is deleted outright. Kept so rows from an older
+    /// instance mid-deploy still read as consumed instead of open.
+    /// </summary>
     public DateTime? ConsumedAt { get; set; }
 
     /// <summary>JSON array of { squareId, previousStatus }.</summary>

@@ -354,6 +354,13 @@ export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         }
       }
 
+      // A reserved block is off the public market in every view, so it wins over
+      // the view mode. The selection highlight still wins over it, because admins
+      // do select reserved blocks (status painting, manual purchase).
+      if (isReserved) {
+        fillColor = RESERVED_COLOR;
+      }
+
       if (this.selectedIdSet.has(id)) {
         fillColor = SELECTED_FILL;
         fillOpacity = 0.95;
