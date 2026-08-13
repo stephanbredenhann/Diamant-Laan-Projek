@@ -49,52 +49,40 @@ describe('BouKaartComponent', () => {
     sessionStorage.clear();
   });
 
+  /** Puts the page on the hundred the old drill-down used to end up at. */
   function daalAf() {
     begin(3);
-    komponent.kiesGroep({ van: 2001, tot: 3000 });
-    komponent.kiesSeksie({ van: 2301, tot: 2400 });
+    komponent.seksie.set({ van: 2301, tot: 2400 });
   }
 
-  it('drops the section when the trail jumps back to the thousand', () => {
-    daalAf();
-    komponent.gaanNaVlak(2);
-
-    expect(komponent.vlak()).toBe(2);
-    expect(komponent.seksie()).toBeNull();
-    expect(komponent.groep()).toEqual({ van: 2001, tot: 3000 });
-  });
-
-  it('drops both when the trail jumps all the way back', () => {
-    daalAf();
-    komponent.gaanNaVlak(1);
-
-    expect(komponent.vlak()).toBe(1);
-    expect(komponent.seksie()).toBeNull();
-    expect(komponent.groep()).toBeNull();
-  });
-
-  it('cannot re-enter a level whose range it no longer has', () => {
-    daalAf();
-    komponent.gaanNaVlak(1);
-
-    komponent.gaanNaVlak(3);
-    expect(komponent.vlak()).toBe(1);
-    komponent.gaanNaVlak(2);
-    expect(komponent.vlak()).toBe(1);
-  });
-
-  it('points the overview at the narrowest range chosen so far', () => {
+  it('opens on the first section that still has free blocks', () => {
+    // 1-199 are reserved in the fixture, so the first hundred is sold out.
     begin(3);
-    expect(komponent.gemerk()).toBeNull();
+    expect(komponent.seksie()).toEqual({ van: 101, tot: 200 });
+  });
 
-    komponent.kiesGroep({ van: 2001, tot: 3000 });
-    expect(komponent.gemerk()).toEqual({ van: 2001, tot: 3000 });
+  it('opens on the section holding blocks that are already pending', () => {
+    begin(3, [2301, 2302]);
+    expect(komponent.seksie()).toEqual({ van: 2301, tot: 2400 });
+  });
 
-    komponent.kiesSeksie({ van: 2301, tot: 2400 });
+  it('points the overview at the open section', () => {
+    daalAf();
     expect(komponent.gemerk()).toEqual({ van: 2301, tot: 2400 });
 
-    komponent.gaanNaVlak(1);
-    expect(komponent.gemerk()).toBeNull();
+    komponent.skuifSeksie(1);
+    expect(komponent.gemerk()).toEqual({ van: 2401, tot: 2500 });
+  });
+
+  it('will not page past either end of the road', () => {
+    begin(3);
+    komponent.seksie.set({ van: 1, tot: 100 });
+    komponent.skuifSeksie(-1);
+    expect(komponent.seksie()).toEqual({ van: 1, tot: 100 });
+
+    komponent.seksie.set({ van: 4101, tot: 4200 });
+    komponent.skuifSeksie(1);
+    expect(komponent.seksie()).toEqual({ van: 4101, tot: 4200 });
   });
 
   it('refuses a block past the amount chosen in step one', () => {
@@ -125,7 +113,6 @@ describe('BouKaartComponent', () => {
     komponent.soekNommer = 2350;
     komponent.soek();
 
-    expect(komponent.vlak()).toBe(3);
     expect(komponent.seksie()).toEqual({ van: 2301, tot: 2400 });
     expect(komponent.gekiesLys()).toEqual([2350]);
     expect(komponent.beklemtoon()).toBe(2350);
@@ -136,18 +123,18 @@ describe('BouKaartComponent', () => {
     komponent.soekNommer = 505;
     komponent.soek();
 
-    expect(komponent.vlak()).toBe(3);
     expect(komponent.seksie()).toEqual({ van: 501, tot: 600 });
     expect(komponent.soekFout()).toContain('reeds verkoop');
     expect(komponent.gekiesLys()).toEqual([]);
   });
 
-  it('rejects a block number that does not exist', () => {
+  it('rejects a block number that does not exist, without moving the page', () => {
     begin(3);
+    const oop = komponent.seksie();
     komponent.soekNommer = 9999;
     komponent.soek();
 
-    expect(komponent.vlak()).toBe(1);
+    expect(komponent.seksie()).toEqual(oop);
     expect(komponent.soekFout()).toContain('bestaan nie');
   });
 

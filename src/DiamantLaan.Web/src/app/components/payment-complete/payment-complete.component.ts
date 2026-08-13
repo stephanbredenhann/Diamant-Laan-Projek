@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService, GuestPurchase, GuestPurchaseRef } from '../../services/purchase.service';
+import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 
@@ -17,9 +18,15 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 @Component({
   selector: 'app-payment-complete',
   standalone: true,
-  imports: [FormsModule, CertificateCardComponent],
+  imports: [FormsModule, BouStepBarComponent, CertificateCardComponent],
   template: `
     <div class="container">
+      <!-- Step 4 of the same rail the rest of the flow carries, locked: the money
+           is paid, so every earlier step is history rather than somewhere to go. -->
+      @if (step !== 'loading' && step !== 'error') {
+        <app-bou-step-bar [active]="4" [gesluit]="true" />
+      }
+
       @switch (step) {
         @case ('loading') {
           <div class="card centered">

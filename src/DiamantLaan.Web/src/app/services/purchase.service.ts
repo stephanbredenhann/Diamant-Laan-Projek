@@ -31,6 +31,13 @@ export interface ShareLink {
   path: string;
 }
 
+/** The names printed on this account's certificates: the summary sheet plus one per block. */
+export interface CertificateNames {
+  sameForAll: boolean;
+  summaryName: string;
+  blocks: { squareId: number; name: string }[];
+}
+
 export interface PurchaseTransaction {
   id: number;
   purchaseDate: string;
@@ -101,7 +108,7 @@ export class PurchaseService {
   /**
    * Wipes every trace of an in-flight build. Call this at each terminal point of
    * the flow — paid, claimed, cancelled, abandoned. Without it the wizard state
-   * outlives the purchase and the map keeps claiming to be "Stap 2 van 3".
+   * outlives the purchase and the map keeps claiming to be "Stap 2 van 4".
    */
   clearBouVloei() {
     this.pendingSquareIds = [];
@@ -173,6 +180,15 @@ export class PurchaseService {
 
   getMySummary() {
     return this.http.get<{ blockCount: number; totalSpent: number }>('/api/my-squares/summary');
+  }
+
+  getCertificateNames() {
+    return this.http.get<CertificateNames>('/api/my-squares/certificate-names');
+  }
+
+  /** Saves the whole form in one go and answers with the names as they now stand. */
+  saveCertificateNames(names: CertificateNames) {
+    return this.http.put<CertificateNames>('/api/my-squares/certificate-names', names);
   }
 
   getShareLink() {

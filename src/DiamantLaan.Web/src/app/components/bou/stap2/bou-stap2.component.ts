@@ -68,8 +68,8 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           </div>
           <h2>Kies self op die kaart</h2>
           <p>
-            Kies eers ’n groep blokke, dan ’n kleiner groep, en dan die
-            {{ meterFrase(aantal()) }} self. Niks om te sleep of te zoem nie.
+            Die blokke word honderd op ’n slag gewys. Blaai tot waar jy wil wees en
+            kies die {{ meterFrase(aantal()) }} self. Niks om te sleep of te zoem nie.
           </p>
           <span class="option-cta">Maak kaart oop →</span>
         </button>
@@ -196,7 +196,7 @@ export class BouStap2Component implements OnInit {
   aantal = signal(0);
   besig = signal(false);
   fout = signal<string | null>(null);
-  stepAnnouncement = 'Stap 2 van 3: Hoe wil jy jou blokkies kies?';
+  stepAnnouncement = 'Stap 2 van 4: Hoe wil jy jou blokkies kies?';
 
   readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;

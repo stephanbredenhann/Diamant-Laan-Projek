@@ -45,9 +45,9 @@ function ryMiddel(n: number): LngLat | null {
 /**
  * The whole 700 m road at a glance, with the stretch you are looking at marked.
  *
- * Drilling from a thousand blocks down to a hundred loses all sense of place:
- * seventeen metres of tar looks the same anywhere. This band is the answer to
- * "where am I?" and it stays on screen at every level of the drill-down.
+ * Looking at a hundred numbered blocks loses all sense of place: seventeen
+ * metres of tar looks the same anywhere. This band is the answer to "where am
+ * I?" and it stays on screen while you page along the road.
  */
 @Component({
   selector: 'app-pad-oorsig',
@@ -161,9 +161,9 @@ export class PadOorsigComponent {
     WAYPOINTS.map(w => this.vlak().project([w.lng, w.lat])));
 
   /**
-   * Tightens as the visitor drills in: the whole road, then the thousand, then
-   * the hundred. The orientation never changes, so each step reads as zooming
-   * into the same map rather than jumping to a new one.
+   * The whole road when nothing is marked, otherwise the hundred on screen. The
+   * orientation never changes, so paging along reads as sliding over the same
+   * map rather than jumping to a new one.
    */
   private readonly venster = computed(() => {
     const stuk = this.merkPunte();

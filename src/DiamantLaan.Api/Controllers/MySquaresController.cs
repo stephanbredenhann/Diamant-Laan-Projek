@@ -55,6 +55,93 @@ public class MySquaresController : ControllerBase
         return Ok(new { blockCount, totalSpent });
     }
 
+    /// <summary>
+    /// The names printed on this account's certificates: one for the summary sheet and one per
+    /// block, already resolved, so the page can render without knowing the fallback rules.
+    /// </summary>
+    [HttpGet("certificate-names")]
+    public async Task<IActionResult> GetCertificateNames()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return NotFound();
+
+        var squares = await _db.Squares
+            .Where(s => s.OwnerId == userId)
+            .OrderBy(s => s.Id)
+            .Select(s => new { s.Id, s.CertificateName })
+            .ToListAsync();
+
+        var summaryName = SummaryNameOf(user);
+
+        return Ok(new CertificateNamesDto
+        {
+            SameForAll = squares.All(s => s.CertificateName == null),
+            SummaryName = summaryName,
+            Blocks = squares
+                .Select(s => new BlockCertificateNameDto { SquareId = s.Id, Name = s.CertificateName ?? summaryName })
+                .ToList()
+        });
+    }
+
+    [HttpPut("certificate-names")]
+    public async Task<IActionResult> SaveCertificateNames([FromBody] SaveCertificateNamesDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var summaryName = dto.SummaryName.Trim();
+        if (summaryName.Length < 2)
+            return BadRequest(new { message = "Voer asseblief ’n naam vir die opsomming-sertifikaat in." });
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return NotFound();
+
+        var squares = await _db.Squares.Where(s => s.OwnerId == userId).ToListAsync();
+
+        if (dto.SameForAll)
+        {
+            // One name everywhere means no per-block names at all, rather than the same string
+            // copied onto every block: change it once later and every certificate follows.
+            foreach (var square in squares)
+                square.CertificateName = null;
+        }
+        else
+        {
+            var byId = squares.ToDictionary(s => s.Id);
+            foreach (var block in dto.Blocks)
+            {
+                // Silently skips blocks that are not this account's; nothing to leak either way.
+                if (!byId.TryGetValue(block.SquareId, out var square))
+                    continue;
+
+                var name = block.Name.Trim();
+                if (name.Length < 2)
+                    return BadRequest(new { message = $"Voer asseblief ’n naam vir blok {block.SquareId} in." });
+
+                // Matching the summary name is stored as "no override", so the block keeps
+                // following the summary if that is edited afterwards.
+                square.CertificateName = name == summaryName ? null : name;
+            }
+        }
+
+        user.CertificateName = summaryName;
+        await _db.SaveChangesAsync();
+
+        return await GetCertificateNames();
+    }
+
+    /// <summary>The chosen certificate name, or the account name for someone who never set one.</summary>
+    private static string SummaryNameOf(Models.User user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.CertificateName))
+            return user.CertificateName;
+
+        return $"{user.FirstName} {user.LastName}".Trim();
+    }
+
     [HttpGet("share-link")]
     public async Task<IActionResult> GetShareLink()
     {

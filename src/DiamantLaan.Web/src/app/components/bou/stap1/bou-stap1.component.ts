@@ -19,7 +19,7 @@ const MAX_EIE = 50;
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 1 van 3 · Jou bydrae</p>
+          <p class="eyebrow page-eyebrow">Stap 1 van 4 · Jou bydrae</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Hoeveel meter wil jy help bou?</h1>
           <p class="page-lead">
@@ -286,7 +286,7 @@ export class BouStap1Component implements OnInit {
   eieModus = signal(false);
   eieWaarde = signal<number | null>(null);
   eieFout = signal<string | null>(null);
-  stepAnnouncement = 'Stap 1 van 3: Hoeveel meter wil jy help bou?';
+  stepAnnouncement = 'Stap 1 van 4: Hoeveel meter wil jy help bou?';
 
   ngOnInit() {
     const raw = this.route.snapshot.queryParamMap.get('aantal');

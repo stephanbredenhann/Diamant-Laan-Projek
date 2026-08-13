@@ -1,11 +1,10 @@
 import { Square, SquareStatus } from '../../../models/square';
 import {
   MAX_BLOK_ID,
+  alleSeksies,
   blokRede,
-  groepe,
   isBeskikbaar,
   seksieVan,
-  seksies,
   telBeskikbaar,
 } from './blok-reekse';
 
@@ -14,50 +13,25 @@ function blok(id: number, isSold = false, isReserved = false): Square {
 }
 
 describe('blok-reekse', () => {
-  it('tiles 1..4200 with four groups, no gap and no overlap', () => {
-    const gs = groepe();
-    expect(gs.length).toBe(4);
-    expect(gs[0].van).toBe(1);
-    expect(gs[gs.length - 1].tot).toBe(MAX_BLOK_ID);
-    gs.forEach((g, i) => {
-      if (i > 0) expect(g.van).toBe(gs[i - 1].tot + 1);
-      expect(g.tot).toBeGreaterThanOrEqual(g.van);
+  it('tiles 1..4200 with sections of a hundred, no gap and no overlap', () => {
+    const ss = alleSeksies();
+    expect(ss.length).toBe(42);
+    expect(ss[0]).toEqual({ van: 1, tot: 100 });
+    expect(ss[ss.length - 1].tot).toBe(MAX_BLOK_ID);
+    ss.forEach((s, i) => {
+      if (i > 0) expect(s.van).toBe(ss[i - 1].tot + 1);
     });
   });
 
-  it('folds the trailing 200 blocks into the last group', () => {
-    const last = groepe()[3];
-    expect(last).toEqual({ van: 3001, tot: 4200 });
-  });
-
-  it('tiles every group with 100-block sections', () => {
-    for (const g of groepe()) {
-      const ss = seksies(g);
-      expect(ss[0].van).toBe(g.van);
-      expect(ss[ss.length - 1].tot).toBe(g.tot);
-      ss.forEach((s, i) => {
-        if (i > 0) expect(s.van).toBe(ss[i - 1].tot + 1);
-      });
-    }
-  });
-
-  it('gives the last group twelve sections and the others ten', () => {
-    const counts = groepe().map(g => seksies(g).length);
-    expect(counts).toEqual([10, 10, 10, 12]);
-  });
-
-  it('locates a block in its group and section', () => {
-    expect(seksieVan(2350)).toEqual({
-      groep: { van: 2001, tot: 3000 },
-      seksie: { van: 2301, tot: 2400 },
-    });
+  it('locates a block in its section', () => {
+    expect(seksieVan(2350)).toEqual({ van: 2301, tot: 2400 });
   });
 
   it('puts range boundaries in the right section', () => {
-    expect(seksieVan(1)!.seksie).toEqual({ van: 1, tot: 100 });
-    expect(seksieVan(100)!.seksie).toEqual({ van: 1, tot: 100 });
-    expect(seksieVan(101)!.seksie).toEqual({ van: 101, tot: 200 });
-    expect(seksieVan(4200)!.seksie).toEqual({ van: 4101, tot: 4200 });
+    expect(seksieVan(1)).toEqual({ van: 1, tot: 100 });
+    expect(seksieVan(100)).toEqual({ van: 1, tot: 100 });
+    expect(seksieVan(101)).toEqual({ van: 101, tot: 200 });
+    expect(seksieVan(4200)).toEqual({ van: 4101, tot: 4200 });
   });
 
   it('rejects block numbers that do not exist', () => {

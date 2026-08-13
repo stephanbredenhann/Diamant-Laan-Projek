@@ -2,19 +2,21 @@ import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 /**
- * Mockup-style purchase progress rail: Bydrae → Toekenning → Erkenning.
+ * Purchase progress rail, mirroring the four steps on the landing page:
+ * Hoeveelheid → Kies jou blokkie → Betaal → Erkenning.
  * Active = orange; completed = OB blue + check; upcoming = chalk outline.
  *
  * Completed steps are links back; the next step is only a link once the current
  * page says its data is valid (`nextEnabled`), so nobody lands on payment with
- * nothing selected.
+ * nothing selected. On the certificate the whole rail is `gesluit`: the money is
+ * paid and there is nothing left to go back to.
  */
 @Component({
   selector: 'app-bou-step-bar',
   standalone: true,
   imports: [RouterLink],
   template: `
-    <nav class="step-bar" [attr.aria-label]="'Stap ' + active + ' van 3'">
+    <nav class="step-bar" [attr.aria-label]="'Stap ' + active + ' van 4'">
       <div class="step-rail" aria-hidden="true"></div>
       @for (label of labels; track label; let i = $index) {
         @let step = i + 1;
@@ -49,14 +51,14 @@ import { RouterLink } from '@angular/router';
     .step-bar {
       position: relative;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       margin: 2rem auto 2.5rem;
-      max-width: 44rem;
+      max-width: 52rem;
     }
     .step-rail {
       position: absolute;
-      left: 16%;
-      right: 16%;
+      left: 12%;
+      right: 12%;
       top: 1.375rem;
       height: 2px;
       background: rgba(0, 0, 0, 0.18);
@@ -105,6 +107,7 @@ import { RouterLink } from '@angular/router';
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text-muted);
+      line-height: 1.2;
     }
     .step-label.active-label {
       color: var(--ink);
@@ -122,25 +125,32 @@ import { RouterLink } from '@angular/router';
     .step-node:not(.linkbaar) { cursor: default; }
     @media (max-width: 600px) {
       .step-bar { margin: 1.25rem auto 1.5rem; }
-      .step-rail { left: 20%; right: 20%; top: 1.125rem; }
+      .step-rail { left: 14%; right: 14%; top: 1.125rem; }
       .step-dot { width: 2.25rem; height: 2.25rem; font-size: 1.1rem; }
-      .step-node { gap: 0.4rem; }
-      .step-label { font-size: 0.8rem; letter-spacing: 0.04em; }
+      .step-node { gap: 0.4rem; padding: 0.25rem 0.15rem; }
+      /* "Kies jou blokkie" has to wrap on a phone rather than shove the rail
+         apart, so the label keeps its own lines and the dots stay evenly spaced. */
+      .step-label { font-size: 0.7rem; letter-spacing: 0.02em; line-height: 1.15; }
     }
   `]
 })
 export class BouStepBarComponent {
-  /** 1 = Bydrae, 2 = Toekenning, 3 = Erkenning */
-  @Input({ required: true }) active!: 1 | 2 | 3;
+  /** 1 = Hoeveelheid, 2 = Kies jou blokkie, 3 = Betaal, 4 = Erkenning */
+  @Input({ required: true }) active!: 1 | 2 | 3 | 4;
 
   /** True when the current step's data is valid, which unlocks the next step. */
   @Input() nextEnabled = false;
 
-  readonly labels = ['Bydrae', 'Toekenning', 'Erkenning'] as const;
-  readonly routes = ['/bou', '/bou/kies', '/bou/bevestig'] as const;
+  /** Shows the trail without letting anyone walk back down it. */
+  @Input() gesluit = false;
+
+  readonly labels = ['Hoeveelheid', 'Kies jou blokkie', 'Betaal', 'Erkenning'] as const;
+  readonly routes = ['/bou', '/bou/kies', '/bou/bevestig', null] as const;
 
   /** Back to anything completed, forward only one step and only when valid. */
   kanSpring(step: number): boolean {
+    if (this.gesluit) return false;
+    if (!this.routes[step - 1]) return false;
     return step < this.active || (step === this.active + 1 && this.nextEnabled);
   }
 }

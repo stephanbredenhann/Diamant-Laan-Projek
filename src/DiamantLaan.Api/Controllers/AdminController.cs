@@ -793,9 +793,9 @@ public async Task<IActionResult> DeleteTransaction(int id)
     [HttpGet("diagnostics")]
     public IActionResult GetDiagnostics()
     {
-        var resend = _config.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
-        var emailConfigured = !string.IsNullOrWhiteSpace(resend.ApiKey)
-            && !string.IsNullOrWhiteSpace(resend.FromEmail);
+        var mandrill = _config.GetSection("Mandrill").Get<MandrillSettings>() ?? new MandrillSettings();
+        var emailConfigured = !string.IsNullOrWhiteSpace(mandrill.ApiKey)
+            && !string.IsNullOrWhiteSpace(mandrill.FromEmail);
 
         var pendingEmails = _db.PendingEmails.Count(e => !e.Sent);
         var pendingBlockNotifications = _db.PendingBlockNotifications.Count(p => !p.Sent);
@@ -805,8 +805,8 @@ public async Task<IActionResult> DeleteTransaction(int id)
             email = new
             {
                 configured = emailConfigured,
-                fromEmailSet = !string.IsNullOrWhiteSpace(resend.FromEmail),
-                apiKeySet = !string.IsNullOrWhiteSpace(resend.ApiKey),
+                fromEmailSet = !string.IsNullOrWhiteSpace(mandrill.FromEmail),
+                apiKeySet = !string.IsNullOrWhiteSpace(mandrill.ApiKey),
                 pendingOutboxCount = pendingEmails
             },
             notifications = new

@@ -5,10 +5,11 @@ import { BouStepBarComponent } from './bou-step-bar.component';
  * which steps it will let someone jump to.
  */
 describe('BouStepBarComponent.kanSpring', () => {
-  const bar = (active: 1 | 2 | 3, nextEnabled = false) => {
+  const bar = (active: 1 | 2 | 3 | 4, nextEnabled = false, gesluit = false) => {
     const c = new BouStepBarComponent();
     c.active = active;
     c.nextEnabled = nextEnabled;
+    c.gesluit = gesluit;
     return c;
   };
 
@@ -30,5 +31,14 @@ describe('BouStepBarComponent.kanSpring', () => {
 
   it('never skips more than one step ahead', () => {
     expect(bar(1, true).kanSpring(3)).toBe(false);
+  });
+
+  it('links nothing at all once the rail is locked', () => {
+    const c = bar(4, true, true);
+    for (const step of [1, 2, 3, 4]) expect(c.kanSpring(step)).toBe(false);
+  });
+
+  it('never links the certificate step, which has no route', () => {
+    expect(bar(3, true).kanSpring(4)).toBe(false);
   });
 });

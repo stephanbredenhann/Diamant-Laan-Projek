@@ -21,8 +21,8 @@ export const EN: Record<string, string> = {
   'My profiel': 'My profile',
   'Meld af': 'Log out',
   'Meld aan': 'Log in',
-  'Bou 1 m²': 'Build 1 m²',
-  'Bou 1 m² vir R500': 'Build 1 m² for R500',
+  'Borg 1 m²': 'Sponsor 1 m²',
+  'Borg 1 m² vir R500': 'Sponsor 1 m² for R500',
   'Wissel na Engels': 'Switch to English',
   'Wissel na Afrikaans': 'Switch to Afrikaans',
   'Help Oewerpad teer, een vierkante meter op ’n slag.':

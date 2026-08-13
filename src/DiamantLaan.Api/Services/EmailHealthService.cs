@@ -5,9 +5,9 @@ namespace DiamantLaan.Api.Services;
 
 public class EmailHealthService
 {
-    private readonly ResendSettings _settings;
+    private readonly MandrillSettings _settings;
 
-    public EmailHealthService(IOptions<ResendSettings> settings) => _settings = settings.Value;
+    public EmailHealthService(IOptions<MandrillSettings> settings) => _settings = settings.Value;
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(_settings.ApiKey)

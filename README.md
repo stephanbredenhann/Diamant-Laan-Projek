@@ -9,7 +9,7 @@
 | Database | SQLite via Entity Framework Core 8.0 |
 | Auth | ASP.NET Core Identity + JWT Bearer |
 | Mapping | Leaflet 1.9 + OpenStreetMap |
-| Email | Resend (pluggable via `IEmailService`) |
+| Email | Mailchimp Transactional / Mandrill (pluggable via `IEmailService`) |
 | Payments | PayFast (merchant-hosted integration) |
 | Hosting | Azure App Service (F1 free tier, Linux) |
 
@@ -37,7 +37,7 @@ src/
 │   │   ├── Dtos/                   # Request/response DTOs
 │   │   ├── Enums/                  # SquareStatus, PaymentStatus
 │   │   ├── PayFastSettings.cs      # PayFast config POCO
-│   │   ├── ResendSettings.cs       # Email config POCO
+│   │   ├── MandrillSettings.cs     # Email config POCO
 │   │   └── *.cs                    # Entities: User, Square, Purchase, RefreshToken, etc.
 │   ├── Services/                   # Business logic (21 services)
 │   ├── Validation/                 # EmailValidator, PasswordValidator, PhoneValidator
@@ -116,8 +116,8 @@ dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Email" "admin@e
 dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Password" "Admin123!"
 
 # --- OPTIONAL (emails won't send if omitted, see Email Subsystem) ---
-dotnet user-secrets set --project src/DiamantLaan.Api "Resend:ApiKey" "re_your_api_key"
-dotnet user-secrets set --project src/DiamantLaan.Api "Resend:FromEmail" "noreply@yourdomain.com"
+dotnet user-secrets set --project src/DiamantLaan.Api "Mandrill:ApiKey" "md-your_api_key"
+dotnet user-secrets set --project src/DiamantLaan.Api "Mandrill:FromEmail" "noreply@yourdomain.com"
 
 # --- OPTIONAL (PayFast sandbox, payments won't work if omitted) ---
 dotnet user-secrets set --project src/DiamantLaan.Api "PayFast:MerchantId" "10000100"
@@ -167,8 +167,8 @@ All configuration is read from `appsettings.json` and overridden by `dotnet user
 |-----|---------|-------------|
 | `Jwt:ExpireMinutes` | `60` | Access token lifetime in minutes. |
 | `Jwt:RefreshExpireDays` | `7` | Refresh token lifetime in days. |
-| `Resend:ApiKey` | *(empty)* | Resend API key for transactional emails. Emails silently skip if unset. |
-| `Resend:FromEmail` | *(empty)* | Sender "from" address for emails. Must be verified in Resend dashboard. |
+| `Mandrill:ApiKey` | *(empty)* | Mailchimp Transactional (Mandrill) API key. Emails silently skip if unset. |
+| `Mandrill:FromEmail` | *(empty)* | Sender "from" address for emails. Its domain must be verified in the Mailchimp Transactional dashboard. |
 | `PayFast:MerchantId` | *(empty)* | PayFast merchant ID. |
 | `PayFast:MerchantKey` | *(empty)* | PayFast merchant key. |
 | `PayFast:Passphrase` | *(empty)* | PayFast signature passphrase. Must match the PayFast dashboard setting. |
@@ -188,8 +188,8 @@ ConnectionStrings__DefaultConnection="Data Source=/data/diamantlaan.db"
 Jwt__Key="your-super-secret-key-at-least-32-chars!!"
 AdminUser__Email="admin@example.com"
 AdminUser__Password="Admin123!"
-Resend__ApiKey="re_xxx"
-Resend__FromEmail="noreply@yourdomain.com"
+Mandrill__ApiKey="md-xxx"
+Mandrill__FromEmail="noreply@yourdomain.com"
 PayFast__MerchantId="10000100"
 PayFast__MerchantKey="46f0cd694581a"
 PayFast__Passphrase="your_passphrase"
@@ -216,10 +216,10 @@ User Action (register, forgot-pw, manual purchase)
        └──▶ Tries immediate send via IEmailService
               │
               ▼
-         ResendEmailService (Resend SDK)
+         MandrillEmailService (HttpClient)
               │
               ▼
-         Resend API (resend.com)
+         Mandrill API (mandrillapp.com)
 
 Background: EmailOutboxBackgroundService (every 2 min)
        │
@@ -244,135 +244,22 @@ All emails flow through `EmailOutboxService`, which persists every email to the 
 - **Background flush** — `EmailOutboxBackgroundService` runs every 2 minutes to retry any unsent emails
 - **Shutdown flush** — All pending emails are flushed when the app stops
 
-### Current Provider: Resend
+### Current Provider: Mailchimp Transactional (Mandrill)
 
-The system uses [Resend](https://resend.com) via the `Resend` NuGet package. The implementation is in `ResendEmailService.cs` (via the `IEmailService` interface).
+`MandrillEmailService.cs` implements `IEmailService` with a single `HttpClient` POST to
+`https://mandrillapp.com/api/1.0/messages/send.json`. No SDK package is needed.
 
-**Configuration:** Requires `Resend:ApiKey` and `Resend:FromEmail` (the "from" domain must be verified in your Resend dashboard).
+**Configuration:** `Mandrill:ApiKey` and `Mandrill:FromEmail` (set via user secrets or
+environment variables). The from-address domain must be verified in the Mailchimp
+Transactional dashboard. If either is blank the service logs a warning and returns
+`false`, so the email stays in the outbox instead of throwing.
 
-### How to Migrate to Mailchimp (Mandrill)
+Mandrill has no idempotency-key concept, so the `idempotencyKey` argument on
+`IEmailService.SendAsync` is ignored by this implementation.
 
-The email system is designed to be provider-agnostic through the `IEmailService` interface:
-
-```csharp
-// Services/IEmailService.cs
-public interface IEmailService
-{
-    Task<bool> SendAsync(string to, string subject, string html,
-        string? idempotencyKey = null, CancellationToken cancellationToken = default);
-}
-```
-
-**Step 1: Install the Mailchimp/ Mandrill package**
-
-Since this project has no transactional email SDK other than Resend, you will need to add a Mailchimp package.
-
-```bash
-dotnet add src/DiamantLaan.Api package Mailchimp.Transactional
-```
-
-**Step 2: Create the Mandrill implementation**
-
-Create a new file `src/DiamantLaan.Api/Services/MandrillEmailService.cs`:
-
-```csharp
-using DiamantLaan.Api.Models;
-using Microsoft.Extensions.Options;
-using mandrill; // Mailchimp.Transactional namespace
-
-public class MandrillEmailService : IEmailService
-{
-    private readonly MandrillSettings _settings;
-    private readonly ILogger<MandrillEmailService> _logger;
-
-    public MandrillEmailService(IOptions<MandrillSettings> settings, ILogger<MandrillEmailService> logger)
-    {
-        _settings = settings.Value;
-        _logger = logger;
-    }
-
-    public async Task<bool> SendAsync(string to, string subject, string html,
-        string? idempotencyKey = null, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey) || string.IsNullOrWhiteSpace(_settings.FromEmail))
-        {
-            _logger.LogWarning("Mandrill not configured. Skipping email to {To}.", to);
-            return false;
-        }
-
-        try
-        {
-            var api = new MandrillApi(_settings.ApiKey);
-            var message = new EmailMessage
-            {
-                FromEmail = _settings.FromEmail,
-                Subject = subject,
-                Html = html,
-                To = new List<EmailAddress> { new EmailAddress(to) }
-            };
-            var result = await api.SendMessageAsync(message);
-            // result is a list of MandrillSendResult
-            // Check result.Status == "sent"
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Mandrill send failed for {To}", to);
-            return false;
-        }
-    }
-}
-```
-
-**Step 3: Create settings model or rename `ResendSettings`**
-
-You can either:
-
-- **Option A**: Rename `ResendSettings` to `EmailSettings` (shared settings model).
-- **Option B**: Create a separate `MandrillSettings` class and add a new config section.
-
-**Step 4: Register the new service in `Program.cs`**
-
-Replace:
-
-```csharp
-builder.Services.Configure<ResendSettings>(builder.Configuration.GetSection("Resend"));
-builder.Services.AddSingleton<IEmailService, ResendEmailService>();
-```
-
-With:
-
-```csharp
-builder.Services.Configure<MandrillSettings>(builder.Configuration.GetSection("Mandrill"));
-builder.Services.AddSingleton<IEmailService, MandrillEmailService>();
-```
-
-**Step 5: Update configuration**
-
-Replace Resend config in `appsettings.json` and user secrets:
-
-```json
-"Mandrill": {
-  "ApiKey": "your-mandrill-api-key",
-  "FromEmail": "noreply@yourdomain.com"
-}
-```
-
-**Step 6: Remove the Resend NuGet package**
-
-```bash
-dotnet remove src/DiamantLaan.Api package Resend
-```
-
-**Step 7: Verify**
-
-- Check password reset emails still send (forgot password flow)
-- Check manual purchase welcome emails still send (admin manual purchase)
-- Check block progress notifications still send (admin status update)
-- Check `GET /api/health` returns `emailConfigured: true`
-- Check `GET /api/admin/diagnostics` shows email configuration status
-
-The outbox pattern, background services, and email templates remain unchanged — only the `IEmailService` implementation is swapped.
+**To swap providers again:** write a new `IEmailService`, register it in `Program.cs`, and
+add its settings section. The outbox pattern, background services, and email templates are
+provider-agnostic.
 
 ---
 

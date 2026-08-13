@@ -108,8 +108,8 @@ import { LangService } from '../../i18n/lang.service';
             betalingsbesonderhede word aan PayFast gestuur).
           </li>
           <li>
-            <strong>Resend:</strong> om diens-e-posse af te lewer (jou e-posadres en die
-            inhoud van die boodskap word aan Resend gestuur).
+            <strong>Mailchimp:</strong> om diens-e-posse af te lewer (jou e-posadres en die
+            inhoud van die boodskap word aan Mailchimp gestuur).
           </li>
           <li>
             <strong>Azure:</strong> om die webwerf en databasis te huisves.
@@ -329,8 +329,8 @@ import { LangService } from '../../i18n/lang.service';
             details are sent to PayFast).
           </li>
           <li>
-            <strong>Resend:</strong> to deliver service emails (your email address and the
-            content of the message are sent to Resend).
+            <strong>Mailchimp:</strong> to deliver service emails (your email address and the
+            content of the message are sent to Mailchimp).
           </li>
           <li>
             <strong>Azure:</strong> to host the website and the database.

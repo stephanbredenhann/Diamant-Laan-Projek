@@ -10,23 +10,25 @@ import { BlokRoosterComponent } from './blok-rooster.component';
 import { BlokStrookComponent } from './blok-strook.component';
 import { PadOorsigComponent } from './pad-oorsig.component';
 import {
+  MAX_BLOK_ID,
   Reeks,
+  alleSeksies,
   blokRede,
-  groepe,
   reeksSleutel,
   seksieVan,
-  seksies,
   telBeskikbaar,
 } from './blok-reekse';
 
 const PRYS_PER_METER = 500;
 
 /**
- * Step 2, the "kies self" path: a guided drill-down instead of a free map.
+ * Step 2, the "kies self" path: a hundred numbered blocks at a time.
  *
- * Thousand, then hundred, then the blocks themselves. Nothing on this page
- * pans, zooms or scrolls sideways, because every one of those is a way to end
- * up lost, and the visitor is in the middle of paying.
+ * It opens on real blocks rather than on ranges to drill through, starting at
+ * the first hundred with anything left. Paging and a jump list move between the
+ * hundreds. Nothing on this page pans, zooms or scrolls sideways, because every
+ * one of those is a way to end up lost, and the visitor is in the middle of
+ * paying.
  */
 @Component({
   selector: 'app-bou-kaart',
@@ -37,94 +39,55 @@ const PRYS_PER_METER = 500;
   ],
   template: `
     <div class="kaart-shell bou-shell">
-      <p class="eyebrow page-eyebrow">Stap 2 van 3 · Kies self</p>
+      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies self</p>
       <div class="visually-hidden" aria-live="polite">{{ aankondiging() }}</div>
       <h1 class="page-title">{{ titel() }}</h1>
       <p class="page-lead">{{ leidraad() }}</p>
 
       <app-bou-step-bar [active]="2" [nextEnabled]="klaarGekies()" />
 
-      <nav class="krummels" aria-label="Waar jy is">
-        <button type="button" class="krummel" [class.huidig]="vlak() === 1" (click)="gaanNaVlak(1)">
-          Alle blokke
-        </button>
-        @if (groep(); as g) {
-          <span class="krummel-skei" aria-hidden="true">›</span>
-          <button type="button" class="krummel" [class.huidig]="vlak() === 2" (click)="gaanNaVlak(2)">
-            {{ reeksNaam(g) }}
-          </button>
-        }
-        @if (seksie(); as s) {
-          <span class="krummel-skei" aria-hidden="true">›</span>
-          <button type="button" class="krummel huidig" (click)="gaanNaVlak(3)">
-            {{ reeksNaam(s) }}
-          </button>
-        }
-      </nav>
-
       <div class="layout">
-        <div class="werkarea" [class.langs]="vlak() < 3">
-          <!-- Beside the buttons it is a panel and can afford height; above the
-               blocks it is a slim band, so it orients without crowding them. -->
-          <app-pad-oorsig [merk]="gemerk()" [aspek]="vlak() === 3 ? 7 : 16 / 9" />
+        <div class="werkarea">
+          <!-- A slim band under the blocks: it orients without pushing the thing
+               you came to use below the fold. On a phone it goes back on top. -->
+          <app-pad-oorsig [merk]="gemerk()" [aspek]="7" />
           <div class="inhoud">
           @if (laai()) {
             <p class="laai-nota">Besig om die blokke te laai...</p>
           } @else if (laaiFout()) {
             <p class="error-alert">{{ laaiFout() }}</p>
-          } @else if (vlak() === 1) {
-            <div class="reeks-rooster groot" role="group" aria-label="Kies ’n groep blokke">
-              @for (g of alleGroepe; track reeksSleutel(g)) {
-                <button
-                  type="button"
-                  class="reeks-kaart"
-                  [disabled]="beskikbaarIn(g) === 0"
-                  (click)="kiesGroep(g)"
-                >
-                  <span class="reeks-eyebrow">Blokke</span>
-                  <span class="reeks-nommer">{{ reeksNaam(g) }}</span>
-                  <span class="reeks-telling">{{ vryTeks(g) }}</span>
-                  <span class="reeks-balk" aria-hidden="true">
-                    <span class="reeks-balk-vul" [style.width.%]="vryPersent(g)"></span>
-                  </span>
-                </button>
-              }
-            </div>
-          } @else if (vlak() === 2) {
-            <div class="reeks-rooster smal" role="group" aria-label="Kies ’n honderdtal blokke">
-              @for (s of huidigeSeksies(); track reeksSleutel(s)) {
-                <button
-                  type="button"
-                  class="reeks-kaart"
-                  [disabled]="beskikbaarIn(s) === 0"
-                  (click)="kiesSeksie(s)"
-                >
-                  <span class="reeks-eyebrow">Blokke</span>
-                  <span class="reeks-nommer">{{ reeksNaam(s) }}</span>
-                  <span class="reeks-telling">{{ vryTeks(s) }}</span>
-                  <span class="reeks-balk" aria-hidden="true">
-                    <span class="reeks-balk-vul" [style.width.%]="vryPersent(s)"></span>
-                  </span>
-                </button>
-              }
-            </div>
           } @else {
-            @let s = seksie()!;
+            @let s = seksie();
             <div class="strook-paneel">
               <div class="strook-kop">
                 <button type="button" class="strook-blaai" (click)="skuifSeksie(-1)" [disabled]="!vorigeSeksie()">
                   ‹ Vorige 100
                 </button>
-                <div class="legende">
-                  <span><i class="swatch beskikbaar"></i> Beskikbaar</span>
-                  <span><i class="swatch gekies"></i> Gekies</span>
-                  <span><i class="swatch verkoop"></i> Verkoop</span>
-                  <span><i class="swatch onbeskikbaar"></i> Onbeskikbaar</span>
+                <div class="springer">
+                  <select
+                    id="seksie-keuse"
+                    aria-label="Spring na blokke"
+                    [value]="reeksSleutel(s)"
+                    (change)="kiesSeksie($event)"
+                  >
+                    @for (opsie of alleSeksies; track reeksSleutel(opsie)) {
+                      <option [value]="reeksSleutel(opsie)" [disabled]="beskikbaarIn(opsie) === 0">
+                        {{ reeksNaam(opsie) }} · {{ vryKort(opsie) }}
+                      </option>
+                    }
+                  </select>
                 </div>
                 <button type="button" class="strook-blaai" (click)="skuifSeksie(1)" [disabled]="!volgendeSeksie()">
                   Volgende 100 ›
                 </button>
               </div>
+              <div class="legende">
+                <span><i class="swatch beskikbaar"></i> Beskikbaar</span>
+                <span><i class="swatch gekies"></i> Gekies</span>
+                <span><i class="swatch verkoop"></i> Verkoop</span>
+                <span><i class="swatch onbeskikbaar"></i> Onbeskikbaar</span>
+              </div>
+              <p class="strook-nota">Druk op ’n blokkie om dit te kies. Druk weer om dit af te haal.</p>
               <app-blok-strook
                 class="net-wyd"
                 [van]="s.van"
@@ -143,7 +106,6 @@ const PRYS_PER_METER = 500;
                 [beklemtoon]="beklemtoon()"
                 (blokGekliek)="wisselBlok($event)"
               />
-              <p class="strook-nota">Druk op ’n blokkie om dit te kies. Druk weer om dit af te haal.</p>
             </div>
           }
           </div>
@@ -157,6 +119,27 @@ const PRYS_PER_METER = 500;
           <p class="teller-etiket">blokkies gekies</p>
           <p class="totaal">{{ randBedrag(aantal() * prysPerMeter) }}</p>
           <p class="totaal-nota">R{{ prysPerMeter }} per blokkie</p>
+
+          <div class="soek">
+            <label for="soek-blok">Soek ’n bloknommer</label>
+            <div class="soek-ry">
+              <input
+                id="soek-blok"
+                type="number"
+                name="soekBlok"
+                inputmode="numeric"
+                min="1"
+                [max]="maxBlokId"
+                placeholder="bv. 2350"
+                [(ngModel)]="soekNommer"
+                (keydown.enter)="soek()"
+              >
+              <button type="button" class="btn btn-accent" (click)="soek()">Soek</button>
+            </div>
+            @if (soekFout(); as f) {
+              <p class="waarskuwing" role="alert">{{ f }}</p>
+            }
+          </div>
 
           @if (boodskap(); as b) {
             <p class="waarskuwing" role="alert">{{ b }}</p>
@@ -197,27 +180,6 @@ const PRYS_PER_METER = 500;
             </button>
           }
 
-          <div class="soek">
-            <label for="soek-blok">Soek ’n bloknommer</label>
-            <div class="soek-ry">
-              <input
-                id="soek-blok"
-                type="number"
-                name="soekBlok"
-                inputmode="numeric"
-                min="1"
-                [max]="maxBlokId"
-                placeholder="bv. 2350"
-                [(ngModel)]="soekNommer"
-                (keydown.enter)="soek()"
-              >
-              <button type="button" class="btn btn-accent" (click)="soek()">Soek</button>
-            </div>
-            @if (soekFout(); as f) {
-              <p class="waarskuwing" role="alert">{{ f }}</p>
-            }
-          </div>
-
           <button type="button" class="btn btn-outline btn-terug" (click)="gaanTerug()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
@@ -246,8 +208,8 @@ const PRYS_PER_METER = 500;
     </div>
   `,
   styles: [`
-    /* Wider than .container-wide: at level 3 the strip has to fit seventeen
-       blocks across and still print a four-digit number on each one. */
+    /* Wider than .container-wide: the strip has to fit seventeen blocks across
+       and still print a four-digit number on each one. */
     .kaart-shell {
       max-width: 1600px;
       margin: 0 auto;
@@ -259,136 +221,16 @@ const PRYS_PER_METER = 500;
       align-items: start;
       margin-top: 1.5rem;
     }
-    .werkarea { min-width: 0; }
-    .werkarea app-pad-oorsig { margin-bottom: 1.5rem; }
-
-    /* Stacked, the preview's 486 px pushed the range buttons a full screen below
-       the fold, so the page opened on a map with no visible way to act on it.
-       While choosing a range there is spare width beside the buttons, so the
-       preview goes there and the buttons start at the top. At block level the
-       strip needs the full width back, and by then the visitor has already
-       used the page. */
-    .werkarea.langs {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
-      gap: 1.5rem;
-      align-items: start;
-    }
-    /* The button column is narrower here than at full width, so the range
-       numbers step down a size rather than overflow their card. */
-    .werkarea.langs .reeks-rooster.groot .reeks-nommer {
-      font-size: clamp(1.5rem, 1.8vw, 2.2rem);
-    }
-    .werkarea.langs .inhoud { grid-column: 1; grid-row: 1; }
-    .werkarea.langs app-pad-oorsig {
-      grid-column: 2;
-      grid-row: 1;
-      margin-bottom: 0;
-      position: sticky;
-      top: 5.5rem;
-    }
-    .laai-nota { color: var(--text-muted); font-size: var(--fs-lg); }
-
-    .krummels {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 1.5rem;
-    }
-    .krummel {
-      font-family: var(--font-display);
-      font-size: var(--fs-lg);
-      font-weight: 700;
-      min-height: var(--tap-min);
-      padding: 0.5rem 1.1rem;
-      background: var(--surface);
-      border: 2px solid var(--border-soft);
-      color: var(--route-blue);
-      cursor: pointer;
-    }
-    .krummel:hover { border-color: var(--route-blue); }
-    .krummel.huidig {
-      background: var(--route-blue);
-      border-color: var(--route-blue);
-      color: #fff;
-      cursor: default;
-    }
-    .krummel-skei {
-      font-family: var(--font-display);
-      font-size: var(--fs-xl);
-      color: var(--text-muted);
-    }
-
-    .reeks-rooster {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-      max-width: 60rem;
-    }
-    /* Four groups sit as a 2×2 block rather than a row of three and a stray. */
-    .reeks-rooster.groot {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      max-width: 44rem;
-    }
-    .reeks-rooster.smal {
-      grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
-      max-width: 66rem;
-    }
-    /* Four-digit ranges are wide; kept on one line so the eye can scan the
-       column of numbers without every card breaking in a different place. */
-    .reeks-rooster.smal .reeks-nommer { font-size: clamp(1.5rem, 1.8vw, 1.95rem); }
-    .reeks-kaart {
+    /* DOM order puts the preview first, which is what a phone wants. On a wide
+       screen it belongs under the blocks instead: the blocks are the thing you
+       came to use, and a 486 px map above them pushed them below the fold. */
+    .werkarea {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 0.3rem;
-      padding: 1.25rem;
-      min-height: 9.5rem;
-      background: var(--surface);
-      border: 2px solid var(--border-soft);
-      text-align: left;
-      font-family: var(--font-body);
-      cursor: pointer;
-      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      min-width: 0;
     }
-    .reeks-kaart:hover:not(:disabled) {
-      border-color: var(--action);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-cta);
-    }
-    .reeks-eyebrow {
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--route-blue);
-    }
-    .reeks-nommer {
-      font-family: var(--font-display);
-      font-size: clamp(1.9rem, 2.4vw, 2.6rem);
-      font-weight: 800;
-      line-height: 1;
-      color: var(--ink);
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-    .reeks-telling {
-      font-size: var(--fs-base);
-      color: var(--text-muted);
-      margin-top: auto;
-    }
-    .reeks-balk {
-      display: block;
-      width: 100%;
-      height: 0.5rem;
-      background: var(--surface-sand);
-      margin-top: 0.6rem;
-    }
-    .reeks-balk-vul { display: block; height: 100%; background: var(--blok-gekies); }
-    .reeks-kaart:disabled .reeks-nommer,
-    .reeks-kaart:disabled .reeks-eyebrow { color: var(--text-muted); }
+    .werkarea app-pad-oorsig { order: 2; margin: 1.5rem 0 0; }
+    .laai-nota { color: var(--text-muted); font-size: var(--fs-lg); }
 
     .strook-paneel {
       background: var(--bg-chalk);
@@ -416,10 +258,35 @@ const PRYS_PER_METER = 500;
       white-space: nowrap;
     }
     .strook-blaai:hover:not(:disabled) { background: rgba(3, 78, 162, 0.08); }
+
+    /* Replaces the old thousand-then-hundred drill-down: one native control that
+       reaches any stretch of the road in a single tap, sold-out ones greyed. */
+    .springer {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      justify-content: center;
+      min-width: 0;
+    }
+    .springer select {
+      min-width: 0;
+      min-height: var(--tap-min);
+      padding: 0.5rem 0.75rem;
+      font-family: var(--font-display);
+      font-size: var(--fs-base);
+      font-weight: 700;
+      background: var(--surface);
+      border: 2px solid var(--route-blue);
+      color: var(--route-blue);
+      cursor: pointer;
+    }
+
     .legende {
       display: flex;
       flex-wrap: wrap;
+      justify-content: center;
       gap: 1rem;
+      margin-bottom: 0.75rem;
       font-size: var(--fs-sm);
       color: var(--text-muted);
     }
@@ -435,9 +302,10 @@ const PRYS_PER_METER = 500;
     .swatch.verkoop { background: var(--blok-verkoop); }
     .swatch.onbeskikbaar { background: var(--blok-onbeskikbaar); }
     .strook-nota {
-      margin-top: 0.75rem;
+      margin: 0 0 0.75rem;
       font-size: var(--fs-base);
-      color: var(--text-muted);
+      font-weight: 700;
+      color: #000;
       text-align: center;
     }
     /* OpenStreetMap's licence requires this credit stays visible. */
@@ -548,9 +416,10 @@ const PRYS_PER_METER = 500;
     .maak-skoon { font-size: var(--fs-base); min-height: var(--tap-min); padding: 0.6rem 1rem; }
 
     .soek {
-      margin-top: 1.5rem;
-      padding-top: 1.25rem;
+      margin: 1.25rem 0 0.5rem;
+      padding: 1.25rem 0;
       border-top: 1px solid rgba(255,255,255,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
     }
     .soek label {
       display: block;
@@ -585,19 +454,18 @@ const PRYS_PER_METER = 500;
       .layout { grid-template-columns: 1fr; }
       .keuse-kaart { position: static; }
       .strook-kop { justify-content: center; }
-      /* Full width again: stacking the preview above the buttons is right once
-         there is no room to put it beside them. */
-      .werkarea.langs { display: block; }
-      .werkarea.langs app-pad-oorsig { position: static; margin-bottom: 1.5rem; }
+      /* On a narrow screen the map goes back on top: it is the orientation you
+         want before you start tapping, and nothing is competing for the space. */
+      .werkarea app-pad-oorsig { order: -1; margin: 0 0 1.5rem; }
     }
 
     @media (max-width: 820px) {
       .net-wyd { display: none; }
       .net-smal { display: block; }
       .strook-paneel { background: transparent; border: none; padding: 0; }
-      .legende { order: -1; width: 100%; justify-content: center; }
       .strook-kop { gap: 0.5rem; }
       .strook-blaai { flex: 1; }
+      .springer { order: -1; width: 100%; }
     }
 
     .voetbalk { display: none; }
@@ -646,12 +514,7 @@ const PRYS_PER_METER = 500;
     @media (max-width: 700px) {
       .kaart-shell { padding-left: 1rem; padding-right: 1rem; }
       .voetbalk { margin-left: -1rem; margin-right: -1rem; }
-      .krummels { gap: 0.35rem; }
-      .krummel { font-size: var(--fs-base); padding: 0.45rem 0.7rem; }
-      .reeks-rooster.groot,
-      .reeks-rooster.smal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .reeks-kaart { min-height: 7.5rem; padding: 1rem; }
-      .reeks-nommer { font-size: 1.6rem; }
+      .springer select { width: 100%; }
     }
   `]
 })
@@ -661,8 +524,8 @@ export class BouKaartComponent implements OnInit {
   private purchase = inject(PurchaseService);
 
   readonly prysPerMeter = PRYS_PER_METER;
-  readonly alleGroepe = groepe();
-  readonly maxBlokId = this.alleGroepe[this.alleGroepe.length - 1].tot;
+  readonly alleSeksies = alleSeksies();
+  readonly maxBlokId = MAX_BLOK_ID;
   readonly randBedrag = randBedrag;
   readonly reeksSleutel = reeksSleutel;
 
@@ -671,9 +534,7 @@ export class BouKaartComponent implements OnInit {
   laaiFout = signal<string | null>(null);
 
   aantal = signal(0);
-  vlak = signal<1 | 2 | 3>(1);
-  groep = signal<Reeks | null>(null);
-  seksie = signal<Reeks | null>(null);
+  seksie = signal<Reeks>(this.alleSeksies[0]);
   gekies = signal<Set<number>>(new Set());
   boodskap = signal<string | null>(null);
   beklemtoon = signal<number | null>(null);
@@ -683,31 +544,19 @@ export class BouKaartComponent implements OnInit {
   private byId = computed(() => new Map(this.squares().map(s => [s.id, s])));
 
   /**
-   * Free-block counts for every range, worked out once per load rather than on
-   * each change-detection pass: the template asks for them three times a card.
+   * Free-block counts per section, worked out once per load rather than on each
+   * change-detection pass: the jump list asks for all forty-two of them.
    */
   private tellings = computed(() => {
     const byId = this.byId();
-    const m = new Map<string, number>();
-    for (const g of this.alleGroepe) {
-      m.set(reeksSleutel(g), telBeskikbaar(g, byId));
-      for (const s of seksies(g)) {
-        m.set(reeksSleutel(s), telBeskikbaar(s, byId));
-      }
-    }
-    return m;
+    return new Map(this.alleSeksies.map(s => [reeksSleutel(s), telBeskikbaar(s, byId)]));
   });
 
   gekiesLys = computed(() => Array.from(this.gekies()).sort((a, b) => a - b));
   klaarGekies = computed(() => this.aantal() > 0 && this.gekies().size === this.aantal());
 
-  huidigeSeksies = computed(() => {
-    const g = this.groep();
-    return g ? seksies(g) : [];
-  });
-
-  /** What the overview band highlights: always the narrowest thing chosen so far. */
-  gemerk = computed(() => this.seksie() ?? this.groep());
+  /** The overview band highlights whichever hundred is open. */
+  gemerk = computed(() => this.seksie());
 
   ngOnInit() {
     const n = this.purchase.bouAantal;
@@ -731,6 +580,8 @@ export class BouKaartComponent implements OnInit {
         const byId = this.byId();
         const geldig = bestaande.filter(id => blokRede(id, byId.get(id)) === null).slice(0, n);
         if (geldig.length > 0) this.gekies.set(new Set(geldig));
+
+        this.seksie.set(this.openingsSeksie(geldig));
       },
       error: () => {
         this.laai.set(false);
@@ -739,28 +590,28 @@ export class BouKaartComponent implements OnInit {
     });
   }
 
+  /**
+   * Where the page opens: the section holding the first block already picked, or
+   * failing that the first one with anything left. Landing on a sold-out stretch
+   * would look like a broken page to someone who has just paid attention.
+   */
+  private openingsSeksie(gekies: number[]): Reeks {
+    const eerste = gekies.length > 0 ? seksieVan(Math.min(...gekies)) : null;
+    if (eerste) return eerste;
+
+    const byId = this.byId();
+    return this.alleSeksies.find(s => telBeskikbaar(s, byId) > 0) ?? this.alleSeksies[0];
+  }
+
   titel(): string {
-    switch (this.vlak()) {
-      case 1: return 'Kies waar op die pad';
-      case 2: return `Blokke ${this.reeksNaam(this.groep()!)}`;
-      default: return `Blokke ${this.reeksNaam(this.seksie()!)}`;
-    }
+    return `Blokke ${this.reeksNaam(this.seksie())}`;
   }
 
   leidraad(): string {
-    switch (this.vlak()) {
-      case 1: return 'Begin breed. Kies eers ’n groot groep blokke, dan ’n kleiner groep, en eers daarna kies jy die blokkies self.';
-      case 2: return 'Kies nou ’n kleiner groep van honderd blokke. Die getal onderaan wys hoeveel nog beskikbaar is.';
-      default: return 'Hier is die blokkies op die pad. Klik op ’n oop blokkie om dit te kies.';
-    }
+    return 'Hier is die blokkies op die pad. Klik op ’n oop blokkie om dit te kies.';
   }
 
-  aankondiging = computed(() => {
-    const v = this.vlak();
-    if (v === 1) return 'Stap 2 van 3: kies ’n groep blokke.';
-    if (v === 2) return `Groep ${this.reeksNaam(this.groep()!)} oop. Kies ’n honderdtal.`;
-    return `Blokke ${this.reeksNaam(this.seksie()!)} is oop.`;
-  });
+  aankondiging = computed(() => `Blokke ${this.reeksNaam(this.seksie())} is oop.`);
 
   reeksNaam(r: Reeks): string {
     return `${nommer(r.van)} – ${nommer(r.tot)}`;
@@ -770,22 +621,15 @@ export class BouKaartComponent implements OnInit {
     return this.tellings().get(reeksSleutel(r)) ?? 0;
   }
 
-  vryTeks(r: Reeks): string {
+  /** Short enough to sit on one line of the jump list, beside the range. */
+  vryKort(r: Reeks): string {
     const vry = this.beskikbaarIn(r);
-    if (vry === 0) return 'Niks meer beskikbaar nie';
-    if (vry === 1) return '1 nog beskikbaar';
-    return `${nommer(vry)} nog beskikbaar`;
-  }
-
-  vryPersent(r: Reeks): number {
-    const totaal = r.tot - r.van + 1;
-    return totaal === 0 ? 0 : (this.beskikbaarIn(r) / totaal) * 100;
+    if (vry === 0) return 'geen beskikbaar';
+    return `${nommer(vry)} beskikbaar`;
   }
 
   leegTeks(): string {
-    return this.vlak() === 3
-      ? 'Nog niks gekies nie. Klik op ’n blokkie op die kaart.'
-      : 'Nog niks gekies nie. Kies ’n groep om te begin.';
+    return 'Nog niks gekies nie. Klik op ’n blokkie op die kaart.';
   }
 
   oorblywendTeks(): string {
@@ -803,51 +647,23 @@ export class BouKaartComponent implements OnInit {
 
   // --- Navigation -------------------------------------------------------
 
-  /**
-   * Moving up drops what was chosen below it. Leaving the old section behind
-   * meant the trail still offered "2 301 – 2 400" after you had gone back to
-   * pick a different thousand, and it would silently reopen the stretch you had
-   * just left.
-   */
-  gaanNaVlak(v: 1 | 2 | 3) {
-    if (v === 2 && !this.groep()) return;
-    if (v === 3 && !this.seksie()) return;
-
-    if (v <= 2) this.seksie.set(null);
-    if (v === 1) this.groep.set(null);
-
-    this.vlak.set(v);
-    this.wisBoodskappe();
-  }
-
-  kiesGroep(g: Reeks) {
-    this.groep.set(g);
-    this.seksie.set(null);
-    this.vlak.set(2);
-    this.wisBoodskappe();
-  }
-
-  kiesSeksie(s: Reeks) {
+  /** Jump list: the value is the range key, so map it back to the range. */
+  kiesSeksie(gebeurtenis: Event) {
+    const sleutel = (gebeurtenis.target as HTMLSelectElement).value;
+    const s = this.alleSeksies.find(r => reeksSleutel(r) === sleutel);
+    if (!s) return;
     this.seksie.set(s);
-    this.vlak.set(3);
     this.wisBoodskappe();
   }
 
-  /** One step back up the drill-down, or out of the wizard step entirely. */
+  /** Out of the wizard step; there is no drill-down left to climb. */
   gaanTerug() {
-    const v = this.vlak();
-    if (v === 1) {
-      this.router.navigate(['/bou/kies']);
-      return;
-    }
-    this.gaanNaVlak(v === 3 ? 2 : 1);
+    this.router.navigate(['/bou/kies']);
   }
 
   private buurSeksie(rigting: -1 | 1): Reeks | null {
     const huidig = this.seksie();
-    if (!huidig) return null;
-    const van = huidig.van + rigting * (huidig.tot - huidig.van + 1);
-    return seksieVan(van)?.seksie ?? null;
+    return seksieVan(huidig.van + rigting * (huidig.tot - huidig.van + 1));
   }
 
   vorigeSeksie = computed(() => this.buurSeksie(-1));
@@ -856,10 +672,7 @@ export class BouKaartComponent implements OnInit {
   skuifSeksie(rigting: -1 | 1) {
     const volgende = this.buurSeksie(rigting);
     if (!volgende) return;
-    const plek = seksieVan(volgende.van);
-    if (!plek) return;
-    this.groep.set(plek.groep);
-    this.seksie.set(plek.seksie);
+    this.seksie.set(volgende);
     this.wisBoodskappe();
   }
 
@@ -926,9 +739,7 @@ export class BouKaartComponent implements OnInit {
 
     // Show them where it is either way; a refusal makes far more sense when you
     // can see the block sitting there in red or black.
-    this.groep.set(plek.groep);
-    this.seksie.set(plek.seksie);
-    this.vlak.set(3);
+    this.seksie.set(plek);
     this.beklemtoon.set(id);
 
     if (this.gekies().has(id)) {

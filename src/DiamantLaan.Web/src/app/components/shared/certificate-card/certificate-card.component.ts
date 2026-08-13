@@ -75,6 +75,8 @@ export interface CertificateSquare {
   status?: number;
   /** ISO timestamp from the API. Absent for older purchases, which simply leave the row blank. */
   purchaseDate?: string;
+  /** Name for this block's own sheet. Absent means it prints the summary name. */
+  ownerName?: string;
 }
 
 /** What a single sheet shows. Both the per-block and the summary certificate reduce to this. */
@@ -129,18 +131,18 @@ export function formatBlockRanges(ids: number[]): string {
       @if (squares.length > 1) {
         <div class="view-toggle" role="group" aria-label="Kies sertifikaat weergawe">
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'summary'"
-                  [attr.aria-pressed]="mode === 'summary'" (click)="mode = 'summary'">Opsomming</button>
+                  [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Opsomming</button>
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'block'"
-                  [attr.aria-pressed]="mode === 'block'" (click)="mode = 'block'">Individuele blokke</button>
+                  [attr.aria-pressed]="mode === 'block'" (click)="stelModus('block')">Individuele blokke</button>
         </div>
       }
 
       <div class="cert-sheet" #previewSheet>
         <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" #bgImage />
-        @if (ownerName && previewView; as view) {
+        @if (bladNaam && previewView; as view) {
           <div class="cert-name" [class.cert-name--wrap]="nameWraps"
                [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-               [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ ownerName }}</div>
+               [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ bladNaam }}</div>
           <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
                [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
           @if (dateParts(view); as d) {
@@ -192,7 +194,7 @@ export function formatBlockRanges(ids: number[]): string {
       @if (exportView; as view) {
         <div class="cert-name" [class.cert-name--wrap]="nameWraps"
              [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-             [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ ownerName }}</div>
+             [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ bladNaam }}</div>
         <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
              [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
         @if (dateParts(view); as d) {
@@ -382,6 +384,21 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     return this.mode === 'summary' ? this.summaryView() : this.blockView(this.previewSquare);
   }
 
+  /**
+   * The name on the sheet in view. A block may carry its own, for someone splitting their
+   * blocks between family; the summary sheet always prints the one shared name.
+   */
+  get bladNaam(): string {
+    if (this.mode === 'block') return this.previewSquare?.ownerName?.trim() || this.ownerName;
+    return this.ownerName;
+  }
+
+  stelModus(mode: 'summary' | 'block') {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    void this.refit();
+  }
+
   get downloadLabel(): string {
     if (this.squares.length <= 1) return 'Laai PDF af';
     return this.mode === 'summary' ? 'Laai opsomming af' : 'Laai hierdie sertifikaat af';
@@ -421,6 +438,8 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     const next = this.previewIndex + delta;
     if (next >= 0 && next < this.squares.length) {
       this.previewIndex = next;
+      // The next block may print a different name, which may need a different fit.
+      void this.refit();
     }
   }
 
@@ -521,13 +540,14 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
    * artwork's native width and then applied to both sheets.
    */
   private fitName(): void {
-    if (!this.ownerName) return;
+    const naam = this.bladNaam;
+    if (!naam) return;
 
     const ctx = document.createElement('canvas').getContext('2d');
     if (!ctx) return;
 
     ctx.font = `400 ${NAME_BOX.fontSize}px 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif`;
-    const measured = ctx.measureText(this.ownerName).width;
+    const measured = ctx.measureText(naam).width;
     const required = NAME_BOX.width / measured;
 
     let fit: number;
@@ -592,7 +612,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   private filenameFor(view: SheetView): string {
-    const owner = this.sanitizeFilename(this.ownerName);
+    const owner = this.sanitizeFilename(this.bladNaam);
     return view.count > 1
       ? `sertifikaat-${owner}-opsomming.pdf`
       : `sertifikaat-${owner}-blok-${view.blocks}.pdf`;

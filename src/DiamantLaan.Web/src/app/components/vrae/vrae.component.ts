@@ -58,7 +58,7 @@ interface FaqItem {
           <h2 class="display">{{ 'Het jy jou antwoord? Kies nou jou hoeveelheid.' | t }}</h2>
           <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Bou 1 m² vir R500' | t }}</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg 1 m² vir R500' | t }}</a>
       </div>
     </section>
   `,

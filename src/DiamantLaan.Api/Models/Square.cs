@@ -13,6 +13,13 @@ public class Square
     /// <summary>Held back by an admin: not publicly buyable, still sellable via manual purchase.</summary>
     public bool IsReserved { get; set; }
 
+    /// <summary>
+    /// Name printed on this block's own certificate, when the owner wants it to differ from the
+    /// one on the rest. Null means fall back to the owner's summary certificate name.
+    /// </summary>
+    [MaxLength(100)]
+    public string? CertificateName { get; set; }
+
     [Timestamp]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 

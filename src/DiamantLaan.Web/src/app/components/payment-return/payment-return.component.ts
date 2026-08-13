@@ -175,10 +175,13 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
           this.state = 'success';
           this.purchase.bouAantal = null;
           this.purchase.pendingSquareIds = [];
+          this.sub?.unsubscribe();
           if (this.guestRef) {
-            // Guests carry on to the "create an account?" step rather than My Blocks.
-            this.sub?.unsubscribe();
+            // Guests carry on to the "create an account?" step first.
             this.router.navigate(['/betalings/klaar']);
+          } else {
+            // Signed in: straight to the certificate, which is step 4 of the flow.
+            this.router.navigate(['/my-blokke/sertifikaat'], { queryParams: { vloei: 1 } });
           }
         } else if (p.paymentStatus === 'Failed' || p.paymentStatus === 'Cancelled') {
           this.state = 'failed';

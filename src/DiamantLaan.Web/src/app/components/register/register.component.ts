@@ -329,9 +329,11 @@ export class RegisterComponent implements OnInit {
     ).subscribe({
       next: () => {
         if (this.guestRef) {
-          // The guest purchase now belongs to this account outright.
+          // The guest purchase now belongs to this account outright, so finish the
+          // flow where it was always heading: the certificate, step 4. The flag
+          // makes the progress rail show there this once and nowhere else.
           this.purchase.clearBouVloei();
-          this.router.navigate(['/my-blokke']);
+          this.router.navigate(['/my-blokke/sertifikaat'], { queryParams: { vloei: 1 } });
           return;
         }
         // No purchase attached yet, so send them to step 1 of the build flow

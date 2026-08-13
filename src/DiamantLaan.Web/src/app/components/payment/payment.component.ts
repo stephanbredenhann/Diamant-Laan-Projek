@@ -18,7 +18,7 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 3 van 3 · Betalingsvoorskou</p>
+          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Betalingsvoorskou</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Bevestig jou bourekord.</h1>
           <p class="page-lead">
@@ -34,19 +34,8 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
 
       <app-bou-step-bar [active]="3" />
 
+      <div class="betaal-layout">
       <form class="checkout-card ledger-paper surface-card" (ngSubmit)="submitPayment()">
-        <div class="totals">
-          <div>
-            <p class="eyebrow">Hoeveelheid</p>
-            <p class="big">{{ squareIds.length }} <span>m²</span></p>
-          </div>
-          <div>
-            <p class="eyebrow">Totaal</p>
-            <p class="big accent">{{ randBedrag(totalAmount) }}</p>
-          </div>
-        </div>
-        <p class="per-meter">{{ meterFrase(squareIds.length) }} · R500 per vierkante meter</p>
-
         @if (isGuest) {
           <div class="guest-box">
             <p class="guest-note">
@@ -97,6 +86,28 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
           Gaan terug
         </a>
       </form>
+
+      <!-- The same black panel as the picker, but read-only: this is the last
+           look at the numbers before the money moves, not another chance to
+           change them. Changing anything means going back a step. -->
+      <aside class="keuse-kaart">
+        <p class="eyebrow">Jou keuse</p>
+        <p class="teller">{{ squareIds.length }} <span>m²</span></p>
+        <p class="teller-etiket">{{ meterFrase(squareIds.length) }} pad</p>
+        <p class="totaal">{{ randBedrag(totalAmount) }}</p>
+        <p class="totaal-nota">R500 per blokkie</p>
+
+        <p class="blokke-kop">Jou bloknommers</p>
+        <ul class="gekose-blokke">
+          @for (id of squareIds; track id) {
+            <li class="gekose-blok">{{ id }}</li>
+          }
+        </ul>
+        <p class="kontroleer">
+          Kontroleer die nommers. Druk op <strong>Gaan terug</strong> om iets te verander.
+        </p>
+      </aside>
+      </div>
     </div>
   `,
   styles: [`
@@ -113,29 +124,85 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
       font-size: 0.85rem;
       margin-top: 0.5rem;
     }
+    .betaal-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 44rem) 340px;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 1.5rem;
+    }
     .checkout-card {
       max-width: 44rem;
       padding: 2rem;
     }
-    .totals {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 0.5rem;
+
+    /* Lifted from the picker's sidebar so the two pages read as one flow. */
+    .keuse-kaart {
+      background: var(--tar);
+      color: #fff;
+      padding: 1.75rem;
+      position: sticky;
+      top: 5.5rem;
     }
-    .big {
+    .keuse-kaart .eyebrow { color: rgba(255,255,255,0.55); }
+    .teller {
       font-family: var(--font-display);
-      font-size: 3.5rem;
+      font-size: 4rem;
       font-weight: 800;
       line-height: 1;
-      color: var(--ink);
+      margin: 0.75rem 0 0;
+      font-variant-numeric: tabular-nums;
     }
-    .big span { font-size: 1.25rem; color: var(--text-muted); }
-    .big.accent { color: var(--action); }
-    .per-meter {
-      color: var(--text-muted);
-      margin-bottom: 1.75rem;
+    .teller span { font-size: 2rem; opacity: 0.6; }
+    .teller-etiket { color: rgba(255,255,255,0.65); font-size: var(--fs-base); }
+    .totaal {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--action);
+      margin-top: 0.75rem;
     }
+    .totaal-nota { color: rgba(255,255,255,0.6); font-size: var(--fs-sm); }
+    .blokke-kop {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--fs-base);
+      margin: 1.5rem 0 0;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    /* Same green tiles as on the map, minus the remove button: nothing here is
+       clickable, so they are list items rather than controls. */
+    .gekose-blokke {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      list-style: none;
+      margin: 0.75rem 0 1rem;
+      padding: 0;
+    }
+    .gekose-blok {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 5rem;
+      min-height: 3rem;
+      padding: 0.5rem 0.6rem;
+      background: var(--blok-gekies);
+      border: 2px solid #FFFFFF;
+      color: #FFFFFF;
+      font-family: var(--font-display);
+      font-size: var(--fs-xl);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .kontroleer {
+      color: rgba(255,255,255,0.75);
+      font-size: var(--fs-base);
+      margin: 0;
+    }
+
     .guest-box { margin-bottom: 1.5rem; }
     .guest-note {
       font-size: var(--fs-base);
@@ -166,15 +233,21 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
       margin-right: 0.5rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1000px) {
+      /* One column, and the summary goes first: check the numbers, then fill in
+         the email and pay. The panel unsticks so it does not follow you down. */
+      .betaal-layout { grid-template-columns: 1fr; }
+      .keuse-kaart { position: static; order: -1; }
+      .checkout-card { max-width: none; }
+    }
+
     @media (max-width: 600px) {
-      /* Keep both totals on one row; stacking them pushed the pay button
-         off the first screen. */
-      .totals { gap: 1rem; margin-bottom: 0.25rem; }
-      .big { font-size: 2.25rem; }
-      .big span { font-size: 1rem; }
       .checkout-card { padding: 1.25rem; }
+      .keuse-kaart { padding: 1.25rem; }
+      .teller { font-size: 2.75rem; }
+      .teller span { font-size: 1.5rem; }
+      .totaal { font-size: 2rem; }
       .stamp { font-size: 0.7rem; padding: 0.35rem 0.5rem; margin-top: 0; }
-      .per-meter { font-size: 1rem; margin-bottom: 1.25rem; }
       .redirect-notice { padding: 0.875rem 1rem; margin-bottom: 1.25rem; }
       .redirect-notice p { font-size: 1rem; }
     }
@@ -196,7 +269,7 @@ export class PaymentComponent implements OnInit {
   private guestRef?: GuestPurchaseRef;
   readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
-  stepAnnouncement = 'Stap 3 van 3: Bevestig jou bourekord';
+  stepAnnouncement = 'Stap 3 van 4: Bevestig jou bourekord';
 
   ngOnInit() {
     this.isGuest = !this.auth.currentUser();

@@ -73,8 +73,8 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.Configure<ResendSettings>(builder.Configuration.GetSection("Resend"));
-builder.Services.AddSingleton<IEmailService, ResendEmailService>();
+builder.Services.Configure<MandrillSettings>(builder.Configuration.GetSection("Mandrill"));
+builder.Services.AddHttpClient<IEmailService, MandrillEmailService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<SiteSettingsService>();
@@ -176,10 +176,10 @@ if (string.IsNullOrWhiteSpace(appPayFastSettings.Passphrase))
     app.Logger.LogWarning("PayFast Passphrase is not configured. PayFast will reject payment signatures until it matches the merchant dashboard setting via user secrets or environment variables.");
 }
 
-var resendSettings = app.Configuration.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
-if (string.IsNullOrWhiteSpace(resendSettings.ApiKey) || string.IsNullOrWhiteSpace(resendSettings.FromEmail))
+var mandrillSettings = app.Configuration.GetSection("Mandrill").Get<MandrillSettings>() ?? new MandrillSettings();
+if (string.IsNullOrWhiteSpace(mandrillSettings.ApiKey) || string.IsNullOrWhiteSpace(mandrillSettings.FromEmail))
 {
-    app.Logger.LogWarning("Resend ApiKey and/or FromEmail are not configured. Transactional emails will be skipped until they are set via user secrets or environment variables.");
+    app.Logger.LogWarning("Mandrill ApiKey and/or FromEmail are not configured. Transactional emails will be skipped until they are set via user secrets or environment variables.");
 }
 
 if (!app.Environment.IsDevelopment())

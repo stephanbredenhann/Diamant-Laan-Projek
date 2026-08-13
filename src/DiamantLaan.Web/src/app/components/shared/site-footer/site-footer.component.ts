@@ -33,7 +33,7 @@ import { TPipe } from '../../../i18n/t.pipe';
             <p class="footer-heading">{{ 'Belangrik' | t }}</p>
             <a href="https://orania.co.za/privaatheidsbeleid/" target="_blank" rel="noopener">{{ 'Privaatheidsbeleid' | t }}</a>
             <a routerLink="/meld-aan">{{ 'Meld aan' | t }}</a>
-            <a routerLink="/bou">{{ 'Bou 1 m²' | t }}</a>
+            <a routerLink="/bou">{{ 'Borg 1 m²' | t }}</a>
           </div>
         </div>
         <div class="container footer-meta">
@@ -43,7 +43,7 @@ import { TPipe } from '../../../i18n/t.pipe';
 
       @if (showMobileCta()) {
         <a routerLink="/bou" class="mobile-cta">
-          <span>{{ 'Bou 1 m² vir R500' | t }}</span>
+          <span>{{ 'Borg 1 m² vir R500' | t }}</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>

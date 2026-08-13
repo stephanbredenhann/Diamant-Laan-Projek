@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 
 namespace DiamantLaan.Api.Models;
@@ -26,6 +27,13 @@ public class User : IdentityUser
     /// Opaque token for the public /deel/{token} page. Null until the donor opts in.
     /// </summary>
     public string? ShareToken { get; set; }
+    /// <summary>
+    /// Name printed on the summary certificate, and on every block certificate that has not been
+    /// given one of its own. Null means fall back to the account's first and last name.
+    /// </summary>
+    [MaxLength(100)]
+    public string? CertificateName { get; set; }
+
     public string PhoneCountryCode { get; set; } = "+27";
     public ICollection<Square> Squares { get; set; } = new List<Square>();
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
