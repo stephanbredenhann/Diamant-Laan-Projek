@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #444; font: 14px monospace; color: #fff; }
+  #log { padding: 8px; white-space: pre; }
+  /* --- mirrors certificate-card.component.ts --- */
+  .cert-sheet {
+    position: relative; width: 794px; height: 1123px; --sheet-w: 794px;
+    background: #fff; overflow: hidden;
+  }
+  .cert-sheet--export { position: fixed; left: -10000px; top: 0; }
+  .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .cert-name, .cert-body {
+    position: absolute; color: #000;
+    font-family: 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif;
+    font-weight: 400; text-align: center;
+  }
+  .cert-name {
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: calc(var(--sheet-w) * 0.0839632 * var(--name-fit, 1));
+    line-height: 1.15; white-space: nowrap;
+  }
+  .cert-name--wrap { white-space: normal; overflow-wrap: anywhere; }
+  .cert-body { font-size: calc(var(--sheet-w) * 0.0268682); line-height: 1.4; }
+  /* the captured result, scaled for viewing */
+  #shots img { width: 397px; border: 2px solid #0f0; margin: 4px; vertical-align: top; }
+</style>
+</head>
+<body>
+<div id="log">running...</div>
+<div id="shots"></div>
+
+<!-- offscreen export sheet, exactly as the component renders it -->
+<div class="cert-sheet cert-sheet--export" id="exportSheet">
+  <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" id="bg">
+  <div class="cert-name" id="xname">Stephan Bredenhann</div>
+  <div class="cert-body" id="xbody"></div>
+</div>
+
+<script type="module">
+import html2canvas from '/@fs/home/stephanbredenhann/Documents/GitHub/Diamant Laan Projek/src/DiamantLaan.Web/node_modules/html2canvas/dist/html2canvas.esm.js';
+import { jsPDF } from '/@fs/home/stephanbredenhann/Documents/GitHub/Diamant Laan Projek/src/DiamantLaan.Web/node_modules/jspdf/dist/jspdf.es.min.js';
+
+const SHEET_W = 794, SHEET_H = 1123;
+const NAME_BOX = { left: 116.7551, top: 477.4423, width: 560.1905, height: 79.6667, fontSize: 66.6667 };
+const BODY_BOX = { left: 146.3550, top: 574.7090, width: 500.9908 };
+const MIN_NAME_FIT = 0.42, NAME_FIT_SAFETY = 0.98;
+const pctW = v => (v / SHEET_W) * 100 + '%';
+const pctH = v => (v / SHEET_H) * 100 + '%';
+const log = m => { document.getElementById('log').textContent += '\n' + m; };
+
+const name = document.getElementById('xname'), body = document.getElementById('xbody');
+Object.assign(name.style, { left: pctW(NAME_BOX.left), top: pctH(NAME_BOX.top),
+  width: pctW(NAME_BOX.width), height: pctH(NAME_BOX.height) });
+Object.assign(body.style, { left: pctW(BODY_BOX.left), top: pctH(BODY_BOX.top), width: pctW(BODY_BOX.width) });
+
+const bodyTextFor = id => `blok no. ${id} aangekoop het ter ondersteuning van die teer van die Oewerpad in Orania.`;
+
+try {
+  await document.fonts.ready;
+  const img = document.getElementById('bg');
+  if (!img.complete) await img.decode();
+
+  // name fit, same maths as the component
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `400 ${NAME_BOX.fontSize}px 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif`;
+  const required = NAME_BOX.width / ctx.measureText(name.textContent).width;
+  const fit = required >= 1 ? 1
+    : (required * NAME_FIT_SAFETY >= MIN_NAME_FIT ? required * NAME_FIT_SAFETY : MIN_NAME_FIT);
+  document.getElementById('exportSheet').style.setProperty('--name-fit', fit);
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight();
+  log(`jsPDF A4: ${pageW} x ${pageH} mm`);
+
+  const blocks = [42, 1287];
+  for (const [i, id] of blocks.entries()) {
+    body.textContent = bodyTextFor(id);
+    await new Promise(requestAnimationFrame);
+
+    const canvas = await html2canvas(document.getElementById('exportSheet'),
+      { scale: 2, width: SHEET_W, height: SHEET_H, backgroundColor: '#ffffff' });
+    log(`block ${id}: canvas ${canvas.width}x${canvas.height}`);
+
+    if (i > 0) pdf.addPage();
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+
+    const shot = new Image(); shot.src = canvas.toDataURL('image/png');
+    document.getElementById('shots').appendChild(shot);
+  }
+
+  log(`PDF pages: ${pdf.internal.getNumberOfPages()}`);
+  log(`PDF bytes: ${pdf.output('arraybuffer').byteLength}`);
+  log('RESULT: OK');
+} catch (e) {
+  log('RESULT: FAILED -> ' + (e && e.stack || e));
+}
+</script>
+</body>
+</html>

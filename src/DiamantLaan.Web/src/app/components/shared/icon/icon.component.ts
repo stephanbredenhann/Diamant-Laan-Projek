@@ -14,11 +14,13 @@ export type IconName =
   | 'award'
   | 'user'
   | 'road'
+  | 'dirt-road'
   | 'wallet'
   | 'calendar'
   | 'camera'
   | 'check-circle'
-  | 'help-circle';
+  | 'help-circle'
+  | 'hammer';
 
 @Component({
   selector: 'app-icon',
@@ -60,6 +62,12 @@ export type IconName =
         @case ('road') {
           <path d="M4 22 8 2M20 22 16 2M12 6v3M12 13v3M12 20v1" />
         }
+        @case ('dirt-road') {
+          <path d="M4 22 6.5 11 8 2M20 22 17.5 11 16 2" />
+          <circle cx="11" cy="8" r="1.25" />
+          <circle cx="13.5" cy="13" r="1.4" />
+          <circle cx="10.5" cy="18" r="1.2" />
+        }
         @case ('wallet') {
           <path d="M20 12V8a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4h13" />
           <path d="M3 4v14a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-4" />
@@ -76,6 +84,10 @@ export type IconName =
         @case ('check-circle') {
           <circle cx="12" cy="12" r="9" />
           <polyline points="8.5 12 11 14.5 15.5 9.5" />
+        }
+        @case ('hammer') {
+          <path d="M14.5 3.5 21 10l-2.5 2.5L12 6z" />
+          <path d="M12.5 8.5 4 17l3 3 8.5-8.5" />
         }
         @case ('help-circle') {
           <circle cx="12" cy="12" r="9" />

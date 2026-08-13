@@ -5,7 +5,7 @@ import {
   reeksTeks,
 } from './blok-nommers';
 
-const MAX = 4000;
+const MAX = 4200;
 
 describe('ontleedBlokNommers', () => {
   it('reads single numbers, ranges and mixed separators', () => {

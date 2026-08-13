@@ -18,7 +18,7 @@ import { TPipe } from '../../i18n/t.pipe';
       <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">{{ 'Orania-Teerprojek' | t }}</p>
+        <p class="eyebrow hero-eyebrow">{{ 'Van grondpad tot teerpad' | t }}</p>
         <h1 class="display hero-title">
           {{ 'Bou die volgende' | t }} <span class="accent">m²</span> {{ 'van die Oewerpad.' | t }}
         </h1>
@@ -503,8 +503,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   progress = 0;
   totalRaised = 0;
   fundedMeters = 0;
-  /** The whole road is saleable; 4200 is only a fallback until /stats answers. */
-  totalSquares = 4200;
+  /** The whole road is saleable; 4000 is only a fallback until /stats answers. */
+  totalSquares = 4000;
 
   readonly randBedrag = randBedrag;
 

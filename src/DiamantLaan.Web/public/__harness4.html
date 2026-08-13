@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<!-- the REAL global stylesheet, so the button cascade matches the app exactly -->
+<link rel="stylesheet" href="__global.css">
+<style>
+  body { background: #eee; padding: 16px; }
+  #report { font: 13px monospace; background: #222; color: #0f0; padding: 8px; white-space: pre; margin-bottom: 12px; }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { width: 460px; }
+
+  /* ---- copied verbatim from certificate-card.component.ts ---- */
+  .cert-sheet {
+    position: relative; width: 100%; aspect-ratio: 794 / 1123;
+    background: #fff; box-shadow: var(--shadow-lg); overflow: hidden;
+  }
+  .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .cert-name, .cert-body, .cert-date {
+    position: absolute; color: #000;
+    font-family: 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif;
+    font-weight: 400; text-align: center;
+  }
+  .cert-name {
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: calc(var(--sheet-w, 100%) * 0.0839632 * var(--name-fit, 1));
+    line-height: 1.15; white-space: nowrap;
+  }
+  .cert-body { line-height: 1.4; }
+  .cert-date {
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: calc(var(--sheet-w, 100%) * 0.0176322);
+    line-height: 1.1; white-space: nowrap;
+  }
+  .view-toggle { display: flex; justify-content: center; gap: 0.5rem; }
+  .toggle-btn {
+    padding: 0.5rem 1.25rem; border: 1px solid var(--color-border); border-radius: 999px;
+    background: var(--color-surface); color: var(--color-muted); font-size: 0.875rem;
+  }
+  .toggle-btn.is-active {
+    background: var(--ob-orange); border-color: var(--ob-orange); color: var(--color-on-primary);
+  }
+  .sheet-nav { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+  .nav-label { font-size: 0.875rem; color: var(--color-muted); }
+  .nav-btn {
+    flex: 0 0 auto; width: 2.25rem; height: 2.25rem; padding: 0;
+    border: 1px solid var(--color-border); border-radius: 50%;
+    background: var(--color-surface); color: var(--color-text);
+    font-size: 1.25rem; line-height: 1;
+  }
+  .nav-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* the OLD rule, to show what was wrong */
+  .nav-btn--old {
+    flex: 0 0 auto; width: 2rem; height: 2rem;
+    border: 1px solid var(--color-border); border-radius: 50%;
+    background: var(--color-surface); font-size: 1.25rem; line-height: 1;
+  }
+</style>
+</head>
+<body>
+<div id="report">measuring...</div>
+
+<div class="view-toggle">
+  <button type="button" class="toggle-btn is-active">Opsomming</button>
+  <button type="button" class="toggle-btn">Individuele blokke</button>
+</div>
+<br>
+<div class="sheet-nav">
+  <span class="nav-label">BEFORE (old rule):</span>
+  <button type="button" class="nav-btn--old" id="old">‹</button>
+  <span class="nav-label">AFTER (fixed):</span>
+  <button type="button" class="nav-btn" id="new1">‹</button>
+  <span class="nav-label">Blok 42 — 3 van 12</span>
+  <button type="button" class="nav-btn" id="new2">›</button>
+</div>
+<br>
+
+<div class="row">
+  <div class="col">
+    <div class="cert-sheet" id="s1">
+      <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="">
+      <div class="cert-name" id="n1">Stephan Bredenhann</div>
+      <div class="cert-body" id="b1"></div>
+      <div class="cert-date" id="d1a">10</div><div class="cert-date" id="d1b">08</div><div class="cert-date" id="d1c">2026</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="cert-sheet" id="s2">
+      <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="">
+      <div class="cert-name" id="n2">Stephan Bredenhann</div>
+      <div class="cert-body" id="b2"></div>
+      <div class="cert-date" id="d2a">10</div><div class="cert-date" id="d2b">08</div><div class="cert-date" id="d2c">2026</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_W = 794, SHEET_H = 1123;
+const NAME_BOX = { left: 116.7551, top: 477.4423, width: 560.1905, height: 79.6667, fontSize: 66.6667 };
+const BODY_BOX = { left: 146.3550, top: 574.7090, width: 500.9908, fontSize: 21.3334 };
+const DATE_ROW = { top: 947, height: 20 };
+const SLOTS = [{ left: 311.5664, width: 48 }, { left: 370, width: 41 }, { left: 421, width: 46 }];
+const MAX_BODY_HEIGHT = 130, MIN_BODY_FIT = 0.55, BODY_LINE_HEIGHT = 1.4, MAX_RUN_AS_LIST = 3;
+
+function formatBlockRanges(ids) {
+  const sorted = [...new Set(ids)].sort((a,b) => a-b);
+  if (!sorted.length) return '';
+  const runs = []; let run = [sorted[0]];
+  for (let i=1;i<sorted.length;i++){
+    if (sorted[i] === sorted[i-1]+1) run.push(sorted[i]);
+    else { runs.push(run); run = [sorted[i]]; }
+  }
+  runs.push(run);
+  return runs.map(r => r.length <= MAX_RUN_AS_LIST ? r.join(', ') : `${r[0]}-${r[r.length-1]}`).join(', ');
+}
+const blokLabel = c => c === 1 ? 'blok' : 'blokke';
+const bodyText = (blocks, count) =>
+  `${blokLabel(count)} no. ${blocks} aangekoop het ter ondersteuning van die teer van die Oewerpad in Orania.`;
+
+function computeBodyFit(text) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  for (let fit = 1; fit >= MIN_BODY_FIT; fit -= 0.04) {
+    const size = BODY_BOX.fontSize * fit;
+    ctx.font = `400 ${size}px 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif`;
+    let lines = 1, current = '';
+    for (const w of text.split(' ')) {
+      const cand = current ? current + ' ' + w : w;
+      if (current && ctx.measureText(cand).width > BODY_BOX.width) { lines++; current = w; }
+      else current = cand;
+    }
+    if (lines * size * BODY_LINE_HEIGHT <= MAX_BODY_HEIGHT) return fit;
+  }
+  return MIN_BODY_FIT;
+}
+
+function layout(sheetId, nameId, bodyId, dateIds, ids) {
+  const sheet = document.getElementById(sheetId);
+  sheet.style.setProperty('--sheet-w', sheet.getBoundingClientRect().width + 'px');
+  const nm = document.getElementById(nameId), bd = document.getElementById(bodyId);
+  Object.assign(nm.style, { left:(NAME_BOX.left/SHEET_W*100)+'%', top:(NAME_BOX.top/SHEET_H*100)+'%',
+    width:(NAME_BOX.width/SHEET_W*100)+'%', height:(NAME_BOX.height/SHEET_H*100)+'%' });
+  const blocks = formatBlockRanges(ids), text = bodyText(blocks, ids.length);
+  const fit = ids.length > 1 ? computeBodyFit(text) : 1;
+  bd.textContent = text;
+  Object.assign(bd.style, { left:(BODY_BOX.left/SHEET_W*100)+'%', top:(BODY_BOX.top/SHEET_H*100)+'%',
+    width:(BODY_BOX.width/SHEET_W*100)+'%',
+    fontSize:`calc(var(--sheet-w, 100%) * ${(BODY_BOX.fontSize/SHEET_W)*fit})` });
+  dateIds.forEach((id, i) => {
+    const el = document.getElementById(id), s = SLOTS[i];
+    Object.assign(el.style, { left:(s.left/SHEET_W*100)+'%', top:(DATE_ROW.top/SHEET_H*100)+'%',
+      width:(s.width/SHEET_W*100)+'%', height:(DATE_ROW.height/SHEET_H*100)+'%' });
+  });
+  return { blocks, fit };
+}
+
+const single = layout('s1','n1','b1',['d1a','d1b','d1c'], [42]);
+// a deliberately awkward holding: several runs plus scattered singles
+const manyIds = [1,2,3,7,8,9,10,15,22,23,24,25,26,40,41,51,52,53,54,55,80,81,99];
+const many = layout('s2','n2','b2',['d2a','d2b','d2c'], manyIds);
+
+document.fonts.ready.then(() => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `400 ${NAME_BOX.fontSize}px 'Open Sans', sans-serif`;
+  for (const [sid, nid] of [['s1','n1'],['s2','n2']]) {
+    const req = NAME_BOX.width / ctx.measureText(document.getElementById(nid).textContent).width;
+    document.getElementById(sid).style.setProperty('--name-fit', req >= 1 ? 1 : Math.max(req*0.98, 0.42));
+  }
+  const r = id => { const b = document.getElementById(id).getBoundingClientRect();
+    return `${b.width.toFixed(1)}x${b.height.toFixed(1)}` + (Math.abs(b.width-b.height) < 0.5 ? '  ROUND' : '  OVAL'); };
+  const bd2 = document.getElementById('b2').getBoundingClientRect();
+  document.getElementById('report').textContent =
+    `nav-btn OLD rule : ${r('old')}\n` +
+    `nav-btn FIXED    : ${r('new1')} / ${r('new2')}\n` +
+    `summary blocks   : ${many.blocks}\n` +
+    `summary body fit : ${many.fit.toFixed(2)}  height ${(bd2.height / (document.getElementById('s2').getBoundingClientRect().width/SHEET_W)).toFixed(0)}px of ${MAX_BODY_HEIGHT} max\n` +
+    `single block     : ${single.blocks} (fit ${single.fit})`;
+});
+</script>
+</body>
+</html>

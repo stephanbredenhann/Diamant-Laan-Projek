@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService, UndoLastInfo } from '../../services/admin.service';
 import { RoadService } from '../../services/road.service';
@@ -481,6 +481,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   private road = inject(RoadService);
 
   squares: Square[] = [];
+  /** Lookup for squares, so per-block checks do not scan all 4000 each time. */
+  private squaresById = new Map<number, Square>();
   /** Bound to the map; stable reference except when squares/view/photo overlay change. */
   mapDisplaySquares: Square[] = [];
   stats = { totalRaised: 0 };
@@ -496,7 +498,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private undoCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private activeUndoBatchId: string | null = null;
 
-  readonly maxBlockId = 4200;
+  readonly maxBlockId = 4000;
 
   draftStatus: SquareStatus | null = null;
   draftImageCaption = '';
@@ -563,13 +565,15 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.applyPhotoOverlayFromCache();
   }
 
-  selectedIdsArray(): number[] {
-    return Array.from(this.selectedIds());
-  }
+  /**
+   * Computed, not a method: the map re-styles all 4000 features whenever this input
+   * reference changes, so a fresh array per change-detection tick froze the browser.
+   */
+  readonly selectedIdsArray = computed(() => Array.from(this.selectedIds()));
 
   toggleById(sqId: number) {
     if (this.imageConflictPrompt) return;
-    const sq = this.squares.find(s => s.id === sqId);
+    const sq = this.squaresById.get(sqId);
     if (!sq) return;
     this.toggle(sq);
   }
@@ -590,7 +594,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     let shared: SquareStatus | null = null;
     for (const id of ids) {
-      const sq = this.squares.find(s => s.id === id);
+      const sq = this.squaresById.get(id);
       if (!sq) return null;
       if (shared === null) {
         shared = sq.status;
@@ -637,9 +641,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   /** The selection as "1-15, 120", so steps 2 and 3 never hide what is being changed. */
-  keuseOpsomming(): string {
-    return nommersNaReekse(this.selectedIdsArray()).map(reeksTeks).join(', ');
-  }
+  readonly keuseOpsomming = computed(() =>
+    nommersNaReekse(this.selectedIdsArray()).map(reeksTeks).join(', '));
 
   /** Step 2 needs blocks; step 3 needs something to actually save. */
   kanNaStap(n: number): boolean {
@@ -889,6 +892,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     });
     this.road.getSquares().subscribe(s => {
       this.squares = s;
+      this.squaresById = new Map(s.map(sq => [sq.id, sq]));
       this.updateMapDisplaySquares();
     });
     if (this.viewMode() === 'photos') {

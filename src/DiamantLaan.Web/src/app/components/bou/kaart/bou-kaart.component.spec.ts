@@ -6,7 +6,7 @@ import { Square, SquareStatus } from '../../../models/square';
 import { PurchaseService } from '../../../services/purchase.service';
 import { BouKaartComponent } from './bou-kaart.component';
 
-const squares: Square[] = Array.from({ length: 4200 }, (_, i) => ({
+const squares: Square[] = Array.from({ length: 4000 }, (_, i) => ({
   id: i + 1,
   status: SquareStatus.NogNieBeginNie,
   isSold: i + 1 >= 500 && i + 1 <= 520,
@@ -80,9 +80,9 @@ describe('BouKaartComponent', () => {
     komponent.skuifSeksie(-1);
     expect(komponent.seksie()).toEqual({ van: 1, tot: 100 });
 
-    komponent.seksie.set({ van: 4101, tot: 4200 });
+    komponent.seksie.set({ van: 3901, tot: 4000 });
     komponent.skuifSeksie(1);
-    expect(komponent.seksie()).toEqual({ van: 4101, tot: 4200 });
+    expect(komponent.seksie()).toEqual({ van: 3901, tot: 4000 });
   });
 
   it('refuses a block past the amount chosen in step one', () => {

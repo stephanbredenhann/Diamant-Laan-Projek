@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, SimpleChanges, ElementRef, inject, NgZone } from '@angular/core';
+import { Component, EventEmitter, Input, Output, AfterViewInit, OnChanges, OnDestroy, SimpleChanges, ElementRef, inject, NgZone } from '@angular/core';
 import * as L from 'leaflet';
 import { Square, SquareStatus, STATUS_LABELS, STATUS_COLORS, MapViewMode } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
@@ -20,7 +20,7 @@ const DRAG_THRESHOLD = 5;
   templateUrl: './road-map.component.html',
   styleUrls: ['./road-map.component.scss'],
 })
-export class RoadMapComponent implements AfterViewInit, OnChanges {
+export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() squares: Square[] = [];
   @Input() selectedIds: number[] = [];
   @Input() statusFilter: number | null = null;
@@ -43,9 +43,19 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
   private dragStartPoint: L.Point | null = null;
   private selectBox: L.Rectangle | null = null;
   private activeTooltipLayer: L.Layer | null = null;
+  private invalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngAfterViewInit() {
-    this.initMap();
+    // Outside the zone: Leaflet's move/zoom/pointermove listeners would otherwise tick
+    // change detection every frame, and each tick re-styles all 4000 features.
+    this.zone.runOutsideAngular(() => this.initMap());
+  }
+
+  ngOnDestroy() {
+    if (this.invalidateTimer !== null) {
+      clearTimeout(this.invalidateTimer);
+    }
+    this.map?.remove();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -206,7 +216,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     this.initialized = true;
     this.syncSelectedIdSet();
     this.rebuildLayer();
-    setTimeout(() => this.map.invalidateSize(), 100);
+    this.invalidateTimer = setTimeout(() => this.map.invalidateSize(), 100);
   }
 
   private syncSelectedIdSet() {
@@ -265,7 +275,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
         });
 
         if (ids.length > 0) {
-          this.squaresRangeSelected.emit(ids);
+          this.zone.run(() => this.squaresRangeSelected.emit(ids));
         }
       }
 
@@ -407,7 +417,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
           this.activeTooltipLayer = layer;
         }
 
-        this.squareClicked.emit(id);
+        this.zone.run(() => this.squareClicked.emit(id));
       });
     });
   }

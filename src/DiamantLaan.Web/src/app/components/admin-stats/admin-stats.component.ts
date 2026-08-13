@@ -561,7 +561,7 @@ export class AdminStatsComponent implements OnInit {
   @ViewChild('statsExport') statsExport!: ElementRef<HTMLElement>;
 
   stats: Stats = {
-    totalSquares: 4200,
+    totalSquares: 4000,
     soldSquares: 0,
     totalRaised: 0,
     sponsorBaseline: 2_000_000,

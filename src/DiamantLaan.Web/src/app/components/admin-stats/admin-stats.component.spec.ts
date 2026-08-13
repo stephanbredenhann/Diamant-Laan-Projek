@@ -5,7 +5,7 @@ import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { AdminStatsComponent } from './admin-stats.component';
 
 const emptyStats = {
-  totalSquares: 4200,
+  totalSquares: 4000,
   soldSquares: 0,
   totalRaised: 0,
   sponsorBaseline: 2_000_000,

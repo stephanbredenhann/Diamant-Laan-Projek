@@ -39,7 +39,7 @@ const PRYS_PER_METER = 500;
   ],
   template: `
     <div class="kaart-shell bou-shell">
-      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies self</p>
+      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou m²</p>
       <div class="visually-hidden" aria-live="polite">{{ aankondiging() }}</div>
       <h1 class="page-title">{{ titel() }}</h1>
       <p class="page-lead">{{ leidraad() }}</p>
@@ -87,7 +87,7 @@ const PRYS_PER_METER = 500;
                 <span><i class="swatch verkoop"></i> Verkoop</span>
                 <span><i class="swatch onbeskikbaar"></i> Onbeskikbaar</span>
               </div>
-              <p class="strook-nota">Druk op ’n blokkie om dit te kies. Druk weer om dit af te haal.</p>
+              <p class="strook-nota">Klik op ’n blokkie om dit te kies. Klik weer om dit af te haal.</p>
               <app-blok-strook
                 class="net-wyd"
                 [van]="s.van"

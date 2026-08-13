@@ -71,7 +71,7 @@ describe('PadOorsigComponent', () => {
     // Block ids run across the road before they run along it, so a trace built
     // from raw centroids can end in a lane six metres off the one it started
     // in. That showed up as a right-angled hook on the end of the marker.
-    for (const merk of [{ van: 2301, tot: 2400 }, { van: 1, tot: 100 }, { van: 4101, tot: 4200 }]) {
+    for (const merk of [{ van: 2301, tot: 2400 }, { van: 1, tot: 100 }, { van: 3901, tot: 4000 }]) {
       fixture.componentRef.setInput('merk', merk);
       fixture.detectChanges();
 

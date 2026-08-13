@@ -61,7 +61,7 @@ export function getMapBounds(): L.LatLngBounds {
 }
 
 /**
- * Generate a Leaflet GeoJSON layer with all 4200 squares positioned
+ * Generate a Leaflet GeoJSON layer with all 4000 squares positioned
  * along the real-world road path defined by WAYPOINTS.
  *
  * Geometry is cached; only status/sold properties are merged per request.

@@ -20,24 +20,26 @@ describe('ShareButtonComponent', () => {
     fixture = TestBed.createComponent(ShareButtonComponent);
     component = fixture.componentInstance;
     component.url = 'https://example.com/deel/abc';
-    component.text = 'Ek het 3 vierkante meter geborg!';
+    component.text = 'Ek het 3 m² geborg vir die Oewerpad in Orania!';
     component.menuOpen.set(true);
     fixture.detectChanges();
   });
 
   afterEach(() => fixture.destroy());
 
-  it('gives Facebook only the page url, which it still accepts', () => {
-    const parsed = new URL(component.facebookUrl);
-    expect(parsed.origin + parsed.pathname).toBe('https://www.facebook.com/sharer/sharer.php');
-    expect(parsed.searchParams.get('u')).toBe(component.url);
-    expect(parsed.searchParams.has('quote')).toBeFalse();
+  it('copies message and link together, and confirms without closing the menu', async () => {
+    const button = fixture.nativeElement.querySelector('.share-menu button') as HTMLButtonElement;
+    await component.copyLink();
+    fixture.detectChanges();
+
+    expect(writeText).toHaveBeenCalledWith(component.sharePayload);
+    expect(component.copied()).toBeTrue();
+    expect(component.menuOpen()).toBeTrue();
+    expect(button.textContent!.trim()).toBe('Gekopieer!');
   });
 
-  it('copies the share message when Facebook is chosen', () => {
-    const link = fixture.nativeElement.querySelector('a[href*="facebook.com"]') as HTMLAnchorElement;
-    expect(link).toBeTruthy();
-    link.click();
-    expect(writeText).toHaveBeenCalledWith('Ek het 3 vierkante meter geborg!');
+  it('puts the link on its own line in the copied message and the WhatsApp text', () => {
+    expect(component.sharePayload).toBe('Ek het 3 m² geborg vir die Oewerpad in Orania!\nhttps://example.com/deel/abc');
+    expect(new URL(component.whatsappUrl).searchParams.get('text')).toBe(component.sharePayload);
   });
 });

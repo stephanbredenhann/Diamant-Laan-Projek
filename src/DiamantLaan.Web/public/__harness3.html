@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #777; padding: 10px; }
+  .cert-sheet {
+    position: relative; width: 794px; height: 1123px; --sheet-w: 794px;
+    background: #fff; overflow: hidden; --name-fit: 1;
+  }
+  .cert-name, .cert-body, .cert-date {
+    position: absolute; color: #000;
+    font-family: 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif;
+    font-weight: 400; text-align: center;
+  }
+  .cert-date {
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: calc(var(--sheet-w) * 0.0176322);
+    line-height: 1.1; white-space: nowrap;
+  }
+  .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<div class="cert-sheet" id="sheet">
+  <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="">
+  <div class="cert-date" id="d1">10</div>
+  <div class="cert-date" id="d2">08</div>
+  <div class="cert-date" id="d3">2026</div>
+</div>
+<script>
+const SHEET_W = 794, SHEET_H = 1123;
+const DATE_ROW = { top: 947, height: 20 };
+const slots = { d1: { left: 311.5664, width: 48 }, d2: { left: 370, width: 41 }, d3: { left: 421, width: 46 } };
+for (const [id, s] of Object.entries(slots)) {
+  const el = document.getElementById(id);
+  el.style.left = (s.left / SHEET_W) * 100 + '%';
+  el.style.top = (DATE_ROW.top / SHEET_H) * 100 + '%';
+  el.style.width = (s.width / SHEET_W) * 100 + '%';
+  el.style.height = (DATE_ROW.height / SHEET_H) * 100 + '%';
+}
+</script>
+</body>
+</html>

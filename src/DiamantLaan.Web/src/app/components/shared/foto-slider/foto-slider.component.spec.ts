@@ -15,9 +15,17 @@ describe('FotoSliderComponent', () => {
 
   afterEach(() => fixture.destroy());
 
-  it('should swap between the two Oewerpad photos', () => {
-    expect(fixture.componentInstance.fotos.length).toBe(2);
+  it('should swap between the Oewerpad photos', () => {
+    expect(fixture.componentInstance.fotos.length).toBe(4);
     fixture.componentInstance.kies(1);
+    fixture.detectChanges();
+    const active = fixture.nativeElement.querySelector('.why-slider img.is-active') as HTMLImageElement;
+    expect(active.src).toContain('oewerpad-lugfoto.jpg');
+  });
+
+  it('should step with the boxy nav buttons', () => {
+    const next = fixture.nativeElement.querySelector('.why-nav.next') as HTMLButtonElement;
+    next.click();
     fixture.detectChanges();
     const active = fixture.nativeElement.querySelector('.why-slider img.is-active') as HTMLImageElement;
     expect(active.src).toContain('oewerpad-lugfoto.jpg');

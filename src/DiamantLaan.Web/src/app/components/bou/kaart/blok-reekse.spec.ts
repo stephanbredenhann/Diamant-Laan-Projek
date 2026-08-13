@@ -13,9 +13,9 @@ function blok(id: number, isSold = false, isReserved = false): Square {
 }
 
 describe('blok-reekse', () => {
-  it('tiles 1..4200 with sections of a hundred, no gap and no overlap', () => {
+  it('tiles 1..4000 with sections of a hundred, no gap and no overlap', () => {
     const ss = alleSeksies();
-    expect(ss.length).toBe(42);
+    expect(ss.length).toBe(40);
     expect(ss[0]).toEqual({ van: 1, tot: 100 });
     expect(ss[ss.length - 1].tot).toBe(MAX_BLOK_ID);
     ss.forEach((s, i) => {
@@ -31,12 +31,12 @@ describe('blok-reekse', () => {
     expect(seksieVan(1)).toEqual({ van: 1, tot: 100 });
     expect(seksieVan(100)).toEqual({ van: 1, tot: 100 });
     expect(seksieVan(101)).toEqual({ van: 101, tot: 200 });
-    expect(seksieVan(4200)).toEqual({ van: 4101, tot: 4200 });
+    expect(seksieVan(4000)).toEqual({ van: 3901, tot: 4000 });
   });
 
   it('rejects block numbers that do not exist', () => {
     expect(seksieVan(0)).toBeNull();
-    expect(seksieVan(4201)).toBeNull();
+    expect(seksieVan(4001)).toBeNull();
     expect(seksieVan(NaN)).toBeNull();
   });
 

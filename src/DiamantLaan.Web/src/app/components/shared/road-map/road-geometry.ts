@@ -13,7 +13,7 @@ import { WAYPOINTS } from '../../map/map-segments';
 
 export const ROAD_LENGTH_M = 700;
 export const ROAD_WIDTH = 6;
-export const TOTAL_SQUARES = 4200;
+export const TOTAL_SQUARES = 4000;
 
 /** One block's outline as [lng, lat] pairs, closed (first point repeated last). */
 export interface SquarePolygon {
@@ -114,7 +114,7 @@ export function getSquareRing(squareId: number): [number, number][] | null {
  * Outlines for a slice of the road, inclusive of both ends.
  *
  * Only the requested blocks are computed, so the picker's 100-block section
- * costs a fraction of building all 4200.
+ * costs a fraction of building all 4000.
  */
 export function getSquarePolygons(fromId: number, toId: number): SquarePolygon[] {
   const from = Math.max(1, Math.floor(fromId));

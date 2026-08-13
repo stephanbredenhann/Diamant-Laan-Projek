@@ -13,16 +13,12 @@ import { CommonModule } from '@angular/common';
       </button>
       @if (menuOpen()) {
         <div class="share-menu">
-          <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer" (click)="menuOpen.set(false)">WhatsApp</a>
-          <a [href]="facebookUrl" target="_blank" rel="noopener noreferrer" (click)="onFacebookClick()">Facebook</a>
+          <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer" (click)="menuOpen.set(false)">Stuur met WhatsApp</a>
           <button type="button" (click)="copyLink()">{{ copied() ? 'Gekopieer!' : 'Kopieer skakel' }}</button>
           @if (showRevoke) {
             <button type="button" class="revoke" (click)="onRevoke()">Verwyder my openbare skakel</button>
           }
         </div>
-      }
-      @if (facebookCopied()) {
-        <p class="share-hint">Teks gekopieer. Plak dit in jou Facebook-plasing.</p>
       }
     </div>
   `,
@@ -53,22 +49,32 @@ import { CommonModule } from '@angular/common';
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       box-shadow: var(--shadow);
-      min-width: 240px;
+      min-width: 300px;
       z-index: 100;
       overflow: hidden;
     }
+    /*
+     * The global button rule centres its text in the display font at weight 700, so a button
+     * and a link sitting side by side in this menu look nothing alike. Everything the rule
+     * sets is restated here, which is what keeps the rows identical.
+     */
     .share-menu a,
     .share-menu button {
       display: flex;
       align-items: center;
+      justify-content: flex-start;
       width: 100%;
-      min-height: var(--tap-min);
-      padding: 0.625rem 1rem;
+      min-height: var(--tap-large);
+      padding: 0.75rem 1.25rem;
       text-align: left;
-      font-size: var(--fs-lg);
+      font-family: inherit;
+      font-size: var(--fs-xl);
+      font-weight: 600;
+      line-height: 1.2;
       color: var(--color-text);
       background: none;
       border: none;
+      border-radius: 0;
       border-bottom: 1px solid var(--color-border);
       cursor: pointer;
       text-decoration: none;
@@ -81,13 +87,9 @@ import { CommonModule } from '@angular/common';
     .share-menu button:hover {
       background: var(--color-cream);
     }
+    /* Same size and weight as the rest, only greyed: it deletes the link, so it must not read
+       as a third way to share. */
     .share-menu button.revoke {
-      color: var(--text-muted);
-      font-size: var(--fs-base);
-    }
-    .share-hint {
-      margin: 0.5rem 0 0;
-      font-size: var(--fs-base);
       color: var(--text-muted);
     }
   `]
@@ -106,18 +108,13 @@ export class ShareButtonComponent {
 
   menuOpen = signal(false);
   copied = signal(false);
-  facebookCopied = signal(false);
 
   get whatsappUrl(): string {
-    return `https://wa.me/?text=${encodeURIComponent(this.text + ' ' + this.url)}`;
-  }
-
-  get facebookUrl(): string {
-    return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(this.url)}`;
+    return `https://wa.me/?text=${encodeURIComponent(this.sharePayload)}`;
   }
 
   get sharePayload(): string {
-    return `${this.text} ${this.url}`;
+    return `${this.text}\n${this.url}`;
   }
 
   @HostListener('document:click', ['$event'])
@@ -162,30 +159,14 @@ export class ShareButtonComponent {
     this.revokeRequested.emit();
   }
 
-  onFacebookClick() {
-    void this.copyShareText(this.text).then(ok => {
-      if (!ok) return;
-      this.facebookCopied.set(true);
-      setTimeout(() => this.facebookCopied.set(false), 4000);
-    });
-    this.menuOpen.set(false);
-  }
-
   async copyLink() {
-    const ok = await this.copyShareText(this.sharePayload);
-    if (ok) {
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 2000);
-    }
-    this.menuOpen.set(false);
-  }
-
-  private async copyShareText(value: string): Promise<boolean> {
     try {
-      await navigator.clipboard.writeText(value);
-      return true;
+      await navigator.clipboard.writeText(this.sharePayload);
     } catch {
-      return false;
+      return;
     }
+    // Menu stays open so "Gekopieer!" is actually visible.
+    this.copied.set(true);
+    setTimeout(() => this.copied.set(false), 2000);
   }
 }

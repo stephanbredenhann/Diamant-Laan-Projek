@@ -21,16 +21,13 @@ import {
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Opsioneel</p>
           <h2 class="display auth-title">Registreer</h2>
-          <p>’n Rekening is heeltemal opsioneel. Dit help net om vorige bydraes, sertifikate en opdaterings later te bestuur.</p>
+          <p>
+            Deur ’n rekening te skep verseker jy dat jou sertifikate deurlopend beskikbaar is,
+            ons jou kan opdateer oor die status van jou blokkie en vergemaklik jy die koopproses
+            in die toekoms.
+          </p>
         </div>
-        @if (guestRef) {
-          <div class="guest-banner">
-            <strong>Jou aankoop word aan hierdie rekening gekoppel.</strong>
-            <span>Sodra jy registreer, sien jy jou vierkante meter onder ‘My blokke’.</span>
-          </div>
-        }
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
@@ -65,7 +62,6 @@ import {
             <ul class="pw-checklist" aria-live="polite">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
               <li [class.ok]="checks().hasNumber">’n Nommer</li>
-              <li [class.ok]="checks().hasSpecial">’n Spesiale karakter</li>
               <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
               <li [class.ok]="checks().hasLower">’n Kleinletter</li>
             </ul>
@@ -143,20 +139,6 @@ import {
       letter-spacing: normal;
     }
     .checkbox-group input { width: auto; }
-    .guest-banner {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      border: 1px solid var(--color-border);
-      border-left: 3px solid var(--color-olive);
-      border-radius: var(--radius-sm);
-      background: var(--color-cream);
-      padding: 0.875rem 1rem;
-      margin-bottom: 1.25rem;
-      font-size: var(--fs-base);
-      color: var(--text-muted);
-    }
-    .guest-banner strong { color: var(--color-text); }
     .field-error {
       margin-top: 0.35rem;
       font-size: var(--fs-base);

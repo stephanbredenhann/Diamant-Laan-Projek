@@ -9,7 +9,7 @@ describe('BlokKeusePaneelComponent', () => {
     await TestBed.configureTestingModule({ imports: [BlokKeusePaneelComponent] }).compileComponents();
     fixture = TestBed.createComponent(BlokKeusePaneelComponent);
     komponent = fixture.componentInstance;
-    fixture.componentRef.setInput('maxBlockId', 4200);
+    fixture.componentRef.setInput('maxBlockId', 4000);
     fixture.detectChanges();
   });
 

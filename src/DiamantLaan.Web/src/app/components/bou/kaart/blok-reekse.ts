@@ -2,13 +2,13 @@ import { Square } from '../../../models/square';
 import { Reeks } from '../../../utils/blok-nommers';
 
 /**
- * How the 4200 blocks are cut into the picker's sections of a hundred.
+ * How the 4000 blocks are cut into the picker's sections of a hundred.
  *
  * Plain functions on purpose: the arithmetic is the part most likely to be got
  * wrong, and it is far easier to prove correct without an Angular harness.
  */
 
-export const MAX_BLOK_ID = 4200;
+export const MAX_BLOK_ID = 4000;
 
 /** Blocks per section, and so per page of the picker. */
 export const SEKSIE_GROOTTE = 100;
@@ -19,7 +19,7 @@ export function reeksSleutel(r: Reeks): string {
   return `${r.van}-${r.tot}`;
 }
 
-/** Every section, 1-100 through 4101-4200. */
+/** Every section, 1-100 through 3901-4000. */
 export function alleSeksies(): Reeks[] {
   const out: Reeks[] = [];
   for (let van = 1; van <= MAX_BLOK_ID; van += SEKSIE_GROOTTE) {

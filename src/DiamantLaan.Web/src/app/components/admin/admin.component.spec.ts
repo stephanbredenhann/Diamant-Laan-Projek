@@ -83,6 +83,17 @@ describe('AdminComponent', () => {
       komponent.removeRange({ van: 1, tot: 2 });
       expect(komponent.selectedIdsArray()).toEqual([3]);
     });
+
+    // The bug this guards: as a plain method this handed the map a new array on every
+    // change-detection tick, and the map re-styles all 4000 blocks per new reference.
+    it('keeps the selection array reference stable until the selection changes', () => {
+      kies(1, 2);
+      const eerste = komponent.selectedIdsArray();
+      expect(komponent.selectedIdsArray()).toBe(eerste);
+
+      kies(3);
+      expect(komponent.selectedIdsArray()).not.toBe(eerste);
+    });
   });
 
   describe('save ordering', () => {

@@ -23,8 +23,8 @@ describe('HomeComponent', () => {
     roadService.getStats.and.returnValue(of({
       progress: 50,
       totalRaised: 12345,
-      totalSquares: 4200,
-      saleableSquares: 4200,
+      totalSquares: 4000,
+      saleableSquares: 4000,
       fundedSquares: 25,
       phases: { nogNieBeginNie: 4400, voorberei: 50, besigOmTeTeer: 25, klaarGeteer: 25 },
     }));

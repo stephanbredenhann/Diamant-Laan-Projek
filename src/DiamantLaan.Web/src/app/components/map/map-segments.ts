@@ -45,8 +45,11 @@ export const SEGMENTS: SegmentDef[] = [
     rows: 6, cols: 10, cellW: 6, cellH: 6,
   },
   {
+    // The stretch itself is still 290 m of road; only the first 1540 blocks on it
+    // are on sale, so the saleable road stops at 4000. Nothing reads rows/cols/length
+    // any more, only endId, which is the saleable ceiling every picker derives from.
     name: 'Reguit 290m',
-    startId: 2461, endId: 4200,
+    startId: 2461, endId: 4000,
     length: 290,
     x: 20, y: 872, width: 36, height: 1740,
     rows: 290, cols: 6, cellW: 6, cellH: 6,

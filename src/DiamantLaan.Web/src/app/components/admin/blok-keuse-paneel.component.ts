@@ -127,7 +127,7 @@ import { Reeks, nommersNaReekse, ontleedBlokNommers, reeksTeks } from '../../uti
 })
 export class BlokKeusePaneelComponent {
   selectedIds = input<number[]>([]);
-  maxBlockId = input(4200);
+  maxBlockId = input(4000);
 
   /** Block numbers the admin asked to add. */
   addIds = output<number[]>();
