@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
@@ -30,7 +30,7 @@ import { filter } from 'rxjs';
           </div>
           <div>
             <p class="footer-heading">Belangrik</p>
-            <a routerLink="/privaatheid">Privaatheidsbeleid</a>
+            <a href="https://orania.co.za/privaatheidsbeleid/" target="_blank" rel="noopener">Privaatheidsbeleid</a>
             <a routerLink="/meld-aan">Meld aan</a>
             <a routerLink="/bou">Bou 1 m²</a>
           </div>
@@ -153,20 +153,25 @@ export class SiteFooterComponent {
   private destroyRef = inject(DestroyRef);
   readonly year = new Date().getFullYear();
   private url = signal(this.router.url);
+  private pastHero = signal(false);
 
   isAdminRoute = () => this.url().startsWith('/admin');
 
-  showMobileCta = () => {
-    const path = this.url().split('?')[0];
-    if (this.isAdminRoute()) return false;
-    const hide = ['/bou', '/kaart', '/meld-aan', '/registreer', '/betalings', '/wagwoord'];
-    return !hide.some(p => path === p || path.startsWith(p + '/'));
-  };
+  @HostListener('window:scroll')
+  onScroll() {
+    this.pastHero.set(window.scrollY > window.innerHeight * 0.7);
+  }
+
+  showMobileCta = () => this.url().split('?')[0] === '/' && this.pastHero();
 
   constructor() {
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe(e => this.url.set(e.urlAfterRedirects));
+    ).subscribe(e => {
+      this.url.set(e.urlAfterRedirects);
+      this.onScroll();
+    });
+    this.onScroll();
   }
 }

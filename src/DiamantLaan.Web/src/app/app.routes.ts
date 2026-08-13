@@ -38,6 +38,7 @@ export const routes: Routes = [
       { path: 'gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent) },
       { path: 'transaksies', loadComponent: () => import('./components/admin-transactions/admin-transactions.component').then(m => m.AdminTransactionsComponent) },
       { path: 'telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent) },
+      { path: 'reserveer', loadComponent: () => import('./components/admin-reserveer/admin-reserveer.component').then(m => m.AdminReserveerComponent) },
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
     ]
   },

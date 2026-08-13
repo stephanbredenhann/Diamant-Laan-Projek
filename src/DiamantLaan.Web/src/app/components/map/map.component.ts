@@ -6,7 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { RoadService } from '../../services/road.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
-import { Square, MapViewMode } from '../../models/square';
+import { Square, SquareStatus, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 import { blokLabel } from '../../utils/afrikaans.util';
@@ -627,7 +627,7 @@ export class MapComponent implements OnInit {
   toggleSquare(sqId: number) {
     const sq = this.squares.find(s => s.id === sqId);
     if (!sq) return;
-    if (sq.isSold) return;
+    if (sq.isSold || sq.isReserved) return;
     if (sqId > this.segments[this.segments.length - 1].endId) return;
 
     const selected = new Set(this.selectedIds());
@@ -644,7 +644,7 @@ export class MapComponent implements OnInit {
     for (const id of ids) {
       const sq = this.squares.find(s => s.id === id);
       if (!sq) continue;
-      if (sq.isSold) continue;
+      if (sq.isSold || sq.isReserved) continue;
       if (id > this.segments[this.segments.length - 1].endId) continue;
       selected.add(id);
     }
@@ -724,9 +724,15 @@ export class MapComponent implements OnInit {
       return;
     }
 
-    const sq = this.squares.find(s => s.id === id) ?? { id, isSold: false, status: 0 };
+    const sq: Square = this.squares.find(s => s.id === id)
+      ?? { id, isSold: false, isReserved: false, status: SquareStatus.NogNieBeginNie };
 
     this.roadMap?.focusSquare(id, { showTooltip: true });
+
+    if (sq.isReserved) {
+      this.searchError.set('Hierdie blok is nie beskikbaar nie.');
+      return;
+    }
 
     if (sq.isSold) {
       this.searchError.set('Hierdie blok is reeds toegeken.');

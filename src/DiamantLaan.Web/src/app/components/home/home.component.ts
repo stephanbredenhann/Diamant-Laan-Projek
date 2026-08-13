@@ -6,14 +6,15 @@ import { RoadService } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
 import { randBedrag } from '../../utils/afrikaans.util';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
+import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent],
+  imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent],
   template: `
     <section class="hero">
-      <img src="diamant_laan_foto.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
+      <img src="oewerpad-hero.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
         <p class="eyebrow hero-eyebrow">Orania-Teerprojek</p>
@@ -86,7 +87,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           <a routerLink="/projek" class="text-link">Lees die volledige projekplan →</a>
         </div>
         <div class="why-media">
-          <img src="diamant_laan_foto.jpg" alt="’n Vierkante meter word op die padbasis afgemeet" />
+          <app-foto-slider />
           <div class="meter-badge">
             <span class="display">1 m²</span>
             <small>R500</small>
@@ -333,16 +334,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
     }
     .feature-pair p { color: var(--text-muted); font-size: 1rem; }
     .why-media { position: relative; }
-    .why-media img {
-      width: 100%;
-      aspect-ratio: 4/3;
-      object-fit: cover;
-      display: block;
-    }
     .meter-badge {
       position: absolute;
       left: 1rem;
       bottom: 1rem;
+      z-index: 1;
       background: #fff;
       padding: 0.85rem 1rem;
       box-shadow: var(--shadow);

@@ -46,8 +46,14 @@ describe('HomeComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => fixture.destroy());
+
   it('should create', () => {
     expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('should render the waarom foto slider', () => {
+    expect(fixture.nativeElement.querySelector('app-foto-slider')).toBeTruthy();
   });
 
   it('should load stats when settings allow', () => {

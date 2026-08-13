@@ -7,6 +7,7 @@ import { Component } from '@angular/core';
     <div class="legend">
       <span><span class="dot free"></span> Beskikbaar</span>
       <span><span class="dot sold"></span> Verkoop</span>
+      <span><span class="dot unavailable"></span> Onbeskikbaar</span>
       <span><span class="dot prep"></span> Voorberei</span>
       <span><span class="dot busy"></span> Besig om te teer</span>
       <span><span class="dot done"></span> Klaar geteer</span>
@@ -31,6 +32,7 @@ import { Component } from '@angular/core';
     }
     .dot.free { background: #D4C4A8; }
     .dot.sold { background: #C67B5C; }
+    .dot.unavailable { background: var(--blok-onbeskikbaar); }
     .dot.prep { background: #B5651D; }
     .dot.busy { background: #8B7355; }
     .dot.done { background: #6B7B3C; }

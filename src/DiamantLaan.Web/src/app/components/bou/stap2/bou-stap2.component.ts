@@ -176,6 +176,16 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
     @media (max-width: 800px) {
       .options { grid-template-columns: 1fr; }
     }
+    /* Phones: 18rem tall cards push the second option a whole screen down. */
+    @media (max-width: 600px) {
+      .option-card { min-height: 0; padding: 1.25rem; }
+      .option-top { margin-bottom: 0.75rem; }
+      .option-card h2 { font-size: 1.6rem; }
+      .option-card p { font-size: 1rem; line-height: 1.5; }
+      .option-cta, .option-status { margin-top: 1rem; font-size: 1.05rem; }
+      .option-badge.quiet { max-width: 8rem; font-size: 0.65rem; }
+      .terug-row { margin-top: 1.5rem; }
+    }
   `]
 })
 export class BouStap2Component implements OnInit {

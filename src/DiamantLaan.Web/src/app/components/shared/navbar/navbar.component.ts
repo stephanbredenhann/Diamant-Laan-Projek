@@ -218,14 +218,21 @@ import { AuthService } from '../../../services/auth.service';
         border-radius: 0;
       }
 
-      .navbar-links > a.btn-nav-outline,
+      /* In the drawer "Meld aan" is just another row. Boxing it made two
+         full-width buttons stacked on each other, with the desktop button
+         padding on top of the row padding. */
+      .navbar-links > a.btn-nav-outline {
+        border: none;
+        border-bottom: 1px solid var(--border-soft);
+      }
+
       .navbar-links > a.btn-nav-cta {
-        margin: 0.5rem 1.25rem;
+        margin: 0.75rem 1.25rem;
         text-align: center;
         justify-content: center;
         border-bottom: none;
+        padding: 0.85rem 1.15rem;
       }
-      .navbar-links > a.btn-nav-cta { margin-left: 1.25rem; }
 
       .btn-logout {
         margin: 0.75rem 1.25rem;

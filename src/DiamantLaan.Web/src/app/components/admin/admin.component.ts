@@ -11,7 +11,12 @@ import {
   STATUS_LABELS
 } from '../../models/square';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
+import { AlertComponent } from '../shared/alert/alert.component';
+import { BlokKeusePaneelComponent } from './blok-keuse-paneel.component';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { Reeks, nommersNaReekse, reeksTeks } from '../../utils/blok-nommers';
+
+const STAP_NAME = ['Kies blokke', 'Wat verander', 'Stoor'] as const;
 
 const STATUS_OPTIONS: SquareStatus[] = [SquareStatus.Voorberei, SquareStatus.BesigOmTeTeer, SquareStatus.KlaarGeteer];
 
@@ -25,17 +30,13 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RoadMapComponent],
+  imports: [CommonModule, FormsModule, RoadMapComponent, AlertComponent, BlokKeusePaneelComponent],
   template: `
     <div class="admin-content">
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-value">R{{ stats.totalRaised | number:'1.0-0' }}</div>
           <div class="stat-label">Ingesamel</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ selectedIds().size }}</div>
-          <div class="stat-label">Gekies</div>
         </div>
       </div>
 
@@ -56,17 +57,45 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
         </div>
       }
 
-      @if (selectedIds().size > 0) {
-        <div class="action-panel" [class.has-drafts]="hasUnsavedChanges">
-          <div class="action-section">
-            <h4>Status</h4>
-            <select
-              class="status-select"
-              [(ngModel)]="draftStatus"
-              name="draftStatus"
-              [disabled]="!!imageConflictPrompt"
-              (ngModelChange)="onDraftChanged()"
-            >
+      <nav class="stap-balk" [attr.aria-label]="'Stap ' + stap() + ' van 3'">
+        @for (naam of STAP_NAME; track naam; let i = $index) {
+          @let n = i + 1;
+          <button
+            type="button"
+            class="stap-knop"
+            [class.klaar]="n < stap()"
+            [class.huidig]="n === stap()"
+            [disabled]="n > stap() && !kanNaStap(n)"
+            [attr.aria-current]="n === stap() ? 'step' : null"
+            (click)="gaanNaStap(n)"
+          >
+            <span class="stap-nommer" aria-hidden="true">{{ n }}</span>
+            <span class="stap-naam">{{ naam }}</span>
+          </button>
+        }
+      </nav>
+
+      <div class="stap-paneel">
+        @if (stap() === 1) {
+          <app-blok-keuse-paneel
+            [selectedIds]="selectedIdsArray()"
+            [maxBlockId]="maxBlockId"
+            (addIds)="selectRange($event)"
+            (removeRange)="removeRange($event)"
+            (clearAll)="clearSelection()"
+            (flyTo)="flyTo($event)"
+          />
+        } @else {
+          <p class="keuse-lyn">
+            <strong>{{ selectedIds().size }} {{ blokLabel(selectedIds().size) }} gekies:</strong>
+            {{ keuseOpsomming() }}
+          </p>
+        }
+
+        @if (stap() === 2) {
+          <div class="veld">
+            <label for="draftStatus">Nuwe status</label>
+            <select id="draftStatus" [(ngModel)]="draftStatus" name="draftStatus" (ngModelChange)="onDraftChanged()">
               <option [ngValue]="null">Geen statusverandering</option>
               @for (s of STATUS_OPTIONS; track s) {
                 <option [ngValue]="s">{{ STATUS_LABELS[s] }}</option>
@@ -74,43 +103,83 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
             </select>
           </div>
 
-          <div class="action-section">
-            <h4>Foto</h4>
-            @if (imageConflictPrompt) {
-              <div class="conflict-prompt">
-                <p>
-                  {{ imageConflictPrompt.conflictingCount }} van {{ imageConflictPrompt.totalSelected }}
-                  gekose blokke het reeds ’n foto vir {{ STATUS_LABELS[pendingImageStatus!] }}.
-                </p>
-                <div class="conflict-actions">
-                  <button class="btn btn-primary btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(true)">
-                    Vervang bestaande
-                  </button>
-                  <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(false)">
-                    Net nuwe blokke
-                  </button>
-                  <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="cancelConflictPrompt()">
-                    Kanselleer
-                  </button>
-                </div>
-              </div>
-            }
-            <div class="upload-fields">
-              <div class="field">
-                <label for="imageFile">Foto</label>
-                <input #imageFileInput id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)">
-              </div>
-              <div class="field">
-                <label for="imageCaption">Byskrif (opsioneel)</label>
-                <input id="imageCaption" type="text" [(ngModel)]="draftImageCaption" name="draftImageCaption" placeholder="Bv. Teerwerk begin">
-              </div>
+          <div class="veld-ry">
+            <div class="veld">
+              <label for="imageFile">Foto (opsioneel)</label>
+              <input #imageFileInput id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" (change)="onImageSelected($event)">
             </div>
-            @if (draftImageFile) {
-              <p class="draft-file-hint">Gekose lêer: {{ draftImageFile.name }}</p>
-            }
+            <div class="veld">
+              <label for="imageCaption">Byskrif (opsioneel)</label>
+              <input id="imageCaption" type="text" [(ngModel)]="draftImageCaption" name="draftImageCaption" placeholder="Bv. Teerwerk begin">
+            </div>
           </div>
 
-          <div class="action-footer">
+          @if (draftImageFile) {
+            <p class="lêer-naam">Gekose lêer: {{ draftImageFile.name }}</p>
+            @if (effectiveImageStatus() !== null) {
+              <p class="foto-status">Foto word gestoor onder: <strong>{{ STATUS_LABELS[effectiveImageStatus()!] }}</strong></p>
+            } @else {
+              <app-alert
+                message="Die gekose blokke het verskillende statusse. Kies hierbo ’n status vir almal, of gaan terug en kies blokke met dieselfde status."
+                type="error" />
+            }
+          }
+        }
+
+        @if (stap() === 3) {
+          <ul class="opsomming">
+            @if (draftStatus !== null) {
+              <li>Status word verander na <strong>{{ STATUS_LABELS[draftStatus] }}</strong>.</li>
+            }
+            @if (draftImageFile) {
+              <li>
+                Foto <strong>{{ draftImageFile.name }}</strong> word gestoor onder
+                <strong>{{ STATUS_LABELS[effectiveImageStatus()!] }}</strong>.
+              </li>
+            }
+          </ul>
+
+          @if (imageConflictPrompt) {
+            <div class="konflik">
+              <p>
+                {{ imageConflictPrompt.conflictingCount }} van {{ imageConflictPrompt.totalSelected }}
+                gekose blokke het reeds ’n foto vir {{ STATUS_LABELS[pendingImageStatus!] }}.
+                Niks is nog gestoor nie.
+              </p>
+              <div class="konflik-knoppies">
+                <button class="btn btn-primary btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(true)">
+                  Vervang bestaande
+                </button>
+                <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="confirmUpload(false)">
+                  Net nuwe blokke
+                </button>
+                <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="cancelConflictPrompt()">
+                  Kanselleer
+                </button>
+              </div>
+            </div>
+          }
+        }
+
+        <app-alert [message]="message" [type]="isError ? 'error' : 'success'" />
+
+        <div class="stap-voet">
+          @if (stap() > 1) {
+            <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="gaanNaStap(stap() - 1)">
+              Terug
+            </button>
+          }
+          <span class="voet-vul"></span>
+          @if (stap() < 3) {
+            <button
+              class="btn btn-primary btn-sm"
+              type="button"
+              [disabled]="!kanNaStap(stap() + 1)"
+              (click)="gaanNaStap(stap() + 1)"
+            >
+              Volgende
+            </button>
+          } @else {
             <button
               class="btn btn-primary btn-sm"
               type="button"
@@ -119,89 +188,10 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
             >
               {{ saving ? 'Besig...' : 'Stoor veranderinge' }}
             </button>
-            <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="cancelDrafts()">
-              Kanselleer
-            </button>
-            <button class="btn btn-outline btn-sm" type="button" [disabled]="saving" (click)="clearSelection()">
-              Maak keuses skoon ({{ selectedIds().size }})
-            </button>
-          </div>
+          }
         </div>
-      } @else {
-        <div class="controls">
-          <p class="select-hint">Kies blokke op die kaart om status of ’n foto by te werk.</p>
-        </div>
-      }
-
-      @if (message) {
-        <div class="msg" [class.error]="isError">{{ message }}</div>
-      }
-      <div class="advanced-search">
-        <button
-          type="button"
-          class="advanced-search-toggle"
-          (click)="advancedSearchOpen.set(!advancedSearchOpen())"
-          [attr.aria-expanded]="advancedSearchOpen()"
-        >
-          <span>Gevorderde soek</span>
-          <span class="chevron" [class.open]="advancedSearchOpen()">▾</span>
-        </button>
-        @if (advancedSearchOpen()) {
-          <div class="advanced-search-body">
-            <div class="search-block-section">
-              <span class="section-label">Soek ’n spesifieke blok</span>
-              <p class="section-hint">Voer die bloknommer in, dan druk Soek.</p>
-              <div class="search-row">
-                <input
-                  type="number"
-                  name="searchBlockNumber"
-                  class="search-input"
-                  min="1"
-                  max="4200"
-                  placeholder="Bloknommer"
-                  [(ngModel)]="searchBlockNumber"
-                  (keydown.enter)="searchBlock()"
-                />
-                <button type="button" class="btn btn-outline btn-sm" (click)="searchBlock()">Soek</button>
-              </div>
-              @if (searchError) {
-                <div class="msg error search-msg">{{ searchError }}</div>
-              }
-            </div>
-            <div class="range-section">
-              <span class="section-label">Kies binne reeks</span>
-              <p class="section-hint">Kies alle blokke tussen twee nommers (byvoeg tot huidige keuse).</p>
-              <div class="search-row range-row">
-                <input
-                  type="number"
-                  name="rangeFrom"
-                  class="search-input range-input"
-                  min="1"
-                  max="4200"
-                  placeholder="Van"
-                  [(ngModel)]="rangeFrom"
-                  (keydown.enter)="selectNumericRange()"
-                />
-                <span class="range-sep">—</span>
-                <input
-                  type="number"
-                  name="rangeTo"
-                  class="search-input range-input"
-                  min="1"
-                  max="4200"
-                  placeholder="Tot"
-                  [(ngModel)]="rangeTo"
-                  (keydown.enter)="selectNumericRange()"
-                />
-                <button type="button" class="btn btn-outline btn-sm" (click)="selectNumericRange()">Kies</button>
-              </div>
-              @if (rangeError) {
-                <div class="msg error search-msg">{{ rangeError }}</div>
-              }
-            </div>
-          </div>
-        }
       </div>
+
       <div class="map-header-controls">
         <div class="view-toggle">
           <button
@@ -239,6 +229,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
         } @else {
           <span><span class="dot free"></span> Beskikbaar</span>
           <span><span class="dot sold"></span> Verkoop</span>
+          <span><span class="dot unavailable"></span> Onbeskikbaar</span>
           <span><span class="dot prep"></span> Voorberei</span>
           <span><span class="dot busy"></span> Besig om te teer</span>
           <span><span class="dot done"></span> Klaar geteer</span>
@@ -306,14 +297,48 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       letter-spacing: 0.8px;
       margin-top: 0.125rem;
     }
-    .controls {
+    .stap-balk {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
       margin-bottom: 1rem;
     }
-    .select-hint {
-      font-size: 0.875rem;
+    .stap-knop {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
       color: var(--color-muted);
+      font-family: var(--font-heading);
+      font-size: 0.875rem;
+      cursor: pointer;
     }
-    .action-panel {
+    .stap-knop:disabled { opacity: 0.5; cursor: not-allowed; }
+    .stap-knop.huidig {
+      background: var(--color-surface);
+      border-color: var(--color-orange);
+      color: var(--color-text);
+      font-weight: 700;
+    }
+    .stap-knop.klaar { color: var(--color-text); }
+    .stap-nommer {
+      display: grid;
+      place-items: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--color-border);
+      color: var(--color-text);
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+    .stap-knop.huidig .stap-nommer { background: var(--color-orange); color: #fff; }
+    .stap-paneel {
       background: var(--color-cream);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
@@ -321,116 +346,48 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       margin-bottom: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
-    }
-    .action-panel.has-drafts {
-      border-color: #D97706;
-      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15);
-    }
-    .action-section h4 {
-      font-family: var(--font-heading);
-      font-size: 0.875rem;
-      margin-bottom: 0.625rem;
-      color: var(--color-text);
-    }
-    .action-section .status-select {
-      width: 100%;
-      padding: 0.4rem 0.6rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font-size: 0.8125rem;
-    }
-    .action-footer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      padding-top: 0.25rem;
-      border-top: 1px solid var(--color-border);
-    }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
-    .msg {
-      font-size: 0.8125rem;
-      padding: 0.625rem 1rem;
-      border-radius: var(--radius-sm);
-      background: #E8ECD8;
-      color: #5A6A32;
-      margin-bottom: 1rem;
-    }
-    .msg.error {
-      background: #FEF2F2;
-      color: #DC2626;
-    }
-    .advanced-search {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      margin-bottom: 1rem;
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .advanced-search-toggle {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-family: var(--font-heading);
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--color-text);
-    }
-    .chevron {
-      color: var(--color-muted);
-      transition: transform 0.15s;
-      display: inline-block;
-    }
-    .chevron.open { transform: rotate(180deg); }
-    .advanced-search-body {
-      padding: 0 1rem 1rem;
-      display: flex;
-      flex-direction: column;
       gap: 1rem;
-      border-top: 1px solid var(--color-border);
-      padding-top: 0.875rem;
     }
-    .section-label {
+    .keuse-lyn { font-size: 0.875rem; color: var(--color-text); margin: 0; }
+    .veld-ry { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .veld { flex: 1 1 14rem; }
+    .veld label {
       display: block;
       font-family: var(--font-heading);
       font-size: 0.8125rem;
       font-weight: 600;
+      margin-bottom: 0.375rem;
       color: var(--color-text);
-      margin-bottom: 0.25rem;
     }
-    .section-hint {
-      font-size: 0.75rem;
-      color: var(--color-muted);
-      margin-bottom: 0.5rem;
+    .veld select, .veld input {
+      width: 100%;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.9375rem;
     }
-    .search-row {
+    .lêer-naam { font-size: 0.8125rem; color: var(--color-muted); margin: 0; }
+    .foto-status { font-size: 0.875rem; color: var(--color-text); margin: 0; }
+    .opsomming { margin: 0; padding-left: 1.25rem; font-size: 0.9375rem; color: var(--color-text); }
+    .opsomming li { margin-bottom: 0.375rem; }
+    .konflik {
+      background: #FFFBEB;
+      border: 1px solid #F59E0B;
+      border-radius: var(--radius-sm);
+      padding: 0.875rem 1rem;
+    }
+    .konflik p { font-size: 0.875rem; margin: 0 0 0.75rem; color: var(--color-text); }
+    .konflik-knoppies { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .stap-voet {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .search-input {
-      flex: 1;
-      min-width: 120px;
-      padding: 0.4rem 0.6rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font-size: 0.8125rem;
-    }
-    .range-input { flex: 0 1 100px; min-width: 80px; }
-    .range-sep { color: var(--color-muted); }
-    .search-msg { margin: 0.5rem 0 0; }
-    .range-section {
-      padding-top: 0.875rem;
+      padding-top: 0.75rem;
       border-top: 1px solid var(--color-border);
     }
+    .voet-vul { flex: 1; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
     .map-header-controls {
       display: flex;
       flex-wrap: wrap;
@@ -511,35 +468,6 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    .upload-fields {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: flex-end;
-    }
-    .upload-fields .field {
-      flex: 1;
-      min-width: 140px;
-    }
-    .upload-fields label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-      color: var(--color-text);
-    }
-    .upload-fields input, .upload-fields select {
-      width: 100%;
-      padding: 0.4rem 0.6rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font-size: 0.8125rem;
-    }
-    .draft-file-hint {
-      margin-top: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--color-muted);
-    }
     @media (max-width: 640px) {
       .stats-row { flex-direction: column; }
     }
@@ -557,8 +485,9 @@ export class AdminComponent implements OnInit, OnDestroy {
   mapDisplaySquares: Square[] = [];
   stats = { totalRaised: 0 };
   selectedIds = signal<Set<number>>(new Set());
+  /** 1 = kies blokke, 2 = wat verander, 3 = stoor. The map stays visible in all three. */
+  stap = signal<1 | 2 | 3>(1);
   viewMode = signal<MapViewMode>('status');
-  advancedSearchOpen = signal(false);
   photoViewStatus = signal<SquareStatus>(SquareStatus.Voorberei);
   photoSquareIds = signal<Set<number>>(new Set());
 
@@ -566,12 +495,6 @@ export class AdminComponent implements OnInit, OnDestroy {
   private undoExpiresAt: Date | null = null;
   private undoCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private activeUndoBatchId: string | null = null;
-
-  searchBlockNumber: number | null = null;
-  searchError = '';
-  rangeFrom: number | null = null;
-  rangeTo: number | null = null;
-  rangeError = '';
 
   readonly maxBlockId = 4200;
 
@@ -592,6 +515,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   STATUS_LABELS = STATUS_LABELS;
   STATUS_OPTIONS = STATUS_OPTIONS;
   PHOTO_VIEW_STATUSES = PHOTO_VIEW_STATUSES;
+  STAP_NAME = STAP_NAME;
+  readonly blokLabel = blokLabel;
 
   get hasUnsavedChanges(): boolean {
     return this.draftStatus !== null || this.draftImageFile !== null;
@@ -680,6 +605,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.selectedIds.set(new Set());
     this.cancelDrafts();
     this.message = '';
+    this.stap.set(1);
   }
 
   cancelDrafts() {
@@ -698,43 +624,34 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.selectedIds.set(selected);
   }
 
-  searchBlock() {
-    this.searchError = '';
-    const id = Math.floor(Number(this.searchBlockNumber));
-    if (!Number.isFinite(id) || id < 1 || id > this.maxBlockId) {
-      this.searchError = 'Voer ’n geldige bloknommer in.';
-      return;
-    }
-
-    this.roadMap?.focusSquare(id, { showTooltip: true });
+  /** Removes a whole range chip from the selection. */
+  removeRange(r: Reeks) {
+    if (this.imageConflictPrompt) return;
     const selected = new Set(this.selectedIds());
-    selected.add(id);
+    for (let id = r.van; id <= r.tot; id++) selected.delete(id);
     this.selectedIds.set(selected);
   }
 
-  selectNumericRange() {
-    this.rangeError = '';
-    const from = Math.floor(Number(this.rangeFrom));
-    const to = Math.floor(Number(this.rangeTo));
-    if (
-      !Number.isFinite(from) ||
-      !Number.isFinite(to) ||
-      from < 1 ||
-      to > this.maxBlockId ||
-      from >= to
-    ) {
-      this.rangeError = 'Ongeldige keuse';
-      return;
-    }
+  flyTo(id: number) {
+    this.roadMap?.focusSquare(id, { showTooltip: true });
+  }
 
-    if (this.imageConflictPrompt) return;
+  /** The selection as "1-15, 120", so steps 2 and 3 never hide what is being changed. */
+  keuseOpsomming(): string {
+    return nommersNaReekse(this.selectedIdsArray()).map(reeksTeks).join(', ');
+  }
 
-    const selected = new Set(this.selectedIds());
-    for (let id = from; id <= to; id++) {
-      selected.add(id);
-    }
-    this.selectedIds.set(selected);
-    this.roadMap?.focusSquare(from, { showTooltip: true });
+  /** Step 2 needs blocks; step 3 needs something to actually save. */
+  kanNaStap(n: number): boolean {
+    if (n <= 1) return true;
+    if (this.selectedIds().size === 0) return false;
+    return n === 2 || this.hasUnsavedChanges;
+  }
+
+  gaanNaStap(n: number) {
+    if (n < 1 || n > 3 || !this.kanNaStap(n)) return;
+    this.message = '';
+    this.stap.set(n as 1 | 2 | 3);
   }
 
   onImageSelected(event: Event) {
@@ -751,46 +668,26 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.saving = true;
     this.activeUndoBatchId = crypto.randomUUID();
 
-    const afterStatus = () => {
-      if (this.draftImageFile) {
-        this.startImageConflictCheck();
-      } else {
-        this.finishSaveSuccess(this.buildStatusOnlyMessage());
-      }
-    };
-
-    if (this.draftStatus !== null) {
-      const ids = Array.from(this.selectedIds());
-      const status = this.draftStatus;
-      this.admin.updateStatus(ids, status, this.activeUndoBatchId ?? undefined).subscribe({
-        next: () => afterStatus(),
-        error: (err) => {
-          this.message = err.error?.message || 'Statusopdatering het misluk.';
-          this.isError = true;
-          this.saving = false;
-          this.activeUndoBatchId = null;
-          this.loadUndoState();
-        }
-      });
-    } else {
-      afterStatus();
+    // Everything that can fail is checked before anything is written. The old order
+    // committed the status PUT first, so a rejected or cancelled photo left the
+    // statuses already changed with only the undo bar to recover.
+    if (!this.draftImageFile) {
+      this.commitStatusThenUpload(false);
+      return;
     }
-  }
-
-  private startImageConflictCheck() {
-    if (!this.draftImageFile || this.selectedIds().size === 0) return;
 
     const imageStatus = this.effectiveImageStatus();
     if (imageStatus === null) {
       this.message = 'Gekose blokke het verskillende statusse. Kies blokke met dieselfde status, of stel ’n nuwe status.';
       this.isError = true;
       this.saving = false;
+      this.activeUndoBatchId = null;
       return;
     }
 
     this.pendingImageStatus = imageStatus;
-    const ids = Array.from(this.selectedIds());
-    this.admin.checkImageConflicts(ids, imageStatus).subscribe({
+    // A read, so nothing is committed yet even when this opens the prompt.
+    this.admin.checkImageConflicts(Array.from(this.selectedIds()), imageStatus).subscribe({
       next: (result) => {
         if (result.conflictingSquareIds.length > 0) {
           this.imageConflictPrompt = {
@@ -798,9 +695,8 @@ export class AdminComponent implements OnInit, OnDestroy {
             totalSelected: result.totalSelected
           };
           this.saving = false;
-          this.loadUndoState();
         } else {
-          this.performUpload(false);
+          this.commitStatusThenUpload(false);
         }
       },
       error: (err) => {
@@ -808,6 +704,31 @@ export class AdminComponent implements OnInit, OnDestroy {
         this.message = err.error?.message || 'Kon nie konflikte kontroleer nie.';
         this.isError = true;
         this.saving = false;
+        this.activeUndoBatchId = null;
+      }
+    });
+  }
+
+  /** The only place that writes. Status first, then the photo, under one undo batch. */
+  private commitStatusThenUpload(replaceExisting: boolean) {
+    const afterStatus = () => {
+      if (this.draftImageFile) this.performUpload(replaceExisting);
+      else this.finishSaveSuccess(this.buildStatusOnlyMessage());
+    };
+
+    if (this.draftStatus === null) {
+      afterStatus();
+      return;
+    }
+
+    const ids = Array.from(this.selectedIds());
+    this.admin.updateStatus(ids, this.draftStatus, this.activeUndoBatchId ?? undefined).subscribe({
+      next: () => afterStatus(),
+      error: (err) => {
+        this.message = err.error?.message || 'Statusopdatering het misluk.';
+        this.isError = true;
+        this.saving = false;
+        this.activeUndoBatchId = null;
         this.loadUndoState();
       }
     });
@@ -815,12 +736,16 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   confirmUpload(replaceExisting: boolean) {
     this.saving = true;
-    this.performUpload(replaceExisting);
+    this.imageConflictPrompt = null;
+    this.commitStatusThenUpload(replaceExisting);
   }
 
   cancelConflictPrompt() {
+    // Nothing was written, so this is a clean abort back to the drafts.
     this.imageConflictPrompt = null;
     this.pendingImageStatus = null;
+    this.activeUndoBatchId = null;
+    this.saving = false;
   }
 
   private performUpload(replaceExisting: boolean) {
@@ -897,6 +822,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.activeUndoBatchId = null;
     this.cancelDrafts();
     this.selectedIds.set(new Set());
+    this.stap.set(1);
     this.refresh();
     this.loadUndoState();
   }

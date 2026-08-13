@@ -10,6 +10,7 @@ const squares: Square[] = Array.from({ length: 4200 }, (_, i) => ({
   id: i + 1,
   status: SquareStatus.NogNieBeginNie,
   isSold: i + 1 >= 500 && i + 1 <= 520,
+  isReserved: i + 1 <= 199,
 }));
 
 describe('BouKaartComponent', () => {
@@ -112,7 +113,7 @@ describe('BouKaartComponent', () => {
     expect(komponent.gekiesLys()).toEqual([2301, 2303, 2304]);
   });
 
-  it('will not take a sold or shoulder block', () => {
+  it('will not take a sold or reserved block', () => {
     daalAf();
     komponent.wisselBlok(505);
     komponent.wisselBlok(150);

@@ -11,6 +11,8 @@ export interface Square {
   id: number;
   status: SquareStatus;
   isSold?: boolean;
+  /** Held back by an admin: not publicly buyable, still sellable via manual purchase. */
+  isReserved?: boolean;
   imageCount?: number;
 }
 

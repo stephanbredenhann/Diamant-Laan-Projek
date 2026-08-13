@@ -6,7 +6,7 @@ describe('BlokRoosterComponent', () => {
   let fixture: ComponentFixture<BlokRoosterComponent>;
 
   const squares: Square[] = [
-    { id: 150, status: SquareStatus.NogNieBeginNie },
+    { id: 150, status: SquareStatus.NogNieBeginNie, isReserved: true },
     { id: 210, status: SquareStatus.NogNieBeginNie, isSold: true },
     { id: 220, status: SquareStatus.NogNieBeginNie },
     { id: 230, status: SquareStatus.NogNieBeginNie },

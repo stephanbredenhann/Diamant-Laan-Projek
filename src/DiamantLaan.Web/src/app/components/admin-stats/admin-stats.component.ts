@@ -1,11 +1,8 @@
 import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BaseChartDirective } from 'ng2-charts';
-import { Chart, registerables } from 'chart.js';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { AdminService } from '../../services/admin.service';
-
-Chart.register(...registerables);
 import { STATUS_LABELS, SquareStatus, STATUS_COLORS } from '../../models/square';
 
 interface Buyer {
@@ -60,6 +57,7 @@ type DailyChartMode = 'daily' | 'cumulative';
   selector: 'app-admin-stats',
   standalone: true,
   imports: [CommonModule, FormsModule, BaseChartDirective],
+  providers: [provideCharts(withDefaultRegisterables())],
   template: `
     <div class="admin-content">
       @if (loading) {
@@ -138,11 +136,13 @@ type DailyChartMode = 'daily' | 'cumulative';
                 </button>
               </div>
             </div>
-            <canvas baseChart
-              [data]="dailyChartData"
-              [options]="lineChartOptions"
-              [type]="'line'">
-            </canvas>
+            @if (dailyChartData) {
+              <canvas baseChart
+                [data]="dailyChartData"
+                [options]="lineChartOptions"
+                [type]="'line'">
+              </canvas>
+            }
           </div>
           <div class="chart-card">
             <div class="chart-header">
@@ -164,40 +164,48 @@ type DailyChartMode = 'daily' | 'cumulative';
                 </button>
               </div>
             </div>
-            <canvas baseChart
-              [data]="squaresChartData"
-              [options]="squaresChartOptions"
-              [type]="'line'">
-            </canvas>
+            @if (squaresChartData) {
+              <canvas baseChart
+                [data]="squaresChartData"
+                [options]="squaresChartOptions"
+                [type]="'line'">
+              </canvas>
+            }
           </div>
         </div>
 
         <div class="charts-row">
           <div class="chart-card">
             <h3>Statusverdeling</h3>
-            <canvas baseChart
-              [data]="statusChartData"
-              [options]="donutChartOptions"
-              [type]="'doughnut'">
-            </canvas>
+            @if (statusChartData) {
+              <canvas baseChart
+                [data]="statusChartData"
+                [options]="donutChartOptions"
+                [type]="'doughnut'">
+              </canvas>
+            }
           </div>
           <div class="chart-card">
             <h3>Inwoners vs Uitwoners</h3>
             <p class="chart-subtitle">Blokke gekoop</p>
-            <canvas baseChart
-              [data]="oraniaChartData"
-              [options]="donutChartOptions"
-              [type]="'pie'">
-            </canvas>
+            @if (oraniaChartData) {
+              <canvas baseChart
+                [data]="oraniaChartData"
+                [options]="donutChartOptions"
+                [type]="'pie'">
+              </canvas>
+            }
           </div>
           <div class="chart-card">
             <h3>Bewegingslede vs nie-lede</h3>
             <p class="chart-subtitle">Blokke gekoop</p>
-            <canvas baseChart
-              [data]="bewegingChartData"
-              [options]="donutChartOptions"
-              [type]="'pie'">
-            </canvas>
+            @if (bewegingChartData) {
+              <canvas baseChart
+                [data]="bewegingChartData"
+                [options]="donutChartOptions"
+                [type]="'pie'">
+              </canvas>
+            }
           </div>
         </div>
 

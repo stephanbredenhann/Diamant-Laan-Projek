@@ -1,11 +1,12 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
+import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component';
 
 @Component({
   selector: 'app-projek',
   standalone: true,
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, FotoSliderComponent],
   template: `
     <section class="page-hero">
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
@@ -45,7 +46,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
         <aside class="callout-panel">
           <div class="callout-media">
-            <img src="diamant_laan_foto.jpg" alt="Oewerpad, grondpad wat teerwerk nodig het" />
+            <img src="oewerpad-03.jpg" alt="Oewerpad, grondpad wat teerwerk nodig het" />
             <div class="price-chip">
               <span class="display price-chip-value">R500</span>
               <p>Per volle vierkante meter.</p>
@@ -84,17 +85,7 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
           </div>
         </div>
 
-        <div class="foto-strook-wrap">
-          <button type="button" class="foto-nav foto-nav-prev" (click)="rolFoto(-1)" aria-label="Vorige foto">‹</button>
-          <div class="foto-strook" #fotoStrook>
-            @for (foto of fotos; track foto.src) {
-              <figure class="foto-slide">
-                <img [src]="foto.src" [alt]="foto.alt" />
-              </figure>
-            }
-          </div>
-          <button type="button" class="foto-nav foto-nav-next" (click)="rolFoto(1)" aria-label="Volgende foto">›</button>
-        </div>
+        <app-foto-slider />
       </div>
     </section>
 
@@ -252,50 +243,6 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
       margin: 0 0 0.5rem;
     }
 
-    .foto-strook-wrap {
-      position: relative;
-    }
-    .foto-strook {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .foto-strook::-webkit-scrollbar { display: none; }
-    .foto-slide {
-      flex: 0 0 100%;
-      scroll-snap-align: start;
-      margin: 0;
-    }
-    .foto-slide img {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      display: block;
-      box-shadow: var(--shadow-lg);
-    }
-    .foto-nav {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1;
-      width: 2.75rem;
-      height: 2.75rem;
-      min-height: 2.75rem;
-      padding: 0;
-      border: 0;
-      background: var(--tar);
-      color: #fff;
-      font-size: 1.75rem;
-      line-height: 1;
-      cursor: pointer;
-    }
-    .foto-nav:hover { background: #2a2018; }
-    .foto-nav-prev { left: 0.75rem; }
-    .foto-nav-next { right: 0.75rem; }
-
     .scope-icon {
       display: inline-grid;
       place-items: center;
@@ -357,13 +304,6 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
   `],
 })
 export class ProjekComponent {
-  @ViewChild('fotoStrook') fotoStrook?: ElementRef<HTMLDivElement>;
-
-  readonly fotos = [
-    { src: 'diamant_laan_foto.jpg', alt: 'Oewerpad, grondpad wat teerwerk nodig het' },
-    { src: 'hero-bg.jpeg', alt: 'Oewerpad in Orania' },
-  ];
-
   readonly scopeCards: { icon: IconName; title: string; body: string }[] = [
     {
       icon: 'road',
@@ -386,10 +326,4 @@ export class ProjekComponent {
       body: 'Hierdie is ’n groot en ’n duur projek. Deur dit in blokkies op te deel en te skarefinansier, word die groot taak makliker gemaak.',
     },
   ];
-
-  rolFoto(rigting: -1 | 1) {
-    const el = this.fotoStrook?.nativeElement;
-    if (!el) return;
-    el.scrollBy({ left: rigting * el.clientWidth, behavior: 'smooth' });
-  }
 }

@@ -482,6 +482,20 @@ input[type="checkbox"], input[type="radio"] {
   margin-bottom: 0;
 }
 
+/* Phones: the wizard chrome eats too much of a 360px screen at desktop sizes. */
+@media (max-width: 600px) {
+  .bou-shell {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .bou-shell .page-lead {
+    font-size: var(--fs-base);
+  }
+  .btn-xl, .btn-terug {
+    font-size: var(--fs-lg);
+    padding: 0.875rem 1.25rem;
+  }
+}
+
 .cta-band {
   background: var(--action-strong);
   color: #fff;

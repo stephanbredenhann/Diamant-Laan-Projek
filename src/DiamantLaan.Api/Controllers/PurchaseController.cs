@@ -319,6 +319,11 @@ public class PurchaseController : ControllerBase
             if (squares.Any(s => s.OwnerId != null))
                 return (null, BadRequest(new { message = "Sommige blokke is reeds verkoop." }));
 
+            // Reserved blocks are held back by an admin. They stay sellable through
+            // AdminController.ManualPurchase, which deliberately skips this check.
+            if (squares.Any(s => s.IsReserved))
+                return (null, BadRequest(new { message = "Sommige blokke is nie beskikbaar nie." }));
+
             if (squares.Any(s => s.Id < 1 || s.Id > MaxSaleableSquareId))
                 return (null, BadRequest(new { message = "Ongeldige blokke gekies." }));
 

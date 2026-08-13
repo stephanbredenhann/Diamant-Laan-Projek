@@ -1,7 +1,6 @@
 import { Square, SquareStatus } from '../../../models/square';
 import {
   MAX_BLOK_ID,
-  MIN_VERKOOPBARE_ID,
   blokRede,
   groepe,
   isBeskikbaar,
@@ -10,8 +9,8 @@ import {
   telBeskikbaar,
 } from './blok-reekse';
 
-function blok(id: number, isSold = false): Square {
-  return { id, status: SquareStatus.NogNieBeginNie, isSold };
+function blok(id: number, isSold = false, isReserved = false): Square {
+  return { id, status: SquareStatus.NogNieBeginNie, isSold, isReserved };
 }
 
 describe('blok-reekse', () => {
@@ -67,9 +66,13 @@ describe('blok-reekse', () => {
     expect(seksieVan(NaN)).toBeNull();
   });
 
-  it('treats the road shoulders as unavailable', () => {
-    expect(blokRede(199, blok(199))).toBe('onbeskikbaar');
-    expect(blokRede(MIN_VERKOOPBARE_ID, blok(MIN_VERKOOPBARE_ID))).toBeNull();
+  it('treats an admin-reserved block as unavailable', () => {
+    expect(blokRede(199, blok(199, false, true))).toBe('onbeskikbaar');
+    expect(blokRede(199, blok(199))).toBeNull();
+  });
+
+  it('prefers onbeskikbaar over verkoop when a block is both', () => {
+    expect(blokRede(500, blok(500, true, true))).toBe('onbeskikbaar');
   });
 
   it('reports a sold block as verkoop, not onbeskikbaar', () => {
@@ -81,11 +84,13 @@ describe('blok-reekse', () => {
     expect(isBeskikbaar(500, undefined)).toBe(true);
   });
 
-  it('excludes both sold blocks and shoulders when counting a range', () => {
+  it('excludes both sold and reserved blocks when counting a range', () => {
     const byId = new Map<number, Square>();
-    for (let id = 1; id <= 300; id++) byId.set(id, blok(id, id === 250 || id === 251));
+    for (let id = 1; id <= 300; id++) {
+      byId.set(id, blok(id, id === 250 || id === 251, id <= 10));
+    }
 
-    // 1..199 are shoulders, 200..300 is 101 blocks, two of them sold.
-    expect(telBeskikbaar({ van: 1, tot: 300 }, byId)).toBe(99);
+    // 300 blocks, ten reserved and two sold.
+    expect(telBeskikbaar({ van: 1, tot: 300 }, byId)).toBe(288);
   });
 });

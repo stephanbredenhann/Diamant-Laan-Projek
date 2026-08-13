@@ -10,6 +10,9 @@ public class Square
     public string? OwnerId { get; set; }
     public User? Owner { get; set; }
 
+    /// <summary>Held back by an admin: not publicly buyable, still sellable via manual purchase.</summary>
+    public bool IsReserved { get; set; }
+
     [Timestamp]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 

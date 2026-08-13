@@ -14,8 +14,6 @@ public class RoadController : ControllerBase
 
     public RoadController(AppDbContext db) => _db = db;
 
-    /// <summary>Squares outside this range are road shoulders and are never sold.</summary>
-    private const int MinPickId = 200;
     private const int MaxSaleableId = 4200;
 
     [HttpGet("squares")]
@@ -28,6 +26,7 @@ public class RoadController : ControllerBase
                 Id = s.Id,
                 Status = s.Status,
                 IsSold = s.OwnerId != null,
+                IsReserved = s.IsReserved,
                 ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
             })
             .ToListAsync();
@@ -47,7 +46,7 @@ public class RoadController : ControllerBase
             return BadRequest(new { message = "Maksimum 4000 blokke kan gekies word." });
 
         var squareIds = await _db.Squares
-            .Where(s => s.OwnerId == null && s.Id >= MinPickId && s.Id <= MaxSaleableId)
+            .Where(s => s.OwnerId == null && !s.IsReserved && s.Id <= MaxSaleableId)
             .OrderBy(s => s.Id)
             .Take(count)
             .Select(s => s.Id)
@@ -66,9 +65,10 @@ public class RoadController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        // The DB seeds extra rows (up to Id 4500) as headroom beyond the current road,
-        // and MinPickId only restricts auto-assign ("pick for me"), not the road itself.
-        // Every other headline number is scoped to the actual saleable road: 1..MaxSaleableId.
+        // The DB seeds extra rows (up to Id 4500) as headroom beyond the current road, so every
+        // headline number is scoped to the actual saleable road: 1..MaxSaleableId.
+        // Admin-reserved blocks stay in these totals on purpose. They are part of the road and
+        // still get tarred, they are just not on public sale.
         var total = await _db.Squares.CountAsync(s => s.Id <= MaxSaleableId);
         var klaarCount = await _db.Squares.CountAsync(s => s.Status == SquareStatus.KlaarGeteer && s.Id <= MaxSaleableId);
         var progress = total > 0 ? Math.Round((double)klaarCount / total * 100, 1) : 0;

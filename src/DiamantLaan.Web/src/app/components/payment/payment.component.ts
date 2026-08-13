@@ -167,8 +167,16 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 600px) {
-      .totals { grid-template-columns: 1fr; }
-      .big { font-size: 2.75rem; }
+      /* Keep both totals on one row; stacking them pushed the pay button
+         off the first screen. */
+      .totals { gap: 1rem; margin-bottom: 0.25rem; }
+      .big { font-size: 2.25rem; }
+      .big span { font-size: 1rem; }
+      .checkout-card { padding: 1.25rem; }
+      .stamp { font-size: 0.7rem; padding: 0.35rem 0.5rem; margin-top: 0; }
+      .per-meter { font-size: 1rem; margin-bottom: 1.25rem; }
+      .redirect-notice { padding: 0.875rem 1rem; margin-bottom: 1.25rem; }
+      .redirect-notice p { font-size: 1rem; }
     }
   `]
 })

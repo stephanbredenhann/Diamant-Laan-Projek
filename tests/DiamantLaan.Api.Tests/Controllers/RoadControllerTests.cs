@@ -33,10 +33,10 @@ public class RoadControllerTests
     }
 
     [Fact]
-    public async Task PickSquares_ReturnsFirstNAvailableFrom200Upward()
+    public async Task PickSquares_ReturnsFirstNAvailableFromBlockOneUpward()
     {
         await using var db = CreateDb();
-        await SeedSquares(db, Enumerable.Range(198, 8).Select(id => (id, (string?)null)));
+        await SeedSquares(db, Enumerable.Range(1, 8).Select(id => (id, (string?)null)));
         var controller = new RoadController(db);
 
         var result = await controller.PickSquares(3);
@@ -44,7 +44,7 @@ public class RoadControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var value = ok.Value!;
         var squareIds = (List<int>)value.GetType().GetProperty("squareIds")!.GetValue(value)!;
-        Assert.Equal(new[] { 200, 201, 202 }, squareIds);
+        Assert.Equal(new[] { 1, 2, 3 }, squareIds);
     }
 
     [Fact]

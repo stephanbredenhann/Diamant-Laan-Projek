@@ -244,6 +244,31 @@ const MAX_EIE = 50;
       .layout { grid-template-columns: 1fr; }
       .summary-card { position: static; }
     }
+    /* Phones: two cards per row leaves ~150px each, which crushes the big
+       numbers. One card per row instead, number left, wording right. */
+    @media (max-width: 600px) {
+      .choices { grid-template-columns: 1fr; gap: 0.75rem; }
+      .choice-btn {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 1rem;
+        align-items: center;
+        min-height: 0;
+        padding: 1rem 1.25rem;
+      }
+      .choice-number { grid-row: span 2; font-size: 2.75rem; }
+      .choice-number small { font-size: 1.25rem; }
+      .choice-caption { align-self: end; }
+      .choice-price { align-self: start; margin-top: 0; }
+      .choice-eie { grid-template-columns: 1fr; row-gap: 0.15rem; }
+      .choice-eie-label { font-size: 1.75rem; }
+      .eie-panel { margin-top: 1rem; padding: 1rem; }
+      .stepper { grid-template-columns: 3.5rem 1fr 3.5rem; margin: 0.75rem 0; }
+      .summary-card { padding: 1.25rem; }
+      .summary-meters { font-size: 2.75rem; margin: 0.35rem 0 0; }
+      .summary-total { font-size: 2.25rem; }
+      .summary-note { margin: 0.5rem 0 1rem; }
+    }
   `]
 })
 export class BouStap1Component implements OnInit {

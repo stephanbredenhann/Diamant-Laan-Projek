@@ -8,6 +8,8 @@ const SOLD_COLOR = '#C67B5C';
 const AVAILABLE_COLOR = '#D4C4A8';
 const HAS_PHOTO_COLOR = '#034EA2';
 const NO_PHOTO_COLOR = '#D4C4A8';
+/** Matches --blok-onbeskikbaar in styles.scss, so both map renderers agree. */
+const RESERVED_COLOR = '#000000';
 const SELECTED_FILL = '#F5A623';
 const SELECTED_STROKE = '#3D2B1F';
 const DRAG_THRESHOLD = 5;
@@ -319,6 +321,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       const id = props?.['id'] as number;
       const status = (props?.['status'] as number) ?? SquareStatus.NogNieBeginNie;
       const isSold = props?.['isSold'] as boolean;
+      const isReserved = props?.['isReserved'] === true;
       const imageCount = (props?.['imageCount'] as number) ?? 0;
 
       let fillColor: string;
@@ -327,13 +330,17 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       let strokeWeight = 0.5;
 
       if (this.viewMode === 'availability') {
-        fillColor = isSold ? SOLD_COLOR : AVAILABLE_COLOR;
+        fillColor = isReserved ? RESERVED_COLOR : isSold ? SOLD_COLOR : AVAILABLE_COLOR;
       } else if (this.viewMode === 'photos') {
         fillColor = imageCount > 0 ? HAS_PHOTO_COLOR : NO_PHOTO_COLOR;
       } else {
         fillColor = STATUS_COLORS[status] ?? STATUS_COLORS[SquareStatus.NogNieBeginNie];
-        if (status === SquareStatus.NogNieBeginNie && isSold) {
-          fillColor = SOLD_COLOR;
+        // Reserved follows the same rule sold already does here: an untouched block
+        // shows why it is off the market, but once tarring starts the phase colour
+        // wins, because admins still paint progress on reserved blocks.
+        if (status === SquareStatus.NogNieBeginNie) {
+          if (isReserved) fillColor = RESERVED_COLOR;
+          else if (isSold) fillColor = SOLD_COLOR;
         }
       }
 
@@ -364,7 +371,12 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
       if (id == null) return;
 
       layer.bindTooltip(
-        this.buildTooltipHtml(id, props?.['status'] as number | undefined, props?.['isSold'] === true),
+        this.buildTooltipHtml(
+          id,
+          props?.['status'] as number | undefined,
+          props?.['isSold'] === true,
+          props?.['isReserved'] === true,
+        ),
         {
           sticky: true,
           direction: 'top',
@@ -404,12 +416,12 @@ export class RoadMapComponent implements AfterViewInit, OnChanges {
     (layer as L.Layer & { _initTooltipInteractions?: (remove?: boolean) => void })._initTooltipInteractions?.(true);
   }
 
-  private buildTooltipHtml(id: number, status: number | undefined, isSold: boolean): string {
+  private buildTooltipHtml(id: number, status: number | undefined, isSold: boolean, isReserved: boolean): string {
     const statusValue = status ?? SquareStatus.NogNieBeginNie;
     const statusLabel = statusValue === SquareStatus.NogNieBeginNie && isSold
       ? 'Verkoop'
       : STATUS_LABELS[statusValue as SquareStatus] ?? 'Onbekend';
-    const availability = isSold ? 'Verkoop' : 'Beskikbaar';
+    const availability = isReserved ? 'Onbeskikbaar' : isSold ? 'Verkoop' : 'Beskikbaar';
 
     return `
       <div class="block-bubble">

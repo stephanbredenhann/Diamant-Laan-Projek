@@ -82,7 +82,7 @@ describe('BlokStrookComponent', () => {
 
   it('paints the four block states and hides the number on unavailable ones', () => {
     const squares: Square[] = [
-      { id: 150, status: SquareStatus.NogNieBeginNie },
+      { id: 150, status: SquareStatus.NogNieBeginNie, isReserved: true },
       { id: 210, status: SquareStatus.NogNieBeginNie, isSold: true },
       { id: 220, status: SquareStatus.NogNieBeginNie },
       { id: 230, status: SquareStatus.NogNieBeginNie },
@@ -91,7 +91,7 @@ describe('BlokStrookComponent', () => {
 
     const blok = (id: number) => fixture.nativeElement.querySelector(`g.blok[aria-label^="Blok ${id},"]`);
 
-    // 150 sits below the saleable range, so it is black, unlabelled and not focusable.
+    // 150 is admin-reserved, so it is black, unlabelled and not focusable.
     expect(blok(150).classList).toContain('onbeskikbaar');
     expect(blok(150).querySelector('text')).toBeNull();
     expect(blok(150).getAttribute('tabindex')).toBeNull();
@@ -108,7 +108,7 @@ describe('BlokStrookComponent', () => {
 
   it('emits only for blocks that can actually be picked', () => {
     const squares: Square[] = [
-      { id: 150, status: SquareStatus.NogNieBeginNie },
+      { id: 150, status: SquareStatus.NogNieBeginNie, isReserved: true },
       { id: 210, status: SquareStatus.NogNieBeginNie, isSold: true },
       { id: 230, status: SquareStatus.NogNieBeginNie },
     ];

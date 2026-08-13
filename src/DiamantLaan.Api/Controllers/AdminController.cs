@@ -106,6 +106,42 @@ public class AdminController : ControllerBase
         return Ok(new { updated = squares.Count });
     }
 
+    /// <summary>
+    /// Holds blocks back from public sale, or releases them again. Reserved blocks stay
+    /// sellable through ManualPurchase, which is the whole point of the flag.
+    /// </summary>
+    [HttpPut("squares/reserve")]
+    public async Task<IActionResult> BulkReserve([FromBody] BulkReserveDto dto)
+    {
+        var squares = await _db.Squares
+            .Where(s => dto.SquareIds.Contains(s.Id))
+            .ToListAsync();
+
+        if (squares.Count != dto.SquareIds.Distinct().Count())
+            return BadRequest(new { message = "Sommige blokke bestaan nie." });
+
+        if (dto.Reserved)
+        {
+            var sold = squares.Where(s => s.OwnerId != null).Select(s => s.Id).ToList();
+            if (sold.Count > 0)
+                return BadRequest(new
+                {
+                    message = $"Hierdie blokke is reeds verkoop en kan nie gereserveer word nie: {string.Join(", ", sold)}."
+                });
+        }
+
+        foreach (var square in squares)
+            square.IsReserved = dto.Reserved;
+
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(
+            User,
+            dto.Reserved ? "ReserveSquares" : "UnreserveSquares",
+            $"{squares.Count} squares: {string.Join(", ", squares.Select(s => s.Id))}");
+
+        return Ok(new { updated = squares.Count });
+    }
+
     [HttpGet("squares/undo-last")]
     public async Task<IActionResult> GetUndoLast()
     {
@@ -220,33 +256,34 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
         var soldCount = await saleableQuery.CountAsync(s => s.OwnerId != null);
         var totalRaised = await _db.Purchases
-    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
-    .SumAsync(p => (double)p.Amount);
+            .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+            .SumAsync(p => (double?)p.Amount) ?? 0;
 
-        var dailySales = await _db.Purchases
-    .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
-    .GroupBy(p => p.PurchaseDate.Date)
-    .Select(g => new
-    {
-        Date = g.Key,
-        Amount = g.Sum(p => (double)p.Amount),
-        Squares = g.Sum(p => p.PurchaseSquares.Count)
-    })
-    .OrderBy(g => g.Date)
-    .ToListAsync();
+        var confirmedPurchases = await _db.Purchases
+            .Include(p => p.PurchaseSquares)
+            .Include(p => p.User)
+            .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
+            .ToListAsync();
+
+        // Group in memory: SQLite cannot always translate DateTime.Date in GroupBy.
+        var dailySales = confirmedPurchases
+            .GroupBy(p => p.PurchaseDate.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Amount = g.Sum(p => (double)p.Amount),
+                Squares = g.Sum(p => p.PurchaseSquares.Count)
+            })
+            .OrderBy(g => g.Date)
+            .ToList();
 
         const double sponsorBaseline = 2_000_000;
         var averageSpendPerBlock = soldCount > 0 ? Math.Round(totalRaised / soldCount, 2) : 0;
 
-        var purchases = await _db.Purchases
-            .Include(p => p.PurchaseSquares)
-            .Include(p => p.User)
-            .ToListAsync();
-
-        var oraniaSquares = purchases.Where(p => p.User.IsOraniaResident).Sum(p => p.PurchaseSquares.Count);
-        var outsiderSquares = purchases.Where(p => !p.User.IsOraniaResident).Sum(p => p.PurchaseSquares.Count);
-        var bewegingSquares = purchases.Where(p => p.User.IsOraniaBewegingMember).Sum(p => p.PurchaseSquares.Count);
-        var nonBewegingSquares = purchases.Where(p => !p.User.IsOraniaBewegingMember).Sum(p => p.PurchaseSquares.Count);
+        var oraniaSquares = CountSquares(confirmedPurchases, u => u.IsOraniaResident);
+        var outsiderSquares = CountSquares(confirmedPurchases, u => !u.IsOraniaResident);
+        var bewegingSquares = CountSquares(confirmedPurchases, u => u.IsOraniaBewegingMember);
+        var nonBewegingSquares = CountSquares(confirmedPurchases, u => !u.IsOraniaBewegingMember);
 
         return Ok(new
         {
@@ -264,6 +301,9 @@ public async Task<IActionResult> DeleteTransaction(int id)
             nonBewegingSquares
         });
     }
+
+    private static int CountSquares(IEnumerable<Purchase> purchases, Func<User, bool> match) =>
+        purchases.Where(p => p.User != null && match(p.User)).Sum(p => p.PurchaseSquares.Count);
 
     [HttpGet("registered-no-purchase")]
     public async Task<IActionResult> GetRegisteredNoPurchase()

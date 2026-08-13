@@ -120,6 +120,13 @@ import { RouterLink } from '@angular/router';
       text-underline-offset: 3px;
     }
     .step-node:not(.linkbaar) { cursor: default; }
+    @media (max-width: 600px) {
+      .step-bar { margin: 1.25rem auto 1.5rem; }
+      .step-rail { left: 20%; right: 20%; top: 1.125rem; }
+      .step-dot { width: 2.25rem; height: 2.25rem; font-size: 1.1rem; }
+      .step-node { gap: 0.4rem; }
+      .step-label { font-size: 0.8rem; letter-spacing: 0.04em; }
+    }
   `]
 })
 export class BouStepBarComponent {

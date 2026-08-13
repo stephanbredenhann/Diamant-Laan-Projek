@@ -1,4 +1,5 @@
 import { Square } from '../../../models/square';
+import { Reeks } from '../../../utils/blok-nommers';
 
 /**
  * How the 4200 blocks are cut into the picker's two levels of ranges.
@@ -9,24 +10,13 @@ import { Square } from '../../../models/square';
 
 export const MAX_BLOK_ID = 4200;
 
-/**
- * Blocks below this are road shoulders and are never for sale.
- *
- * ponytail: mirrors RoadController.MinPickId in the API. When admins get a real
- * "make unavailable" flag, that flag joins isBeskikbaar() and nothing else moves.
- */
-export const MIN_VERKOOPBARE_ID = 200;
-
 /** Blocks per level-1 button. */
 export const GROEP_GROOTTE = 1000;
 
 /** Blocks per level-2 button, and so per map section. */
 export const SEKSIE_GROOTTE = 100;
 
-export interface Reeks {
-  van: number;
-  tot: number;
-}
+export type { Reeks };
 
 export function reeksSleutel(r: Reeks): string {
   return `${r.van}-${r.tot}`;
@@ -86,7 +76,8 @@ export function seksieVan(id: number): { groep: Reeks; seksie: Reeks } | null {
 export type BlokRede = 'onbeskikbaar' | 'verkoop';
 
 export function blokRede(id: number, sq: Square | undefined): BlokRede | null {
-  if (id < MIN_VERKOOPBARE_ID || id > MAX_BLOK_ID) return 'onbeskikbaar';
+  if (id < 1 || id > MAX_BLOK_ID) return 'onbeskikbaar';
+  if (sq?.isReserved) return 'onbeskikbaar';
   if (sq?.isSold) return 'verkoop';
   return null;
 }

@@ -55,6 +55,11 @@ export class AdminService {
     });
   }
 
+  /** Holds blocks back from public sale, or releases them again. */
+  reserveSquares(squareIds: number[], reserved: boolean) {
+    return this.http.put<{ updated: number }>('/api/admin/squares/reserve', { squareIds, reserved });
+  }
+
   getUndoLast() {
     return this.http.get<UndoLastInfo>('/api/admin/squares/undo-last');
   }
