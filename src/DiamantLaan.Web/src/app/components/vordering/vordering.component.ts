@@ -5,41 +5,41 @@ import { RoadService, RoadStats } from '../../services/road.service';
 import { SettingsService } from '../../services/settings.service';
 import { randBedrag } from '../../utils/afrikaans.util';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-vordering',
   standalone: true,
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, TPipe],
   template: `
     <section class="page-hero">
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Vordering · Oewerpad-teerprojek</p>
-        <h1 class="display page-hero-title">Hoe ver is ons?</h1>
+        <p class="eyebrow page-hero-eyebrow">{{ 'Vordering · Oewerpad-teerprojek' | t }}</p>
+        <h1 class="display page-hero-title">{{ 'Hoe ver is ons?' | t }}</h1>
         <p class="page-hero-body">
-          Hier wys ons twee dinge: hoeveel geld reeds ingesamel is, en hoeveel van die pad
-          werklik al geteer is. Die syfers kom regstreeks uit die stelsel.
+          {{ 'Hier wys ons twee dinge: hoeveel geld reeds ingesamel is, en hoeveel van die pad werklik al geteer is. Die syfers kom regstreeks uit die stelsel.' | t }}
         </p>
       </div>
     </section>
 
     @if (showStatsSection) {
-      <section class="stats-band" aria-label="Finansiële vordering">
+      <section class="stats-band" [attr.aria-label]="'Finansiële vordering' | t">
         <div class="container stats-grid">
           @if (showTotalRaised) {
             <div class="stat-cell">
               <span class="display stat-value">{{ randBedrag(totalRaised) }}</span>
-              <span class="eyebrow stat-label">Ingesamel</span>
+              <span class="eyebrow stat-label">{{ 'Ingesamel' | t }}</span>
             </div>
           }
           <div class="stat-cell">
             <span class="display stat-value">{{ fundedSquares }}</span>
-            <span class="eyebrow stat-label">m² geborg</span>
+            <span class="eyebrow stat-label">{{ 'm² geborg' | t }}</span>
           </div>
           <div class="stat-cell">
             <span class="display stat-value">{{ klaarGeteer }}</span>
-            <span class="eyebrow stat-label">m² klaar geteer</span>
+            <span class="eyebrow stat-label">{{ 'm² klaar geteer' | t }}</span>
           </div>
         </div>
         <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100">
@@ -50,24 +50,23 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
     <section class="section chalk">
       <div class="container">
-        <p class="eyebrow">Waar ons staan</p>
-        <h2 class="display section-title">Geld ingesamel, en pad geteer.</h2>
+        <p class="eyebrow">{{ 'Waar ons staan' | t }}</p>
+        <h2 class="display section-title">{{ 'Geld ingesamel, en pad geteer.' | t }}</h2>
         <p class="lead">
-          Die twee gaan nie op dieselfde tempo nie. Geld word eers ingesamel; die teerwerk
-          volg in fases sodra ’n stuk pad ten volle geborg is.
+          {{ 'Die twee gaan nie op dieselfde tempo nie. Geld word eers ingesamel; die teerwerk volg in fases sodra ’n stuk pad ten volle geborg is.' | t }}
         </p>
 
         <div class="twin-grid">
           <article class="surface-card twin-card">
             <div class="twin-head">
-              <p class="eyebrow">Geborg</p>
+              <p class="eyebrow">{{ 'Geborg' | t }}</p>
               <span class="display twin-accent">{{ fundedPercent }}%</span>
             </div>
             <div class="bar-track" role="progressbar" [attr.aria-valuenow]="fundedPercent" aria-valuemin="0" aria-valuemax="100">
               <div class="bar-fill" [style.width.%]="fundedPercent"></div>
             </div>
             <div class="twin-meta">
-              <span>{{ hasBreakdown ? fundedSquares + ' van ' + saleableSquares + ' m²' : 'Nog nie beskikbaar nie' }}</span>
+              <span>{{ hasBreakdown ? fundedSquares + ' ' + ('van' | t) + ' ' + saleableSquares + ' m²' : ('Nog nie beskikbaar nie' | t) }}</span>
               @if (showTotalRaised) {
                 <span>{{ randBedrag(totalRaised) }}</span>
               }
@@ -76,15 +75,15 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
           <article class="surface-card twin-card">
             <div class="twin-head">
-              <p class="eyebrow">Geteer</p>
+              <p class="eyebrow">{{ 'Geteer' | t }}</p>
               <span class="display twin-accent">{{ progress }}%</span>
             </div>
             <div class="bar-track" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100">
               <div class="bar-fill bar-fill--done" [style.width.%]="progress"></div>
             </div>
             <div class="twin-meta">
-              <span>{{ hasBreakdown ? klaarGeteer + ' van ' + totalSquares + ' m²' : 'Nog nie beskikbaar nie' }}</span>
-              <span>{{ workStarted ? 'Werk aan die gang' : 'Werk nog nie begin nie' }}</span>
+              <span>{{ hasBreakdown ? klaarGeteer + ' ' + ('van' | t) + ' ' + totalSquares + ' m²' : ('Nog nie beskikbaar nie' | t) }}</span>
+              <span>{{ (workStarted ? 'Werk aan die gang' : 'Werk nog nie begin nie') | t }}</span>
             </div>
           </article>
         </div>
@@ -93,11 +92,10 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
 
     <section class="section white">
       <div class="container">
-        <p class="eyebrow">Die pad self</p>
-        <h2 class="display section-title">Elke vierkante meter se stand.</h2>
+        <p class="eyebrow">{{ 'Die pad self' | t }}</p>
+        <h2 class="display section-title">{{ 'Elke vierkante meter se stand.' | t }}</h2>
         <p class="lead">
-          Elke blokkie op die kaart is in een van vier fases. Dit is die werklike telling,
-          nou net soos dit in die stelsel staan.
+          {{ 'Elke blokkie op die kaart is in een van vier fases. Dit is die werklike telling, nou net soos dit in die stelsel staan.' | t }}
         </p>
 
         <div class="phase-cards">
@@ -105,8 +103,8 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
             <article class="surface-card phase-card" [class.is-active]="phase.count > 0">
               <span class="phase-icon"><app-icon [name]="phase.icon" [size]="26" /></span>
               <div class="phase-body">
-                <h3>{{ phase.title }}</h3>
-                <p>{{ phase.body }}</p>
+                <h3>{{ phase.title | t }}</h3>
+                <p>{{ phase.body | t }}</p>
               </div>
               <div class="phase-count">
                 <span class="display phase-number">{{ phase.count }}</span>
@@ -117,8 +115,8 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
         </div>
 
         <p class="phase-note">
-          Sodra werk op jou eie blokkies begin, sien jy dit onder
-          <a routerLink="/my-blokke">My blokke</a>, met foto’s van die werk waar dit beskikbaar is.
+          {{ 'Sodra werk op jou eie blokkies begin, sien jy dit onder' | t }}
+          <a routerLink="/my-blokke">{{ 'My blokke' | t }}</a>{{ ', met foto’s van die werk waar dit beskikbaar is.' | t }}
         </p>
       </div>
     </section>
@@ -126,11 +124,11 @@ import { IconComponent, IconName } from '../shared/icon/icon.component';
     <section class="cta-band">
       <div class="container cta-inner">
         <div>
-          <p class="eyebrow cta-eyebrow">Jou volgende stap</p>
-          <h2 class="display">Help ons die volgende stuk teer.</h2>
-          <p>Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.</p>
+          <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
+          <h2 class="display">{{ 'Help ons die volgende stuk teer.' | t }}</h2>
+          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">Bou 1 m² vir R500</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Bou 1 m² vir R500' | t }}</a>
       </div>
     </section>
   `,

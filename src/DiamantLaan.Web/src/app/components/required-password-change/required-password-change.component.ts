@@ -93,7 +93,7 @@ export class RequiredPasswordChangeComponent {
 
     this.loading = true;
     this.auth.completeRequiredPasswordChange(this.newPassword, this.confirmPassword).subscribe({
-      next: () => this.router.navigate(['/kaart']),
+      next: () => this.router.navigate(['/my-blokke']),
       error: (err) => {
         this.error = err.error?.message || 'Kon nie wagwoord verander nie.';
         this.loading = false;

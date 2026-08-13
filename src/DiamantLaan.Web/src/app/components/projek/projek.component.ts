@@ -2,21 +2,21 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
 import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-projek',
   standalone: true,
-  imports: [RouterLink, IconComponent, FotoSliderComponent],
+  imports: [RouterLink, IconComponent, FotoSliderComponent, TPipe],
   template: `
     <section class="page-hero">
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Die projek · Orania bou ’n pad</p>
-        <h1 class="display page-hero-title">Wat gebou word en hoe dit werk.</h1>
+        <p class="eyebrow page-hero-eyebrow">{{ 'Die projek · Orania bou ’n pad' | t }}</p>
+        <h1 class="display page-hero-title">{{ 'Wat gebou word en hoe dit werk.' | t }}</h1>
         <p class="page-hero-body">
-          Die Oewerpad is ’n belangrike roete wat tans nog ’n grondpad is.
-          Met eie Afrikanerhande en duisende ondersteuners, kan ons hierdie pad na ’n volgende vlak neem.
+          {{ 'Die Oewerpad is ’n belangrike roete wat tans nog ’n grondpad is. Met eie Afrikanerhande en duisende ondersteuners, kan ons hierdie pad na ’n volgende vlak neem.' | t }}
         </p>
       </div>
     </section>
@@ -24,21 +24,18 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
     <section class="section chalk">
       <div class="container-wide why-grid">
         <div>
-          <p class="eyebrow">Waarom die Oewerpad?</p>
-          <h2 class="display section-title">Van grondpad na teerpad.</h2>
+          <p class="eyebrow">{{ 'Waarom die Oewerpad?' | t }}</p>
+          <h2 class="display section-title">{{ 'Van grondpad na teerpad.' | t }}</h2>
           <p class="lead">
-            Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer sien.
-            Dit is ’n besonder belangrike roete vir toeriste wat gastehuise, die hotel, restaurant of rivier wil gaan besoek.
-            Dit is dikwels een van die roetes wat die meeste deur toeriste gery word en dit is daarom van kardinale belang om die pad te teer.
-            Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.
+            {{ 'Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer sien. Dit is ’n besonder belangrike roete vir toeriste wat gastehuise, die hotel, restaurant of rivier wil gaan besoek. Dit is dikwels een van die roetes wat die meeste deur toeriste gery word en dit is daarom van kardinale belang om die pad te teer. Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.' | t }}
           </p>
 
           <div class="scope-grid">
             @for (card of scopeCards; track card.title) {
               <article class="surface-card scope-card">
                 <span class="scope-icon"><app-icon [name]="card.icon" [size]="26" /></span>
-                <h3>{{ card.title }}</h3>
-                <p>{{ card.body }}</p>
+                <h3>{{ card.title | t }}</h3>
+                <p>{{ card.body | t }}</p>
               </article>
             }
           </div>
@@ -46,10 +43,10 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
 
         <aside class="callout-panel">
           <div class="callout-media">
-            <img src="oewerpad-03.jpg" alt="Oewerpad, grondpad wat teerwerk nodig het" />
+            <img src="oewerpad-03.jpg" [alt]="'Oewerpad, grondpad wat teerwerk nodig het' | t" />
             <div class="price-chip">
               <span class="display price-chip-value">R500</span>
-              <p>Per volle vierkante meter.</p>
+              <p>{{ 'Per volle vierkante meter.' | t }}</p>
             </div>
           </div>
         </aside>
@@ -60,28 +57,18 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
       <div class="container">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Die inisiatief</p>
-            <h2 class="display section-title">Waar die projek vandaan kom.</h2>
+            <p class="eyebrow">{{ 'Die inisiatief' | t }}</p>
+            <h2 class="display section-title">{{ 'Waar die projek vandaan kom.' | t }}</h2>
             <p class="lead">
-              Die Oewerpad is al lankal as een van die belangrikste en besigste roetes in Orania geïdentifiseer.
-              Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne.
-              Geen staatstoelae beteken dat Oraniërs alles wat hulle graag wil hê, self moet befonds.
-              Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree.
-              Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is alles boublokke vir ’n vrye Afrikanertuiste.
-              In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie.
-              Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners.
-              Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner tans in Suid-Afrika, en meer as dit, binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan beleef.
+              {{ 'Die Oewerpad is al lankal as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Geen staatstoelae beteken dat Oraniërs alles wat hulle graag wil hê, self moet befonds. Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is alles boublokke vir ’n vrye Afrikanertuiste. In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner tans in Suid-Afrika, en meer as dit, binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan beleef.' | t }}
             </p>
             <p class="lead">
-              Die stryd begin egter reeds vandag.
-              ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds niks nie.
+              {{ 'Die stryd begin egter reeds vandag. ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds niks nie.' | t }}
             </p>
             <p class="lead">
-              Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid.
-              Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is.
-              Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:
+              {{ 'Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid. Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:' | t }}
             </p>
-            <p class="inisiatief-slot">Deur self te bou!</p>
+            <p class="inisiatief-slot">{{ 'Deur self te bou!' | t }}</p>
           </div>
         </div>
 
@@ -92,11 +79,11 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
     <section class="cta-band">
       <div class="container cta-inner">
         <div>
-          <p class="eyebrow cta-eyebrow">Jou volgende stap</p>
-          <h2 class="display">Help om die plan in pad te verander.</h2>
-          <p>Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.</p>
+          <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
+          <h2 class="display">{{ 'Help om die plan in pad te verander.' | t }}</h2>
+          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">Bou 1 m² vir R500</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Bou 1 m² vir R500' | t }}</a>
       </div>
     </section>
   `,

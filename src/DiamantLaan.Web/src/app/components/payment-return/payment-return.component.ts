@@ -131,7 +131,7 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
     if (!this.purchaseId) {
-      this.router.navigate(['/kaart']);
+      this.router.navigate(['/']);
       return;
     }
 

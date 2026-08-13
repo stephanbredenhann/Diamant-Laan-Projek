@@ -94,7 +94,7 @@ export class LoginComponent {
           // They paid as a guest and signed in afterwards, so go back and attach that purchase.
           this.router.navigate(['/betalings/klaar']);
         } else {
-          this.router.navigate(['/kaart']);
+          this.router.navigate(['/my-blokke']);
         }
       },
       error: (err) => { this.error = err.error?.message || 'Aanmelding het misluk.'; this.loading = false; }

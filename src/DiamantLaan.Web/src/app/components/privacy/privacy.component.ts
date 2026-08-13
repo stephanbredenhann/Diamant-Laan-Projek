@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { inject } from '@angular/core';
+import { LangService } from '../../i18n/lang.service';
 
 @Component({
   selector: 'app-privacy',
@@ -8,6 +10,9 @@ import { RouterLink } from '@angular/router';
   template: `
   <div class="container privacy-page">
     <article class="privacy-content">
+      <!-- A legal notice is translated as one document, not string by string,
+           so each language gets its own block instead of a lookup per line. -->
+      @if (lang.lang() === 'af') {
       <p class="privacy-back"><a routerLink="/">← Terug na tuisblad</a></p>
 
       <p class="eyebrow">Inligting</p>
@@ -233,6 +238,226 @@ import { RouterLink } from '@angular/router';
           die hersiene beleid.
         </p>
       </section>
+      } @else {
+      <p class="privacy-back"><a routerLink="/">← Back to home</a></p>
+
+      <p class="eyebrow">Information</p>
+      <h1 class="display page-title">Privacy policy</h1>
+      <p class="privacy-meta">Last updated: 9 July 2026</p>
+
+      <p>
+        This notice explains how the Diamant Laan website collects, uses and protects
+        personal information. It is an informal, practical summary of our practices and is
+        not formal legal advice.
+      </p>
+
+      <section>
+        <h2>1. Who we are</h2>
+        <p>
+          The responsible party for this website and for the processing of personal
+          information is the <strong>Orania Beweging</strong>.
+        </p>
+        <p>
+          For privacy questions or requests about your data, contact us at
+          <a href="mailto:inligting@orania.co.za">inligting&#64;orania.co.za</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>2. What personal information we collect</h2>
+        <p>Depending on how you use the website, we may process the following information:</p>
+        <ul>
+          <li>
+            <strong>Account details:</strong> first name, surname, email address, optional
+            phone number, whether you are an Orania resident, your membership of the Orania
+            Beweging, your email preference for block progress updates, and a hashed password.
+          </li>
+          <li>
+            <strong>Password reset codes:</strong> hashed one-time codes with a short
+            lifetime, created when you request a password reset.
+          </li>
+          <li>
+            <strong>Purchases and blocks:</strong> purchase records (amount, status, date),
+            which road blocks you own or have reserved, PayFast payment references, and
+            where applicable proof-of-payment files (for example PDFs for telephone
+            purchases).
+          </li>
+          <li>
+            <strong>Login sessions:</strong> refresh tokens (in a secure cookie) and an
+            access token plus profile details stored temporarily in your browser's local
+            storage.
+          </li>
+          <li>
+            <strong>Administrative records:</strong> audit entries of admin actions (which
+            may contain email addresses) and progress photos uploaded by administrators.
+          </li>
+        </ul>
+        <p>
+          The public map shows only whether a block has been sold, never the owner's name,
+          email address or phone number.
+        </p>
+      </section>
+
+      <section>
+        <h2>3. Why we use your information</h2>
+        <p>We process personal information in order to:</p>
+        <ul>
+          <li>create and manage your account;</li>
+          <li>reserve and sell blocks and link them to your account;</li>
+          <li>process payments via PayFast or manual (telephone) purchases;</li>
+          <li>show you your blocks, certificates and transactions;</li>
+          <li>administer the project (statistics, user management, progress photos);</li>
+          <li>secure the service and prevent abuse or faulty reservations;</li>
+          <li>send password resets by email when you request one;</li>
+          <li>send account welcome and login details by email after telephone purchases;</li>
+          <li>
+            send updates about the progress of your blocks by email (if you have enabled
+            them).
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. Who we share information with</h2>
+        <p>
+          We do not sell your personal information. We use the service providers needed to
+          run the website:
+        </p>
+        <ul>
+          <li>
+            <strong>PayFast:</strong> to process payments (name, email address and payment
+            details are sent to PayFast).
+          </li>
+          <li>
+            <strong>Resend:</strong> to deliver service emails (your email address and the
+            content of the message are sent to Resend).
+          </li>
+          <li>
+            <strong>Azure:</strong> to host the website and the database.
+          </li>
+          <li>
+            <strong>Google Fonts:</strong> to load typefaces (your browser contacts Google's
+            servers).
+          </li>
+          <li>
+            <strong>OpenStreetMap:</strong> to show map tiles.
+          </li>
+        </ul>
+        <p>
+          We do not send marketing emails or SMS messages; emails are service related only
+          (password reset, account welcome, block progress). We also do not use marketing
+          analytics platforms.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Email communication</h2>
+        <p>
+          We send <strong>transactional</strong> emails only, no marketing and no
+          newsletters. Depending on how you use the website, you may receive:
+        </p>
+        <ul>
+          <li>
+            <strong>Password reset:</strong> a one-time code when you have forgotten your
+            password.
+          </li>
+          <li>
+            <strong>Account welcome:</strong> login details when an administrator creates an
+            account for you during a telephone purchase.
+          </li>
+          <li>
+            <strong>Block progress:</strong> updates when the status of your blocks changes
+            (for example from dirt road to tarred road).
+          </li>
+        </ul>
+        <p>
+          Block progress emails are optional. You can switch them off under
+          <strong>My profile</strong>. Password reset and account welcome emails are needed
+          to deliver the service and cannot be switched off.
+        </p>
+      </section>
+
+      <section>
+        <h2>6. Cookies and local storage</h2>
+        <ul>
+          <li>
+            An <strong>HttpOnly cookie</strong> stores a refresh token so that you can stay
+            logged in.
+          </li>
+          <li>
+            Your browser's <strong>localStorage</strong> may hold a JWT access token and
+            basic profile details (name, email, phone, Orania residency, Beweging
+            membership, email preference and roles).
+          </li>
+          <li>
+            Temporary <strong>sessionStorage</strong> may hold selected block IDs during the
+            payment process.
+          </li>
+        </ul>
+        <p>
+          We do not use advertising or tracking cookies.
+        </p>
+      </section>
+
+      <section>
+        <h2>7. How long we keep information</h2>
+        <p>
+          Account and purchase records are kept for as long as your account or the Diamant
+          Laan project is active, or for as long as is needed for administrative, security
+          or legal purposes. Outstanding (unpaid) reservations are released automatically
+          after roughly 30 minutes. Password reset codes expire after roughly 15 minutes.
+          You can request that your data be deleted or corrected via the contact details
+          below.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Security</h2>
+        <p>
+          Passwords are stored in hashed form, never in plain text. Access to the website is
+          over HTTPS where available. Administrative functions are limited to authorised
+          users. No system is entirely free of risk, so use strong passwords and do not
+          share your login details with anyone.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Your rights</h2>
+        <p>
+          Under the Protection of Personal Information Act (POPIA) you may, among other
+          things, request to:
+        </p>
+        <ul>
+          <li>access the personal information we hold about you;</li>
+          <li>have incorrect information corrected;</li>
+          <li>request deletion or restriction of processing (where applicable);</li>
+          <li>complain to the Information Regulator if you believe your rights have been
+            infringed.</li>
+        </ul>
+        <p>
+          Send such requests to
+          <a href="mailto:inligting@orania.co.za">inligting&#64;orania.co.za</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>10. Contact</h2>
+        <p>
+          <strong>Orania Beweging</strong><br />
+          Email:
+          <a href="mailto:inligting@orania.co.za">inligting&#64;orania.co.za</a>
+        </p>
+      </section>
+
+      <section>
+        <h2>11. Changes</h2>
+        <p>
+          We may update this policy from time to time. The "last updated" date at the top of
+          the page shows when the newest version took effect. Continued use of this website
+          after an update means you have taken note of the revised policy.
+        </p>
+      </section>
+      }
     </article>
   </div>
 `,
@@ -315,4 +540,6 @@ import { RouterLink } from '@angular/router';
     }
   `]
 })
-export class PrivacyComponent {}
+export class PrivacyComponent {
+  lang = inject(LangService);
+}

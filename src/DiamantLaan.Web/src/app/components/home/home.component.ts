@@ -7,37 +7,37 @@ import { SettingsService } from '../../services/settings.service';
 import { randBedrag } from '../../utils/afrikaans.util';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
 import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent],
+  imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent, TPipe],
   template: `
     <section class="hero">
-      <img src="oewerpad-hero.jpg" alt="Oewerpad wat van grondpad na teerpad verander" class="hero-img" />
+      <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">Orania-Teerprojek</p>
+        <p class="eyebrow hero-eyebrow">{{ 'Orania-Teerprojek' | t }}</p>
         <h1 class="display hero-title">
-          Bou die volgende <span class="accent">m²</span> van die Oewerpad.
+          {{ 'Bou die volgende' | t }} <span class="accent">m²</span> {{ 'van die Oewerpad.' | t }}
         </h1>
         <p class="hero-sub">
-          Elke m² wat geborg word, sluit vir Orania nuwe moontlikhede oop.
-          Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en dra Orania na die volgende vlak.
+          {{ 'Elke m² wat geborg word, sluit vir Orania nuwe moontlikhede oop. Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en dra Orania na die volgende vlak.' | t }}
         </p>
         <div class="hero-actions">
           <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
-            Borg jou m²
+            {{ 'Borg jou m²' | t }}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
         </div>
         <ul class="reassurance">
-          <li>Geen registrasie</li>
-          <li>Veilige betaling</li>
-          <li>Bydraersertifikaat</li>
-          <li>Ontwikkel Orania</li>
+          <li>{{ 'Geen registrasie' | t }}</li>
+          <li>{{ 'Veilige betaling' | t }}</li>
+          <li>{{ 'Bydraersertifikaat' | t }}</li>
+          <li>{{ 'Ontwikkel Orania' | t }}</li>
         </ul>
       </div>
 
@@ -45,18 +45,18 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
         <div class="hero-stat-float" id="stats-section">
           <div class="stat-dark">
             <strong class="tabular">{{ fundedMeters }}<span class="stat-doel">/{{ totalSquares }} m²</span></strong>
-            <span>Reeds geborg</span>
+            <span>{{ 'Reeds geborg' | t }}</span>
           </div>
           @if (showTotalRaised) {
             <div class="stat-orange">
               <strong class="tabular">{{ randBedrag(totalRaised) }}<span class="stat-doel">/{{ randBedrag(randDoel) }}</span></strong>
-              <span>Ingesamel</span>
+              <span>{{ 'Ingesamel' | t }}</span>
             </div>
           }
         </div>
       }
 
-      <button type="button" class="scroll-cue" (click)="rolAf()" aria-label="Rol af vir meer">
+      <button type="button" class="scroll-cue" (click)="rolAf()" [attr.aria-label]="'Rol af vir meer' | t">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
@@ -66,25 +66,22 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
     <section class="section" id="waarom">
       <div class="container-wide why-grid">
         <div>
-          <p class="eyebrow">Waarom hierdie projek?</p>
-          <h2 class="display section-title">Nie net ’n donasie nie. ’n Belegging in ’n Afrikanertoekoms.</h2>
+          <p class="eyebrow">{{ 'Waarom hierdie projek?' | t }}</p>
+          <h2 class="display section-title">{{ 'Nie net ’n donasie nie. ’n Belegging in ’n Afrikanertoekoms.' | t }}</h2>
           <p class="lead">
-            Die Oewerpad (Diamantlaan) se teerwerk is ’n groot infrastruktuurprojek.
-            Orania is ’n privaat Afrikanergemeenskap wat geen staatstoelae ontvang nie.
-            Dit beteken dat elke sentimeter wat hier ontwikkel word, self gedoen word.
-            Deur hierdie reuse projek in m² op te deel, kan elke bydraer presies sien waar sy of haar bydrae by die groter prentjie inpas.
+            {{ 'Die Oewerpad (Diamantlaan) se teerwerk is ’n groot infrastruktuurprojek. Orania is ’n privaat Afrikanergemeenskap wat geen staatstoelae ontvang nie. Dit beteken dat elke sentimeter wat hier ontwikkel word, self gedoen word. Deur hierdie reuse projek in m² op te deel, kan elke bydraer presies sien waar sy of haar bydrae by die groter prentjie inpas.' | t }}
           </p>
           <div class="feature-pair">
             <article>
-              <h3>Duidelike doelwit</h3>
-              <p>Ons bou ’n toekoms vir Afrikaners, en ons doen dit self!</p>
+              <h3>{{ 'Duidelike doelwit' | t }}</h3>
+              <p>{{ 'Ons bou ’n toekoms vir Afrikaners, en ons doen dit self!' | t }}</p>
             </article>
             <article>
-              <h3>Sigbare vordering</h3>
-              <p>Deur reuse projekte in kleiner segmente te verdeel, kan ons sien presies waar ons vordering maak. Só ook met hierdie pad, waar jy presies kan sien waar jou m² ’n verskil maak.</p>
+              <h3>{{ 'Sigbare vordering' | t }}</h3>
+              <p>{{ 'Deur reuse projekte in kleiner segmente te verdeel, kan ons sien presies waar ons vordering maak. Só ook met hierdie pad, waar jy presies kan sien waar jou m² ’n verskil maak.' | t }}</p>
             </article>
           </div>
-          <a routerLink="/projek" class="text-link">Lees die volledige projekplan →</a>
+          <a routerLink="/projek" class="text-link">{{ 'Lees die volledige projekplan →' | t }}</a>
         </div>
         <div class="why-media">
           <app-foto-slider />
@@ -98,9 +95,9 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
 
     <section class="section chalk" id="hoe-dit-werk">
       <div class="container-wide">
-        <p class="eyebrow">Vier eenvoudige stappe</p>
-        <h2 class="display section-title">Verstaan elke stap.</h2>
-        <p class="lead narrow">Vier eenvoudige stappe om jou bydrae te lewer.</p>
+        <p class="eyebrow">{{ 'Vier eenvoudige stappe' | t }}</p>
+        <h2 class="display section-title">{{ 'Verstaan elke stap.' | t }}</h2>
+        <p class="lead narrow">{{ 'Vier eenvoudige stappe om jou bydrae te lewer.' | t }}</p>
 
         <div class="steps">
           @for (step of steps; track step.number; let last = $last) {
@@ -110,8 +107,8 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
                 <span class="step-badge" aria-hidden="true">{{ step.number }}</span>
               </div>
               <div class="step-body">
-                <h3>{{ step.title }}</h3>
-                <p>{{ step.body }}</p>
+                <h3>{{ step.title | t }}</h3>
+                <p>{{ step.body | t }}</p>
               </div>
               <span class="display step-ghost" aria-hidden="true">{{ step.number }}</span>
             </article>
@@ -126,20 +123,18 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
     <section class="section chalk">
       <div class="container-wide recog-grid">
         <div>
-          <p class="eyebrow">Erkenning</p>
-          <h2 class="display section-title">Jou naam. Jou blokkie. Jou bydrae vir ewig sigbaar.</h2>
+          <p class="eyebrow">{{ 'Erkenning' | t }}</p>
+          <h2 class="display section-title">{{ 'Jou naam. Jou blokkie. Jou bydrae vir ewig sigbaar.' | t }}</h2>
           <p class="lead">
-            Elkeen wat bydra ontvang erkenning in die vorm van ’n Stadsbouersertifikaat.
-            Jou sertifikaat vertoon jou naam en die unieke nommers van die blokkies wat jy geborg het.
-            Met nog baie projekte op die horison, gaan hierdie sertifikate eindelik versamelstukke wees.
+            {{ 'Elkeen wat bydra ontvang erkenning in die vorm van ’n Stadsbouersertifikaat. Jou sertifikaat vertoon jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog baie projekte op die horison, gaan hierdie sertifikate eindelik versamelstukke wees.' | t }}
           </p>
         </div>
         <div class="cert-preview surface-card">
           <img src="stadsboufonds-logo-orange.png" alt="" width="64" height="64" />
-          <p class="eyebrow">Erkenning as</p>
+          <p class="eyebrow">{{ 'Erkenning as' | t }}</p>
           <h3 class="display">STADSBOUER</h3>
-          <p class="cert-name">JOU NAAM</p>
-          <p>Vir die finansiering van 1 m² van die Oewerpad-teerprojek.</p>
+          <p class="cert-name">{{ 'JOU NAAM' | t }}</p>
+          <p>{{ 'Vir die finansiering van 1 m² van die Oewerpad-teerprojek.' | t }}</p>
           <span class="work-stamp stamp">1 m²</span>
         </div>
       </div>
@@ -148,12 +143,12 @@ import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component
     <section class="cta-band">
       <div class="container cta-inner">
         <div>
-          <p class="eyebrow" style="color: rgba(255,255,255,0.65)">Jou volgende stap</p>
-          <h2 class="display">Bou die volgende m² saam met ons.</h2>
-          <p>Kies jou spesiale nommer voordat dit te laat is!</p>
+          <p class="eyebrow" style="color: rgba(255,255,255,0.65)">{{ 'Jou volgende stap' | t }}</p>
+          <h2 class="display">{{ 'Bou die volgende m² saam met ons.' | t }}</h2>
+          <p>{{ 'Kies jou spesiale nommer voordat dit te laat is!' | t }}</p>
         </div>
         <a routerLink="/bou" class="btn btn-on-orange">
-          Borg jou m²
+          {{ 'Borg jou m²' | t }}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>

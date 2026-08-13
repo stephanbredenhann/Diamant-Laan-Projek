@@ -1,15 +1,17 @@
 import { Component, HostListener, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { LangService } from '../../../i18n/lang.service';
+import { TPipe } from '../../../i18n/t.pipe';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TPipe],
   template: `
-    <nav class="navbar" aria-label="Hoofnavigasie">
+    <nav class="navbar" [attr.aria-label]="'Hoofnavigasie' | t">
       <div class="container navbar-inner">
-        <a routerLink="/" class="nav-brand" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" aria-label="Orania Stadsboufonds tuis">
+        <a routerLink="/" class="nav-brand" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
           <img src="stadsboufonds-logo-orange.png" alt="" width="36" height="36" />
           <span class="brand-text">
             <small>ORANIA</small>
@@ -17,7 +19,7 @@ import { AuthService } from '../../../services/auth.service';
           </span>
         </a>
 
-        <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop'">
+        <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="(menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop') | t">
           @if (menuOpen()) {
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           } @else {
@@ -26,27 +28,38 @@ import { AuthService } from '../../../services/auth.service';
         </button>
 
         <div class="navbar-links" [class.open]="menuOpen()">
-          <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">Die projek</a>
-          <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">Hoe dit werk</a>
-          <a routerLink="/vordering" routerLinkActive="active" (click)="menuOpen.set(false)">Vordering</a>
-          <a routerLink="/vrae" routerLinkActive="active" (click)="menuOpen.set(false)">Vrae</a>
+          <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Die projek' | t }}</a>
+          <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">{{ 'Hoe dit werk' | t }}</a>
+          <a routerLink="/vordering" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vordering' | t }}</a>
+          <a routerLink="/vrae" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vrae' | t }}</a>
           @if (auth.currentUser(); as user) {
-            <a routerLink="/my-blokke" routerLinkActive="active" (click)="menuOpen.set(false)">My blokke</a>
-            <a routerLink="/my-transaksies" routerLinkActive="active" (click)="menuOpen.set(false)">My transaksies</a>
+            <a routerLink="/my-blokke" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My blokke' | t }}</a>
+            <a routerLink="/my-transaksies" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My transaksies' | t }}</a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin" routerLinkActive="active" (click)="menuOpen.set(false)">Admin</a>
             }
-            <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">My profiel</a>
-            <button class="btn-logout" (click)="logout()">Meld af</button>
+            <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My profiel' | t }}</a>
+            <button class="btn-logout" (click)="logout()">{{ 'Meld af' | t }}</button>
           } @else {
-            <a routerLink="/meld-aan" class="btn-nav-outline" (click)="menuOpen.set(false)">Meld aan</a>
+            <a routerLink="/meld-aan" class="btn-nav-outline" (click)="menuOpen.set(false)">{{ 'Meld aan' | t }}</a>
           }
+
           <a routerLink="/bou" class="btn-nav-cta" (click)="menuOpen.set(false)">
-            Bou 1 m²
+            {{ 'Bou 1 m²' | t }}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
+
+          <button
+            type="button"
+            class="btn-lang"
+            (click)="lang.toggle()"
+            [attr.aria-label]="(lang.lang() === 'af' ? 'Wissel na Engels' : 'Wissel na Afrikaans') | t">
+            <span [class.on]="lang.lang() === 'af'">AF</span>
+            <span aria-hidden="true">/</span>
+            <span [class.on]="lang.lang() === 'en'">EN</span>
+          </button>
         </div>
       </div>
     </nav>
@@ -189,6 +202,29 @@ import { AuthService } from '../../../services/auth.service';
       border-color: var(--action);
     }
 
+    /* Deliberately quiet: a utility, not a call to action. It keeps a full tap
+       target but pays for it with padding rather than a box. */
+    .btn-lang {
+      font-family: var(--font-body);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0 0.5rem;
+      margin-left: 0.15rem;
+      min-height: var(--tap-min);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+      opacity: 0.65;
+    }
+    .btn-lang:hover { opacity: 1; }
+    .btn-lang .on { color: var(--ink); }
+
     .backdrop { display: none; }
 
     @media (max-width: 980px) {
@@ -241,6 +277,18 @@ import { AuthService } from '../../../services/auth.service';
         display: flex;
       }
 
+      /* Muting it only makes sense on desktop, where it sits in the corner. In
+         the drawer it is just another row and has to stay readable. */
+      .btn-lang {
+        display: flex;
+        justify-content: center;
+        margin: 0 1.25rem 0.75rem;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+        opacity: 1;
+        gap: 0.35rem;
+      }
+
       .backdrop {
         display: block;
         position: fixed;
@@ -253,6 +301,7 @@ import { AuthService } from '../../../services/auth.service';
 })
 export class NavbarComponent {
   auth = inject(AuthService);
+  lang = inject(LangService);
   menuOpen = signal(false);
 
   @HostListener('document:keydown.escape')

@@ -2,37 +2,38 @@ import { Component, DestroyRef, HostListener, inject, signal } from '@angular/co
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
+import { TPipe } from '../../../i18n/t.pipe';
 
 @Component({
   selector: 'app-site-footer',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TPipe],
   template: `
     @if (!isAdminRoute()) {
       <footer class="site-footer">
         <div class="container footer-grid">
           <div class="footer-brand">
-            <a routerLink="/" class="footer-logo" aria-label="Orania Stadsboufonds tuis">
+            <a routerLink="/" class="footer-logo" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
               <img src="stadsboufonds-logo-orange.png" alt="" width="40" height="40" />
               <span>
                 <small>ORANIA</small>
                 <strong>Stadsboufonds</strong>
               </span>
             </a>
-            <p>Help Oewerpad teer, een vierkante meter op ’n slag.</p>
+            <p>{{ 'Help Oewerpad teer, een vierkante meter op ’n slag.' | t }}</p>
           </div>
           <div>
-            <p class="footer-heading">Verken</p>
-            <a routerLink="/projek">Die projek</a>
-            <a routerLink="/" fragment="hoe-dit-werk">Hoe dit werk</a>
-            <a routerLink="/vordering">Vordering</a>
-            <a routerLink="/vrae">Vrae</a>
+            <p class="footer-heading">{{ 'Verken' | t }}</p>
+            <a routerLink="/projek">{{ 'Die projek' | t }}</a>
+            <a routerLink="/" fragment="hoe-dit-werk">{{ 'Hoe dit werk' | t }}</a>
+            <a routerLink="/vordering">{{ 'Vordering' | t }}</a>
+            <a routerLink="/vrae">{{ 'Vrae' | t }}</a>
           </div>
           <div>
-            <p class="footer-heading">Belangrik</p>
-            <a href="https://orania.co.za/privaatheidsbeleid/" target="_blank" rel="noopener">Privaatheidsbeleid</a>
-            <a routerLink="/meld-aan">Meld aan</a>
-            <a routerLink="/bou">Bou 1 m²</a>
+            <p class="footer-heading">{{ 'Belangrik' | t }}</p>
+            <a href="https://orania.co.za/privaatheidsbeleid/" target="_blank" rel="noopener">{{ 'Privaatheidsbeleid' | t }}</a>
+            <a routerLink="/meld-aan">{{ 'Meld aan' | t }}</a>
+            <a routerLink="/bou">{{ 'Bou 1 m²' | t }}</a>
           </div>
         </div>
         <div class="container footer-meta">
@@ -42,7 +43,7 @@ import { filter } from 'rxjs';
 
       @if (showMobileCta()) {
         <a routerLink="/bou" class="mobile-cta">
-          <span>Bou 1 m² vir R500</span>
+          <span>{{ 'Bou 1 m² vir R500' | t }}</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>

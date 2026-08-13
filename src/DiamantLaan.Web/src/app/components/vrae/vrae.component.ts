@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TPipe } from '../../i18n/t.pipe';
 
 interface FaqItem {
   question: string;
@@ -9,38 +10,37 @@ interface FaqItem {
 @Component({
   selector: 'app-vrae',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TPipe],
   template: `
     <section class="page-hero">
       <img src="diamant_laan_foto.jpg" alt="" class="page-hero-bg" aria-hidden="true" />
       <div class="page-hero-scrim" aria-hidden="true"></div>
       <div class="container page-hero-content">
-        <p class="eyebrow page-hero-eyebrow">Vrae · Oewerpad-teerprojek</p>
-        <h1 class="display page-hero-title">Antwoorde vóór die besluit, nie ná die betaling nie.</h1>
+        <p class="eyebrow page-hero-eyebrow">{{ 'Vrae · Oewerpad-teerprojek' | t }}</p>
+        <h1 class="display page-hero-title">{{ 'Antwoorde vóór die besluit, nie ná die betaling nie.' | t }}</h1>
         <p class="page-hero-body">
-          Duidelike antwoorde oor koste, eienaarskap, betaling, erkenning en projekbeleid verwyder
-          onsekerheid voordat iemand begin bou.
+          {{ 'Duidelike antwoorde oor koste, eienaarskap, betaling, erkenning en projekbeleid verwyder onsekerheid voordat iemand begin bou.' | t }}
         </p>
       </div>
     </section>
 
     <section class="section chalk">
       <div class="container container-narrow">
-        <p class="eyebrow">Gereelde vrae</p>
-        <h2 class="display section-title">Wat mense die meeste wil weet.</h2>
+        <p class="eyebrow">{{ 'Gereelde vrae' | t }}</p>
+        <h2 class="display section-title">{{ 'Wat mense die meeste wil weet.' | t }}</h2>
 
         <div class="faq-list">
           @for (item of faqs; track item.question) {
             <details class="faq-item surface-card">
-              <summary>{{ item.question }}</summary>
-              <p>{{ item.answer }}</p>
+              <summary>{{ item.question | t }}</summary>
+              <p>{{ item.answer | t }}</p>
             </details>
           }
         </div>
 
         <div class="vra-ons surface-card">
-          <h3 class="display">Het jy enige ander vrae vir ons?</h3>
-          <p>Stuur gerus ’n e-pos. Ons help graag.</p>
+          <h3 class="display">{{ 'Het jy enige ander vrae vir ons?' | t }}</h3>
+          <p>{{ 'Stuur gerus ’n e-pos. Ons help graag.' | t }}</p>
           <a href="mailto:inligting&#64;orania.co.za" class="btn btn-primary btn-terug">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
@@ -54,11 +54,11 @@ interface FaqItem {
     <section class="cta-band">
       <div class="container cta-inner">
         <div>
-          <p class="eyebrow cta-eyebrow">Jou volgende stap</p>
-          <h2 class="display">Het jy jou antwoord? Kies nou jou hoeveelheid.</h2>
-          <p>Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.</p>
+          <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
+          <h2 class="display">{{ 'Het jy jou antwoord? Kies nou jou hoeveelheid.' | t }}</h2>
+          <p>{{ 'Begin met 1 m² vir R500. Ons kan jou blokkie outomaties kies, of jy kan self die kaart oopmaak.' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-primary cta-btn">Bou 1 m² vir R500</a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Bou 1 m² vir R500' | t }}</a>
       </div>
     </section>
   `,
