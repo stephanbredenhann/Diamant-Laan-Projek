@@ -1,24 +1,36 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+const FALLBACK_TOAST =
+  'Jou toestel ondersteun nie direkte deel nie. Die skakel is gekopieer en kan in enige sosiale media-platform geplak word.';
+
 @Component({
   selector: 'app-share-button',
   standalone: true,
   imports: [CommonModule],
   template: `
     <div class="share-wrap">
-      <button type="button" class="btn btn-outline btn-xl share-btn" (click)="onShareClick()">
+      <button
+        type="button"
+        class="btn btn-outline btn-xl share-btn"
+        [attr.aria-expanded]="menuOpen()"
+        aria-haspopup="menu"
+        (click)="onShareClick()"
+      >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         {{ label }}
       </button>
       @if (menuOpen()) {
-        <div class="share-menu">
-          <a [href]="whatsappUrl" target="_blank" rel="noopener noreferrer" (click)="menuOpen.set(false)">Stuur met WhatsApp</a>
-          <button type="button" (click)="copyLink()">{{ copied() ? 'Gekopieer!' : 'Kopieer skakel' }}</button>
+        <div class="share-menu" role="menu">
+          <button type="button" role="menuitem" (click)="shareToDevice()">Deel my bydrae</button>
+          <button type="button" role="menuitem" (click)="copyLink()">{{ copied() ? 'Gekopieer!' : 'Kopieer skakel' }}</button>
           @if (showRevoke) {
-            <button type="button" class="revoke" (click)="onRevoke()">Verwyder my openbare skakel</button>
+            <button type="button" class="revoke" role="menuitem" (click)="onRevoke()">Verwyder my openbare skakel</button>
           }
         </div>
+      }
+      @if (toast()) {
+        <div class="share-toast" role="status">{{ toast() }}</div>
       }
     </div>
   `,
@@ -41,7 +53,8 @@ import { CommonModule } from '@angular/common';
       width: 100%;
       flex: 1;
     }
-    .share-menu {
+    .share-menu,
+    .share-toast {
       position: absolute;
       top: calc(100% + 0.375rem);
       left: 0;
@@ -49,16 +62,20 @@ import { CommonModule } from '@angular/common';
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       box-shadow: var(--shadow);
-      min-width: 300px;
       z-index: 100;
+    }
+    .share-menu {
+      min-width: 300px;
       overflow: hidden;
     }
-    /*
-     * The global button rule centres its text in the display font at weight 700, so a button
-     * and a link sitting side by side in this menu look nothing alike. Everything the rule
-     * sets is restated here, which is what keeps the rows identical.
-     */
-    .share-menu a,
+    .share-toast {
+      right: 0;
+      padding: 1rem 1.25rem;
+      font-size: var(--fs-lg);
+      font-weight: 600;
+      line-height: 1.45;
+      color: var(--color-text);
+    }
     .share-menu button {
       display: flex;
       align-items: center;
@@ -77,18 +94,13 @@ import { CommonModule } from '@angular/common';
       border-radius: 0;
       border-bottom: 1px solid var(--color-border);
       cursor: pointer;
-      text-decoration: none;
     }
-    .share-menu a:last-child,
     .share-menu button:last-child {
       border-bottom: none;
     }
-    .share-menu a:hover,
     .share-menu button:hover {
       background: var(--color-cream);
     }
-    /* Same size and weight as the rest, only greyed: it deletes the link, so it must not read
-       as a third way to share. */
     .share-menu button.revoke {
       color: var(--text-muted);
     }
@@ -100,7 +112,7 @@ export class ShareButtonComponent {
   @Input() label = 'Deel';
   @Input() url = typeof window !== 'undefined' ? window.location.origin : '';
   @Input() text = 'Dra by aan Diamant Laan!';
-  /** Parent handles the first tap (consent). Call performShare() afterwards. */
+  /** Parent handles the first tap (consent). Call performShare() afterwards to open the menu. */
   @Input() deferShare = false;
   @Input() showRevoke = false;
   @Output() shareRequested = new EventEmitter<void>();
@@ -108,10 +120,7 @@ export class ShareButtonComponent {
 
   menuOpen = signal(false);
   copied = signal(false);
-
-  get whatsappUrl(): string {
-    return `https://wa.me/?text=${encodeURIComponent(this.sharePayload)}`;
-  }
+  toast = signal('');
 
   get sharePayload(): string {
     return `${this.text}\n${this.url}`;
@@ -132,26 +141,41 @@ export class ShareButtonComponent {
   }
 
   onShareClick() {
+    if (this.menuOpen()) {
+      this.menuOpen.set(false);
+      return;
+    }
     if (this.deferShare) {
       this.shareRequested.emit();
       return;
     }
-    void this.performShare();
+    this.menuOpen.set(true);
   }
 
-  async performShare(url?: string) {
-    const shareUrl = url ?? this.url;
-    if (url) this.url = url;
+  async shareToDevice() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title: 'Diamant Laan', text: this.text, url: shareUrl });
+        await navigator.share({ title: 'Diamant Laan', text: this.text, url: this.url });
         this.menuOpen.set(false);
-        return;
       } catch {
-        // User cancelled or share failed — fall through to menu
+        // User cancelled or share failed. Leave the menu open.
       }
+      return;
     }
-    this.menuOpen.update(v => !v);
+    try {
+      await navigator.clipboard.writeText(this.sharePayload);
+    } catch {
+      return;
+    }
+    this.menuOpen.set(false);
+    this.toast.set(FALLBACK_TOAST);
+    setTimeout(() => this.toast.set(''), 8000);
+  }
+
+  performShare(url?: string) {
+    if (url) this.url = url;
+    this.toast.set('');
+    this.menuOpen.set(true);
   }
 
   onRevoke() {
@@ -165,7 +189,6 @@ export class ShareButtonComponent {
     } catch {
       return;
     }
-    // Menu stays open so "Gekopieer!" is actually visible.
     this.copied.set(true);
     setTimeout(() => this.copied.set(false), 2000);
   }

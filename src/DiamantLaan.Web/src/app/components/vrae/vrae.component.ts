@@ -40,7 +40,7 @@ interface FaqItem {
 
         <div class="vra-ons surface-card">
           <h3 class="display">{{ 'Indien jou vraag nie hier beantwoord is nie, stuur gerus vir ons ’n e-pos:' | t }}</h3>
-          <a href="mailto:inligting&#64;orania.co.za" class="btn btn-primary btn-terug">
+          <a href="mailto:inligting&#64;orania.co.za?subject=Padprojek%20Navraag" class="btn btn-primary btn-terug">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
             </svg>
