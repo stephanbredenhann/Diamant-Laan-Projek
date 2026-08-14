@@ -53,6 +53,9 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
                 <p class="error-alert">{{ emailError }}</p>
               }
             </div>
+            <button type="button" class="btn btn-outline btn-xl btn-full rekening-btn" (click)="openLogin()">
+              Ek het reeds ’n rekening
+            </button>
           </div>
         }
 
@@ -105,6 +108,56 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
         </p>
       </aside>
       </div>
+
+      @if (showLogin) {
+        <div class="prompt-backdrop" (click)="closeLogin()">
+          <div
+            class="prompt-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-title"
+            (click)="$event.stopPropagation()"
+          >
+            <p class="eyebrow">Vir terugkerende ondersteuners</p>
+            <h2 id="login-title" class="display">Meld aan</h2>
+            <p class="login-lead">Meld aan. Hierdie aankoop word dan aan jou rekening gekoppel.</p>
+            <form (ngSubmit)="submitLogin()">
+              <div class="form-group">
+                <label for="login-email">E-pos</label>
+                <input
+                  id="login-email"
+                  type="email"
+                  name="loginEmail"
+                  autocomplete="email"
+                  required
+                  placeholder="jou@epos.co.za"
+                  [(ngModel)]="loginEmail">
+              </div>
+              <div class="form-group">
+                <label for="login-password">Wagwoord</label>
+                <input
+                  id="login-password"
+                  type="password"
+                  name="loginPassword"
+                  autocomplete="current-password"
+                  required
+                  placeholder="Jou wagwoord"
+                  [(ngModel)]="loginPassword">
+              </div>
+              @if (loginError) {
+                <div class="error-alert">{{ loginError }}</div>
+              }
+              <button type="submit" class="btn btn-primary btn-xl btn-full" [disabled]="loginLoading">
+                {{ loginLoading ? 'Besig...' : 'Meld aan' }}
+              </button>
+              <button type="button" class="btn btn-outline btn-xl btn-full" [disabled]="loginLoading" (click)="closeLogin()">
+                Kanselleer
+              </button>
+            </form>
+            <p class="auth-link"><a routerLink="/wagwoord-vergeet">Wagwoord vergeet?</a></p>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -206,6 +259,35 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
       color: var(--text-body);
       margin-bottom: 1rem;
     }
+    .rekening-btn { margin-top: 0.75rem; }
+    .prompt-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(61, 43, 31, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 1000;
+    }
+    .prompt-dialog {
+      width: min(100%, 480px);
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-lg);
+      box-sizing: border-box;
+    }
+    .prompt-dialog h2 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin: 0.35rem 0 0.5rem;
+    }
+    .login-lead {
+      color: var(--text-body);
+      font-size: var(--fs-base);
+      margin-bottom: 1rem;
+    }
+    .auth-link { margin-top: 1rem; text-align: center; }
     .required-mark { color: var(--action); }
     input.invalid { border-color: #A61B1B; }
     .redirect-notice {
@@ -247,6 +329,8 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
       .stamp { font-size: 0.7rem; padding: 0.35rem 0.5rem; margin-top: 0; }
       .redirect-notice { padding: 0.875rem 1rem; margin-bottom: 1.25rem; }
       .redirect-notice p { font-size: 1rem; }
+      .prompt-backdrop { padding: 1rem; }
+      .prompt-dialog { padding: 1.25rem; }
     }
   `]
 })
@@ -261,16 +345,22 @@ export class PaymentComponent implements OnInit {
   error = '';
   guestEmail = '';
   emailError = '';
-  isGuest = false;
+  showLogin = false;
+  loginEmail = '';
+  loginPassword = '';
+  loginError = '';
+  loginLoading = false;
   private createdPurchaseId?: number;
   private guestRef?: GuestPurchaseRef;
   readonly meterFrase = meterFrase;
   readonly randBedrag = randBedrag;
   stepAnnouncement = 'Stap 3 van 4: Borg jou m²';
 
-  ngOnInit() {
-    this.isGuest = !this.auth.currentUser();
+  get isGuest() {
+    return !this.auth.currentUser();
+  }
 
+  ngOnInit() {
     const ids = this.purchase.pendingSquareIds;
     if (ids && Array.isArray(ids) && ids.length > 0) {
       this.squareIds = ids;
@@ -311,6 +401,37 @@ export class PaymentComponent implements OnInit {
 
   checkEmail() {
     this.emailError = this.isGuest ? validateEmail(this.guestEmail) ?? '' : '';
+  }
+
+  openLogin() {
+    this.loginEmail = this.guestEmail.trim();
+    this.loginPassword = '';
+    this.loginError = '';
+    this.showLogin = true;
+  }
+
+  closeLogin() {
+    if (this.loginLoading) return;
+    this.showLogin = false;
+  }
+
+  submitLogin() {
+    if (this.loginLoading) return;
+    this.loginError = '';
+    this.loginLoading = true;
+    this.auth.login(this.loginEmail, this.loginPassword).subscribe({
+      next: (res) => {
+        this.loginLoading = false;
+        this.showLogin = false;
+        if (res.mustChangePassword) {
+          this.router.navigate(['/wagwoord-wysig-verplig']);
+        }
+      },
+      error: (err) => {
+        this.loginError = err.error?.message || 'Aanmelding het misluk.';
+        this.loginLoading = false;
+      }
+    });
   }
 
   private submitGuestPayment() {
