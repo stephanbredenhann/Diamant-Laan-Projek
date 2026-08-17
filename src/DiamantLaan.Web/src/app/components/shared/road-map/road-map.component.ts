@@ -3,6 +3,8 @@ import * as L from 'leaflet';
 import { Square, SquareStatus, STATUS_LABELS, STATUS_COLORS, MapViewMode } from '../../../models/square';
 import { WAYPOINTS } from '../../map/map-segments';
 import { generateSquareGeoJson, getMapBounds, getSquareCentroid } from './coordinate-config';
+import { TPipe } from '../../../i18n/t.pipe';
+import { LangService } from '../../../i18n/lang.service';
 
 const SOLD_COLOR = '#C67B5C';
 const AVAILABLE_COLOR = '#D4C4A8';
@@ -17,6 +19,7 @@ const DRAG_THRESHOLD = 5;
 @Component({
   selector: 'app-road-map',
   standalone: true,
+  imports: [TPipe],
   templateUrl: './road-map.component.html',
   styleUrls: ['./road-map.component.scss'],
 })
@@ -34,6 +37,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private el = inject(ElementRef);
   private zone = inject(NgZone);
+  private lang = inject(LangService);
   private map!: L.Map;
   private geoLayer!: L.GeoJSON;
   private initialized = false;
@@ -433,18 +437,24 @@ export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     (layer as L.Layer & { _initTooltipInteractions?: (remove?: boolean) => void })._initTooltipInteractions?.(true);
   }
 
+  /**
+   * ponytail: the tooltip HTML is built once when the layer is bound, so blocks
+   * already on screen keep the language they were drawn in until the map
+   * rebuilds. Re-bind every tooltip on a language change only if that shows.
+   */
   private buildTooltipHtml(id: number, status: number | undefined, isSold: boolean, isReserved: boolean): string {
+    const t = (af: string) => this.lang.t(af);
     const statusValue = status ?? SquareStatus.NogNieBeginNie;
-    const statusLabel = statusValue === SquareStatus.NogNieBeginNie && isSold
+    const statusLabel = t(statusValue === SquareStatus.NogNieBeginNie && isSold
       ? 'Verkoop'
-      : STATUS_LABELS[statusValue as SquareStatus] ?? 'Onbekend';
-    const availability = isReserved ? 'Onbeskikbaar' : isSold ? 'Verkoop' : 'Beskikbaar';
+      : STATUS_LABELS[statusValue as SquareStatus] ?? 'Onbekend');
+    const availability = t(isReserved ? 'Onbeskikbaar' : isSold ? 'Verkoop' : 'Beskikbaar');
 
     return `
       <div class="block-bubble">
-        <div class="block-bubble-id">Blok #${id}</div>
-        <div class="block-bubble-row"><span>Status:</span> ${statusLabel}</div>
-        <div class="block-bubble-row"><span>Beskikbaarheid:</span> ${availability}</div>
+        <div class="block-bubble-id">${t('Blok')} #${id}</div>
+        <div class="block-bubble-row"><span>${t('Status:')}</span> ${statusLabel}</div>
+        <div class="block-bubble-row"><span>${t('Beskikbaarheid:')}</span> ${availability}</div>
       </div>
     `;
   }

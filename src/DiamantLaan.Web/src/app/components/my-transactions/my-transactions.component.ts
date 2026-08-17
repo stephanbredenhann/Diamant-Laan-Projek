@@ -6,30 +6,31 @@ import { PurchaseService, PurchaseTransaction } from '../../services/purchase.se
 import { ReceiptCardComponent, ReceiptData } from '../shared/receipt-card/receipt-card.component';
 import { downloadElementAsPdf } from '../../utils/pdf-export.util';
 import { randBedrag } from '../../utils/afrikaans.util';
+import { TPipe } from '../../i18n/t.pipe';
 
 type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amount';
 
 @Component({
   selector: 'app-my-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReceiptCardComponent],
+  imports: [CommonModule, FormsModule, ReceiptCardComponent, TPipe],
   template: `
     <div class="container">
       <div class="page-header">
-        <p class="eyebrow">My rekening</p>
-        <h2 class="display page-title">My transaksies</h2>
-        <p class="hint">Jou bevestigde borgskappe en kwitansies</p>
+        <p class="eyebrow">{{ 'My rekening' | t }}</p>
+        <h2 class="display page-title">{{ 'My transaksies' | t }}</h2>
+        <p class="hint">{{ 'Jou bevestigde borgskappe en kwitansies' | t }}</p>
       </div>
 
       <div class="table-card">
         @if (loading) {
-          <p class="muted">Laai transaksies...</p>
+          <p class="muted">{{ 'Laai transaksies...' | t }}</p>
         } @else if (loadError) {
-          <p class="error-msg">{{ loadError }}</p>
+          <p class="error-msg">{{ loadError | t }}</p>
         } @else if (transactions.length === 0) {
           <div class="empty-state">
-            <h3>Nog geen transaksies nie</h3>
-            <p>Bevestigde aankope sal hier verskyn.</p>
+            <h3>{{ 'Nog geen transaksies nie' | t }}</h3>
+            <p>{{ 'Bevestigde aankope sal hier verskyn.' | t }}</p>
           </div>
         } @else {
           <div class="table-scroll">
@@ -37,22 +38,22 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
               <thead>
                 <tr>
                   <th (click)="sortBy('purchaseDate')" [class.sorted]="sortKey === 'purchaseDate'">
-                    Datum <span class="sort-icon">{{ sortIcon('purchaseDate') }}</span>
+                    {{ 'Datum' | t }} <span class="sort-icon">{{ sortIcon('purchaseDate') }}</span>
                   </th>
                   <th (click)="sortBy('id')" [class.sorted]="sortKey === 'id'">
-                    Transaksie # <span class="sort-icon">{{ sortIcon('id') }}</span>
+                    {{ 'Transaksie #' | t }} <span class="sort-icon">{{ sortIcon('id') }}</span>
                   </th>
                   <th (click)="sortBy('squareCount')" class="numeric" [class.sorted]="sortKey === 'squareCount'">
-                    Aantal <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
+                    {{ 'Aantal' | t }} <span class="sort-icon">{{ sortIcon('squareCount') }}</span>
                   </th>
                   <th (click)="sortBy('amountPerBlock')" class="numeric" [class.sorted]="sortKey === 'amountPerBlock'">
-                    Bedrag per m² <span class="sort-icon">{{ sortIcon('amountPerBlock') }}</span>
+                    {{ 'Bedrag per m²' | t }} <span class="sort-icon">{{ sortIcon('amountPerBlock') }}</span>
                   </th>
                   <th (click)="sortBy('amount')" class="numeric" [class.sorted]="sortKey === 'amount'">
-                    Totaal <span class="sort-icon">{{ sortIcon('amount') }}</span>
+                    {{ 'Totaal' | t }} <span class="sort-icon">{{ sortIcon('amount') }}</span>
                   </th>
-                  <th>Bloknommer(s)</th>
-                  <th class="action-col">Kwitansie</th>
+                  <th>{{ 'Bloknommer(s)' | t }}</th>
+                  <th class="action-col">{{ 'Kwitansie' | t }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -70,7 +71,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                         class="btn btn-outline btn-sm"
                         [disabled]="downloadingId === tx.id"
                         (click)="downloadReceipt(tx)">
-                        {{ downloadingId === tx.id ? 'Besig...' : 'Laai kwitansie af' }}
+                        {{ (downloadingId === tx.id ? 'Besig...' : 'Laai kwitansie af') | t }}
                       </button>
                     </td>
                   </tr>
@@ -81,7 +82,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
         }
 
         @if (downloadError) {
-          <p class="error-msg">{{ downloadError }}</p>
+          <p class="error-msg">{{ downloadError | t }}</p>
         }
       </div>
     </div>

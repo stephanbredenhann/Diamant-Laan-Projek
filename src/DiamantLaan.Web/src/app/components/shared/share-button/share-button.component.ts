@@ -1,5 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TPipe } from '../../../i18n/t.pipe';
+import { LangService } from '../../../i18n/lang.service';
 
 const FALLBACK_TOAST =
   'Jou toestel ondersteun nie direkte deel nie. Die skakel is gekopieer en kan in enige sosiale media-platform geplak word.';
@@ -7,7 +9,7 @@ const FALLBACK_TOAST =
 @Component({
   selector: 'app-share-button',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TPipe],
   template: `
     <div class="share-wrap">
       <button
@@ -18,19 +20,19 @@ const FALLBACK_TOAST =
         (click)="onShareClick()"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        {{ label }}
+        {{ label | t }}
       </button>
       @if (menuOpen()) {
         <div class="share-menu" role="menu">
-          <button type="button" role="menuitem" (click)="shareToDevice()">Deel my bydrae</button>
-          <button type="button" role="menuitem" (click)="copyLink()">{{ copied() ? 'Gekopieer!' : 'Kopieer skakel' }}</button>
+          <button type="button" role="menuitem" (click)="shareToDevice()">{{ 'Deel my bydrae' | t }}</button>
+          <button type="button" role="menuitem" (click)="copyLink()">{{ (copied() ? 'Gekopieer!' : 'Kopieer skakel') | t }}</button>
           @if (showRevoke) {
-            <button type="button" class="revoke" role="menuitem" (click)="onRevoke()">Verwyder my openbare skakel</button>
+            <button type="button" class="revoke" role="menuitem" (click)="onRevoke()">{{ 'Verwyder my openbare skakel' | t }}</button>
           }
         </div>
       }
       @if (toast()) {
-        <div class="share-toast" role="status">{{ toast() }}</div>
+        <div class="share-toast" role="status">{{ toast() | t }}</div>
       }
     </div>
   `,
@@ -108,6 +110,7 @@ const FALLBACK_TOAST =
 })
 export class ShareButtonComponent {
   private host = inject(ElementRef<HTMLElement>);
+  private lang = inject(LangService);
 
   @Input() label = 'Deel';
   @Input() url = typeof window !== 'undefined' ? window.location.origin : '';
@@ -123,7 +126,7 @@ export class ShareButtonComponent {
   toast = signal('');
 
   get sharePayload(): string {
-    return `${this.text}\n${this.url}`;
+    return `${this.lang.t(this.text)}\n${this.url}`;
   }
 
   @HostListener('document:click', ['$event'])
@@ -155,7 +158,7 @@ export class ShareButtonComponent {
   async shareToDevice() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title: 'Diamant Laan', text: this.text, url: this.url });
+        await navigator.share({ title: 'Diamant Laan', text: this.lang.t(this.text), url: this.url });
         this.menuOpen.set(false);
       } catch {
         // User cancelled or share failed. Leave the menu open.

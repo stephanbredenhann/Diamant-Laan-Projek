@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../../services/purchase.service';
 import { randBedrag } from '../../../utils/afrikaans.util';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
+import { TPipe } from '../../../i18n/t.pipe';
 
 const PRYS_PER_METER = 500;
 
@@ -13,26 +14,23 @@ const PRYS_PER_METER = 500;
 @Component({
   selector: 'app-bou-stap1',
   standalone: true,
-  imports: [FormsModule, BouStepBarComponent, RouterLink],
+  imports: [FormsModule, BouStepBarComponent, RouterLink, TPipe],
   template: `
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 1 van 4 · Hoeveelheid</p>
-          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Hoeveel blokkies m² gaan jy borg?</h1>
-          <p class="page-lead">
-            Elke blokkie m² het ’n unieke nommer. Kies hoeveel blokkies jy wil borg
-            en versamel ’n sertifikaat vir elke blokkie.
-          </p>
+          <p class="eyebrow page-eyebrow">{{ 'Stap 1 van 4 · Hoeveelheid' | t }}</p>
+          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement | t }}</div>
+          <h1 class="page-title">{{ 'Hoeveel blokkies m² gaan jy borg?' | t }}</h1>
+          <p class="page-lead">{{ 'Elke blokkie m² het ’n unieke nommer. Kies hoeveel blokkies jy wil borg en versamel ’n sertifikaat vir elke blokkie.' | t }}</p>
         </div>
       </div>
 
-      <app-bou-step-bar [active]="1" [nextEnabled]="kanGaanVoort()" />
+      <app-bou-step-bar [active]="1" />
 
       <div class="layout">
         <div>
-          <div class="choices" role="group" aria-label="Hoeveel vierkante meter">
+          <div class="choices" role="group" [attr.aria-label]="'Hoeveel vierkante meter' | t">
             @for (opt of presets; track opt) {
               <button
                 type="button"
@@ -50,43 +48,43 @@ const PRYS_PER_METER = 500;
               [class.active]="eieModus()"
               (click)="kiesEie()"
             >
-              <span class="choice-eie-label">Eie hoeveelheid</span>
-              <span class="choice-caption">Besluit self hoeveel blokkies jy wil borg</span>
+              <span class="choice-eie-label">{{ 'Eie hoeveelheid' | t }}</span>
+              <span class="choice-caption">{{ 'Besluit self hoeveel blokkies jy wil borg' | t }}</span>
             </button>
           </div>
 
           @if (eieModus()) {
             <div class="eie-panel">
-              <p class="eyebrow">Jou hoeveelheid</p>
+              <p class="eyebrow">{{ 'Jou hoeveelheid' | t }}</p>
               <div class="stepper">
-                <button type="button" class="stepper-btn" (click)="veranderEie(-1)" aria-label="Verminder hoeveelheid">−</button>
+                <button type="button" class="stepper-btn" (click)="veranderEie(-1)" [attr.aria-label]="'Verminder hoeveelheid' | t">−</button>
                 <input
                   id="eie-aantal"
                   type="number"
                   name="eieAantal"
                   min="1"
                   inputmode="numeric"
-                  aria-label="Aantal vierkante meter"
+                  [attr.aria-label]="'Aantal vierkante meter' | t"
                   [ngModel]="eieWaarde()"
                   (ngModelChange)="opEieVerander($event)"
                 >
-                <button type="button" class="stepper-btn" (click)="veranderEie(1)" aria-label="Verhoog hoeveelheid">+</button>
+                <button type="button" class="stepper-btn" (click)="veranderEie(1)" [attr.aria-label]="'Verhoog hoeveelheid' | t">+</button>
               </div>
               @if (eieFout()) {
-                <p class="error-alert">{{ eieFout() }}</p>
+                <p class="error-alert">{{ eieFout() | t }}</p>
               }
-              <p class="eie-hint">Elke blokkie verteenwoordig 1 m² van die pad en ’n bydrae van R500.</p>
+              <p class="eie-hint">{{ 'Elke blokkie verteenwoordig 1 m² van die pad en ’n bydrae van R500.' | t }}</p>
             </div>
           }
         </div>
 
         <aside class="summary-card" aria-live="polite">
-          <p class="eyebrow">Hoeveelheid</p>
+          <p class="eyebrow">{{ 'Hoeveelheid' | t }}</p>
           <p class="summary-meters">{{ gekoseAantal() || '—' }} <span>m²</span></p>
           <p class="summary-total">{{ gekoseAantal() ? randBedrag(totaalBedrag()) : 'R0' }}</p>
-          <p class="summary-note">R500 per m²</p>
+          <p class="summary-note">{{ 'R500 per m²' | t }}</p>
           <button type="button" class="btn btn-primary btn-xl" (click)="gaanVoort()" [disabled]="!kanGaanVoort()">
-            Gaan voort
+            {{ 'Gaan voort' | t }}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
@@ -95,7 +93,7 @@ const PRYS_PER_METER = 500;
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>
-            Gaan terug
+            {{ 'Gaan terug' | t }}
           </a>
         </aside>
       </div>

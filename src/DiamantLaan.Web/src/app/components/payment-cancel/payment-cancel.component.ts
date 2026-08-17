@@ -1,32 +1,33 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../services/purchase.service';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-payment-cancel',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TPipe],
   template: `
     <div class="container">
       <div class="gateway-card auth-card">
         @if (loading) {
           <div class="spinner"></div>
-          <p class="eyebrow">Betaling</p>
-          <h2 class="display auth-title">Besig om te kanselleer</h2>
-          <p class="summary">Ons stel jou blokkies weer beskikbaar...</p>
+          <p class="eyebrow">{{ 'Betaling' | t }}</p>
+          <h2 class="display auth-title">{{ 'Besig om te kanselleer' | t }}</h2>
+          <p class="summary">{{ 'Ons stel jou blokkies weer beskikbaar...' | t }}</p>
         } @else if (error) {
-          <p class="eyebrow">Betaling</p>
-          <h2 class="display auth-title">Kon nie kanselleer nie</h2>
-          <p class="summary">{{ error }}</p>
+          <p class="eyebrow">{{ 'Betaling' | t }}</p>
+          <h2 class="display auth-title">{{ 'Kon nie kanselleer nie' | t }}</h2>
+          <p class="summary">{{ error | t }}</p>
           <div class="actions">
-            <a routerLink="/bou" class="btn btn-outline">Begin weer</a>
-            <button class="btn btn-primary" (click)="retryCancel()">Probeer weer</button>
+            <a routerLink="/bou" class="btn btn-outline">{{ 'Begin weer' | t }}</a>
+            <button class="btn btn-primary" (click)="retryCancel()">{{ 'Probeer weer' | t }}</button>
           </div>
         } @else {
-          <p class="eyebrow">Betaling</p>
-          <h2 class="display auth-title">Betaling gekanselleer</h2>
-          <p class="summary">Jy het die betaling gekanselleer. Jou blokkies is weer beskikbaar.</p>
-          <a routerLink="/bou" class="btn btn-primary btn-wide">Probeer weer</a>
+          <p class="eyebrow">{{ 'Betaling' | t }}</p>
+          <h2 class="display auth-title">{{ 'Betaling gekanselleer' | t }}</h2>
+          <p class="summary">{{ 'Jy het die betaling gekanselleer. Jou blokkies is weer beskikbaar.' | t }}</p>
+          <a routerLink="/bou" class="btn btn-primary btn-wide">{{ 'Probeer weer' | t }}</a>
         }
       </div>
     </div>

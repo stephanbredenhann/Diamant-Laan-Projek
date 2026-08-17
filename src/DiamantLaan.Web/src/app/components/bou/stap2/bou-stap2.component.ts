@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RoadService } from '../../../services/road.service';
 import { PurchaseService } from '../../../services/purchase.service';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
+import { TPipe } from '../../../i18n/t.pipe';
 
 
 /**
@@ -11,18 +12,15 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
 @Component({
   selector: 'app-bou-stap2',
   standalone: true,
-  imports: [RouterLink, BouStepBarComponent],
+  imports: [RouterLink, BouStepBarComponent, TPipe],
   template: `
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou blokkie</p>
-          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Hoe wil jy jou blokkie kies?</h1>
-          <p class="page-lead">
-            Jy het twee keuses: laat die stelsel outomaties blokkies aan jou toeken, of kies
-            self presies waar op die pad jy jou blokkie wil borg.
-          </p>
+          <p class="eyebrow page-eyebrow">{{ 'Stap 2 van 4 · Kies jou blokkie' | t }}</p>
+          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement | t }}</div>
+          <h1 class="page-title">{{ 'Hoe wil jy jou blokkie kies?' | t }}</h1>
+          <p class="page-lead">{{ 'Jy het twee keuses: laat die stelsel outomaties blokkies aan jou toeken, of kies self presies waar op die pad jy jou blokkie wil borg.' | t }}</p>
         </div>
       </div>
 
@@ -39,14 +37,14 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <span class="option-badge">Aanbeveel</span>
+            <span class="option-badge">{{ 'Aanbeveel' | t }}</span>
           </div>
-          <h2>Kies beskikbare blokkies vir my</h2>
-          <p>Die stelsel kies outomaties die korrekte aantal beskikbare blokkies vir jou.</p>
+          <h2>{{ 'Kies beskikbare blokkies vir my' | t }}</h2>
+          <p>{{ 'Die stelsel kies outomaties die korrekte aantal beskikbare blokkies vir jou.' | t }}</p>
           @if (besig()) {
-            <span class="option-status">Besig...</span>
+            <span class="option-status">{{ 'Besig...' | t }}</span>
           } @else {
-            <span class="option-cta">Gaan voort →</span>
+            <span class="option-cta">{{ 'Gaan voort →' | t }}</span>
           }
         </button>
 
@@ -60,16 +58,16 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
               <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
               <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
             </svg>
-            <span class="option-badge quiet">Maak die kaart oop</span>
+            <span class="option-badge quiet">{{ 'Maak die kaart oop' | t }}</span>
           </div>
-          <h2>Kies self op kaart</h2>
-          <p>Kyk waar die pad gebou word en kies self watter m² jy wil borg.</p>
-          <span class="option-cta">Maak kaart oop →</span>
+          <h2>{{ 'Kies self op kaart' | t }}</h2>
+          <p>{{ 'Kyk waar die pad gebou word en kies self watter m² jy wil borg.' | t }}</p>
+          <span class="option-cta">{{ 'Maak kaart oop →' | t }}</span>
         </button>
       </div>
 
       @if (fout()) {
-        <p class="error-alert">{{ fout() }}</p>
+        <p class="error-alert">{{ fout() | t }}</p>
       }
 
       <div class="terug-row">
@@ -77,7 +75,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          Gaan terug
+          {{ 'Gaan terug' | t }}
         </a>
       </div>
     </div>

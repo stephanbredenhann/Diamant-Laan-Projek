@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { meterFrase, randBedrag } from '../../../utils/afrikaans.util';
+import { TPipe } from '../../../i18n/t.pipe';
 
 export interface ReceiptData {
   purchaseId: number;
@@ -16,44 +17,44 @@ export interface ReceiptData {
 @Component({
   selector: 'app-receipt-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TPipe],
   template: `
   <div class="receipt-sheet">
     <header class="kop">
       <img class="ob-logo" src="ob-logo.png" alt="Orania Beweging" />
-      <h1>Kwitansie</h1>
-      <p class="subtitle">Oewerpad teerprojek</p>
+      <h1>{{ 'Kwitansie' | t }}</h1>
+      <p class="subtitle">{{ 'Oewerpad teerprojek' | t }}</p>
       <span class="reël" aria-hidden="true"></span>
     </header>
 
     <dl class="receipt-details">
       <div>
-        <dt>Aankoop #</dt>
+        <dt>{{ 'Aankoop #' | t }}</dt>
         <dd>{{ data.purchaseId }}</dd>
       </div>
       <div>
-        <dt>Datum</dt>
+        <dt>{{ 'Datum' | t }}</dt>
         <dd>{{ data.purchaseDate | date:'dd MMM yyyy HH:mm' }}</dd>
       </div>
       <div>
-        <dt>Koper</dt>
+        <dt>{{ 'Koper' | t }}</dt>
         <dd>{{ data.buyerName }}</dd>
       </div>
       <div>
-        <dt>Aantal</dt>
+        <dt>{{ 'Aantal' | t }}</dt>
         <dd>{{ meterFrase(data.squareCount) }}</dd>
       </div>
       <div>
-        <dt>Bloknommer(s)</dt>
+        <dt>{{ 'Bloknommer(s)' | t }}</dt>
         <dd>{{ data.squareIds.join(', ') }}</dd>
       </div>
       <div>
-        <dt>Bedrag per m²</dt>
+        <dt>{{ 'Bedrag per m²' | t }}</dt>
         <dd>{{ randBedrag(data.amountPerBlock) }}</dd>
       </div>
       @if (data.payFastPaymentId) {
         <div>
-          <dt>PayFast verwysing</dt>
+          <dt>{{ 'PayFast verwysing' | t }}</dt>
           <dd>{{ data.payFastPaymentId }}</dd>
         </div>
       }
@@ -61,17 +62,17 @@ export interface ReceiptData {
 
     <div class="totaal-blok">
       <div class="totaal-ry">
-        <span class="totaal-etiket">Totale bedrag</span>
+        <span class="totaal-etiket">{{ 'Totale bedrag' | t }}</span>
         <span class="totaal-waarde">{{ randBedrag(data.amount) }}</span>
       </div>
-      <p class="status">Betaling bevestig</p>
+      <p class="status">{{ 'Betaling bevestig' | t }}</p>
     </div>
 
     <!-- Pushes the footer to the foot of the A4 sheet however short the detail list is. -->
     <div class="vul" aria-hidden="true"></div>
 
     <footer class="voet">
-      <p class="dankie">Dankie vir jou bydrae</p>
+      <p class="dankie">{{ 'Dankie vir jou bydrae' | t }}</p>
       <p class="fyn">Orania Beweging &middot; inligting&#64;orania.co.za &middot; 053 207 0062</p>
     </footer>
   </div>

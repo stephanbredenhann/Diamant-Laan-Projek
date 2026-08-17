@@ -2,6 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { Square } from '../../../models/square';
 import { getSquarePolygons } from '../../shared/road-map/road-geometry';
 import { BlokStaat, staatVir } from './blok-staat';
+import { isEngels } from '../../../i18n/lang.service';
 import { LngLat, maakVenster, maakVlak } from './kaart-projeksie';
 
 /** Breathing room around the strip, in metres. */
@@ -36,7 +37,7 @@ interface StrookBlok extends BlokStaat {
       class="strook"
       [attr.viewBox]="viewBox()"
       role="group"
-      [attr.aria-label]="'Blokke ' + van() + ' tot ' + tot()"
+      [attr.aria-label]="reeksEtiket()"
       preserveAspectRatio="xMidYMid meet"
     >
       @for (b of blokke(); track b.id) {
@@ -144,6 +145,10 @@ export class BlokStrookComponent {
   readonly tot = input.required<number>();
   readonly squares = input<Square[]>([]);
   readonly selectedIds = input<number[]>([]);
+
+  readonly reeksEtiket = computed(() => isEngels()
+    ? `Blocks ${this.van()} to ${this.tot()}`
+    : `Blokke ${this.van()} tot ${this.tot()}`);
   /** Block to flash after a search hit. */
   readonly beklemtoon = input<number | null>(null);
 

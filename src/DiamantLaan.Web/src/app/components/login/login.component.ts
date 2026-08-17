@@ -4,41 +4,42 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService } from '../../services/purchase.service';
 import { PasswordInputComponent } from '../shared/password-input/password-input.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink, PasswordInputComponent],
+  imports: [FormsModule, RouterLink, PasswordInputComponent, TPipe],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Bly deurlopend op hoogte</p>
-          <h2 class="display auth-title">Meld aan</h2>
-          <p>’n Rekening maak dit vir jou moontlik om jou bydraes en sertifikate te bestuur en gereelde opdaterings te ontvang.</p>
+          <p class="eyebrow">{{ 'Bly deurlopend op hoogte' | t }}</p>
+          <h2 class="display auth-title">{{ 'Meld aan' | t }}</h2>
+          <p>{{ '’n Rekening maak dit vir jou moontlik om jou bydraes en sertifikate te bestuur en gereelde opdaterings te ontvang.' | t }}</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label for="email">E-posadres</label>
+            <label for="email">{{ 'E-posadres' | t }}</label>
             <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           <div class="form-group">
-            <label for="password">Wagwoord</label>
-            <app-password-input id="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord" />
+            <label for="password">{{ 'Wagwoord' | t }}</label>
+            <app-password-input id="password" [(ngModel)]="password" name="password" required autocomplete="current-password" [placeholder]="'Jou wagwoord' | t" />
           </div>
           @if (error) {
-            <div class="error-alert">{{ error }}</div>
+            <div class="error-alert">{{ error | t }}</div>
           }
           <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
-            {{ loading ? 'Besig...' : 'Meld aan' }}
+            {{ (loading ? 'Besig...' : 'Meld aan') | t }}
           </button>
         </form>
-        <p class="auth-link"><a routerLink="/wagwoord-vergeet">Wagwoord vergeet?</a></p>
+        <p class="auth-link"><a routerLink="/wagwoord-vergeet">{{ 'Wagwoord vergeet?' | t }}</a></p>
 
         <div class="auth-register-promo">
-          <p class="auth-register-promo__title">Nog nie ’n rekening nie?</p>
-          <p class="auth-register-promo__text">Sluit aan en begin bou.</p>
-          <a routerLink="/registreer" class="btn btn-outline btn-block">Registreer</a>
+          <p class="auth-register-promo__title">{{ 'Nog nie ’n rekening nie?' | t }}</p>
+          <p class="auth-register-promo__text">{{ 'Sluit aan en begin bou.' | t }}</p>
+          <a routerLink="/registreer" class="btn btn-outline btn-block">{{ 'Registreer' | t }}</a>
         </div>
       </div>
     </div>

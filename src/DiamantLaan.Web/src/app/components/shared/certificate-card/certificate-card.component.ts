@@ -11,6 +11,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import { TPipe } from '../../../i18n/t.pipe';
 
 /**
  * The certificate artwork is the client's Canva design, exported to `sertifikaat-agtergrond.png`
@@ -124,15 +125,15 @@ export function formatBlockRanges(ids: number[]): string {
 @Component({
   selector: 'app-certificate-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TPipe],
   template: `
     <div class="cert-page">
       @if (squares.length > 1 && !viewOnly && !lockedMode) {
-        <div class="view-toggle" role="group" aria-label="Kies sertifikaat weergawe">
+        <div class="view-toggle" role="group" [attr.aria-label]="'Kies sertifikaat weergawe' | t">
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'summary'"
-                  [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Al die bloknommers op een sertifikaat</button>
+                  [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">{{ 'Al die bloknommers op een sertifikaat' | t }}</button>
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'block'"
-                  [attr.aria-pressed]="mode === 'block'" (click)="stelModus('block')">Elke bloknommer op sy eie sertifikaat</button>
+                  [attr.aria-pressed]="mode === 'block'" (click)="stelModus('block')">{{ 'Elke bloknommer op sy eie sertifikaat' | t }}</button>
         </div>
       }
 
@@ -158,10 +159,10 @@ export function formatBlockRanges(ids: number[]): string {
       @if (mode === 'block' && squares.length > 1) {
         <div class="sheet-nav">
           <button type="button" class="nav-btn" [disabled]="previewIndex === 0"
-                  (click)="stepPreview(-1)" aria-label="Vorige sertifikaat">‹</button>
-          <span class="nav-label">Blok {{ previewSquare?.id }} — {{ previewIndex + 1 }} van {{ squares.length }}</span>
+                  (click)="stepPreview(-1)" [attr.aria-label]="'Vorige sertifikaat' | t">‹</button>
+          <span class="nav-label">{{ 'Blok' | t }} {{ previewSquare?.id }}, {{ previewIndex + 1 }} {{ 'van' | t }} {{ squares.length }}</span>
           <button type="button" class="nav-btn" [disabled]="previewIndex === squares.length - 1"
-                  (click)="stepPreview(1)" aria-label="Volgende sertifikaat">›</button>
+                  (click)="stepPreview(1)" [attr.aria-label]="'Volgende sertifikaat' | t">›</button>
         </div>
       }
 
@@ -174,18 +175,18 @@ export function formatBlockRanges(ids: number[]): string {
               class="btn btn-primary"
               [disabled]="downloading"
               (click)="downloadPdf()">
-              {{ downloading ? 'Besig om PDF te genereer...' : downloadLabel }}
+              {{ (downloading ? 'Besig om PDF te genereer...' : downloadLabel) | t }}
             </button>
           }
         </div>
       }
 
       @if (squares.length === 0) {
-        <p class="empty">Geen vierkante meter gevind nie.</p>
+        <p class="empty">{{ 'Geen vierkante meter gevind nie.' | t }}</p>
       }
 
       @if (downloadError) {
-        <p class="download-error">{{ downloadError }}</p>
+        <p class="download-error">{{ downloadError | t }}</p>
       }
     </div>
 
@@ -456,7 +457,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     }
   }
 
-  /** The design's own sentence, with the placeholder filled in. The summary only pluralises it. */
+  /**
+   * The design's own sentence, with the placeholder filled in. The summary only pluralises it.
+   * Stays Afrikaans in both languages: it is overlaid on the Afrikaans Canva plate, so an English
+   * sentence would sit inside Afrikaans artwork. Translate this only alongside an English plate.
+   */
   bodyText(view?: SheetView): string {
     if (!view) return '';
     const nommer = view.count === 1 ? 'nommer' : 'nommers';

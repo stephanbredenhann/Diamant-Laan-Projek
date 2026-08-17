@@ -5,11 +5,12 @@ import { Square } from '../../../models/square';
 import { RoadMapComponent } from '../road-map/road-map.component';
 import { SEGMENTS } from '../../map/map-segments';
 import { blokLabel } from '../../../utils/afrikaans.util';
+import { TPipe } from '../../../i18n/t.pipe';
 
 @Component({
   selector: 'app-block-picker-modal',
   standalone: true,
-  imports: [FormsModule, RoadMapComponent],
+  imports: [FormsModule, RoadMapComponent, TPipe],
   template: `
     <div class="picker-backdrop" (click)="cancel()" role="presentation">
       <div
@@ -20,8 +21,8 @@ import { blokLabel } from '../../../utils/afrikaans.util';
         (click)="$event.stopPropagation()"
       >
         <div class="picker-header">
-          <h3 id="block-picker-title">Kies blokke op die kaart</h3>
-          <p class="picker-hint">Beskikbaarheid-aansig, soek of klik/sleep om blokke te kies.</p>
+          <h3 id="block-picker-title">{{ 'Kies blokke op die kaart' | t }}</h3>
+          <p class="picker-hint">{{ 'Beskikbaarheid-aansig, soek of klik/sleep om blokke te kies.' | t }}</p>
         </div>
 
         <div class="picker-search">
@@ -31,14 +32,14 @@ import { blokLabel } from '../../../utils/afrikaans.util';
             class="search-input"
             min="1"
             [max]="maxBlockId"
-            placeholder="Bloknommer"
+            [placeholder]="'Bloknommer' | t"
             [(ngModel)]="searchBlockNumber"
             (keydown.enter)="searchBlock()"
           />
-          <button type="button" class="btn btn-outline btn-sm" (click)="searchBlock()">Soek</button>
+          <button type="button" class="btn btn-outline btn-sm" (click)="searchBlock()">{{ 'Soek' | t }}</button>
         </div>
         @if (searchError()) {
-          <p class="search-error">{{ searchError() }}</p>
+          <p class="search-error">{{ searchError() | t }}</p>
         }
 
         <div class="picker-map">
@@ -52,11 +53,11 @@ import { blokLabel } from '../../../utils/afrikaans.util';
         </div>
 
         <div class="picker-footer">
-          <span class="selection-count">{{ selectedIds().size }} {{ blokLabel(selectedIds().size) }} gekies</span>
+          <span class="selection-count">{{ selectedIds().size }} {{ blokLabel(selectedIds().size) }} {{ 'gekies' | t }}</span>
           <div class="picker-actions">
-            <button type="button" class="btn btn-outline btn-sm" (click)="cancel()">Kanselleer</button>
+            <button type="button" class="btn btn-outline btn-sm" (click)="cancel()">{{ 'Kanselleer' | t }}</button>
             <button type="button" class="btn btn-primary btn-sm" (click)="confirm()">
-              Bevestig keuse ({{ selectedIds().size }})
+              {{ 'Bevestig keuse' | t }} ({{ selectedIds().size }})
             </button>
           </div>
         </div>

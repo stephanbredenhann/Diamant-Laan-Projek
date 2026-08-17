@@ -15,132 +15,129 @@ import {
   validatePhone,
   validateName,
 } from '../../utils/validation.util';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, AlertComponent, PhoneInputComponent, PasswordInputComponent],
+  imports: [FormsModule, AlertComponent, PhoneInputComponent, PasswordInputComponent, TPipe],
   template: `
     <div class="container profile-page">
       <div class="page-header">
-        <p class="eyebrow">My rekening</p>
-        <h2 class="display page-title">My profiel</h2>
-        <p class="summary">Jy kan binne die volgende 12 uur nog {{ changesRemaining }} wysigings aanbring.</p>
+        <p class="eyebrow">{{ 'My rekening' | t }}</p>
+        <h2 class="display page-title">{{ 'My profiel' | t }}</h2>
+        <p class="summary">{{ 'Jy kan binne die volgende 12 uur nog' | t }} {{ changesRemaining }} {{ 'wysigings aanbring.' | t }}</p>
       </div>
 
       @if (loadError) {
-        <app-alert type="error" [message]="loadError" />
+        <app-alert type="error" [message]="loadError | t" />
       }
 
       @if (loaded) {
         <div class="cards">
           <section class="card">
-            <h3>Persoonlike besonderhede</h3>
+            <h3>{{ 'Persoonlike besonderhede' | t }}</h3>
             <form (ngSubmit)="saveProfile()">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="firstName">Voornaam</label>
+                  <label for="firstName">{{ 'Voornaam' | t }}</label>
                   <input id="firstName" type="text" [(ngModel)]="firstName" name="firstName" required>
                   @if (firstNameError) {
-                    <p class="field-error">{{ firstNameError }}</p>
+                    <p class="field-error">{{ firstNameError | t }}</p>
                   }
                 </div>
                 <div class="form-group">
-                  <label for="lastName">Van</label>
+                  <label for="lastName">{{ 'Van' | t }}</label>
                   <input id="lastName" type="text" [(ngModel)]="lastName" name="lastName" required>
                   @if (lastNameError) {
-                    <p class="field-error">{{ lastNameError }}</p>
+                    <p class="field-error">{{ lastNameError | t }}</p>
                   }
                 </div>
               </div>
               <div class="form-group">
-                <label for="phoneNumber">Foonnommer</label>
+                <label for="phoneNumber">{{ 'Foonnommer' | t }}</label>
                 <app-phone-input
                   [(countryCode)]="phoneCountryCode"
                   [(phoneNumber)]="phoneNumber"
                 />
                 @if (phoneError) {
-                  <p class="field-error">{{ phoneError }}</p>
+                  <p class="field-error">{{ phoneError | t }}</p>
                 }
               </div>
               <div class="form-group toggle-group">
                 <label class="toggle">
                   <input id="receiveBlockProgressEmails" type="checkbox" [(ngModel)]="receiveBlockProgressEmails" name="receiveBlockProgressEmails">
                   <span class="toggle-ui" aria-hidden="true"></span>
-                  <span class="toggle-label">Ontvang e-posse oor die vordering van my vierkante meter</span>
+                  <span class="toggle-label">{{ 'Ontvang e-posse oor die vordering van my vierkante meter' | t }}</span>
                 </label>
               </div>
               @if (profileMessage) {
-                <app-alert [type]="profileMessageType" [message]="profileMessage" />
+                <app-alert [type]="profileMessageType" [message]="profileMessage | t" />
               }
               <button type="submit" class="btn btn-primary" [disabled]="profileLoading || !changesAllowed">
-                {{ profileLoading ? 'Besig...' : 'Stoor besonderhede' }}
+                {{ (profileLoading ? 'Besig...' : 'Stoor besonderhede') | t }}
               </button>
             </form>
           </section>
 
           <section class="card">
-            <h3>E-posadres</h3>
+            <h3>{{ 'E-posadres' | t }}</h3>
             <form (ngSubmit)="saveEmail()">
               <div class="form-group">
-                <label for="email">Nuwe e-pos</label>
+                <label for="email">{{ 'Nuwe e-pos' | t }}</label>
                 <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email">
                 @if (emailError) {
-                  <p class="field-error">{{ emailError }}</p>
+                  <p class="field-error">{{ emailError | t }}</p>
                 }
               </div>
               <div class="form-group">
-                <label for="emailCurrentPassword">Huidige wagwoord</label>
+                <label for="emailCurrentPassword">{{ 'Huidige wagwoord' | t }}</label>
                 <app-password-input id="emailCurrentPassword" [(ngModel)]="emailCurrentPassword" name="emailCurrentPassword" required autocomplete="current-password" />
               </div>
               @if (emailMessage) {
-                <app-alert [type]="emailMessageType" [message]="emailMessage" />
+                <app-alert [type]="emailMessageType" [message]="emailMessage | t" />
               }
               <button type="submit" class="btn btn-primary" [disabled]="emailLoading || !changesAllowed">
-                {{ emailLoading ? 'Besig...' : 'Verander e-pos' }}
+                {{ (emailLoading ? 'Besig...' : 'Verander e-pos') | t }}
               </button>
             </form>
           </section>
 
           <section class="card">
-            <h3>Wagwoord</h3>
+            <h3>{{ 'Wagwoord' | t }}</h3>
             <form (ngSubmit)="savePassword()">
               <div class="form-group">
-                <label for="currentPassword">Huidige wagwoord</label>
+                <label for="currentPassword">{{ 'Huidige wagwoord' | t }}</label>
                 <app-password-input id="currentPassword" [(ngModel)]="currentPassword" name="currentPassword" required autocomplete="current-password" />
               </div>
               <div class="form-group">
-                <label for="newPassword">Nuwe wagwoord</label>
+                <label for="newPassword">{{ 'Nuwe wagwoord' | t }}</label>
                 <app-password-input id="newPassword" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8" />
                 <ul class="pw-checklist">
-                  <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-                  <li [class.ok]="checks().hasNumber">’n Nommer</li>
-                  <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
-                  <li [class.ok]="checks().hasLower">’n Kleinletter</li>
+                  <li [class.ok]="checks().minLength">{{ 'Minstens 8 karakters' | t }}</li>
+                  <li [class.ok]="checks().hasNumber">{{ '’n Nommer' | t }}</li>
+                  <li [class.ok]="checks().hasUpper">{{ '’n Hoofletter' | t }}</li>
+                  <li [class.ok]="checks().hasLower">{{ '’n Kleinletter' | t }}</li>
                 </ul>
               </div>
               <div class="form-group">
-                <label for="confirmPassword">Bevestig nuwe wagwoord</label>
+                <label for="confirmPassword">{{ 'Bevestig nuwe wagwoord' | t }}</label>
                 <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" />
               </div>
               @if (passwordMessage) {
-                <app-alert [type]="passwordMessageType" [message]="passwordMessage" />
+                <app-alert [type]="passwordMessageType" [message]="passwordMessage | t" />
               }
               <button type="submit" class="btn btn-primary" [disabled]="passwordLoading || !changesAllowed || !isPasswordValid(newPassword)">
-                {{ passwordLoading ? 'Besig...' : 'Verander wagwoord' }}
+                {{ (passwordLoading ? 'Besig...' : 'Verander wagwoord') | t }}
               </button>
             </form>
           </section>
 
           <section class="card danger-card">
-            <h3>Sluit rekening</h3>
-            <p class="danger-copy">
-              Jou blokkie m² bly aan jou naam gekoppel en bly vir ander onbeskikbaar, maar jou
-              rekening sal as ’n &ldquo;Geslote rekening&rdquo; aangedui word. Jy sal nie weer met
-              hierdie rekening kan aanmeld nie.
-            </p>
+            <h3>{{ 'Sluit rekening' | t }}</h3>
+            <p class="danger-copy">{{ 'Jou blokkie m² bly aan jou naam gekoppel en bly vir ander onbeskikbaar, maar jou rekening sal as ’n “Geslote rekening” aangedui word. Jy sal nie weer met hierdie rekening kan aanmeld nie.' | t }}</p>
             <button type="button" class="btn btn-outline danger" (click)="openDeleteModal()">
-              Sluit rekening
+              {{ 'Sluit rekening' | t }}
             </button>
           </section>
         </div>
@@ -156,13 +153,10 @@ import {
           aria-labelledby="delete-account-title"
           (click)="$event.stopPropagation()"
         >
-          <h3 id="delete-account-title">Sluit rekening?</h3>
-          <p>
-            Tik jou wagwoord om te bevestig. Jou blokkie m² bly aan jou naam gekoppel en verskyn as
-            &ldquo;Geslote rekening&rdquo;.
-          </p>
+          <h3 id="delete-account-title">{{ 'Sluit rekening?' | t }}</h3>
+          <p>{{ 'Tik jou wagwoord om te bevestig. Jou blokkie m² bly aan jou naam gekoppel en verskyn as “Geslote rekening”.' | t }}</p>
           <div class="form-group">
-            <label for="deletePassword">Huidige wagwoord</label>
+            <label for="deletePassword">{{ 'Huidige wagwoord' | t }}</label>
             <app-password-input
               id="deletePassword"
               [(ngModel)]="deletePassword"
@@ -174,11 +168,11 @@ import {
             />
           </div>
           @if (deleteError) {
-            <app-alert type="error" [message]="deleteError" />
+            <app-alert type="error" [message]="deleteError | t" />
           }
           <div class="prompt-actions">
             <button type="button" class="btn btn-outline" [disabled]="deleteLoading" (click)="closeDeleteModal()">
-              Kanselleer
+              {{ 'Kanselleer' | t }}
             </button>
             <button
               type="button"
@@ -186,7 +180,7 @@ import {
               [disabled]="deleteLoading || !deletePassword"
               (click)="confirmDeleteAccount()"
             >
-              {{ deleteLoading ? 'Besig...' : 'Sluit rekening' }}
+              {{ (deleteLoading ? 'Besig...' : 'Sluit rekening') | t }}
             </button>
           </div>
         </div>

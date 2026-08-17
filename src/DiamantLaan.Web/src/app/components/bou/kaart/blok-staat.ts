@@ -1,5 +1,6 @@
 import { Square } from '../../../models/square';
 import { blokRede } from './blok-reekse';
+import { isEngels } from '../../../i18n/lang.service';
 
 /**
  * What one block looks like to the visitor, independent of how it is drawn.
@@ -41,6 +42,14 @@ export function staatVir(id: number, sq: Square | undefined, isGekies: boolean):
 }
 
 function etiketVir(id: number, klas: BlokKlas): string {
+  if (isEngels()) {
+    switch (klas) {
+      case 'gekies': return `Block ${id}, selected`;
+      case 'verkoop': return `Block ${id}, already sold`;
+      case 'onbeskikbaar': return `Block ${id}, not available`;
+      default: return `Block ${id}, available`;
+    }
+  }
   switch (klas) {
     case 'gekies': return `Blok ${id}, gekies`;
     case 'verkoop': return `Blok ${id}, reeds verkoop`;

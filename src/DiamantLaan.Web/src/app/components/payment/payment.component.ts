@@ -7,6 +7,7 @@ import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 import { validateEmail } from '../../utils/validation.util';
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { PasswordInputComponent } from '../shared/password-input/password-input.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 /**
  * Step 3 — Erkenning / betalingsvoorskou. PayFast handoff unchanged.
@@ -14,19 +15,17 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, FormsModule, BouStepBarComponent, PasswordInputComponent],
+  imports: [RouterLink, FormsModule, BouStepBarComponent, PasswordInputComponent, TPipe],
   template: `
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Voltooi jou borgskap</p>
-          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
-          <h1 class="page-title">Borg jou m²</h1>
-          <p class="page-lead">
-            Handel die transaksie af. Bevestig dat al jou besonderhede korrek is en klik dan op “Betaal”.
-          </p>
+          <p class="eyebrow page-eyebrow">{{ 'Stap 3 van 4 · Voltooi jou borgskap' | t }}</p>
+          <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement | t }}</div>
+          <h1 class="page-title">{{ 'Borg jou m²' | t }}</h1>
+          <p class="page-lead">{{ 'Handel die transaksie af. Bevestig dat al jou besonderhede korrek is en klik dan op “Betaal”.' | t }}</p>
         </div>
-        <span class="work-stamp stamp">STADSBOUER-TOEKENNING</span>
+        <span class="work-stamp stamp">{{ 'STADSBOUER-TOEKENNING' | t }}</span>
       </div>
 
       <app-bou-step-bar [active]="3" />
@@ -35,12 +34,9 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
       <form class="checkout-card ledger-paper surface-card" (ngSubmit)="submitPayment()">
         @if (isGuest) {
           <div class="guest-box">
-            <p class="guest-note">
-              Jou e-posadres word gebruik om jou bevestiging en sertifikaat te stuur, asook die
-              rekening-skakel indien jy besluit het om ’n rekening oop te maak.
-            </p>
+            <p class="guest-note">{{ 'Jou e-posadres word gebruik om jou bevestiging en sertifikaat te stuur, asook die rekening-skakel indien jy besluit het om ’n rekening oop te maak.' | t }}</p>
             <div class="form-group">
-              <label for="guest-email">E-posadres <span class="required-mark" aria-hidden="true">*</span></label>
+              <label for="guest-email">{{ 'E-posadres' | t }} <span class="required-mark" aria-hidden="true">*</span></label>
               <input
                 id="guest-email"
                 type="email"
@@ -52,40 +48,38 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
                 (blur)="checkEmail()"
                 [(ngModel)]="guestEmail">
               @if (emailError) {
-                <p class="error-alert">{{ emailError }}</p>
+                <p class="error-alert">{{ emailError | t }}</p>
               }
             </div>
             <button type="button" class="btn btn-outline btn-xl btn-full rekening-btn" (click)="openLogin()">
-              Ek het reeds ’n rekening
+              {{ 'Ek het reeds ’n rekening' | t }}
             </button>
           </div>
         }
 
         <div class="redirect-notice">
           <p>
-            Wanneer jy op <strong>Betaal</strong> klik, word jy na die veilige betalingskerm van
-            PayFast geneem. Voltooi die transaksie daar en wag totdat jy outomaties na die
-            volgende bladsy geneem word.
+            {{ 'Wanneer jy op' | t }} <strong>{{ 'Betaal' | t }}</strong> {{ 'klik, word jy na die veilige betalingskerm van PayFast geneem. Voltooi die transaksie daar en wag totdat jy outomaties na die volgende bladsy geneem word.' | t }}
           </p>
         </div>
 
         @if (error) {
-          <div class="error-alert">{{ error }}</div>
+          <div class="error-alert">{{ error | t }}</div>
         }
 
         <button type="submit" class="btn btn-primary btn-xl btn-full" [disabled]="loading">
           @if (loading) {
             <span class="btn-spinner"></span>
-            Besig...
+            {{ 'Besig...' | t }}
           } @else {
-            Betaal
+            {{ 'Betaal' | t }}
           }
         </button>
         <a routerLink="/bou/kies" class="btn btn-outline btn-xl btn-full terug-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          Gaan terug
+          {{ 'Gaan terug' | t }}
         </a>
       </form>
 
@@ -93,20 +87,20 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
            look at the numbers before the money moves, not another chance to
            change them. Changing anything means going back a step. -->
       <aside class="keuse-kaart">
-        <p class="eyebrow">Jou keuse</p>
+        <p class="eyebrow">{{ 'Jou keuse' | t }}</p>
         <p class="teller">{{ squareIds.length }} <span>m²</span></p>
-        <p class="teller-etiket">{{ meterFrase(squareIds.length) }} pad</p>
+        <p class="teller-etiket">{{ meterFrase(squareIds.length) }} {{ 'pad' | t }}</p>
         <p class="totaal">{{ randBedrag(totalAmount) }}</p>
-        <p class="totaal-nota">R500 per blokkie</p>
+        <p class="totaal-nota">{{ 'R500 per blokkie' | t }}</p>
 
-        <p class="blokke-kop">Jou bloknommers</p>
+        <p class="blokke-kop">{{ 'Jou bloknommers' | t }}</p>
         <ul class="gekose-blokke">
           @for (id of squareIds; track id) {
             <li class="gekose-blok">{{ id }}</li>
           }
         </ul>
         <p class="kontroleer">
-          Kontroleer die nommers. Druk op <strong>Gaan terug</strong> om iets te verander.
+          {{ 'Kontroleer die nommers. Druk op' | t }} <strong>{{ 'Gaan terug' | t }}</strong> {{ 'om iets te verander.' | t }}
         </p>
       </aside>
       </div>
@@ -120,12 +114,12 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
             aria-labelledby="login-title"
             (click)="$event.stopPropagation()"
           >
-            <p class="eyebrow">Vir terugkerende ondersteuners</p>
-            <h2 id="login-title" class="display">Meld aan</h2>
-            <p class="login-lead">Meld aan. Hierdie aankoop word dan aan jou rekening gekoppel.</p>
+            <p class="eyebrow">{{ 'Vir terugkerende ondersteuners' | t }}</p>
+            <h2 id="login-title" class="display">{{ 'Meld aan' | t }}</h2>
+            <p class="login-lead">{{ 'Meld aan. Hierdie aankoop word dan aan jou rekening gekoppel.' | t }}</p>
             <form (ngSubmit)="submitLogin()">
               <div class="form-group">
-                <label for="login-email">E-pos</label>
+                <label for="login-email">{{ 'E-pos' | t }}</label>
                 <input
                   id="login-email"
                   type="email"
@@ -136,26 +130,26 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
                   [(ngModel)]="loginEmail">
               </div>
               <div class="form-group">
-                <label for="login-password">Wagwoord</label>
+                <label for="login-password">{{ 'Wagwoord' | t }}</label>
                 <app-password-input
                   id="login-password"
                   name="loginPassword"
                   autocomplete="current-password"
                   required
-                  placeholder="Jou wagwoord"
+                  [placeholder]="'Jou wagwoord' | t"
                   [(ngModel)]="loginPassword" />
               </div>
               @if (loginError) {
-                <div class="error-alert">{{ loginError }}</div>
+                <div class="error-alert">{{ loginError | t }}</div>
               }
               <button type="submit" class="btn btn-primary btn-xl btn-full" [disabled]="loginLoading">
-                {{ loginLoading ? 'Besig...' : 'Meld aan' }}
+                {{ (loginLoading ? 'Besig...' : 'Meld aan') | t }}
               </button>
               <button type="button" class="btn btn-outline btn-xl btn-full" [disabled]="loginLoading" (click)="closeLogin()">
-                Kanselleer
+                {{ 'Kanselleer' | t }}
               </button>
             </form>
-            <p class="auth-link"><a routerLink="/wagwoord-vergeet">Wagwoord vergeet?</a></p>
+            <p class="auth-link"><a routerLink="/wagwoord-vergeet">{{ 'Wagwoord vergeet?' | t }}</a></p>
           </div>
         </div>
       }

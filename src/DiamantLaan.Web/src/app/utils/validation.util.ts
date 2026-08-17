@@ -1,4 +1,5 @@
 import { ALL_COUNTRY_CODES } from '../data/country-codes';
+import { isEngels } from '../i18n/lang.service';
 
 export interface PasswordChecks {
   minLength: boolean;
@@ -77,6 +78,11 @@ export function validatePhone(localNumber: string, countryCode: string): string 
   const max = entry?.maxLength ?? DEFAULT_MAX_LOCAL_LENGTH;
 
   if (localDigits.length < min || localDigits.length > max) {
+    if (isEngels()) {
+      return min === max
+        ? `Phone number must be ${min} digits.`
+        : `Phone number must be between ${min} and ${max} digits.`;
+    }
     return min === max
       ? `Foonnommer moet ${min} syfers wees.`
       : `Foonnommer moet tussen ${min} en ${max} syfers wees.`;

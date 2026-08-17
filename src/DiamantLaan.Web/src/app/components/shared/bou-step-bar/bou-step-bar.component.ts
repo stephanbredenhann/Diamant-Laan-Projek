@@ -1,36 +1,28 @@
 import { Component, Input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { TPipe } from '../../..//i18n/t.pipe';
 
 /**
  * Purchase progress rail, mirroring the four steps on the landing page:
  * Hoeveelheid → Kies jou blokkie → Betaal → Erkenning.
  * Active = orange; completed = OB blue + check; upcoming = chalk outline.
- *
- * Completed steps are links back; the next step is only a link once the current
- * page says its data is valid (`nextEnabled`), so nobody lands on payment with
- * nothing selected. On the certificate the whole rail is `gesluit`: the money is
- * paid and there is nothing left to go back to.
+ * Display only: the rail is not a shortcut between steps.
  */
 @Component({
   selector: 'app-bou-step-bar',
   standalone: true,
-  imports: [RouterLink],
+  imports: [TPipe],
   template: `
-    <nav class="step-bar" [attr.aria-label]="'Stap ' + active + ' van 4'">
+    <div class="step-bar" [attr.aria-label]="'Stap ' + active + ' van 4'">
       <div class="step-rail" aria-hidden="true"></div>
       @for (label of labels; track label; let i = $index) {
         @let step = i + 1;
         @let done = step < active;
         @let current = step === active;
 
-        @let skakel = kanSpring(step);
-        <a
+        <div
           class="step-node"
           [class.done]="done"
           [class.current]="current"
-          [class.linkbaar]="skakel"
-          [routerLink]="skakel ? routes[i] : null"
-          [attr.aria-disabled]="skakel || current ? null : 'true'"
           [attr.aria-current]="current ? 'step' : null"
         >
           <span class="step-dot" aria-hidden="true">
@@ -42,10 +34,10 @@ import { RouterLink } from '@angular/router';
               {{ step }}
             }
           </span>
-          <span class="step-label" [class.active-label]="current">{{ label }}</span>
-        </a>
+          <span class="step-label" [class.active-label]="current">{{ label | t }}</span>
+        </div>
       }
-    </nav>
+    </div>
   `,
   styles: [`
     .step-bar {
@@ -74,7 +66,6 @@ import { RouterLink } from '@angular/router';
       gap: 0.6rem;
       min-height: var(--tap-min);
       padding: 0.25rem;
-      text-decoration: none;
       color: inherit;
     }
     .step-dot {
@@ -88,7 +79,6 @@ import { RouterLink } from '@angular/router';
       font-family: var(--font-display);
       font-size: 1.25rem;
       font-weight: 700;
-      transition: transform 0.15s ease;
     }
     .step-node.current .step-dot {
       border-color: var(--action-strong);
@@ -112,17 +102,6 @@ import { RouterLink } from '@angular/router';
     .step-label.active-label {
       color: var(--ink);
     }
-    /* Only reachable steps behave like links. */
-    .step-node.linkbaar { cursor: pointer; }
-    .step-node.linkbaar:hover .step-dot,
-    .step-node.linkbaar:focus-visible .step-dot { transform: translateY(-2px); }
-    .step-node.linkbaar:hover .step-label,
-    .step-node.linkbaar:focus-visible .step-label {
-      color: var(--ink);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-    .step-node:not(.linkbaar) { cursor: default; }
     @media (max-width: 600px) {
       .step-bar { margin: 1.25rem auto 1.5rem; }
       .step-rail { left: 14%; right: 14%; top: 1.125rem; }
@@ -138,19 +117,5 @@ export class BouStepBarComponent {
   /** 1 = Hoeveelheid, 2 = Kies jou blokkie, 3 = Betaal, 4 = Erkenning */
   @Input({ required: true }) active!: 1 | 2 | 3 | 4;
 
-  /** True when the current step's data is valid, which unlocks the next step. */
-  @Input() nextEnabled = false;
-
-  /** Shows the trail without letting anyone walk back down it. */
-  @Input() gesluit = false;
-
   readonly labels = ['Hoeveelheid', 'Kies jou blokkie', 'Betaal', 'Erkenning'] as const;
-  readonly routes = ['/bou', '/bou/kies', '/bou/bevestig', null] as const;
-
-  /** Back to anything completed, forward only one step and only when valid. */
-  kanSpring(step: number): boolean {
-    if (this.gesluit) return false;
-    if (!this.routes[step - 1]) return false;
-    return step < this.active || (step === this.active + 1 && this.nextEnabled);
-  }
 }

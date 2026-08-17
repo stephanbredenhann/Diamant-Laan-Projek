@@ -9,24 +9,26 @@ import { ShareButtonComponent } from '../shared/share-button/share-button.compon
 import { IconComponent } from '../shared/icon/icon.component';
 import { getSquareCentroid } from '../shared/road-map/coordinate-config';
 import { randBedrag } from '../../utils/afrikaans.util';
+import { TPipe } from '../../i18n/t.pipe';
+import { isEngels } from '../../i18n/lang.service';
 
 const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
 
 @Component({
   selector: 'app-my-squares',
   standalone: true,
-  imports: [CommonModule, RouterLink, StatusBadgeComponent, ImageLightboxComponent, ShareButtonComponent, IconComponent],
+  imports: [CommonModule, RouterLink, StatusBadgeComponent, ImageLightboxComponent, ShareButtonComponent, IconComponent, TPipe],
   template: `
     <div class="container">
       <div class="page-header">
-        <p class="eyebrow">Stap 4 uit 4 · Erkenning</p>
-        <h1 class="display page-title">My blokke</h1>
+        <p class="eyebrow">{{ 'Stap 4 uit 4 · Erkenning' | t }}</p>
+        <h1 class="display page-title">{{ 'My blokke' | t }}</h1>
         @if (squares.length > 0) {
-          <p class="summary">{{ squares.length }}m² geborg, <strong>{{ randBedrag(totalSpent) }}</strong> totaal</p>
+          <p class="summary">{{ squares.length }}m² {{ 'geborg,' | t }} <strong>{{ randBedrag(totalSpent) }}</strong> {{ 'totaal' | t }}</p>
           <div class="header-actions">
             <a routerLink="/my-blokke/sertifikaat" class="btn btn-primary btn-xl cert-link">
               <app-icon name="award" [size]="22" />
-              Sien my sertifikate
+              {{ 'Sien my sertifikate' | t }}
             </a>
             <app-share-button
               label="Deel my bydrae"
@@ -43,9 +45,9 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
       @if (squares.length === 0) {
         <div class="empty-state">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <h2>Jy het nog geen vierkante meter gekoop nie</h2>
-          <p>Kies ’n hoeveelheid en ons ken die blokkies aan jou toe. Dit neem net ’n minuut.</p>
-          <a routerLink="/bou" class="btn btn-primary btn-xl">Bou jou eerste m²</a>
+          <h2>{{ 'Jy het nog geen vierkante meter gekoop nie' | t }}</h2>
+          <p>{{ 'Kies ’n hoeveelheid en ons ken die blokkies aan jou toe. Dit neem net ’n minuut.' | t }}</p>
+          <a routerLink="/bou" class="btn btn-primary btn-xl">{{ 'Bou jou eerste m²' | t }}</a>
         </div>
       } @else {
         <div class="grid">
@@ -56,10 +58,10 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
               (click)="openImages(sq)"
             >
               <div class="sq-info">
-                <span class="sq-id">Blok #{{ sq.id }}</span>
+                <span class="sq-id">{{ 'Blok' | t }} #{{ sq.id }}</span>
                 <div class="sq-badges">
                   @if (sq.imageCount && sq.imageCount > 0) {
-                    <span class="image-indicator" title="Vorderingsfoto beskikbaar">
+                    <span class="image-indicator" [title]="'Vorderingsfoto beskikbaar' | t">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     </span>
                   }
@@ -73,7 +75,7 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
               </div>
               @if (getCoords(sq.id); as coords) {
                 <p class="sq-coords">
-                  Koördinate: {{ coords.lat | number:'1.6-6' }}°, {{ coords.lng | number:'1.6-6' }}°
+                  {{ 'Koördinate:' | t }} {{ coords.lat | number:'1.6-6' }}°, {{ coords.lng | number:'1.6-6' }}°
                 </p>
               }
             </div>
@@ -93,16 +95,16 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
     @if (pickerOpen) {
       <div class="prompt-backdrop" (click)="pickerOpen = false">
         <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-pick-title" (click)="$event.stopPropagation()">
-          <h3 id="share-pick-title">Wat wil jy deel?</h3>
-          <p>Jy het ’n sertifikaat per blok. Kies watter een jy wil stuur.</p>
+          <h3 id="share-pick-title">{{ 'Wat wil jy deel?' | t }}</h3>
+          <p>{{ 'Jy het ’n sertifikaat per blok. Kies watter een jy wil stuur.' | t }}</p>
           <div class="pick-list">
             <button type="button" class="pick-btn" (click)="shareChosen(null)">
-              <span class="pick-naam">Almal saam</span>
-              <span class="pick-onder">Een blad: {{ opsommingNaam }}</span>
+              <span class="pick-naam">{{ 'Almal saam' | t }}</span>
+              <span class="pick-onder">{{ 'Een blad:' | t }} {{ opsommingNaam }}</span>
             </button>
             @for (blok of certBlocks; track blok.squareId) {
               <button type="button" class="pick-btn" (click)="shareChosen(blok.squareId)">
-                <span class="pick-naam">Blok #{{ blok.squareId }}</span>
+                <span class="pick-naam">{{ 'Blok' | t }} #{{ blok.squareId }}</span>
                 <span class="pick-onder">{{ blok.name }}</span>
               </button>
             }
@@ -114,18 +116,14 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
     @if (consentOpen) {
       <div class="prompt-backdrop" (click)="closeConsent()">
         <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-consent-title" (click)="$event.stopPropagation()">
-          <h3 id="share-consent-title">Deel jou bydrae in die openbaar?</h3>
-          <p>
-            As jy instem, kry jy ’n skakel wat jou sertifikaat wys: die naam daarop, jou blok
-            nommers en hoeveel m² jy geborg het. Enigeen met die skakel kan dit sien.
-            Jou e-pos en telefoonnommer bly privaat.
-          </p>
+          <h3 id="share-consent-title">{{ 'Deel jou bydrae in die openbaar?' | t }}</h3>
+          <p>{{ 'As jy instem, kry jy ’n skakel wat jou sertifikaat wys: die naam daarop, jou bloknommers en hoeveel m² jy geborg het. Enigeen met die skakel kan dit sien. Jou e-pos en telefoonnommer bly privaat.' | t }}</p>
           @if (consentError) {
-            <p class="consent-error">{{ consentError }}</p>
+            <p class="consent-error">{{ consentError | t }}</p>
           }
           <div class="prompt-actions">
-            <button type="button" class="btn btn-primary" [disabled]="consentBusy" (click)="confirmPublicShare()">Ja, skep my skakel</button>
-            <button type="button" class="btn btn-outline" [disabled]="consentBusy" (click)="shareGeneric()">Nee, deel net die projek</button>
+            <button type="button" class="btn btn-primary" [disabled]="consentBusy" (click)="confirmPublicShare()">{{ 'Ja, skep my skakel' | t }}</button>
+            <button type="button" class="btn btn-outline" [disabled]="consentBusy" (click)="shareGeneric()">{{ 'Nee, deel net die projek' | t }}</button>
           </div>
         </div>
       </div>
@@ -368,8 +366,10 @@ export class MySquaresComponent implements OnInit {
   get shareText(): string {
     if (this.gekoseBlok !== null) {
       const naam = this.certBlocks.find(b => b.squareId === this.gekoseBlok)?.name;
+      if (isEngels()) return `${naam || 'I'} sponsored 1 m² of the Oewerpad in Orania!`;
       return `${naam || 'Ek'} het 1 m² geborg vir die Oewerpad in Orania!`;
     }
+    if (isEngels()) return `I sponsored ${this.squares.length} m² of the Oewerpad in Orania!`;
     return `Ek het ${this.squares.length} m² geborg vir die Oewerpad in Orania!`;
   }
 

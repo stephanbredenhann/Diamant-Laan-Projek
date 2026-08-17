@@ -1,6 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { Square } from '../../../models/square';
 import { BlokStaat, blokState } from './blok-staat';
+import { isEngels } from '../../../i18n/lang.service';
 
 /**
  * The same hundred blocks as a plain grid of big buttons.
@@ -16,7 +17,7 @@ import { BlokStaat, blokState } from './blok-staat';
   selector: 'app-blok-rooster',
   standalone: true,
   template: `
-    <ul class="rooster" [attr.aria-label]="'Blokke ' + van() + ' tot ' + tot()">
+    <ul class="rooster" [attr.aria-label]="reeksEtiket()">
       @for (b of blokke(); track b.id) {
         <li>
           <button
@@ -99,6 +100,10 @@ export class BlokRoosterComponent {
   readonly tot = input.required<number>();
   readonly squares = input<Square[]>([]);
   readonly selectedIds = input<number[]>([]);
+
+  readonly reeksEtiket = computed(() => isEngels()
+    ? `Blocks ${this.van()} to ${this.tot()}`
+    : `Blokke ${this.van()} tot ${this.tot()}`);
   readonly beklemtoon = input<number | null>(null);
 
   readonly blokGekliek = output<number>();

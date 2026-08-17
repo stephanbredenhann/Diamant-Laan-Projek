@@ -3,26 +3,27 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PurchaseService, GuestPurchaseRef } from '../../services/purchase.service';
 import { Subscription, interval } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-payment-return',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TPipe],
   template: `
     <div class="container">
       <div class="gateway-card auth-card">
         @switch (state) {
           @case ('pending') {
             <div class="spinner"></div>
-            <p class="eyebrow">Betaling</p>
-            <h2 class="display auth-title">Wag op bevestiging</h2>
-            <p class="summary">Ons wag vir PayFast om die betaling te bevestig. Moenie hierdie bladsy toemaak nie.</p>
+            <p class="eyebrow">{{ 'Betaling' | t }}</p>
+            <h2 class="display auth-title">{{ 'Wag op bevestiging' | t }}</h2>
+            <p class="summary">{{ 'Ons wag vir PayFast om die betaling te bevestig. Moenie hierdie bladsy toemaak nie.' | t }}</p>
             @if (attempts > 1) {
-              <p class="attempts">Kontroleer besig... (poging {{ attempts }}/{{ maxAttempts }})</p>
+              <p class="attempts">{{ 'Kontroleer besig...' | t }} ({{ 'poging' | t }} {{ attempts }}/{{ maxAttempts }})</p>
             }
             @if (isLocalhost) {
               <button class="btn btn-outline btn-wide" (click)="simulateItn()" [disabled]="simulating">
-                {{ simulating ? 'Besig...' : 'Simuleer PayFast bevestiging (slegs ontwikkeling)' }}
+                {{ (simulating ? 'Besig...' : 'Simuleer PayFast bevestiging (slegs ontwikkeling)') | t }}
               </button>
             }
           }
@@ -30,25 +31,25 @@ import { takeWhile } from 'rxjs/operators';
             <div class="success-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <p class="eyebrow">Betaling</p>
-            <h2 class="display auth-title">Betaling suksesvol</h2>
-            <p class="summary">Dankie, jou borg is bevestig. Jou m² is nou aan jou toegeken.</p>
-            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">Gaan na my blokke</a>
+            <p class="eyebrow">{{ 'Betaling' | t }}</p>
+            <h2 class="display auth-title">{{ 'Betaling suksesvol' | t }}</h2>
+            <p class="summary">{{ 'Dankie, jou borg is bevestig. Jou m² is nou aan jou toegeken.' | t }}</p>
+            <a routerLink="/my-blokke" class="btn btn-primary btn-wide">{{ 'Gaan na my blokke' | t }}</a>
           }
           @case ('timeout') {
-            <p class="eyebrow">Betaling</p>
-            <h2 class="display auth-title">Bevestiging neem langer</h2>
-            <p class="summary">Ons kon nie die betalingstatus betyds bevestig nie. As jou betaling deurgegaan het, sal dit binnekort wys. Kyk gerus later weer by <strong>My blokke</strong>.</p>
+            <p class="eyebrow">{{ 'Betaling' | t }}</p>
+            <h2 class="display auth-title">{{ 'Bevestiging neem langer' | t }}</h2>
+            <p class="summary">{{ 'Ons kon nie die betalingstatus betyds bevestig nie. As jou betaling deurgegaan het, sal dit binnekort wys. Kyk gerus later weer by' | t }} <strong>{{ 'My blokke' | t }}</strong>.</p>
             <div class="actions">
-              <a routerLink="/" class="btn btn-outline">Terug na tuisblad</a>
-              <a routerLink="/my-blokke" class="btn btn-primary">Gaan na my blokke</a>
+              <a routerLink="/" class="btn btn-outline">{{ 'Terug na tuisblad' | t }}</a>
+              <a routerLink="/my-blokke" class="btn btn-primary">{{ 'Gaan na my blokke' | t }}</a>
             </div>
           }
           @case ('failed') {
-            <p class="eyebrow">Betaling</p>
-            <h2 class="display auth-title">Betaling het misluk</h2>
-            <p class="summary">Die betaling is nie voltooi nie. Probeer asseblief weer.</p>
-            <a routerLink="/bou" class="btn btn-primary btn-wide">Probeer weer</a>
+            <p class="eyebrow">{{ 'Betaling' | t }}</p>
+            <h2 class="display auth-title">{{ 'Betaling het misluk' | t }}</h2>
+            <p class="summary">{{ 'Die betaling is nie voltooi nie. Probeer asseblief weer.' | t }}</p>
+            <a routerLink="/bou" class="btn btn-primary btn-wide">{{ 'Probeer weer' | t }}</a>
           }
         }
       </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 interface PublicCertificate {
   name: string;
@@ -20,15 +21,15 @@ interface PublicCertificate {
 @Component({
   selector: 'app-deel',
   standalone: true,
-  imports: [RouterLink, CertificateCardComponent],
+  imports: [RouterLink, CertificateCardComponent, TPipe],
   template: `
     <div class="container">
       @if (cert; as c) {
         <div class="page-header">
-          <p class="eyebrow">Stadsbouer</p>
-          <h1 class="display page-title">{{ c.firstName }} het {{ c.blocks.length }} m² geborg vir die Oewerpad in Orania!</h1>
+          <p class="eyebrow">{{ 'Stadsbouer' | t }}</p>
+          <h1 class="display page-title">{{ c.firstName }} {{ 'het' | t }} {{ c.blocks.length }} {{ 'm² geborg vir die Oewerpad in Orania!' | t }}</h1>
           <p class="lead">
-            Elke m² wat geborg word, help om die Oewerpad te teer. Hier is {{ c.firstName }} se sertifikaat.
+            {{ 'Elke m² wat geborg word, help om die Oewerpad te teer. Hier is' | t }} {{ c.firstName }} {{ 'se sertifikaat.' | t }}
           </p>
         </div>
 
@@ -37,16 +38,16 @@ interface PublicCertificate {
         </div>
 
         <div class="cta">
-          <a routerLink="/bou" class="btn btn-primary btn-xl">Borg ook ’n m²</a>
-          <a routerLink="/" class="terug">Meer oor die projek</a>
+          <a routerLink="/bou" class="btn btn-primary btn-xl">{{ 'Borg ook ’n m²' | t }}</a>
+          <a routerLink="/" class="terug">{{ 'Meer oor die projek' | t }}</a>
         </div>
       } @else if (laai) {
-        <p class="boodskap">Besig om te laai...</p>
+        <p class="boodskap">{{ 'Besig om te laai...' | t }}</p>
       } @else {
         <div class="page-header">
-          <h1 class="display page-title">Hierdie skakel is nie meer geldig nie</h1>
-          <p class="lead">Die openbare skakel bestaan nie, of is verwyder.</p>
-          <a routerLink="/" class="btn btn-primary btn-xl">Terug na Diamant Laan</a>
+          <h1 class="display page-title">{{ 'Hierdie skakel is nie meer geldig nie' | t }}</h1>
+          <p class="lead">{{ 'Die openbare skakel bestaan nie, of is verwyder.' | t }}</p>
+          <a routerLink="/" class="btn btn-primary btn-xl">{{ 'Terug na Diamant Laan' | t }}</a>
         </div>
       }
     </div>

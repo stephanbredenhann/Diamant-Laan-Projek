@@ -1,3 +1,5 @@
+import { isEngels } from '../i18n/lang.service';
+
 /**
  * Afrikaans wording helpers.
  *
@@ -9,6 +11,7 @@
 
 /** Internal/admin wording: 1 blok, 2 blokke. */
 export function blokLabel(count: number): string {
+  if (isEngels()) return count === 1 ? 'block' : 'blocks';
   return count === 1 ? 'blok' : 'blokke';
 }
 
@@ -16,7 +19,8 @@ export function blokLabel(count: number): string {
  * Donor-facing wording. Afrikaans does not pluralise a unit of measure after a
  * numeral, so it stays "vierkante meter" for every count — never "meters".
  */
-export function meterLabel(_count: number): string {
+export function meterLabel(count: number): string {
+  if (isEngels()) return count === 1 ? 'square metre' : 'square metres';
   return 'vierkante meter';
 }
 

@@ -1,17 +1,19 @@
 import { Component } from '@angular/core';
+import { TPipe } from '../../..//i18n/t.pipe';
 
 @Component({
   selector: 'app-map-legend',
   standalone: true,
+  imports: [TPipe],
   template: `
     <div class="legend">
-      <span><span class="dot free"></span> Beskikbaar</span>
-      <span><span class="dot sold"></span> Verkoop</span>
-      <span><span class="dot unavailable"></span> Onbeskikbaar</span>
-      <span><span class="dot prep"></span> Voorberei</span>
-      <span><span class="dot busy"></span> Besig om te teer</span>
-      <span><span class="dot done"></span> Klaar geteer</span>
-      <span><span class="dot selected"></span> Gekies</span>
+      <span><span class="dot free"></span> {{ 'Beskikbaar' | t }}</span>
+      <span><span class="dot sold"></span> {{ 'Verkoop' | t }}</span>
+      <span><span class="dot unavailable"></span> {{ 'Onbeskikbaar' | t }}</span>
+      <span><span class="dot prep"></span> {{ 'Voorberei' | t }}</span>
+      <span><span class="dot busy"></span> {{ 'Besig om te teer' | t }}</span>
+      <span><span class="dot done"></span> {{ 'Klaar geteer' | t }}</span>
+      <span><span class="dot selected"></span> {{ 'Gekies' | t }}</span>
     </div>
   `,
   styles: [`

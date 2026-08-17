@@ -1,14 +1,15 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TPipe } from '../../..//i18n/t.pipe';
 
 @Component({
   selector: 'app-alert',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TPipe],
   template: `
     @if (message) {
       <div class="app-alert" [class.error]="type === 'error'" [class.success]="type === 'success'" [class.info]="type === 'info'">
-        {{ message }}
+        {{ message | t }}
       </div>
     }
   `,

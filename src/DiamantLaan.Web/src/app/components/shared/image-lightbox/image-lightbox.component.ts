@@ -2,31 +2,32 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject } from '@angular/core';
 import { ImageService } from '../../../services/image.service';
 import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/square';
+import { TPipe } from '../../../i18n/t.pipe';
 
 @Component({
   selector: 'app-image-lightbox',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TPipe],
   template: `
     @if (open) {
       <div class="lightbox-backdrop" (click)="close()">
         <div class="lightbox" (click)="$event.stopPropagation()">
           @if (loading) {
-            <div class="lightbox-loading">Laai foto’s...</div>
+            <div class="lightbox-loading">{{ 'Laai foto’s...' | t }}</div>
           } @else if (images.length === 0) {
-            <div class="lightbox-empty">Geen foto’s beskikbaar nie.</div>
+            <div class="lightbox-empty">{{ 'Geen foto’s beskikbaar nie.' | t }}</div>
           } @else {
             <div class="lightbox-body">
               <div class="image-frame">
                 @if (currentBlobUrl) {
-                  <img [src]="currentBlobUrl" [alt]="currentCaption || 'Vorderingsfoto'" />
+                  <img [src]="currentBlobUrl" [alt]="currentCaption || ('Vorderingsfoto' | t)" />
                 }
                 <div class="lightbox-overlay lightbox-overlay-top">
                   <div class="lightbox-meta">
-                    <span class="lightbox-title">Blok #{{ squareId }}</span>
-                    <span class="lightbox-status">{{ currentStatusLabel }}</span>
+                    <span class="lightbox-title">{{ 'Blok' | t }} #{{ squareId }}</span>
+                    <span class="lightbox-status">{{ currentStatusLabel | t }}</span>
                   </div>
-                  <button class="lightbox-close" type="button" (click)="close()" aria-label="Sluit">
+                  <button class="lightbox-close" type="button" (click)="close()" [attr.aria-label]="'Sluit' | t">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -36,7 +37,7 @@ import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/squa
                     type="button"
                     [disabled]="currentIndex === 0"
                     (click)="prev()"
-                    aria-label="Vorige foto"
+                    [attr.aria-label]="'Vorige foto' | t"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
@@ -45,7 +46,7 @@ import { ProgressImage, SquareStatus, STATUS_LABELS } from '../../../models/squa
                     type="button"
                     [disabled]="currentIndex >= images.length - 1"
                     (click)="next()"
-                    aria-label="Volgende foto"
+                    [attr.aria-label]="'Volgende foto' | t"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>

@@ -4,31 +4,32 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { getPasswordChecks, isPasswordValid, validatePassword } from '../../utils/validation.util';
 import { PasswordInputComponent } from '../shared/password-input/password-input.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [FormsModule, RouterLink, PasswordInputComponent],
+  imports: [FormsModule, RouterLink, PasswordInputComponent, TPipe],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Rekening</p>
+          <p class="eyebrow">{{ 'Rekening' | t }}</p>
           @if (step === 1) {
-            <h2 class="display auth-title">Voer herstelkode in</h2>
-            <p>Voer die kode van 6 karakters in wat ons per e-pos gestuur het.</p>
+            <h2 class="display auth-title">{{ 'Voer herstelkode in' | t }}</h2>
+            <p>{{ 'Voer die kode van 6 karakters in wat ons per e-pos gestuur het.' | t }}</p>
           } @else {
-            <h2 class="display auth-title">Kies nuwe wagwoord</h2>
-            <p>Kies ’n nuwe wagwoord vir jou rekening.</p>
+            <h2 class="display auth-title">{{ 'Kies nuwe wagwoord' | t }}</h2>
+            <p>{{ 'Kies ’n nuwe wagwoord vir jou rekening.' | t }}</p>
           }
         </div>
 
-        <p class="email-display">Herstel vir: <strong>{{ email }}</strong></p>
+        <p class="email-display">{{ 'Herstel vir:' | t }} <strong>{{ email }}</strong></p>
 
         @if (step === 1) {
           <form (ngSubmit)="nextStep()">
             <div class="form-group">
-              <label for="otp">Herstelkode</label>
+              <label for="otp">{{ 'Herstelkode' | t }}</label>
               <input id="otp"
                 type="text"
                 class="otp-input"
@@ -41,44 +42,44 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
                 (input)="otp = otp.toUpperCase()">
             </div>
             @if (error) {
-              <div class="error-alert">{{ error }}</div>
+              <div class="error-alert">{{ error | t }}</div>
             }
             <button type="submit" class="btn btn-primary btn-block" [disabled]="otp.trim().length !== 6">
-              Volgende
+              {{ 'Volgende' | t }}
             </button>
           </form>
         } @else {
           <form (ngSubmit)="submit()">
             <div class="form-group">
-              <label for="newPassword">Nuwe wagwoord</label>
+              <label for="newPassword">{{ 'Nuwe wagwoord' | t }}</label>
               <app-password-input id="newPassword" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8" />
               <ul class="pw-checklist">
-                <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-                <li [class.ok]="checks().hasNumber">’n Nommer</li>
-                <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
-                <li [class.ok]="checks().hasLower">’n Kleinletter</li>
+                <li [class.ok]="checks().minLength">{{ 'Minstens 8 karakters' | t }}</li>
+                <li [class.ok]="checks().hasNumber">{{ '’n Nommer' | t }}</li>
+                <li [class.ok]="checks().hasUpper">{{ '’n Hoofletter' | t }}</li>
+                <li [class.ok]="checks().hasLower">{{ '’n Kleinletter' | t }}</li>
               </ul>
             </div>
             <div class="form-group">
-              <label for="confirmPassword">Bevestig wagwoord</label>
+              <label for="confirmPassword">{{ 'Bevestig wagwoord' | t }}</label>
               <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" />
             </div>
             @if (error) {
-              <div class="error-alert">{{ error }}</div>
+              <div class="error-alert">{{ error | t }}</div>
             }
             @if (success) {
-              <div class="success-alert">{{ success }}</div>
+              <div class="success-alert">{{ success | t }}</div>
             }
             <div class="btn-row">
-              <button type="button" class="btn btn-outline" (click)="step = 1; error = ''">Terug</button>
+              <button type="button" class="btn btn-outline" (click)="step = 1; error = ''">{{ 'Terug' | t }}</button>
               <button type="submit" class="btn btn-primary" [disabled]="loading || !canSubmit()">
-                {{ loading ? 'Besig...' : 'Stel nuwe wagwoord' }}
+                {{ (loading ? 'Besig...' : 'Stel nuwe wagwoord') | t }}
               </button>
             </div>
           </form>
         }
 
-        <p class="auth-link"><a routerLink="/meld-aan">Terug na aanmeld</a></p>
+        <p class="auth-link"><a routerLink="/meld-aan">{{ 'Terug na aanmeld' | t }}</a></p>
       </div>
     </div>
   `,

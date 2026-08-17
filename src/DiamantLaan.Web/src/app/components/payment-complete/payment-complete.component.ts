@@ -6,6 +6,7 @@ import { PurchaseService, GuestPurchase, GuestPurchaseRef } from '../../services
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 import { randBedrag } from '../../utils/afrikaans.util';
+import { TPipe } from '../../i18n/t.pipe';
 
 type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
@@ -18,20 +19,20 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 @Component({
   selector: 'app-payment-complete',
   standalone: true,
-  imports: [FormsModule, BouStepBarComponent, CertificateCardComponent],
+  imports: [FormsModule, BouStepBarComponent, CertificateCardComponent, TPipe],
   template: `
     <div class="container">
       <!-- Step 4 of the same rail the rest of the flow carries, locked: the money
            is paid, so every earlier step is history rather than somewhere to go. -->
       @if (step !== 'loading' && step !== 'error') {
-        <app-bou-step-bar [active]="4" [gesluit]="true" />
+        <app-bou-step-bar [active]="4" />
       }
 
       @switch (step) {
         @case ('loading') {
           <div class="card centered">
             <div class="spinner"></div>
-            <p class="lead">Besig om jou aankoop te laai...</p>
+            <p class="lead">{{ 'Besig om jou aankoop te laai...' | t }}</p>
           </div>
         }
 
@@ -40,87 +41,75 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
             <div class="success-icon">
               <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <p class="eyebrow">Betaling bevestig</p>
+            <p class="eyebrow">{{ 'Betaling bevestig' | t }}</p>
             @if (fromEmail) {
-              <h2 class="display auth-title">Welkom terug</h2>
+              <h2 class="display auth-title">{{ 'Welkom terug' | t }}</h2>
             } @else {
-              <h2 class="display auth-title">Dankie, Stadsbouer!</h2>
+              <h2 class="display auth-title">{{ 'Dankie, Stadsbouer!' | t }}</h2>
             }
             <p class="lead">
-              Jy het <strong>{{ squareCount }} m²</strong> van die nuwe pad in Orania geborg.
-              Met jou bydrae van <strong>{{ randBedrag(amount) }}</strong> help jy ons om hierdie
-              stukkie pad te teer. Dankie dat jy saam met ons bou!
+              {{ 'Jy het' | t }} <strong>{{ squareCount }} m²</strong> {{ 'van die nuwe pad in Orania geborg. Met jou bydrae van' | t }}
+              <strong>{{ randBedrag(amount) }}</strong> {{ 'help jy ons om hierdie stukkie pad te teer. Dankie dat jy saam met ons bou!' | t }}
             </p>
 
             <div class="pros">
-              <h3>Skep jou rekening</h3>
-              <p class="pros-intro">Ons beveel sterk aan dat jy ’n rekening skep. Met ’n rekening kan jy:</p>
+              <h3>{{ 'Skep jou rekening' | t }}</h3>
+              <p class="pros-intro">{{ 'Ons beveel sterk aan dat jy ’n rekening skep. Met ’n rekening kan jy:' | t }}</p>
               <ul>
-                <li>Die vordering van jou m²-borgskap volg.</li>
-                <li>Foto’s van die vordering op jou blokkies sien.</li>
-                <li>Opdaterings oor die projek ontvang.</li>
-                <li>Enige tyd toegang tot jou digitale sertifikaat kry.</li>
-                <li>Kwitansies van jou borgskappe aflaai.</li>
-                <li>Later weer ’n m² borg sonder om die hele proses te herhaal.</li>
+                <li>{{ 'Die vordering van jou m²-borgskap volg.' | t }}</li>
+                <li>{{ 'Foto’s van die vordering op jou blokkies sien.' | t }}</li>
+                <li>{{ 'Opdaterings oor die projek ontvang.' | t }}</li>
+                <li>{{ 'Enige tyd toegang tot jou digitale sertifikaat kry.' | t }}</li>
+                <li>{{ 'Kwitansies van jou borgskappe aflaai.' | t }}</li>
+                <li>{{ 'Later weer ’n m² borg sonder om die hele proses te herhaal.' | t }}</li>
               </ul>
-              <p class="pros-note">Skep jou rekening binne 30 sekondes.</p>
+              <p class="pros-note">{{ 'Skep jou rekening binne 30 sekondes.' | t }}</p>
             </div>
 
             <div class="actions">
-              <button type="button" class="btn btn-primary" (click)="createAccount()">Skep ’n rekening</button>
-              <button type="button" class="btn btn-outline" (click)="declineAccount()">Nee dankie</button>
+              <button type="button" class="btn btn-primary" (click)="createAccount()">{{ 'Skep ’n rekening' | t }}</button>
+              <button type="button" class="btn btn-outline" (click)="declineAccount()">{{ 'Nee dankie' | t }}</button>
             </div>
           </div>
         }
 
         @case ('confirm') {
           <div class="card">
-            <h2>Hou dit in gedagte!</h2>
-            <p class="lead">
-              Sonder ’n rekening kan ons nie jou blokkie aan jou verbind nie. Jy sal dus nie in
-              kennis gestel kan word wanneer jou blokkie geteer word nie, en jy sal jou sertifikaat
-              slegs een keer kan aflaai. Daarna sal dit nie meer beskikbaar wees nie.
-            </p>
-            <p class="muted">
-              Jou bydrae bly natuurlik geldig en gaan nie verlore nie. ’n Rekening is bloot nodig om
-              jou bydrae aan jou persoonlike m² te koppel en jou in staat te stel om die vordering
-              daarvan te volg.
-            </p>
-            <p class="muted">Ons beveel sterk aan dat jy jou rekening skep!</p>
+            <h2>{{ 'Hou dit in gedagte!' | t }}</h2>
+            <p class="lead">{{ 'Sonder ’n rekening kan ons nie jou blokkie aan jou verbind nie. Jy sal dus nie in kennis gestel kan word wanneer jou blokkie geteer word nie, en jy sal jou sertifikaat slegs een keer kan aflaai. Daarna sal dit nie meer beskikbaar wees nie.' | t }}</p>
+            <p class="muted">{{ 'Jou bydrae bly natuurlik geldig en gaan nie verlore nie. ’n Rekening is bloot nodig om jou bydrae aan jou persoonlike m² te koppel en jou in staat te stel om die vordering daarvan te volg.' | t }}</p>
+            <p class="muted">{{ 'Ons beveel sterk aan dat jy jou rekening skep!' | t }}</p>
             <div class="actions">
-              <button type="button" class="btn btn-primary" (click)="createAccount()">Skep ’n rekening</button>
-              <button type="button" class="btn btn-outline" (click)="confirmDecline()">Nee, gaan voort sonder ’n rekening</button>
+              <button type="button" class="btn btn-primary" (click)="createAccount()">{{ 'Skep ’n rekening' | t }}</button>
+              <button type="button" class="btn btn-outline" (click)="confirmDecline()">{{ 'Nee, gaan voort sonder ’n rekening' | t }}</button>
             </div>
           </div>
         }
 
         @case ('name') {
           <div class="card card--name">
-            <h2>Naam op jou sertifikaat</h2>
-            <p class="lead">
-              Die naam wat jy hier invul, sal op jou sertifikaat verskyn. Maak asseblief seker
-              dat dit korrek ingevul is.
-            </p>
+            <h2>{{ 'Naam op jou sertifikaat' | t }}</h2>
+            <p class="lead">{{ 'Die naam wat jy hier invul, sal op jou sertifikaat verskyn. Maak asseblief seker dat dit korrek ingevul is.' | t }}</p>
             <div class="form-group form-group--name">
-              <label for="cert-name">Naam vir sertifikaat</label>
+              <label for="cert-name">{{ 'Naam vir sertifikaat' | t }}</label>
               <input
                 id="cert-name"
                 type="text"
                 name="certName"
                 maxlength="100"
-                placeholder="Bv. Jan van der Merwe"
+                [placeholder]="'Bv. Jan van der Merwe' | t"
                 autofocus
                 [(ngModel)]="certificateName"
                 (keyup.enter)="submitName()">
               @if (nameError) {
-                <p class="field-error">{{ nameError }}</p>
+                <p class="field-error">{{ nameError | t }}</p>
               }
             </div>
             <div class="actions">
               <button type="button" class="btn btn-primary btn-xl" (click)="submitName()" [disabled]="saving">
-                {{ saving ? 'Besig...' : 'Wys my sertifikaat' }}
+                {{ (saving ? 'Besig...' : 'Wys my sertifikaat') | t }}
               </button>
-              <button type="button" class="btn btn-outline" (click)="step = 'prompt'">Terug</button>
+              <button type="button" class="btn btn-outline" (click)="step = 'prompt'">{{ 'Terug' | t }}</button>
             </div>
           </div>
         }
@@ -129,27 +118,21 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
           <app-certificate-card
             [ownerName]="certificateName"
             [squares]="certificateSquares">
-            <button type="button" class="btn btn-outline" (click)="finish()">Terug na tuisblad</button>
+            <button type="button" class="btn btn-outline" (click)="finish()">{{ 'Terug na tuisblad' | t }}</button>
           </app-certificate-card>
           @if (hasEmail) {
-            <p class="cert-note">
-              Laai jou sertifikaat gerus nou af. Ons het ook ’n e-pos gestuur met ’n skakel waarmee
-              jy later ’n rekening kan skep en weer hier kan uitkom.
-            </p>
+            <p class="cert-note">{{ 'Laai jou sertifikaat gerus nou af. Ons het ook ’n e-pos gestuur met ’n skakel waarmee jy later ’n rekening kan skep en weer hier kan uitkom.' | t }}</p>
           } @else {
-            <p class="cert-warning">
-              Belangrik: laai jou sertifikaat nou af, voor jy hierdie bladsy verlaat. Sonder ’n
-              rekening of ’n e-posadres kan ons dit nie later vir jou stuur nie.
-            </p>
+            <p class="cert-warning">{{ 'Belangrik: laai jou sertifikaat nou af, voor jy hierdie bladsy verlaat. Sonder ’n rekening of ’n e-posadres kan ons dit nie later vir jou stuur nie.' | t }}</p>
           }
         }
 
         @case ('error') {
           <div class="card centered">
-            <h2>Ons kon nie jou aankoop kry nie</h2>
-            <p class="lead">{{ error }}</p>
+            <h2>{{ 'Ons kon nie jou aankoop kry nie' | t }}</h2>
+            <p class="lead">{{ error | t }}</p>
             <div class="actions">
-              <button type="button" class="btn btn-primary" (click)="finish()">Terug na tuisblad</button>
+              <button type="button" class="btn btn-primary" (click)="finish()">{{ 'Terug na tuisblad' | t }}</button>
             </div>
           </div>
         }

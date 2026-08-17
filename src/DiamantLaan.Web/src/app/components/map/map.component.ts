@@ -10,11 +10,12 @@ import { Square, SquareStatus, MapViewMode } from '../../models/square';
 import { SEGMENTS } from './map-segments';
 import { RoadMapComponent } from '../shared/road-map/road-map.component';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule],
+  imports: [RoadMapComponent, RouterLink, DecimalPipe, FormsModule, TPipe],
   template: `
     <div class="map-page">
       <div class="map-header">
@@ -26,12 +27,12 @@ import { blokLabel } from '../../utils/afrikaans.util';
                   type="button"
                   [class.active]="viewMode() === 'status'"
                   (click)="viewMode.set('status')"
-                >Vordering</button>
+                >{{ 'Vordering' | t }}</button>
                 <button
                   type="button"
                   [class.active]="viewMode() === 'availability'"
                   (click)="viewMode.set('availability')"
-                >Beskikbaarheid</button>
+                >{{ 'Beskikbaarheid' | t }}</button>
               </div>
               <button
                 type="button"
@@ -40,7 +41,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 [attr.aria-expanded]="controlsExpanded()"
                 aria-controls="map-pill-controls"
               >
-                <span class="controls-toggle-label">Kies vir my en soek</span>
+                <span class="controls-toggle-label">{{ 'Kies vir my en soek' | t }}</span>
                 <svg
                   class="controls-chevron"
                   [class.rotated]="controlsExpanded()"
@@ -58,12 +59,12 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 </svg>
               </button>
             </div>
-            <p class="controls-toggle-hint">Outomatiese keuse (Kies vir my) en soek vir ’n spesifieke bloknommer</p>
+            <p class="controls-toggle-hint">{{ 'Outomatiese keuse (Kies vir my) en soek vir ’n spesifieke bloknommer' | t }}</p>
             @if (controlsExpanded()) {
-              <div id="map-pill-controls" class="map-pill-controls-group" role="region" aria-label="Blokke-kies en soek">
+              <div id="map-pill-controls" class="map-pill-controls-group" role="region" [attr.aria-label]="'Blokke-kies en soek' | t">
                 <div class="auto-pick-section">
-                  <span class="auto-pick-label">Outomatiese keuse</span>
-                  <p class="auto-pick-hint">Kies hoeveel blokke jy wil hê, dan druk die knoppie.</p>
+                  <span class="auto-pick-label">{{ 'Outomatiese keuse' | t }}</span>
+                  <p class="auto-pick-hint">{{ 'Kies hoeveel blokke jy wil hê, dan druk die knoppie.' | t }}</p>
                   <div class="auto-pick-panel">
                     <div class="view-toggle pick-amount-toggle">
                       @for (preset of pickPresets; track preset) {
@@ -89,7 +90,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                             (click)="$event.stopPropagation()"
                           />
                         } @else {
-                          Eie hoeveelheid
+                          {{ 'Eie hoeveelheid' | t }}
                         }
                       </div>
                     </div>
@@ -98,15 +99,15 @@ import { blokLabel } from '../../utils/afrikaans.util';
                       class="pick-action-btn"
                       (click)="pickForMe()"
                       [disabled]="picking()"
-                    >{{ picking() ? 'Besig...' : 'Kies vir my' }}</button>
+                    >{{ (picking() ? 'Besig...' : 'Kies vir my') | t }}</button>
                   </div>
                   @if (pickError()) {
-                    <div class="msg error">{{ pickError() }}</div>
+                    <div class="msg error">{{ pickError() | t }}</div>
                   }
                 </div>
                 <div class="search-block-section">
-                  <span class="auto-pick-label">Soek ’n spesifieke blok</span>
-                  <p class="auto-pick-hint">Voer die bloknommer in, dan druk Soek. Klik dan op die blokkie om dit te kies.</p>
+                  <span class="auto-pick-label">{{ 'Soek ’n spesifieke blok' | t }}</span>
+                  <p class="auto-pick-hint">{{ 'Voer die bloknommer in, dan druk Soek. Klik dan op die blokkie om dit te kies.' | t }}</p>
                   <div class="auto-pick-panel search-block-panel">
                     <input
                       #searchBlockInput
@@ -115,7 +116,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                       class="search-block-input"
                       min="1"
                       max="4000"
-                      placeholder="Bloknommer"
+                      [placeholder]="'Bloknommer' | t"
                       [(ngModel)]="searchBlockNumber"
                       (keydown.enter)="searchBlock()"
                     />
@@ -123,10 +124,10 @@ import { blokLabel } from '../../utils/afrikaans.util';
                       type="button"
                       class="pick-action-btn"
                       (click)="searchBlock()"
-                    >Soek</button>
+                    >{{ 'Soek' | t }}</button>
                   </div>
                   @if (searchError()) {
-                    <div class="msg error">{{ searchError() }}</div>
+                    <div class="msg error">{{ searchError() | t }}</div>
                   }
                 </div>
               </div>
@@ -134,14 +135,14 @@ import { blokLabel } from '../../utils/afrikaans.util';
           </div>
           <div class="legend">
             @if (viewMode() === 'status') {
-              <span><span class="dot free"></span> Nog nie begin nie</span>
-              <span><span class="dot prep"></span> Voorberei</span>
-              <span><span class="dot busy"></span> Besig om te teer</span>
-              <span><span class="dot done"></span> Klaar geteer</span>
+              <span><span class="dot free"></span> {{ 'Nog nie begin nie' | t }}</span>
+              <span><span class="dot prep"></span> {{ 'Voorberei' | t }}</span>
+              <span><span class="dot busy"></span> {{ 'Besig om te teer' | t }}</span>
+              <span><span class="dot done"></span> {{ 'Klaar geteer' | t }}</span>
               <span><span class="dot selected"></span> Gekies</span>
             } @else {
-              <span><span class="dot free"></span> Beskikbaar</span>
-              <span><span class="dot sold"></span> Verkoop</span>
+              <span><span class="dot free"></span> {{ 'Beskikbaar' | t }}</span>
+              <span><span class="dot sold"></span> {{ 'Verkoop' | t }}</span>
               <span><span class="dot selected"></span> Gekies</span>
             }
           </div>
@@ -157,36 +158,36 @@ import { blokLabel } from '../../utils/afrikaans.util';
         />
         <div class="sidebar">
           <div class="sidebar-card">
-            <h3>Jou keuse</h3>
+            <h3>{{ 'Jou keuse' | t }}</h3>
             <div class="selection-summary">
               <div class="selection-count">
                 <span class="count">{{ selectedIds().size }}</span>
-                <span class="label">{{ blokLabel(selectedIds().size) }} gekies</span>
+                <span class="label">{{ blokLabel(selectedIds().size) }} {{ 'gekies' | t }}</span>
               </div>
               <div class="selection-total">
-                <span class="label">Totaal</span>
+                <span class="label">{{ 'Totaal' | t }}</span>
                 <span class="amount">R{{ totalAmount() | number:'1.0-0' }}</span>
-                <span class="per-block">R500 per blok</span>
+                <span class="per-block">{{ 'R500 per blok' | t }}</span>
               </div>
             </div>
             @if (selectedIds().size > 0) {
               <button class="btn btn-outline btn-full btn-sm" (click)="clearSelection()">
-                Maak keuses skoon ({{ selectedIds().size }})
+                {{ 'Maak keuses skoon' | t }} ({{ selectedIds().size }})
               </button>
               <button class="btn btn-primary btn-full" (click)="checkout()">
-                Gaan na betaling
+                {{ 'Gaan na betaling' | t }}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
             }
             @if (!auth.currentUser()) {
               <div class="login-nudge">
-                <p>Jy kan sonder ’n rekening koop. <a routerLink="/meld-aan">Meld aan</a> om jou blokke se vordering te volg.</p>
+                <p>{{ 'Jy kan sonder ’n rekening koop.' | t }} <a routerLink="/meld-aan">{{ 'Meld aan' | t }}</a> {{ 'om jou blokke se vordering te volg.' | t }}</p>
               </div>
             }
             <div class="my-squares-mini">
-              <h4>My blokke</h4>
+              <h4>{{ 'My blokke' | t }}</h4>
               @if (mySquareIds().length === 0) {
-                <p class="empty">Nog geen blokke gekoop nie.</p>
+                <p class="empty">{{ 'Nog geen blokke gekoop nie.' | t }}</p>
               }
               @for (id of mySquareIds(); track id) {
                 <span class="owned-chip">#{{ id }}</span>

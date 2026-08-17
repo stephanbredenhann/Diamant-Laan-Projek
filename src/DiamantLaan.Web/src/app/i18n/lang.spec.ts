@@ -14,6 +14,13 @@ describe('language toggle', () => {
     });
   });
 
+  // Both the stored choice and <html lang> outlive the spec, and every other
+  // suite asserts Afrikaans copy, so put them back rather than leaking English.
+  afterEach(() => {
+    localStorage.removeItem('lang');
+    document.documentElement.lang = 'af';
+  });
+
   it('defaults to Afrikaans and falls back to it for an untranslated string', () => {
     const lang = TestBed.inject(LangService);
     expect(lang.lang()).toBe('af');

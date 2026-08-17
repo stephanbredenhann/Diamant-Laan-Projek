@@ -2,35 +2,36 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, TPipe],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Rekening</p>
-          <h2 class="display auth-title">Wagwoord vergeet</h2>
-          <p>Voer jou e-pos in. As die rekening bestaan, stuur ons ’n kode van 6 karakters.</p>
+          <p class="eyebrow">{{ 'Rekening' | t }}</p>
+          <h2 class="display auth-title">{{ 'Wagwoord vergeet' | t }}</h2>
+          <p>{{ 'Voer jou e-pos in. As die rekening bestaan, stuur ons ’n kode van 6 karakters.' | t }}</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label for="email">E-pos</label>
+            <label for="email">{{ 'E-pos' | t }}</label>
             <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           @if (error) {
-            <div class="error-alert">{{ error }}</div>
+            <div class="error-alert">{{ error | t }}</div>
           }
           @if (success) {
-            <div class="success-alert">{{ success }}</div>
+            <div class="success-alert">{{ success | t }}</div>
           }
           <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !email.trim()">
-            {{ loading ? 'Besig...' : 'Stuur herstelkode' }}
+            {{ (loading ? 'Besig...' : 'Stuur herstelkode') | t }}
           </button>
         </form>
-        <p class="auth-link"><a routerLink="/meld-aan">Terug na aanmeld</a></p>
+        <p class="auth-link"><a routerLink="/meld-aan">{{ 'Terug na aanmeld' | t }}</a></p>
       </div>
     </div>
   `,

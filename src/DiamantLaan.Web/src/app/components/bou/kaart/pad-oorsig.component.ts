@@ -1,5 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { WAYPOINTS } from '../../map/map-segments';
+import { TPipe } from '../../../i18n/t.pipe';
+import { isEngels } from '../../../i18n/lang.service';
 import { ROAD_WIDTH, getSquareCentroid } from '../../shared/road-map/road-geometry';
 import { MAX_BLOK_ID, Reeks } from './blok-reekse';
 import {
@@ -52,6 +54,7 @@ function ryMiddel(n: number): LngLat | null {
 @Component({
   selector: 'app-pad-oorsig',
   standalone: true,
+  imports: [TPipe],
   template: `
     <figure class="oorsig">
       <svg
@@ -85,8 +88,8 @@ function ryMiddel(n: number): LngLat | null {
       <figcaption>
         {{ etiket() }}
         <span class="erkenning">
-          Kaartdata &copy;
-          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bydraers
+          {{ 'Kaartdata' | t }} &copy;
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>{{ '-bydraers' | t }}
         </span>
       </figcaption>
     </figure>
@@ -232,6 +235,11 @@ export class PadOorsigComponent {
 
   readonly etiket = computed(() => {
     const r = this.merk();
+    if (isEngels()) {
+      return r
+        ? `Oewerpad: blocks ${r.van} to ${r.tot} are marked here`
+        : 'Oewerpad, the whole route';
+    }
     return r
       ? `Oewerpad: blokke ${r.van} tot ${r.tot} is hier gemerk`
       : 'Oewerpad, die hele roete';

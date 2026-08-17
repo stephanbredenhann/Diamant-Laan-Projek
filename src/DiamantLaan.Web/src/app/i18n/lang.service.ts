@@ -4,6 +4,16 @@ import { EN } from './en';
 export type Lang = 'af' | 'en';
 
 /**
+ * Language check for plain functions that build strings with numbers in them,
+ * where the `t` lookup (keyed on a whole literal sentence) cannot reach.
+ * LangService mirrors the choice onto <html lang>, and templates re-evaluate
+ * these calls on every change-detection pass, so a toggle updates them for free.
+ */
+export function isEngels(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.lang === 'en';
+}
+
+/**
  * Afrikaans is the source language. Templates keep the Afrikaans text literally
  * and `t()` swaps it for English via a lookup keyed on that same Afrikaans
  * string, so an untranslated string simply stays Afrikaans instead of showing

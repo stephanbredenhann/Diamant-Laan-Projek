@@ -7,21 +7,22 @@ import { AuthService } from '../../services/auth.service';
 import { CertificateNames, PurchaseService, PurchaseTransaction } from '../../services/purchase.service';
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
 import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-certificate',
   standalone: true,
-  imports: [FormsModule, RouterLink, BouStepBarComponent, CertificateCardComponent],
+  imports: [FormsModule, RouterLink, BouStepBarComponent, CertificateCardComponent, TPipe],
   template: `
     <div class="container">
       <!-- Only when the buy flow sent them straight here after registering. The
            "Sertifikaat" link on My blokke carries no flag, so the rail shows once. -->
       @if (vanafVloei) {
-        <app-bou-step-bar [active]="4" [gesluit]="true" />
+        <app-bou-step-bar [active]="4" />
       }
       <div class="page-header">
-        <p class="eyebrow">My rekening</p>
-        <h2 class="display page-title">Sertifikaat</h2>
+        <p class="eyebrow">{{ 'My rekening' | t }}</p>
+        <h2 class="display page-title">{{ 'Sertifikaat' | t }}</h2>
       </div>
 
       <!-- Only inside the 15-minute window after a purchase. Once that closes the names are
@@ -30,44 +31,44 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
         <div class="naam-paneel">
           <div class="paneel-kop">
             <span class="paneel-titel">
-              {{ squares.length > 1 ? 'Hoe wil jy jou sertifikate hê?' : 'Naam op jou sertifikaat' }}
+              {{ (squares.length > 1 ? 'Hoe wil jy jou sertifikate hê?' : 'Naam op jou sertifikaat') | t }}
             </span>
             @if (sluitTyd) {
-              <span class="kop-tyd">Jy kan dit tot {{ sluitTyd }} verander. Daarna is dit vasgestel.</span>
+              <span class="kop-tyd">{{ 'Jy kan dit tot' | t }} {{ sluitTyd }} {{ 'verander. Daarna is dit vasgestel.' | t }}</span>
             }
           </div>
 
           <div class="paneel-lyf">
           @if (squares.length > 1) {
-            <div class="keuse" role="group" aria-label="Hoe wil jy jou sertifikate hê">
+            <div class="keuse" role="group" [attr.aria-label]="'Hoe wil jy jou sertifikate hê' | t">
               <button
                 type="button"
                 class="keuse-btn"
                 [class.is-active]="sameForAll"
                 [attr.aria-pressed]="sameForAll"
                 (click)="stelSelfde(true)"
-              >Een sertifikaat<small>Al {{ squares.length }} blokke saam, op een naam</small></button>
+              >{{ 'Een sertifikaat' | t }}<small>{{ 'Al' | t }} {{ squares.length }} {{ 'blokke saam, op een naam' | t }}</small></button>
               <button
                 type="button"
                 class="keuse-btn"
                 [class.is-active]="!sameForAll"
                 [attr.aria-pressed]="!sameForAll"
                 (click)="stelSelfde(false)"
-              >Een per blok<small>Elke blok op sy eie naam</small></button>
+              >{{ 'Een per blok' | t }}<small>{{ 'Elke blok op sy eie naam' | t }}</small></button>
             </div>
           }
 
-          <p class="paneel-lei">Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.</p>
+          <p class="paneel-lei">{{ 'Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.' | t }}</p>
 
           @if (sameForAll) {
             <div class="naam-veld">
-              <label for="naam-almal">Naam op alle sertifikate</label>
+              <label for="naam-almal">{{ 'Naam op alle sertifikate' | t }}</label>
               <input
                 id="naam-almal"
                 type="text"
                 name="naamAlmal"
                 maxlength="100"
-                placeholder="Bv. Jan van der Merwe"
+                [placeholder]="'Bv. Jan van der Merwe' | t"
                 [(ngModel)]="summaryName">
             </div>
           } @else {
@@ -76,19 +77,19 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
                  own falls back to, and what the public share link prints. -->
             @for (blok of blocks; track blok.squareId) {
               <div class="naam-veld">
-                <label [attr.for]="'naam-' + blok.squareId">Blok {{ blok.squareId }}</label>
+                <label [attr.for]="'naam-' + blok.squareId">{{ 'Blok' | t }} {{ blok.squareId }}</label>
                 @if (blok.canEdit) {
                   <input
                     [id]="'naam-' + blok.squareId"
                     type="text"
                     [name]="'naam' + blok.squareId"
                     maxlength="100"
-                    placeholder="Bv. Anna van der Merwe"
+                    [placeholder]="'Bv. Anna van der Merwe' | t"
                     [(ngModel)]="blok.name">
                 } @else {
                   <!-- Bought on an earlier trip, so its own window has already closed. -->
                   <p class="naam-vas" [id]="'naam-' + blok.squareId">
-                    {{ blok.name }}<span class="vas-merk">vasgestel</span>
+                    {{ blok.name }}<span class="vas-merk">{{ 'vasgestel' | t }}</span>
                   </p>
                 }
               </div>
@@ -96,7 +97,7 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
           }
 
           @if (fout) {
-            <p class="error-alert" role="alert">{{ fout }}</p>
+            <p class="error-alert" role="alert">{{ fout | t }}</p>
           }
 
           <button
@@ -104,10 +105,10 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
             class="btn btn-primary btn-xl btn-full"
             [disabled]="besig"
             (click)="stoor()"
-          >{{ besig ? 'Besig om te stoor...' : (wagOpKeuse ? 'Stoor en wys my sertifikate' : 'Stoor name') }}</button>
+          >{{ (besig ? 'Besig om te stoor...' : (wagOpKeuse ? 'Stoor en wys my sertifikate' : 'Stoor name')) | t }}</button>
 
           @if (gestoor) {
-            <p class="klaar" role="status">Gestoor. Die sertifikate hieronder wys nou die nuwe name.</p>
+            <p class="klaar" role="status">{{ 'Gestoor. Die sertifikate hieronder wys nou die nuwe name.' | t }}</p>
           }
           </div>
         </div>
@@ -120,7 +121,7 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
           [ownerName]="ownerName"
           [squares]="squares"
           [lockedMode]="vasteModus">
-          <a routerLink="/my-blokke" class="btn btn-outline">Terug na my blokke</a>
+          <a routerLink="/my-blokke" class="btn btn-outline">{{ 'Terug na my blokke' | t }}</a>
         </app-certificate-card>
       }
     </div>

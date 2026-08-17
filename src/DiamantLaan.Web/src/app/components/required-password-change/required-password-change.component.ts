@@ -4,39 +4,40 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { getPasswordChecks, isPasswordValid, validatePassword } from '../../utils/validation.util';
 import { PasswordInputComponent } from '../shared/password-input/password-input.component';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-required-password-change',
   standalone: true,
-  imports: [FormsModule, PasswordInputComponent],
+  imports: [FormsModule, PasswordInputComponent, TPipe],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Rekening</p>
-          <h2 class="display auth-title">Verander jou wagwoord</h2>
-          <p>Om veiligheidsredes moet jy ’n nuwe wagwoord kies voordat jy voortgaan.</p>
+          <p class="eyebrow">{{ 'Rekening' | t }}</p>
+          <h2 class="display auth-title">{{ 'Verander jou wagwoord' | t }}</h2>
+          <p>{{ 'Om veiligheidsredes moet jy ’n nuwe wagwoord kies voordat jy voortgaan.' | t }}</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label for="newPassword">Nuwe wagwoord</label>
+            <label for="newPassword">{{ 'Nuwe wagwoord' | t }}</label>
             <app-password-input id="newPassword" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8" />
             <ul class="pw-checklist">
-              <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-              <li [class.ok]="checks().hasNumber">’n Nommer</li>
-              <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
-              <li [class.ok]="checks().hasLower">’n Kleinletter</li>
+              <li [class.ok]="checks().minLength">{{ 'Minstens 8 karakters' | t }}</li>
+              <li [class.ok]="checks().hasNumber">{{ '’n Nommer' | t }}</li>
+              <li [class.ok]="checks().hasUpper">{{ '’n Hoofletter' | t }}</li>
+              <li [class.ok]="checks().hasLower">{{ '’n Kleinletter' | t }}</li>
             </ul>
           </div>
           <div class="form-group">
-            <label for="confirmPassword">Bevestig wagwoord</label>
+            <label for="confirmPassword">{{ 'Bevestig wagwoord' | t }}</label>
             <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" />
           </div>
           @if (error) {
-            <div class="error-alert">{{ error }}</div>
+            <div class="error-alert">{{ error | t }}</div>
           }
           <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !canSubmit()">
-            {{ loading ? 'Besig...' : 'Stoor nuwe wagwoord' }}
+            {{ (loading ? 'Besig...' : 'Stoor nuwe wagwoord') | t }}
           </button>
         </form>
       </div>

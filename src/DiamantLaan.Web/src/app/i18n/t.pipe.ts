@@ -13,7 +13,9 @@ import { LangService } from './lang.service';
 export class TPipe implements PipeTransform {
   private lang = inject(LangService);
 
-  transform(af: string): string {
-    return this.lang.t(af);
+  transform<T extends string | null | undefined>(af: T): T {
+    // Error signals are `string | null`; passing one straight through keeps the
+    // caller's `@if` on it working instead of forcing a cast at every use.
+    return (af ? this.lang.t(af) : af) as T;
   }
 }

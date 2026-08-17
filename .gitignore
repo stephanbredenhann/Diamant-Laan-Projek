@@ -15,3 +15,6 @@ dist/
 node_modules/
 .opencode/
 .cursor
+.claude/
+CLAUDE.md
+docs/

@@ -13,73 +13,70 @@ import {
   validatePhone,
   validateName,
 } from '../../utils/validation.util';
+import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink, PhoneInputComponent, PasswordInputComponent],
+  imports: [FormsModule, RouterLink, PhoneInputComponent, PasswordInputComponent, TPipe],
   template: `
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <h2 class="display auth-title">Registreer</h2>
-          <p>
-            Deur ’n rekening te skep, verseker jy dat jou sertifikate altyd beskikbaar is, dat ons
-            jou oor die vordering van jou blokkie kan opdateer en dat toekomstige aankope nóg
-            makliker sal wees.
-          </p>
+          <h2 class="display auth-title">{{ 'Registreer' | t }}</h2>
+          <p>{{ 'Deur ’n rekening te skep, verseker jy dat jou sertifikate altyd beskikbaar is, dat ons jou oor die vordering van jou blokkie kan opdateer en dat toekomstige aankope nóg makliker sal wees.' | t }}</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-row">
             <div class="form-group">
-              <label for="firstName">Voornaam</label>
-              <input id="firstName" type="text" [(ngModel)]="firstName" name="firstName" required placeholder="Jou naam"
+              <label for="firstName">{{ 'Voornaam' | t }}</label>
+              <input id="firstName" type="text" [(ngModel)]="firstName" name="firstName" required [placeholder]="'Jou naam' | t"
                      [class.invalid]="firstNameError" (blur)="checkFirstName()">
               @if (firstNameError) {
-                <p class="field-error">{{ firstNameError }}</p>
+                <p class="field-error">{{ firstNameError | t }}</p>
               }
             </div>
             <div class="form-group">
-              <label for="lastName">Van</label>
-              <input id="lastName" type="text" [(ngModel)]="lastName" name="lastName" required placeholder="Jou van"
+              <label for="lastName">{{ 'Van' | t }}</label>
+              <input id="lastName" type="text" [(ngModel)]="lastName" name="lastName" required [placeholder]="'Jou van' | t"
                      [class.invalid]="lastNameError" (blur)="checkLastName()">
               @if (lastNameError) {
-                <p class="field-error">{{ lastNameError }}</p>
+                <p class="field-error">{{ lastNameError | t }}</p>
               }
             </div>
           </div>
           <div class="form-group">
-            <label for="email">E-pos</label>
+            <label for="email">{{ 'E-pos' | t }}</label>
             <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za"
                    [class.invalid]="emailError" (blur)="checkEmail()">
             @if (emailError) {
-              <p class="field-error">{{ emailError }}</p>
+              <p class="field-error">{{ emailError | t }}</p>
             }
           </div>
           <div class="form-group">
-            <label for="password">Wagwoord</label>
-            <app-password-input id="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies ’n wagwoord"
+            <label for="password">{{ 'Wagwoord' | t }}</label>
+            <app-password-input id="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" [placeholder]="'Kies ’n wagwoord' | t"
                    [invalid]="!!passwordError" (inputBlur)="checkPassword()" />
             <ul class="pw-checklist" aria-live="polite">
-              <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
-              <li [class.ok]="checks().hasNumber">’n Nommer</li>
-              <li [class.ok]="checks().hasUpper">’n Hoofletter</li>
-              <li [class.ok]="checks().hasLower">’n Kleinletter</li>
+              <li [class.ok]="checks().minLength">{{ 'Minstens 8 karakters' | t }}</li>
+              <li [class.ok]="checks().hasNumber">{{ '’n Nommer' | t }}</li>
+              <li [class.ok]="checks().hasUpper">{{ '’n Hoofletter' | t }}</li>
+              <li [class.ok]="checks().hasLower">{{ '’n Kleinletter' | t }}</li>
             </ul>
             @if (passwordError) {
-              <p class="field-error">{{ passwordError }}</p>
+              <p class="field-error">{{ passwordError | t }}</p>
             }
           </div>
           <div class="form-group">
-            <label for="confirmPassword">Bevestig wagwoord</label>
-            <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
+            <label for="confirmPassword">{{ 'Bevestig wagwoord' | t }}</label>
+            <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" [placeholder]="'Tik wagwoord weer' | t"
                    [invalid]="!!confirmPasswordError" (inputBlur)="checkConfirmPassword()" />
             @if (confirmPasswordError) {
-              <p class="field-error">{{ confirmPasswordError }}</p>
+              <p class="field-error">{{ confirmPasswordError | t }}</p>
             }
           </div>
           <div class="form-group">
-            <label for="phoneNumber">Foonnommer</label>
+            <label for="phoneNumber">{{ 'Foonnommer' | t }}</label>
             <!-- Expanded from the two-way form so the error can clear as they correct it. -->
             <app-phone-input
               [countryCode]="phoneCountryCode"
@@ -88,34 +85,34 @@ import {
               (phoneNumberChange)="onPhoneNumberChange($event)"
             />
             @if (phoneError) {
-              <p class="field-error">{{ phoneError }}</p>
+              <p class="field-error">{{ phoneError | t }}</p>
             }
           </div>
           <div class="form-group checkbox-group">
             <label>
               <input type="checkbox" [(ngModel)]="isOraniaResident" name="isOraniaResident">
-              Inwoner van Orania?
+              {{ 'Inwoner van Orania?' | t }}
             </label>
           </div>
           <div class="form-group checkbox-group">
             <label>
               <input type="checkbox" [(ngModel)]="isOraniaBewegingMember" name="isOraniaBewegingMember">
-              Lid van Orania Beweging?
+              {{ 'Lid van Orania Beweging?' | t }}
             </label>
           </div>
           @if (error) {
-            <div class="error-alert">{{ error }}</div>
+            <div class="error-alert">{{ error | t }}</div>
           }
           @if (requiresLogin) {
-            <p class="auth-link"><a [routerLink]="'/meld-aan'">Meld aan met daardie e-posadres</a> om jou vierkante meter te koppel.</p>
+            <p class="auth-link"><a [routerLink]="'/meld-aan'">{{ 'Meld aan met daardie e-posadres' | t }}</a> {{ 'om jou vierkante meter te koppel.' | t }}</p>
           }
           <!-- Deliberately always clickable: a disabled button cannot explain what is wrong,
                and browser autofill regularly leaves one field the form does not accept. -->
           <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
-            {{ loading ? 'Besig...' : 'Registreer' }}
+            {{ (loading ? 'Besig...' : 'Registreer') | t }}
           </button>
         </form>
-        <p class="auth-link">Reeds ’n rekening? <a routerLink="/meld-aan">Meld hier aan</a></p>
+        <p class="auth-link">{{ 'Reeds ’n rekening?' | t }} <a routerLink="/meld-aan">{{ 'Meld hier aan' | t }}</a></p>
       </div>
     </div>
   `,

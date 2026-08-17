@@ -1,11 +1,12 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.util';
+import { TPipe } from '../../../i18n/t.pipe';
 
 @Component({
   selector: 'app-phone-input',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TPipe],
   template: `
     <div class="phone-row">
       <div class="country-slot">
@@ -16,7 +17,7 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
           [attr.aria-expanded]="open"
           [attr.aria-controls]="listboxId"
           aria-haspopup="listbox"
-          aria-label="Landkode"
+          [attr.aria-label]="'Landkode' | t"
           (click)="toggleOpen($event)"
         >
           <span class="country-code">{{ countryCode }}</span>
@@ -50,12 +51,12 @@ import { COUNTRY_CODES, sanitizePhoneInput } from '../../../utils/validation.uti
             [(ngModel)]="search"
             [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="onSearchChange()"
-            placeholder="Soek land..."
-            aria-label="Soek landkode"
+            [placeholder]="'Soek land...' | t"
+            [attr.aria-label]="'Soek landkode' | t"
             (click)="$event.stopPropagation()"
             (keydown)="onSearchKeydown($event)"
           >
-          <ul class="country-list" [id]="listboxId" role="listbox" aria-label="Kies landkode">
+          <ul class="country-list" [id]="listboxId" role="listbox" [attr.aria-label]="'Kies landkode' | t">
             @for (c of filteredCountries(); track c.code + c.label; let i = $index) {
               <li>
                 <button

@@ -5,6 +5,8 @@ import { RoadService } from '../../../services/road.service';
 import { PurchaseService } from '../../../services/purchase.service';
 import { Square } from '../../../models/square';
 import { nommer, randBedrag } from '../../../utils/afrikaans.util';
+import { TPipe } from '../../../i18n/t.pipe';
+import { isEngels } from '../../../i18n/lang.service';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
 import { BlokRoosterComponent } from './blok-rooster.component';
 import { BlokStrookComponent } from './blok-strook.component';
@@ -35,16 +37,16 @@ const PRYS_PER_METER = 500;
   standalone: true,
   imports: [
     FormsModule, RouterLink, BouStepBarComponent,
-    BlokStrookComponent, BlokRoosterComponent, PadOorsigComponent,
+    BlokStrookComponent, BlokRoosterComponent, PadOorsigComponent, TPipe,
   ],
   template: `
     <div class="kaart-shell bou-shell">
-      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou blokkie</p>
+      <p class="eyebrow page-eyebrow">{{ 'Stap 2 van 4 · Kies jou blokkie' | t }}</p>
       <div class="visually-hidden" aria-live="polite">{{ aankondiging() }}</div>
       <h1 class="page-title">{{ titel() }}</h1>
       <p class="page-lead">{{ leidraad() }}</p>
 
-      <app-bou-step-bar [active]="2" [nextEnabled]="klaarGekies()" />
+      <app-bou-step-bar [active]="2" />
 
       <div class="layout">
         <div class="werkarea">
@@ -53,20 +55,20 @@ const PRYS_PER_METER = 500;
           <app-pad-oorsig [merk]="gemerk()" [aspek]="7" />
           <div class="inhoud">
           @if (laai()) {
-            <p class="laai-nota">Besig om die blokke te laai...</p>
+            <p class="laai-nota">{{ 'Besig om die blokke te laai...' | t }}</p>
           } @else if (laaiFout()) {
-            <p class="error-alert">{{ laaiFout() }}</p>
+            <p class="error-alert">{{ laaiFout() | t }}</p>
           } @else {
             @let s = seksie();
             <div class="strook-paneel">
               <div class="strook-kop">
                 <button type="button" class="strook-blaai" (click)="skuifSeksie(-1)" [disabled]="!vorigeSeksie()">
-                  ‹ Vorige 100
+                  ‹ {{ 'Vorige 100' | t }}
                 </button>
                 <div class="springer">
                   <select
                     id="seksie-keuse"
-                    aria-label="Spring na blokke"
+                    [attr.aria-label]="'Spring na blokke' | t"
                     [value]="reeksSleutel(s)"
                     (change)="kiesSeksie($event)"
                   >
@@ -78,16 +80,16 @@ const PRYS_PER_METER = 500;
                   </select>
                 </div>
                 <button type="button" class="strook-blaai" (click)="skuifSeksie(1)" [disabled]="!volgendeSeksie()">
-                  Volgende 100 ›
+                  {{ 'Volgende 100' | t }} ›
                 </button>
               </div>
               <div class="legende">
-                <span><i class="swatch beskikbaar"></i> Beskikbaar</span>
-                <span><i class="swatch gekies"></i> Gekies</span>
-                <span><i class="swatch verkoop"></i> Verkoop</span>
-                <span><i class="swatch onbeskikbaar"></i> Onbeskikbaar</span>
+                <span><i class="swatch beskikbaar"></i> {{ 'Beskikbaar' | t }}</span>
+                <span><i class="swatch gekies"></i> {{ 'Gekies' | t }}</span>
+                <span><i class="swatch verkoop"></i> {{ 'Verkoop' | t }}</span>
+                <span><i class="swatch onbeskikbaar"></i> {{ 'Onbeskikbaar' | t }}</span>
               </div>
-              <p class="strook-nota">Klik op ’n blokkie om dit te kies. Klik weer daarop om jou keuse te verwyder.</p>
+              <p class="strook-nota">{{ 'Klik op ’n blokkie om dit te kies. Klik weer daarop om jou keuse te verwyder.' | t }}</p>
               <app-blok-strook
                 class="net-wyd"
                 [van]="s.van"
@@ -112,16 +114,16 @@ const PRYS_PER_METER = 500;
         </div>
 
         <aside class="keuse-kaart">
-          <p class="eyebrow">Jou keuse</p>
+          <p class="eyebrow">{{ 'Jou keuse' | t }}</p>
           <p class="teller" aria-live="polite">
             {{ gekies().size }} <span>/ {{ aantal() }}</span>
           </p>
-          <p class="teller-etiket">blokkies gekies</p>
+          <p class="teller-etiket">{{ 'blokkies gekies' | t }}</p>
           <p class="totaal">{{ randBedrag(aantal() * prysPerMeter) }}</p>
-          <p class="totaal-nota">R{{ prysPerMeter }} per blokkie</p>
+          <p class="totaal-nota">R{{ prysPerMeter }} {{ 'per blokkie' | t }}</p>
 
           <div class="soek">
-            <label for="soek-blok">Soek ’n bloknommer</label>
+            <label for="soek-blok">{{ 'Soek ’n bloknommer' | t }}</label>
             <div class="soek-ry">
               <input
                 id="soek-blok"
@@ -130,19 +132,19 @@ const PRYS_PER_METER = 500;
                 inputmode="numeric"
                 min="1"
                 [max]="maxBlokId"
-                placeholder="bv. 2350"
+                [placeholder]="'bv. 2350' | t"
                 [(ngModel)]="soekNommer"
                 (keydown.enter)="soek()"
               >
-              <button type="button" class="btn btn-accent" (click)="soek()">Soek</button>
+              <button type="button" class="btn btn-accent" (click)="soek()">{{ 'Soek' | t }}</button>
             </div>
             @if (soekFout(); as f) {
-              <p class="waarskuwing" role="alert">{{ f }}</p>
+              <p class="waarskuwing" role="alert">{{ f | t }}</p>
             }
           </div>
 
           @if (boodskap(); as b) {
-            <p class="waarskuwing" role="alert">{{ b }}</p>
+            <p class="waarskuwing" role="alert">{{ b | t }}</p>
           }
 
           @if (gekiesLys().length > 0) {
@@ -153,10 +155,10 @@ const PRYS_PER_METER = 500;
                     type="button"
                     class="gekose-blok"
                     (click)="verwyder(id)"
-                    [attr.aria-label]="'Verwyder blok ' + id"
+                    [attr.aria-label]="verwyderEtiket(id)"
                   >
                     <span class="gekose-nommer">{{ id }}</span>
-                    <span class="gekose-af" aria-hidden="true">Verwyder</span>
+                    <span class="gekose-af" aria-hidden="true">{{ 'Verwyder' | t }}</span>
                   </button>
                 </li>
               }
@@ -168,7 +170,7 @@ const PRYS_PER_METER = 500;
           <p class="oorblywend">{{ oorblywendTeks() }}</p>
 
           <button type="button" class="btn btn-primary btn-xl" (click)="gaanVoort()" [disabled]="!klaarGekies()">
-            Gaan voort
+            {{ 'Gaan voort' | t }}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
@@ -176,7 +178,7 @@ const PRYS_PER_METER = 500;
 
           @if (gekies().size > 0) {
             <button type="button" class="btn btn-outline maak-skoon" (click)="maakSkoon()">
-              Maak keuses skoon
+              {{ 'Maak keuses skoon' | t }}
             </button>
           }
 
@@ -184,9 +186,9 @@ const PRYS_PER_METER = 500;
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>
-            Gaan terug
+            {{ 'Gaan terug' | t }}
           </button>
-          <a routerLink="/bou" class="verander">Verander hoeveelheid</a>
+          <a routerLink="/bou" class="verander">{{ 'Verander hoeveelheid' | t }}</a>
         </aside>
       </div>
 
@@ -199,7 +201,7 @@ const PRYS_PER_METER = 500;
           <span class="voetbalk-woord">{{ voetbalkTeks() }}</span>
         </div>
         <button type="button" class="btn btn-primary" (click)="gaanVoort()" [disabled]="!klaarGekies()">
-          Gaan voort
+          {{ 'Gaan voort' | t }}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
@@ -604,14 +606,24 @@ export class BouKaartComponent implements OnInit {
   }
 
   titel(): string {
-    return `Blokkies ${this.reeksNaam(this.seksie())}`;
+    const naam = this.reeksNaam(this.seksie());
+    return isEngels() ? `Blocks ${naam}` : `Blokkies ${naam}`;
   }
 
   leidraad(): string {
-    return 'Hier is die blokkies op die pad. Klik op ’n beskikbare blokkie om dit te kies.';
+    return isEngels()
+      ? 'Here are the blocks on the road. Click an available block to choose it.'
+      : 'Hier is die blokkies op die pad. Klik op ’n beskikbare blokkie om dit te kies.';
   }
 
-  aankondiging = computed(() => `Blokkies ${this.reeksNaam(this.seksie())} is oop.`);
+  aankondiging = computed(() => {
+    const naam = this.reeksNaam(this.seksie());
+    return isEngels() ? `Blocks ${naam} are open.` : `Blokkies ${naam} is oop.`;
+  });
+
+  verwyderEtiket(id: number): string {
+    return isEngels() ? `Remove block ${id}` : `Verwyder blok ${id}`;
+  }
 
   reeksNaam(r: Reeks): string {
     return `${nommer(r.van)} – ${nommer(r.tot)}`;
@@ -624,16 +636,23 @@ export class BouKaartComponent implements OnInit {
   /** Short enough to sit on one line of the jump list, beside the range. */
   vryKort(r: Reeks): string {
     const vry = this.beskikbaarIn(r);
+    if (isEngels()) return vry === 0 ? 'none available' : `${nommer(vry)} available`;
     if (vry === 0) return 'geen beskikbaar';
     return `${nommer(vry)} beskikbaar`;
   }
 
   leegTeks(): string {
-    return 'Nog niks gekies nie. Klik op ’n blokkie op die kaart.';
+    return isEngels()
+      ? 'Nothing chosen yet. Click a block on the map.'
+      : 'Nog niks gekies nie. Klik op ’n blokkie op die kaart.';
   }
 
   oorblywendTeks(): string {
     const oor = this.aantal() - this.gekies().size;
+    if (isEngels()) {
+      if (oor <= 0) return 'All chosen. You can continue now.';
+      return oor === 1 ? 'Choose 1 more block.' : `Choose ${oor} more blocks.`;
+    }
     if (oor <= 0) return 'Alles gekies. Jy kan nou voortgaan.';
     return oor === 1 ? 'Kies nog 1 blokkie.' : `Kies nog ${oor} blokkies.`;
   }
@@ -641,6 +660,10 @@ export class BouKaartComponent implements OnInit {
   /** Short enough to sit beside the count in the phone bar. */
   voetbalkTeks(): string {
     const oor = this.aantal() - this.gekies().size;
+    if (isEngels()) {
+      if (oor <= 0) return 'All chosen';
+      return oor === 1 ? 'Choose 1 more' : `Choose ${oor} more`;
+    }
     if (oor <= 0) return 'Alles gekies';
     return oor === 1 ? 'Kies nog 1' : `Kies nog ${oor}`;
   }
@@ -698,9 +721,11 @@ export class BouKaartComponent implements OnInit {
   private kanNogKies(id: number): boolean {
     if (blokRede(id, this.byId().get(id)) !== null) return false;
     if (this.gekies().size >= this.aantal()) {
-      this.boodskap.set(
-        `Jy het reeds ${this.aantal()} ${this.aantal() === 1 ? 'blokkie' : 'blokkies'} gekies. ` +
-        'Verwyder een om ’n ander blokkie te kies.'
+      this.boodskap.set(isEngels()
+        ? `You have already chosen ${this.aantal()} ${this.aantal() === 1 ? 'block' : 'blocks'}. ` +
+          'Remove one to choose another block.'
+        : `Jy het reeds ${this.aantal()} ${this.aantal() === 1 ? 'blokkie' : 'blokkies'} gekies. ` +
+          'Verwyder een om ’n ander blokkie te kies.'
       );
       return false;
     }
@@ -733,7 +758,9 @@ export class BouKaartComponent implements OnInit {
     const id = Math.floor(Number(this.soekNommer));
     const plek = seksieVan(id);
     if (!plek) {
-      this.soekFout.set(`Blok ${this.soekNommer} bestaan nie. Kies ’n nommer tussen 1 en ${nommer(this.maxBlokId)}.`);
+      this.soekFout.set(isEngels()
+        ? `Block ${this.soekNommer} does not exist. Choose a number between 1 and ${nommer(this.maxBlokId)}.`
+        : `Blok ${this.soekNommer} bestaan nie. Kies ’n nommer tussen 1 en ${nommer(this.maxBlokId)}.`);
       return;
     }
 
@@ -743,17 +770,17 @@ export class BouKaartComponent implements OnInit {
     this.beklemtoon.set(id);
 
     if (this.gekies().has(id)) {
-      this.soekFout.set(`Blok ${id} is reeds een van joune.`);
+      this.soekFout.set(isEngels() ? `Block ${id} is already one of yours.` : `Blok ${id} is reeds een van joune.`);
       return;
     }
 
     const rede = blokRede(id, this.byId().get(id));
     if (rede === 'verkoop') {
-      this.soekFout.set(`Blok ${id} is reeds verkoop. Kies ’n ander een.`);
+      this.soekFout.set(isEngels() ? `Block ${id} is already sold. Choose another one.` : `Blok ${id} is reeds verkoop. Kies ’n ander een.`);
       return;
     }
     if (rede === 'onbeskikbaar') {
-      this.soekFout.set(`Blok ${id} is nie beskikbaar nie.`);
+      this.soekFout.set(isEngels() ? `Block ${id} is not available.` : `Blok ${id} is nie beskikbaar nie.`);
       return;
     }
 
