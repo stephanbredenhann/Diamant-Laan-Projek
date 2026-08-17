@@ -140,12 +140,22 @@ public class AppDbContext : IdentityDbContext<User>
             .IsUnique();
     }
 
-    public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)
+    /// <summary>
+    /// Creates the Admin and Buyer roles if they are missing. Split out of <see cref="SeedAsync"/>
+    /// so it can run even when the admin account is not configured: registration adds every buyer
+    /// to Buyer, and AddToRoleAsync throws when the role row does not exist.
+    /// </summary>
+    public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
     {
         if (!await roleManager.RoleExistsAsync("Admin"))
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         if (!await roleManager.RoleExistsAsync("Buyer"))
             await roleManager.CreateAsync(new IdentityRole("Buyer"));
+    }
+
+    public static async Task SeedAsync(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, AppDbContext db, string adminEmail, string adminPassword)
+    {
+        await SeedRolesAsync(roleManager);
 
         if (await userManager.FindByEmailAsync(adminEmail) == null)
         {

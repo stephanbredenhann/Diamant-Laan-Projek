@@ -85,9 +85,19 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
             </div>
           }
           <div class="field">
-            <label for="proof">Bewys van betaling (PDF, opsioneel)</label>
-            <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
+            <label for="paymentMethod">Betaalmetode</label>
+            <select id="paymentMethod" [(ngModel)]="paymentMethod" name="paymentMethod" (ngModelChange)="onMethodChange()">
+              <option value="EFT">EFT</option>
+              <option value="Cash">Kontant</option>
+              <option value="Card">Kaart</option>
+            </select>
           </div>
+          @if (paymentMethod === 'EFT') {
+            <div class="field">
+              <label for="proof">Bewys van betaling (PDF, opsioneel)</label>
+              <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
+            </div>
+          }
 
           <app-alert [message]="message" [type]="isError ? 'error' : 'success'"></app-alert>
 
@@ -99,7 +109,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
 
       <div class="table-card">
         <div class="table-header">
-          <h3>Bewyse van betaling</h3>
+          <h3>Telefoniese aankope</h3>
           <div class="table-actions">
             <input
               type="text"
@@ -124,6 +134,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
                   <th>E-pos</th>
                   <th class="numeric">Blokke</th>
                   <th class="numeric">Totaal</th>
+                  <th>Metode</th>
                   <th class="action-col">Bewys</th>
                 </tr>
               </thead>
@@ -136,8 +147,11 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
                     <td>{{ tx.userEmail }}</td>
                     <td class="numeric">{{ tx.squareCount }} {{ blokLabel(tx.squareCount) }}</td>
                     <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
+                    <td>{{ methodLabel(tx.paymentMethod) }}</td>
                     <td class="action-col">
-                      @if (tx.hasProof) {
+                      @if (tx.paymentMethod !== 'EFT') {
+                        <span class="muted">n.v.t.</span>
+                      } @else if (tx.hasProof) {
                         <div class="proof-actions">
                           <button
                             type="button"
@@ -175,7 +189,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
                 }
                 @if (filteredProofs.length === 0) {
                   <tr>
-                    <td colspan="7" class="empty">Geen telefoniese aankope gevind nie.</td>
+                    <td colspan="8" class="empty">Geen telefoniese aankope gevind nie.</td>
                   </tr>
                 }
               </tbody>
@@ -264,7 +278,8 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
       outline-offset: 2px;
     }
     .field input[type="text"],
-    .field input[type="email"] {
+    .field input[type="email"],
+    .field select {
       width: 100%;
       padding: 0.625rem 0.75rem;
       border: 1px solid var(--color-border);
@@ -403,6 +418,7 @@ export class AdminManualPurchaseComponent implements OnInit {
   isOraniaBewegingMember = false;
   selectedSquareIds: number[] = [];
   pickerOpen = false;
+  paymentMethod: 'EFT' | 'Cash' | 'Card' = 'EFT';
   proofFile: File | null = null;
   message = '';
   isError = false;
@@ -448,6 +464,14 @@ export class AdminManualPurchaseComponent implements OnInit {
 
   removeSquare(id: number) {
     this.selectedSquareIds = this.selectedSquareIds.filter(x => x !== id);
+  }
+
+  methodLabel(method?: string | null): string {
+    return method === 'Cash' ? 'Kontant' : method === 'Card' ? 'Kaart' : method === 'EFT' ? 'EFT' : '';
+  }
+
+  onMethodChange() {
+    if (this.paymentMethod !== 'EFT') this.proofFile = null;
   }
 
   onFileSelected(event: Event) {
@@ -573,7 +597,8 @@ export class AdminManualPurchaseComponent implements OnInit {
     formData.append('isOraniaResident', String(this.isOraniaResident));
     formData.append('isOraniaBewegingMember', String(this.isOraniaBewegingMember));
     this.selectedSquareIds.forEach(id => formData.append('squareIds', String(id)));
-    if (this.proofFile) {
+    formData.append('paymentMethod', this.paymentMethod);
+    if (this.paymentMethod === 'EFT' && this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
     }
 
@@ -594,6 +619,7 @@ export class AdminManualPurchaseComponent implements OnInit {
         this.isOraniaResident = false;
         this.isOraniaBewegingMember = false;
         this.selectedSquareIds = [];
+        this.paymentMethod = 'EFT';
         this.proofFile = null;
         this.loading = false;
         this.loadProofs();

@@ -16,7 +16,7 @@ import { TPipe } from '../../i18n/t.pipe';
         <p class="eyebrow page-hero-eyebrow">{{ 'Die projek · Orania bou ’n pad' | t }}</p>
         <h1 class="display page-hero-title">{{ 'Wat gebou word en hoe dit werk.' | t }}</h1>
         <p class="page-hero-body">
-          {{ 'Die Oewerpad is ’n belangrike roete wat tans nog ’n grondpad is. Met eie Afrikanerhande en duisende ondersteuners, kan ons hierdie pad na ’n volgende vlak neem.' | t }}
+          {{ 'Die Oewerpad is ’n belangrike roete in Orania wat tans nog ’n grondpad is. Met eie Afrikanerhande en die ondersteuning van duisende mense kan ons die Oewerpad stap vir stap van ’n grondpad in ’n behoorlike pad omskep.' | t }}
         </p>
       </div>
     </section>
@@ -27,10 +27,10 @@ import { TPipe } from '../../i18n/t.pipe';
           <p class="eyebrow">{{ 'Waarom die Oewerpad?' | t }}</p>
           <h2 class="display section-title">{{ 'Van grondpad tot teerpad.' | t }}</h2>
           <p class="lead">
-            {{ 'Die Oewerpad is een van Orania se paaie wat jaarliks die meeste verkeer geniet. Dit is ’n besonders belangrike roete vir besoekers wat gastehuise, die hotel, restaurant of rivier gaan besoek. Dit is dikwels een van die eerste roetes wat deur besoekers gery word en eerste indrukke maak saak.' | t }}
+            {{ 'Die Oewerpad is een van Orania se besigste paaie en speel ’n belangrike rol in die toegang tot die oewergebied. Dit is ’n belangrike roete vir besoekers wat Orania se gastehuise, kampeerterreine en ander toerismegeriewe, asook die Oranjerivier, besoek. Vir baie besoekers is dit ook een van die eerste roetes wat hulle in Orania ry. Eerste indrukke maak saak.' | t }}
           </p>
           <p class="lead">
-            {{ 'Die opgradering van die Oewerpad is meer as net infrastruktuurverbetering, maar kan dien as ’n ekonomiese katalisator vir die hele area.' | t }}
+            {{ 'Die teer van die Oewerpad is daarom meer as net infrastruktuurontwikkeling. Dit ontsluit Orania se oewergebied vir ’n volgende fase van toerismeontwikkeling en skep nuwe ruimte vir ekonomiese groei.' | t }}
           </p>
 
           <div class="scope-grid">
@@ -46,7 +46,7 @@ import { TPipe } from '../../i18n/t.pipe';
 
         <aside class="callout-panel">
           <div class="callout-media">
-            <img src="oewerpad-03.jpg" [alt]="'Oewerpad, grondpad wat teerwerk nodig het' | t" />
+            <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" />
             <div class="price-chip">
               <span class="display price-chip-value">R500</span>
               <p>{{ 'Per volle vierkante meter.' | t }}</p>
@@ -321,22 +321,22 @@ export class ProjekComponent {
     {
       icon: 'road',
       title: 'Besige roete',
-      body: 'As een van die paaie wat die meeste verkeer in Orania geniet, is dit belangrik om die infrastruktuur tot ’n volgende vlak te ontwikkel.',
+      body: 'As een van Orania se besigste paaie, is die Oewerpad ’n belangrike roete wat opgegradeer moet word om by Orania se groeiende behoeftes te pas.',
     },
     {
       icon: 'wallet',
-      title: 'Ekonomiese impak',
-      body: 'Beter padinfrastruktuur verlaag voertuig- en instandhoudingskoste, verbeter reistye en skep ’n goeie ervaring wanneer besoekers by een van Orania se gewildste besoekpunte aandoen.',
+      title: 'Ekonomiese waarde',
+      body: 'Beter padinfrastruktuur verlaag voertuig- en instandhoudingskoste, verkort reistye en verbeter die besoekerservaring by een van Orania se gewildste bestemmings.',
     },
     {
       icon: 'map-pin',
       title: 'Bou die stad',
-      body: 'Orania ontwikkel en dit gebeur nie vanself nie. Stap vir stap, stukkie vir stukkie moet ons self Orania verbeter, opgradeer en laat groei. Indrukwekkende infrastruktuur in ’n eie Afrikanergemeenskap is die fisiese bewys van dit waartoe ons in staat is.',
+      body: 'Afrikaners het ’n eie plek nodig: ’n plek waar hulle die meerderheid is, hul taal en kultuur kan uitleef en die Afrikanerkultuur kan floreer. Die grondslag van ’n lewenskragtige Afrikanerstad is sterk, moderne infrastruktuur. Die teer van die Oewerpad vorm daarom deel van Orania se omvattende infrastruktuurontwikkelingsplan, ’n plan om die stad stap vir stap uit te bou en vir die toekoms toe te rus.',
     },
     {
       icon: 'hammer',
       title: 'Vele hande, ligte werk',
-      body: 'Hierdie is ’n belangrike en ’n duur projek. Deur dit in blokkies op te deel maak ons dit moontlik vir elkeen om sy deel te doen. So deel ons almal die verantwoordelikheid om hierdie groot visie haalbaar te maak.',
+      body: 'Dit is ’n belangrike én omvangryke projek. Deur die pad in kleiner blokkies op te deel, maak ons dit moontlik vir elkeen om ’n deel by te dra. Só dra ons almal saam verantwoordelikheid om hierdie groot visie stap vir stap ’n werklikheid te maak.',
     },
   ];
 }

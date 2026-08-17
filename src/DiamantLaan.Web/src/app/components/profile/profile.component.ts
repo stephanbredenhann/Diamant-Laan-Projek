@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertComponent } from '../shared/alert/alert.component';
+import { PasswordInputComponent } from '../shared/password-input/password-input.component';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
@@ -18,7 +19,7 @@ import {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, AlertComponent, PhoneInputComponent],
+  imports: [FormsModule, AlertComponent, PhoneInputComponent, PasswordInputComponent],
   template: `
     <div class="container profile-page">
       <div class="page-header">
@@ -90,7 +91,7 @@ import {
               </div>
               <div class="form-group">
                 <label for="emailCurrentPassword">Huidige wagwoord</label>
-                <input id="emailCurrentPassword" type="password" [(ngModel)]="emailCurrentPassword" name="emailCurrentPassword" required autocomplete="current-password">
+                <app-password-input id="emailCurrentPassword" [(ngModel)]="emailCurrentPassword" name="emailCurrentPassword" required autocomplete="current-password" />
               </div>
               @if (emailMessage) {
                 <app-alert [type]="emailMessageType" [message]="emailMessage" />
@@ -106,11 +107,11 @@ import {
             <form (ngSubmit)="savePassword()">
               <div class="form-group">
                 <label for="currentPassword">Huidige wagwoord</label>
-                <input id="currentPassword" type="password" [(ngModel)]="currentPassword" name="currentPassword" required autocomplete="current-password">
+                <app-password-input id="currentPassword" [(ngModel)]="currentPassword" name="currentPassword" required autocomplete="current-password" />
               </div>
               <div class="form-group">
                 <label for="newPassword">Nuwe wagwoord</label>
-                <input id="newPassword" type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+                <app-password-input id="newPassword" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8" />
                 <ul class="pw-checklist">
                   <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
                   <li [class.ok]="checks().hasNumber">’n Nommer</li>
@@ -120,7 +121,7 @@ import {
               </div>
               <div class="form-group">
                 <label for="confirmPassword">Bevestig nuwe wagwoord</label>
-                <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+                <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" />
               </div>
               @if (passwordMessage) {
                 <app-alert [type]="passwordMessageType" [message]="passwordMessage" />
@@ -161,16 +162,15 @@ import {
           </p>
           <div class="form-group">
             <label for="deletePassword">Huidige wagwoord</label>
-            <input
+            <app-password-input
               id="deletePassword"
-              type="password"
               [(ngModel)]="deletePassword"
               [ngModelOptions]="{ standalone: true }"
               name="deletePassword"
               required
               autocomplete="current-password"
               [disabled]="deleteLoading"
-            >
+            />
           </div>
           @if (deleteError) {
             <app-alert type="error" [message]="deleteError" />
@@ -224,7 +224,7 @@ import {
       color: var(--color-text);
       margin-bottom: 1rem;
     }
-    .card :is(input, select, textarea, button, app-phone-input) {
+    .card :is(input, select, textarea, button, app-phone-input, app-password-input) {
       max-width: 100%;
     }
     .form-row {

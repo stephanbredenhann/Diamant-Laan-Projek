@@ -51,7 +51,7 @@ public class PasswordResetOtpService
         var html = EmailTemplates.PasswordResetOtp(user.FirstName, otp);
         await _emailOutbox.QueueAsync(
             user.Email,
-            "Herstel jou wagwoord — Diamant Laan",
+            EmailTemplates.SubjectPrefix + "Herstel jou wagwoord",
             html,
             cancellationToken);
     }

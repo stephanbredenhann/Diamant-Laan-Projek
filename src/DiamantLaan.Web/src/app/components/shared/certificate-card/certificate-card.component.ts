@@ -127,7 +127,7 @@ export function formatBlockRanges(ids: number[]): string {
   imports: [CommonModule],
   template: `
     <div class="cert-page">
-      @if (squares.length > 1 && !viewOnly) {
+      @if (squares.length > 1 && !viewOnly && !lockedMode) {
         <div class="view-toggle" role="group" aria-label="Kies sertifikaat weergawe">
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'summary'"
                   [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Opsomming</button>
@@ -352,6 +352,13 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
    * No paging through their individual blocks, and no PDF. The owner takes their own copy.
    */
   @Input() viewOnly = false;
+  /**
+   * Forces one shape and hides the toggle. The account picked summary or per-block when it bought,
+   * and that choice is locked with the names, so the certificate page is showing a settled fact
+   * rather than offering a view to flip between. Null leaves the old free choice, which is what
+   * the guest flow still uses.
+   */
+  @Input() lockedMode: 'summary' | 'block' | null = null;
 
   mode: 'summary' | 'block' = 'summary';
   downloading = false;
@@ -423,10 +430,10 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['squares']) {
-      this.previewIndex = 0;
+    if (changes['squares'] || changes['lockedMode']) {
+      if (changes['squares']) this.previewIndex = 0;
       // A lone block has nothing to summarise, so there is no choice to offer.
-      this.mode = this.squares.length > 1 ? 'summary' : 'block';
+      this.mode = this.lockedMode ?? (this.squares.length > 1 ? 'summary' : 'block');
     }
     // Both callers fill these in asynchronously, so re-fit rather than trusting the first render.
     if (!changes['ownerName']?.firstChange || changes['squares']) {

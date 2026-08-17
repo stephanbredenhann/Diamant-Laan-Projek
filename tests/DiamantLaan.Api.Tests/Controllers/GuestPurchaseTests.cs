@@ -238,6 +238,101 @@ public class GuestPurchaseTests : IDisposable
         Assert.Equal(2, await _db.Squares.CountAsync(s => s.OwnerId == originalUserId));
     }
 
+    /// <summary>
+    /// The reported bug: a password Identity rejects used to be checked only after the email
+    /// had been committed, so the shadow user was left half upgraded. The retry then found that
+    /// email and answered 409, and the account it pointed at had no password to log in with.
+    /// </summary>
+    [Fact]
+    public async Task UpgradeShadowUser_RejectedPassword_LeavesShadowUserUntouched()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1, 2);
+        await ConfirmAsync(purchaseId);
+
+        var purchase = await _guests.FindByTokenAsync(purchaseId, token);
+        var originalUserId = purchase!.UserId;
+
+        // Rejected by Identity: no digit, no uppercase.
+        var result = await _guests.UpgradeShadowUserAsync(purchase, new GuestPurchaseService.RegistrationDetails(
+            "nuut@test.com", "wagwoord", "Jan", "Boer", "+27821234567", "+27", false, false));
+
+        Assert.False(result.Succeeded);
+
+        var user = await _db.Users.SingleAsync();
+        Assert.Equal(originalUserId, user.Id);
+        Assert.True(user.IsGuest);
+        Assert.Null(user.Email);
+        Assert.Null(user.PasswordHash);
+    }
+
+    [Fact]
+    public async Task UpgradeShadowUser_SucceedsOnRetryAfterRejectedPassword()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1, 2);
+        await ConfirmAsync(purchaseId);
+
+        var purchase = await _guests.FindByTokenAsync(purchaseId, token);
+        var originalUserId = purchase!.UserId;
+
+        await _guests.UpgradeShadowUserAsync(purchase, new GuestPurchaseService.RegistrationDetails(
+            "nuut@test.com", "wagwoord", "Jan", "Boer", "+27821234567", "+27", false, false));
+
+        var retry = await _guests.UpgradeShadowUserAsync(purchase, new GuestPurchaseService.RegistrationDetails(
+            "nuut@test.com", "Wagwoord1", "Jan", "Boer", "+27821234567", "+27", false, false));
+
+        Assert.True(retry.Succeeded);
+
+        var user = await _db.Users.SingleAsync();
+        Assert.Equal(originalUserId, user.Id);
+        Assert.Equal("nuut@test.com", user.Email);
+        Assert.NotNull(user.PasswordHash);
+        Assert.Equal(2, await _db.Squares.CountAsync(s => s.OwnerId == originalUserId));
+    }
+
+    /// <summary>
+    /// Recovery path for accounts the bug already broke: email set, IsGuest false, no password.
+    /// Those buyers can neither register nor log in, so the upgrade has to resume for them.
+    /// </summary>
+    [Fact]
+    public async Task UpgradeShadowUser_ResumesHalfUpgradedAccount()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1, 2);
+        await ConfirmAsync(purchaseId);
+
+        var purchase = await _guests.FindByTokenAsync(purchaseId, token);
+        var stuck = await _db.Users.SingleAsync(u => u.Id == purchase!.UserId);
+        stuck.Email = "vas@test.com";
+        stuck.NormalizedEmail = "VAS@TEST.COM";
+        stuck.UserName = "vas@test.com";
+        stuck.NormalizedUserName = "VAS@TEST.COM";
+        stuck.IsGuest = false;
+        await _db.SaveChangesAsync();
+
+        var result = await _guests.UpgradeShadowUserAsync(purchase!, new GuestPurchaseService.RegistrationDetails(
+            "vas@test.com", "Wagwoord1!", "Jan", "Boer", "+27821234567", "+27", false, false));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull((await _db.Users.SingleAsync()).PasswordHash);
+    }
+
+    /// <summary>A purchase already attached to a real account must still be refused.</summary>
+    [Fact]
+    public async Task UpgradeShadowUser_RefusesAccountThatAlreadyHasAPassword()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1, 2);
+        await ConfirmAsync(purchaseId);
+
+        var purchase = await _guests.FindByTokenAsync(purchaseId, token);
+        await _guests.UpgradeShadowUserAsync(purchase!, new GuestPurchaseService.RegistrationDetails(
+            "nuut@test.com", "Wagwoord1!", "Jan", "Boer", "+27821234567", "+27", false, false));
+
+        var again = await _guests.UpgradeShadowUserAsync(purchase!, new GuestPurchaseService.RegistrationDetails(
+            "ander@test.com", "Wagwoord1!", "Piet", "Boer", "+27821234567", "+27", false, false));
+
+        Assert.False(again.Succeeded);
+        Assert.Equal("nuut@test.com", (await _db.Users.SingleAsync()).Email);
+    }
+
     [Fact]
     public async Task MergeIntoUser_MovesSquaresAndRemovesShadowUser()
     {
@@ -395,7 +490,9 @@ public class GuestPurchaseTests : IDisposable
     private static UserManager<User> CreateUserManager(AppDbContext db)
     {
         var store = new UserStore<User>(db);
+        // Mirrors Program.cs: special characters are not required.
         var options = Options.Create(new IdentityOptions());
+        options.Value.Password.RequireNonAlphanumeric = false;
         var hasher = new PasswordHasher<User>();
         var userValidators = new List<IUserValidator<User>> { new UserValidator<User>() };
         var passwordValidators = new List<IPasswordValidator<User>> { new PasswordValidator<User>() };

@@ -35,7 +35,11 @@ export interface ShareLink {
 export interface CertificateNames {
   sameForAll: boolean;
   summaryName: string;
-  blocks: { squareId: number; name: string }[];
+  blocks: { squareId: number; name: string; canEdit?: boolean }[];
+  /** True while at least one block is inside its 15-minute window after purchase. */
+  canEdit?: boolean;
+  /** ISO timestamp the last open window closes, or null once everything is locked. */
+  editableUntil?: string | null;
 }
 
 export interface PurchaseTransaction {

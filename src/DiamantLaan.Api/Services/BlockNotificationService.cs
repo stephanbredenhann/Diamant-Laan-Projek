@@ -26,7 +26,10 @@ public class BlockNotificationService
         _logger = logger;
     }
 
-    public async Task QueueOwnersAsync(IEnumerable<string?> ownerIds, CancellationToken cancellationToken = default)
+    public async Task QueueOwnersAsync(
+        IEnumerable<string?> ownerIds,
+        SquareStatus status,
+        CancellationToken cancellationToken = default)
     {
         var ids = ownerIds.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id!).Distinct().ToList();
         if (ids.Count == 0) return;
@@ -43,19 +46,26 @@ public class BlockNotificationService
             if (existingMap.TryGetValue(userId, out var pending))
             {
                 if (pending.Sent)
+                {
                     pending.FirstQueuedAt = now;
+                    // A sent row's statuses were already emailed about; start the set over.
+                    pending.Statuses = string.Empty;
+                }
                 pending.LastQueuedAt = now;
                 pending.Sent = false;
+                pending.AddStatus(status);
             }
             else
             {
-                _db.PendingBlockNotifications.Add(new PendingBlockNotification
+                var row = new PendingBlockNotification
                 {
                     UserId = userId,
                     FirstQueuedAt = now,
                     LastQueuedAt = now,
                     Sent = false
-                });
+                };
+                row.AddStatus(status);
+                _db.PendingBlockNotifications.Add(row);
             }
         }
 
@@ -108,8 +118,16 @@ public class BlockNotificationService
             return;
         }
 
+        var statuses = pending.ParsedStatuses().OrderBy(s => (int)s).ToList();
+        if (statuses.Count == 0)
+        {
+            pending.Sent = true;
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
         var squares = await _db.Squares
-            .Where(s => s.OwnerId == user.Id)
+            .Where(s => s.OwnerId == user.Id && statuses.Contains(s.Status))
             .Select(s => new { s.Id, s.Status })
             .ToListAsync(cancellationToken);
 
@@ -120,30 +138,28 @@ public class BlockNotificationService
             return;
         }
 
-        var statusCounts = squares
-            .GroupBy(s => s.Status)
-            .ToDictionary(g => SquareStatusLabels.Get(g.Key), g => g.Count());
-
-        var squareIds = squares.Select(s => s.Id).ToList();
-        var hasPhotos = await _db.ProgressImageSquares
-            .AnyAsync(pis => squareIds.Contains(pis.SquareId), cancellationToken);
-
         var siteUrl = AppPublicUrl.Resolve(_config);
-        var html = EmailTemplates.BlockProgressSummary(
-            user.FirstName,
-            squares.Count,
-            statusCounts,
-            hasPhotos,
-            siteUrl);
+        var allSent = true;
 
-        var sent = await _email.SendAsync(
-            user.Email,
-            "Opdatering op jou blokke — Diamant Laan",
-            html,
-            idempotencyKey: null,
-            cancellationToken);
+        foreach (var status in statuses)
+        {
+            var blockIds = squares.Where(s => s.Status == status).Select(s => s.Id).ToList();
+            var mail = EmailTemplates.BlockStatusUpdate(user.FirstName, status, blockIds, siteUrl);
+            if (mail == null) continue;
 
-        if (sent)
+            var sent = await _email.SendAsync(
+                user.Email,
+                mail.Value.Subject,
+                mail.Value.Html,
+                idempotencyKey: null,
+                cancellationToken);
+
+            if (!sent) allSent = false;
+        }
+
+        // Marking the row sent only when every status went out means a partial failure retries the
+        // whole batch. Duplicates are the lesser evil against a silently dropped update.
+        if (allSent)
         {
             pending.Sent = true;
             await _db.SaveChangesAsync(cancellationToken);

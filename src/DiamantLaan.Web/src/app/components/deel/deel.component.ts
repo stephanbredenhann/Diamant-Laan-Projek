@@ -82,10 +82,17 @@ export class DeelComponent implements OnInit {
       this.laai = false;
       return;
     }
-    this.http.get<PublicCertificate>(`/api/deel/${encodeURIComponent(token)}/sertifikaat`).subscribe({
+    // `?blok=` narrows the share to one block's own certificate, for someone who split their
+    // blocks between family and wants to send one person just theirs. Without it the whole
+    // sponsorship is shown on one summary sheet.
+    const blok = this.route.snapshot.queryParamMap.get('blok');
+    const url = `/api/deel/${encodeURIComponent(token)}/sertifikaat`
+      + (blok ? `?blok=${encodeURIComponent(blok)}` : '');
+
+    this.http.get<PublicCertificate>(url).subscribe({
       next: cert => {
         this.cert = cert;
-        // The public sheet is always the summary: no per-block names, one shared date.
+        // The server has already resolved the name and the blocks, so the sheet is one shared date.
         this.squares = cert.blocks.map(id => ({ id, purchaseDate: cert.purchaseDate }));
         this.laai = false;
       },

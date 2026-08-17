@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService } from '../../services/purchase.service';
+import { PasswordInputComponent } from '../shared/password-input/password-input.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PasswordInputComponent],
   template: `
     <div class="container">
       <div class="auth-card">
@@ -23,7 +24,7 @@ import { PurchaseService } from '../../services/purchase.service';
           </div>
           <div class="form-group">
             <label for="password">Wagwoord</label>
-            <input id="password" type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord">
+            <app-password-input id="password" [(ngModel)]="password" name="password" required autocomplete="current-password" placeholder="Jou wagwoord" />
           </div>
           @if (error) {
             <div class="error-alert">{{ error }}</div>

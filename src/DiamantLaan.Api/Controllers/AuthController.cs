@@ -105,7 +105,15 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Hierdie aankoop kon nie gevind word nie." });
 
         var existing = await _userManager.FindByEmailAsync(dto.Email);
-        if (existing != null)
+
+        // The email may already be on this purchase's own placeholder account, left there by an
+        // earlier attempt that failed on the password. That is not somebody else's account, so
+        // let the upgrade resume rather than sending them to a login that cannot work.
+        var isOwnHalfUpgrade = existing != null
+            && existing.Id == purchase.UserId
+            && existing.PasswordHash == null;
+
+        if (existing != null && !isOwnHalfUpgrade)
         {
             // They already have an account. Registering again would fail on the duplicate email,
             // so tell the frontend to send them through login and claim the purchase afterwards.
@@ -288,7 +296,7 @@ public class AuthController : ControllerBase
         foreach (var err in result.Errors)
         {
             if (err.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
-                return "Wagwoord voldoen nie aan die vereistes nie (minstens 8 karakters, nommer, spesiale karakter, hoof- en kleinletter).";
+                return "Wagwoord voldoen nie aan die vereistes nie (minstens 8 karakters, nommer, hoof- en kleinletter).";
             if (err.Code.Contains("Duplicate", StringComparison.OrdinalIgnoreCase))
                 return "Hierdie e-posadres is reeds geregistreer.";
         }

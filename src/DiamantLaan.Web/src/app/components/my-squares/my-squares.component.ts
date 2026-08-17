@@ -88,6 +88,29 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
       (closed)="closeLightbox()"
     />
 
+    <!-- Only for an account whose blocks carry different names: it holds several certificates,
+         so "share my contribution" has to ask which one before it can mean anything. -->
+    @if (pickerOpen) {
+      <div class="prompt-backdrop" (click)="pickerOpen = false">
+        <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-pick-title" (click)="$event.stopPropagation()">
+          <h3 id="share-pick-title">Wat wil jy deel?</h3>
+          <p>Jy het ’n sertifikaat per blok. Kies watter een jy wil stuur.</p>
+          <div class="pick-list">
+            <button type="button" class="pick-btn" (click)="shareChosen(null)">
+              <span class="pick-naam">Almal saam</span>
+              <span class="pick-onder">Een blad: {{ opsommingNaam }}</span>
+            </button>
+            @for (blok of certBlocks; track blok.squareId) {
+              <button type="button" class="pick-btn" (click)="shareChosen(blok.squareId)">
+                <span class="pick-naam">Blok #{{ blok.squareId }}</span>
+                <span class="pick-onder">{{ blok.name }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
     @if (consentOpen) {
       <div class="prompt-backdrop" (click)="closeConsent()">
         <div class="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="share-consent-title" (click)="$event.stopPropagation()">
@@ -275,6 +298,39 @@ const SHARE_GENERIC_KEY = 'diamantlaan.deelGeneries';
       margin-bottom: 0.75rem;
     }
     .consent-error { color: #b33; }
+    .pick-list {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      max-height: 55vh;
+      overflow-y: auto;
+    }
+    .pick-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.2rem;
+      width: 100%;
+      min-height: var(--tap-large);
+      padding: 0.9rem 1.1rem;
+      text-align: left;
+      background: var(--color-surface);
+      border: 3px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .pick-btn:hover { border-color: var(--action); }
+    .pick-naam {
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .pick-onder {
+      font-size: var(--fs-base);
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+    }
     .prompt-actions {
       display: flex;
       gap: 0.75rem;
@@ -295,14 +351,30 @@ export class MySquaresComponent implements OnInit {
   consentOpen = false;
   consentBusy = false;
   consentError = '';
+  pickerOpen = false;
+  /** Populated only when this account keeps a separate certificate per block. */
+  certBlocks: { squareId: number; name: string }[] = [];
+  opsommingNaam = '';
   readonly randBedrag = randBedrag;
 
+  /**
+   * What the share button actually sends. Held here rather than pushed into the button, so a
+   * change-detection pass re-applying the binding cannot quietly undo the visitor's choice.
+   * Null means the account's own summary link.
+   */
+  private gekoseUrl: string | null = null;
+  private gekoseBlok: number | null = null;
+
   get shareText(): string {
+    if (this.gekoseBlok !== null) {
+      const naam = this.certBlocks.find(b => b.squareId === this.gekoseBlok)?.name;
+      return `${naam || 'Ek'} het 1 m² geborg vir die Oewerpad in Orania!`;
+    }
     return `Ek het ${this.squares.length} m² geborg vir die Oewerpad in Orania!`;
   }
 
   get shareUrl(): string {
-    return this.publicShareUrl || this.siteUrl;
+    return this.gekoseUrl || this.publicShareUrl || this.siteUrl;
   }
 
   ngOnInit() {
@@ -321,21 +393,31 @@ export class MySquaresComponent implements OnInit {
       next: dto => this.publicShareUrl = this.publicUrlFromDto(dto),
       error: () => { /* no link yet — the consent flow creates one */ }
     });
+    // Same reason: the picker has to be able to list the certificates the moment it opens.
+    this.purchase.getCertificateNames().subscribe({
+      next: names => {
+        this.opsommingNaam = names.summaryName;
+        this.certBlocks = names.sameForAll ? [] : names.blocks.map(b => ({ ...b }));
+      },
+      error: () => { /* one summary certificate, so there is nothing to choose between */ }
+    });
   }
 
   onShareRequested() {
     if (this.publicShareUrl) {
-      void this.shareBtn?.performShare(this.publicShareUrl);
+      this.kiesSertifikaat();
       return;
     }
     this.purchase.getShareLink().subscribe({
       next: dto => {
         this.publicShareUrl = this.publicUrlFromDto(dto);
         this.clearDeclinedGenericShare();
-        void this.shareBtn?.performShare(this.publicShareUrl);
+        this.kiesSertifikaat();
       },
       error: () => {
         if (this.declinedGenericShare()) {
+          this.gekoseBlok = null;
+          this.gekoseUrl = this.siteUrl;
           void this.shareBtn?.performShare(this.siteUrl);
           return;
         }
@@ -354,7 +436,7 @@ export class MySquaresComponent implements OnInit {
         this.clearDeclinedGenericShare();
         this.consentBusy = false;
         this.consentOpen = false;
-        void this.shareBtn?.performShare(this.publicShareUrl);
+        this.kiesSertifikaat();
       },
       error: () => {
         this.consentBusy = false;
@@ -363,9 +445,31 @@ export class MySquaresComponent implements OnInit {
     });
   }
 
+  /**
+   * Consent is settled and a link exists. An account holding one certificate shares it straight
+   * away; one holding a certificate per block is asked which of them to send.
+   */
+  private kiesSertifikaat() {
+    if (this.certBlocks.length > 1) {
+      this.pickerOpen = true;
+      return;
+    }
+    this.shareChosen(null);
+  }
+
+  /** `null` shares the summary sheet; a block id shares that block's own certificate. */
+  shareChosen(squareId: number | null) {
+    this.pickerOpen = false;
+    this.gekoseBlok = squareId;
+    this.gekoseUrl = squareId === null ? null : `${this.publicShareUrl}?blok=${squareId}`;
+    void this.shareBtn?.performShare(this.shareUrl);
+  }
+
   shareGeneric() {
     this.rememberDeclinedGenericShare();
     this.consentOpen = false;
+    this.gekoseBlok = null;
+    this.gekoseUrl = this.siteUrl;
     void this.shareBtn?.performShare(this.siteUrl);
   }
 
@@ -378,6 +482,8 @@ export class MySquaresComponent implements OnInit {
     this.purchase.deleteShareLink().subscribe({
       next: () => {
         this.publicShareUrl = null;
+        this.gekoseUrl = null;
+        this.gekoseBlok = null;
         this.clearDeclinedGenericShare();
       }
     });

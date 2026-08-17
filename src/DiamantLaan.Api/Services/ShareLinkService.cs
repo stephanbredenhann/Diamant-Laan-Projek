@@ -23,8 +23,8 @@ public class ShareLinkService
     public string PageUrl(string token, string? origin = null) =>
         $"{(origin ?? PublicBaseUrl).TrimEnd('/')}{PathFor(token)}";
 
-    public string ImageUrl(string token, int meterCount, string? origin = null) =>
-        $"{PageUrl(token, origin)}/og.jpg?m={meterCount}";
+    public string ImageUrl(string token, int meterCount, string? origin = null, int? blockId = null) =>
+        $"{PageUrl(token, origin)}/og.jpg?m={meterCount}" + (blockId is null ? "" : $"&blok={blockId}");
 
     public static string OriginFrom(HttpRequest request, string fallback)
     {
@@ -82,28 +82,26 @@ public class ShareLinkService
         return true;
     }
 
-    public async Task<PublicShare?> FindPublicAsync(string token, CancellationToken ct = default)
+    /// <summary>
+    /// The link preview's headline figures. With <paramref name="blockId"/> the share is one
+    /// block's own certificate, so the preview names that certificate rather than the account.
+    /// </summary>
+    public async Task<PublicShare?> FindPublicAsync(string token, int? blockId = null, CancellationToken ct = default)
     {
-        if (!IsToken(token)) return null;
+        var cert = await FindCertificateAsync(token, blockId, ct);
+        if (cert == null) return null;
 
-        var row = await _db.Users.AsNoTracking()
-            .Where(u => u.ShareToken == token && !u.IsAnonymized)
-            .Select(u => new { u.FirstName, u.Id })
-            .FirstOrDefaultAsync(ct);
-        if (row == null) return null;
-
-        var count = await _db.Squares.CountAsync(s => s.OwnerId == row.Id, ct);
-        if (count <= 0) return null;
-
-        return new PublicShare(row.FirstName, count, token);
+        return new PublicShare(cert.FirstName, cert.Blocks.Count, token);
     }
 
     /// <summary>
-    /// What the public page needs to draw the visitor's copy of the summary certificate: the same
-    /// name and blocks the owner's own sheet prints. Dated with the latest purchase, matching the
-    /// summary sheet in certificate-card.component.ts.
+    /// What the public page needs to draw the visitor's copy of the certificate: the same name and
+    /// blocks the owner's own sheet prints. Without <paramref name="blockId"/> that is the summary
+    /// sheet, dated with the latest purchase, matching certificate-card.component.ts. With one, it
+    /// is that single block's sheet, in that block's own name.
     /// </summary>
-    public async Task<PublicCertificate?> FindCertificateAsync(string token, CancellationToken ct = default)
+    public async Task<PublicCertificate?> FindCertificateAsync(
+        string token, int? blockId = null, CancellationToken ct = default)
     {
         if (!IsToken(token)) return null;
 
@@ -113,12 +111,31 @@ public class ShareLinkService
             .FirstOrDefaultAsync(ct);
         if (user == null) return null;
 
-        var blocks = await _db.Squares.AsNoTracking()
+        var squares = await _db.Squares.AsNoTracking()
             .Where(s => s.OwnerId == user.Id)
             .OrderBy(s => s.Id)
-            .Select(s => s.Id)
+            .Select(s => new { s.Id, s.CertificateName })
             .ToListAsync(ct);
-        if (blocks.Count == 0) return null;
+        if (squares.Count == 0) return null;
+
+        var summaryName = string.IsNullOrWhiteSpace(user.CertificateName)
+            ? $"{user.FirstName} {user.LastName}".Trim()
+            : user.CertificateName!;
+
+        if (blockId is int id)
+        {
+            var block = squares.FirstOrDefault(s => s.Id == id);
+            // An unknown or unowned block number in the URL falls back to the summary rather than
+            // 404: the token is still a valid share, someone has just mangled the query string.
+            if (block != null)
+            {
+                var blockName = string.IsNullOrWhiteSpace(block.CertificateName)
+                    ? summaryName
+                    : block.CertificateName!;
+                var blockDate = await BlockDateAsync(user.Id, id, ct);
+                return new PublicCertificate(blockName, FirstWord(blockName), [id], blockDate);
+            }
+        }
 
         var date = await _db.Purchases.AsNoTracking()
             .Where(p => p.UserId == user.Id)
@@ -126,12 +143,24 @@ public class ShareLinkService
             .Select(p => (DateTime?)p.PurchaseDate)
             .FirstOrDefaultAsync(ct);
 
-        var name = string.IsNullOrWhiteSpace(user.CertificateName)
-            ? $"{user.FirstName} {user.LastName}".Trim()
-            : user.CertificateName!;
-
-        return new PublicCertificate(name, ShareCopy.DisplayName(user.FirstName), blocks, date);
+        // The summary sheet prints the account's own name and nothing else, even when the blocks
+        // carry several different names: a certificate is signed artwork, not a roll of sponsors,
+        // and "& 2 ander" reads as a typo on it. Someone wanting a particular person's name on the
+        // sheet shares that block instead, which the picker offers.
+        return new PublicCertificate(summaryName, ShareCopy.DisplayName(user.FirstName), squares.Select(s => s.Id).ToList(), date);
     }
+
+    /// <summary>The day one block was bought, for the sheet's date row.</summary>
+    private Task<DateTime?> BlockDateAsync(string userId, int squareId, CancellationToken ct) =>
+        _db.PurchaseSquares.AsNoTracking()
+            .Where(ps => ps.SquareId == squareId && ps.Purchase.UserId == userId)
+            .OrderBy(ps => ps.Purchase.PurchaseDate)
+            .Select(ps => (DateTime?)ps.Purchase.PurchaseDate)
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>The greeting on a shared block uses a first name, not the whole printed name.</summary>
+    private static string FirstWord(string name) =>
+        ShareCopy.DisplayName(name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault());
 
     public static bool IsToken(string? token) =>
         token is { Length: 32 } && token.All(c => char.IsAsciiHexDigit(c));

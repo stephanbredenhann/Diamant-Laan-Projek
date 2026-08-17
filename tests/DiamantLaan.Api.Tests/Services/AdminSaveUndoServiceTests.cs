@@ -58,7 +58,7 @@ public class AdminSaveUndoServiceTests
 
             db.Squares.First().Status = SquareStatus.Voorberei;
             await db.SaveChangesAsync();
-            await notifications.QueueOwnersAsync(new[] { "u1" });
+            await notifications.QueueOwnersAsync(new[] { "u1" }, SquareStatus.Voorberei);
             await undo.BeginOrReplaceAsync(
                 "admin1",
                 "batch-1",
@@ -105,7 +105,7 @@ public class AdminSaveUndoServiceTests
                 "batch-2",
                 new[] { new SquareStatusChange(1, (int)SquareStatus.NogNieBeginNie) },
                 new[] { "u1" });
-            await notifications.QueueOwnersAsync(new[] { "u1" });
+            await notifications.QueueOwnersAsync(new[] { "u1" }, SquareStatus.Voorberei);
 
             var image = new ProgressImage
             {

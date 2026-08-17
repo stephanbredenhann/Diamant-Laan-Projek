@@ -176,8 +176,24 @@ public class GuestPurchaseService
     public async Task<IdentityResult> UpgradeShadowUserAsync(Purchase purchase, RegistrationDetails details)
     {
         var user = await _userManager.FindByIdAsync(purchase.UserId);
-        if (user == null || !user.IsGuest)
+
+        // A user that is no longer a guest but still has no password is one of our own
+        // half-finished upgrades from an earlier attempt that failed on the password.
+        // Resuming it is what lets a stuck buyer recover by simply trying again.
+        var resumable = user != null && !user.IsGuest && user.PasswordHash == null;
+
+        if (user == null || (!user.IsGuest && !resumable))
             return IdentityResult.Failed(new IdentityError { Description = "Hierdie aankoop is reeds aan ’n rekening gekoppel." });
+
+        // Check the password before anything is written. AddPasswordAsync used to run after
+        // the email had already been committed, so a rejected password left an account that
+        // could neither be registered again (duplicate email) nor signed into (no password).
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var check = await validator.ValidateAsync(_userManager, user, details.Password);
+            if (!check.Succeeded)
+                return check;
+        }
 
         user.UserName = details.Email;
         user.Email = details.Email;

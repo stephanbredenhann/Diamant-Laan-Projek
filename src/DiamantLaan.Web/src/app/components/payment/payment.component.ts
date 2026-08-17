@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 import { validateEmail } from '../../utils/validation.util';
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
+import { PasswordInputComponent } from '../shared/password-input/password-input.component';
 
 /**
  * Step 3 — Erkenning / betalingsvoorskou. PayFast handoff unchanged.
@@ -13,7 +14,7 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [RouterLink, FormsModule, BouStepBarComponent],
+  imports: [RouterLink, FormsModule, BouStepBarComponent, PasswordInputComponent],
   template: `
     <div class="container-wide bou-shell">
       <div class="header-row">
@@ -135,14 +136,13 @@ import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.compone
               </div>
               <div class="form-group">
                 <label for="login-password">Wagwoord</label>
-                <input
+                <app-password-input
                   id="login-password"
-                  type="password"
                   name="loginPassword"
                   autocomplete="current-password"
                   required
                   placeholder="Jou wagwoord"
-                  [(ngModel)]="loginPassword">
+                  [(ngModel)]="loginPassword" />
               </div>
               @if (loginError) {
                 <div class="error-alert">{{ loginError }}</div>

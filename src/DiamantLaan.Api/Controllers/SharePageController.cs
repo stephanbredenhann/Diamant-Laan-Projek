@@ -36,12 +36,12 @@ public class SharePageController : ControllerBase
     ];
 
     [HttpGet("{token}")]
-    public async Task<IActionResult> Page(string token)
+    public async Task<IActionResult> Page(string token, [FromQuery] int? blok = null)
     {
         if (!IsPreviewBot()) return File("~/index.html", "text/html");
 
         var origin = Origin();
-        var share = await _shareLinks.FindPublicAsync(token);
+        var share = await _shareLinks.FindPublicAsync(token, blok);
         if (share == null)
             return new ContentResult
             {
@@ -50,8 +50,8 @@ public class SharePageController : ControllerBase
                 Content = SharePageRenderer.NotFoundHtml(origin)
             };
 
-        var pageUrl = _shareLinks.PageUrl(share.Value.Token, origin);
-        var imageUrl = _shareLinks.ImageUrl(share.Value.Token, share.Value.MeterCount, origin);
+        var pageUrl = _shareLinks.PageUrl(share.Value.Token, origin) + (blok is null ? "" : $"?blok={blok}");
+        var imageUrl = _shareLinks.ImageUrl(share.Value.Token, share.Value.MeterCount, origin, blok);
         var html = _pages.Render(
             share.Value.FirstName,
             share.Value.MeterCount,
@@ -65,9 +65,9 @@ public class SharePageController : ControllerBase
 
     [HttpGet("{token}/og.jpg")]
     [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> OgImage(string token)
+    public async Task<IActionResult> OgImage(string token, [FromQuery] int? blok = null)
     {
-        var share = await _shareLinks.FindPublicAsync(token);
+        var share = await _shareLinks.FindPublicAsync(token, blok);
         if (share == null) return NotFound();
 
         var jpeg = _ogImages.Render(share.Value.FirstName, share.Value.MeterCount);
@@ -78,9 +78,9 @@ public class SharePageController : ControllerBase
 
     /// <summary>The certificate data behind a public link. Anonymous by design: the token is the key.</summary>
     [HttpGet("/api/deel/{token}/sertifikaat")]
-    public async Task<IActionResult> Certificate(string token)
+    public async Task<IActionResult> Certificate(string token, [FromQuery] int? blok = null)
     {
-        var cert = await _shareLinks.FindCertificateAsync(token);
+        var cert = await _shareLinks.FindCertificateAsync(token, blok);
         if (cert == null) return NotFound();
 
         return Ok(new

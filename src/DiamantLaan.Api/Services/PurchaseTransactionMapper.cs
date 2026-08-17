@@ -26,7 +26,8 @@ public static class PurchaseTransactionMapper
             UserEmail = includeUser ? user?.Email ?? purchase.GuestEmail : null,
             PayFastPaymentId = includeUser ? purchase.PayFastPaymentId : null,
             PurchaseSource = GetPurchaseSource(purchase),
-            HasProof = !string.IsNullOrEmpty(purchase.ProofOfPaymentPath)
+            HasProof = !string.IsNullOrEmpty(purchase.ProofOfPaymentPath),
+            PaymentMethod = purchase.PaymentMethod
         };
     }
 

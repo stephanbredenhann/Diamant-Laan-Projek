@@ -12,6 +12,10 @@ public class Purchase
     public decimal Amount { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
     public string? ProofOfPaymentPath { get; set; }
+
+    /// <summary>How a telefoniese aankoop was paid: EFT, Cash or Card. Null for PayFast purchases.</summary>
+    [MaxLength(10)]
+    public string? PaymentMethod { get; set; }
     public string? PayFastPaymentId { get; set; }
     public string? PayFastPaymentStatus { get; set; }
     public DateTime? ConfirmedAt { get; set; }

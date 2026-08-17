@@ -44,7 +44,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 8;
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
@@ -241,6 +241,11 @@ using (var scope = app.Services.CreateScope())
     var db = services.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
     await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
+    // Roles are seeded unconditionally: AddToRoleAsync throws rather than returning a failed
+    // result when the role row is missing, so a registration would 500 after the user had
+    // already been created on any environment without the admin secrets configured.
+    await AppDbContext.SeedRolesAsync(roleManager);
+
     var adminEmail = app.Configuration["AdminUser:Email"];
     var adminPassword = app.Configuration["AdminUser:Password"];
     if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))

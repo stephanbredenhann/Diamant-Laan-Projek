@@ -135,6 +135,7 @@ public class AdminProofOfPaymentTests : IDisposable
             User = user,
             Amount = 500m,
             PaymentStatus = PaymentStatus.Confirmed,
+            PaymentMethod = "EFT",
             PurchaseDate = DateTime.UtcNow,
             ProofOfPaymentPath = proofPath
         };
@@ -173,6 +174,20 @@ public class AdminProofOfPaymentTests : IDisposable
         var purchase = await db.Purchases.FindAsync(1);
         Assert.Equal("proofs/1.pdf", purchase!.ProofOfPaymentPath);
         Assert.True(File.Exists(Path.Combine(_contentRoot, "App_Data", "uploads", "proofs", "1.pdf")));
+    }
+
+    [Fact]
+    public async Task UploadProof_RejectsNonEftPurchase()
+    {
+        await using var db = CreateDb();
+        var purchase = await SeedTelephonePurchase(db);
+        purchase.PaymentMethod = "Cash";
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.UploadProofOfPayment(purchase.Id, CreatePdfFormFile());
+
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]

@@ -15,6 +15,7 @@ export interface AdminTransaction {
   payFastPaymentId?: string | null;
   purchaseSource: 'PayFast' | 'TelefonieseAankoop';
   hasProof?: boolean;
+  paymentMethod?: 'EFT' | 'Cash' | 'Card' | null;
 }
 
 export interface ImageConflictResult {
@@ -70,6 +71,13 @@ export class AdminService {
 
   getPurchases() {
     return this.http.get<any[]>('/api/admin/purchases');
+  }
+
+  getCertificateSummary(userId: string) {
+    return this.http.get<{
+      ownerName: string;
+      squares: { id: number; purchaseDate?: string | null }[];
+    }>(`/api/admin/users/${encodeURIComponent(userId)}/certificate-summary`);
   }
 
   getTransactions() {

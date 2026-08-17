@@ -25,4 +25,7 @@ public class ManualPurchaseDto
 
     [Required, MinLength(1), MaxLength(100)]
     public List<int> SquareIds { get; set; } = new();
+
+    [Required, RegularExpression("EFT|Cash|Card", ErrorMessage = "Kies ’n geldige betaalmetode.")]
+    public string PaymentMethod { get; set; } = "EFT";
 }

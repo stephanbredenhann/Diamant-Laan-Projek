@@ -3,6 +3,7 @@ using System;
 using DiamantLaan.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiamantLaan.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817090516_AddCertificateIndividual")]
+    partial class AddCertificateIndividual
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.28");
@@ -130,11 +133,6 @@ namespace DiamantLaan.Api.Migrations
 
                     b.Property<bool>("Sent")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Statuses")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
 
                     b.HasKey("UserId");
 
@@ -290,10 +288,6 @@ namespace DiamantLaan.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PayFastPaymentStatus")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PaymentMethod")
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PaymentStatus")

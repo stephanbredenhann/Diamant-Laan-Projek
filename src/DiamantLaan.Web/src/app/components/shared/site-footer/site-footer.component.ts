@@ -33,8 +33,15 @@ import { TPipe } from '../../../i18n/t.pipe';
             <p class="footer-heading">{{ 'Belangrik' | t }}</p>
             <a href="https://orania.co.za/privaatheidsbeleid/" target="_blank" rel="noopener">{{ 'Privaatheidsbeleid' | t }}</a>
             <a routerLink="/meld-aan">{{ 'Meld aan' | t }}</a>
-            <a routerLink="/bou">{{ 'Borg 1 m²' | t }}</a>
+            <a routerLink="/bou">{{ 'Borg jou m²' | t }}</a>
           </div>
+        </div>
+        <!-- Mobile only; on desktop these sit in the navbar. -->
+        <div class="container footer-logos">
+          <img src="stadsboufonds-logo-orange.png" [alt]="'Orania Stadsboufonds' | t" class="mark" />
+          <img src="dorpsraad-logo.png" [alt]="'Orania Dorpsraad' | t" />
+          <img src="oom-logo.png" [alt]="'Orania Ontwikkelingsmaatskappy' | t" />
+          <img src="ob-logo.png" [alt]="'Orania Beweging' | t" class="stacked" />
         </div>
         <div class="container footer-meta">
           <span>© {{ year }} Orania Stadsboufonds</span>
@@ -43,7 +50,7 @@ import { TPipe } from '../../../i18n/t.pipe';
 
       @if (showMobileCta()) {
         <a routerLink="/bou" class="mobile-cta">
-          <span>{{ 'Borg 1 m² vir R500' | t }}</span>
+          <span>{{ 'Borg jou m² vir R500' | t }}</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
@@ -113,6 +120,31 @@ import { TPipe } from '../../../i18n/t.pipe';
       min-height: auto;
     }
     .footer-grid a:hover { color: #fff; text-decoration: underline; }
+    /* Dark artwork on a dark footer, so it sits on a light plate rather than
+       being knocked out. Hidden above 1120px, where the navbar shows it. */
+    .footer-logos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1.5rem 2.25rem;
+      margin-top: 2.5rem;
+      padding: 1.5rem;
+      background: #fff;
+      border-radius: var(--radius-sm);
+    }
+    .footer-logos img {
+      height: 7rem;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    .footer-logos img.mark { height: 9rem; }
+    .footer-logos img.stacked { height: 9.75rem; }
+    @media (min-width: 1121px) {
+      .footer-logos { display: none; }
+    }
+
     .footer-meta {
       margin-top: 2.5rem;
       padding-top: 1.25rem;

@@ -14,4 +14,5 @@ public class PurchaseTransactionDto
     public string? PayFastPaymentId { get; set; }
     public string PurchaseSource { get; set; } = string.Empty;
     public bool HasProof { get; set; }
+    public string? PaymentMethod { get; set; }
 }

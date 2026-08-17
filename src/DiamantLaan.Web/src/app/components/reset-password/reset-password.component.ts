@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { getPasswordChecks, isPasswordValid, validatePassword } from '../../utils/validation.util';
+import { PasswordInputComponent } from '../shared/password-input/password-input.component';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PasswordInputComponent],
   template: `
     <div class="container">
       <div class="auth-card">
@@ -50,7 +51,7 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
           <form (ngSubmit)="submit()">
             <div class="form-group">
               <label for="newPassword">Nuwe wagwoord</label>
-              <input id="newPassword" type="password" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8">
+              <app-password-input id="newPassword" [(ngModel)]="newPassword" (ngModelChange)="passwordSig.set($event)" name="newPassword" required autocomplete="new-password" minlength="8" />
               <ul class="pw-checklist">
                 <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
                 <li [class.ok]="checks().hasNumber">’n Nommer</li>
@@ -60,7 +61,7 @@ import { getPasswordChecks, isPasswordValid, validatePassword } from '../../util
             </div>
             <div class="form-group">
               <label for="confirmPassword">Bevestig wagwoord</label>
-              <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8">
+              <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" />
             </div>
             @if (error) {
               <div class="error-alert">{{ error }}</div>

@@ -34,6 +34,14 @@ public class User : IdentityUser
     [MaxLength(100)]
     public string? CertificateName { get; set; }
 
+    /// <summary>
+    /// True when this account wants one certificate per block, each in its own name, rather than a
+    /// single summary sheet covering everything. Chosen after a purchase and locked with the names,
+    /// so it is stored rather than derived from whether any block carries its own name: a locked
+    /// block keeps its name even after the account switches back to the summary sheet.
+    /// </summary>
+    public bool CertificateIndividual { get; set; }
+
     public string PhoneCountryCode { get; set; } = "+27";
     public ICollection<Square> Squares { get; set; } = new List<Square>();
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();

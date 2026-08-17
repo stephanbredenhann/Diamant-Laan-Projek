@@ -16,8 +16,13 @@ public class PasswordValidatorTests
         Assert.False(string.IsNullOrWhiteSpace(error));
     }
 
+    /// <summary>
+    /// Identity's RequireNonAlphanumeric is off, so this validator must not reject an
+    /// otherwise-valid password for lacking one. When the two disagree, a registration is
+    /// rejected here that Identity would have accepted (or vice versa).
+    /// </summary>
     [Fact]
-    public void IsValid_AcceptsPasswordWithoutSpecialCharacter()
+    public void IsValid_AllowsPasswordWithoutSpecialCharacter()
     {
         Assert.True(PasswordValidator.IsValid("NoSpecial1A", out var error));
         Assert.Null(error);

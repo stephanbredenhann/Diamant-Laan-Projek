@@ -101,7 +101,7 @@ public class AdminController : ControllerBase
 
         var adminUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         await _saveUndo.BeginOrReplaceAsync(adminUserId, dto.UndoBatchId, statusChanges, ownerIds);
-        await _blockNotifications.QueueOwnersAsync(squares.Select(s => s.OwnerId));
+        await _blockNotifications.QueueOwnersAsync(squares.Select(s => s.OwnerId), dto.Status);
 
         return Ok(new { updated = squares.Count });
     }
@@ -197,6 +197,47 @@ public class AdminController : ControllerBase
             .ToList();
 
         return Ok(buyers);
+    }
+
+    /// <summary>
+    /// Summary certificate data for admin download: account name only (not CertificateName)
+    /// plus the blocks that user currently owns.
+    /// </summary>
+    [HttpGet("users/{userId}/certificate-summary")]
+    public async Task<IActionResult> GetCertificateSummary(string userId)
+    {
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return NotFound(new { message = "Gebruiker nie gevind nie." });
+
+        var ownerName = (user.FirstName + " " + user.LastName).Trim();
+
+        var ownedIds = await _db.Squares
+            .Where(s => s.OwnerId == userId)
+            .Select(s => s.Id)
+            .ToListAsync();
+
+        var boughtOn = await _db.PurchaseSquares
+            .Where(ps => ownedIds.Contains(ps.SquareId))
+            .Select(ps => new { ps.SquareId, ps.Purchase.PurchaseDate })
+            .ToListAsync();
+
+        var earliest = boughtOn
+            .GroupBy(r => r.SquareId)
+            .ToDictionary(g => g.Key, g => g.Min(r => r.PurchaseDate));
+
+        var squares = ownedIds
+            .OrderBy(id => id)
+            .Select(id => new
+            {
+                Id = id,
+                PurchaseDate = earliest.TryGetValue(id, out var date)
+                    ? (DateTime?)date
+                    : null
+            })
+            .ToList();
+
+        return Ok(new { OwnerName = ownerName, Squares = squares });
     }
 
     [HttpGet("transactions")]
@@ -377,6 +418,9 @@ public async Task<IActionResult> DeleteTransaction(int id)
         if (proofOfPayment != null && !FileUploadService.IsPdf(proofOfPayment))
             return BadRequest(new { message = "Bewys van betaling moet ’n geldige PDF wees." });
 
+        if (proofOfPayment != null && dto.PaymentMethod != "EFT")
+            return BadRequest(new { message = "Bewys van betaling geld net vir EFT-aankope." });
+
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -440,7 +484,8 @@ public async Task<IActionResult> DeleteTransaction(int id)
                 UserId = user.Id,
                 Amount = amount,
                 PaymentStatus = PaymentStatus.Confirmed,
-                ConfirmedAt = DateTime.UtcNow
+                ConfirmedAt = DateTime.UtcNow,
+                PaymentMethod = dto.PaymentMethod
             };
 
             foreach (var square in squares)
@@ -467,13 +512,17 @@ public async Task<IActionResult> DeleteTransaction(int id)
             await _audit.LogAsync(User, "ManualPurchase", $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
 
             var welcomeEmailSent = false;
-            if (isNewUser && welcomeTempPassword != null && !string.IsNullOrWhiteSpace(user.Email))
+            if (!string.IsNullOrWhiteSpace(user.Email))
             {
                 var siteUrl = AppPublicUrl.Resolve(_config);
-                var html = EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl);
+                // A brand new user needs the temporary password; an existing one just needs the
+                // same confirmation a PayFast buyer gets.
+                var html = isNewUser && welcomeTempPassword != null
+                    ? EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl)
+                    : EmailTemplates.AccountPurchaseConfirmation(user.FirstName, squares.Count, purchase.Amount, siteUrl);
                 welcomeEmailSent = await _emailOutbox.QueueAsync(
                     user.Email,
-                    "Jou Diamant Laan rekening — Diamant Laan",
+                    EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
                     html);
             }
 
@@ -529,6 +578,9 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
         if (!PurchaseTransactionMapper.IsTelefonieseAankoop(purchase))
             return BadRequest(new { message = "Bewys van betaling kan net vir telefoniese aankope gestoor word." });
+
+        if (purchase.PaymentMethod != "EFT")
+            return BadRequest(new { message = "Bewys van betaling geld net vir EFT-aankope." });
 
         var uploadsDir = FileUploadService.GetPrivateUploadsPath(_env);
         var fileName = $"{purchase.Id}.pdf";

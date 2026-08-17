@@ -23,6 +23,9 @@ public class BlockCertificateNameDto
 
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>Response only: false once this block's 15-minute window has closed.</summary>
+    public bool CanEdit { get; set; }
 }
 
 /// <summary>The names as they stand, with every block already resolved to what it will print.</summary>
@@ -31,4 +34,10 @@ public class CertificateNamesDto
     public bool SameForAll { get; set; }
     public string SummaryName { get; set; } = string.Empty;
     public List<BlockCertificateNameDto> Blocks { get; set; } = new();
+
+    /// <summary>True while at least one block is still inside its 15-minute window.</summary>
+    public bool CanEdit { get; set; }
+
+    /// <summary>When the last open window closes. Null once everything is locked.</summary>
+    public DateTime? EditableUntil { get; set; }
 }

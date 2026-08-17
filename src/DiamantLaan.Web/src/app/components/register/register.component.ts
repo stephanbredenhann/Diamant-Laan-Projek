@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService, GuestPurchaseRef } from '../../services/purchase.service';
+import { PasswordInputComponent } from '../shared/password-input/password-input.component';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import {
   getPasswordChecks,
@@ -16,7 +17,7 @@ import {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink, PhoneInputComponent],
+  imports: [FormsModule, RouterLink, PhoneInputComponent, PasswordInputComponent],
   template: `
     <div class="container">
       <div class="auth-card">
@@ -57,8 +58,8 @@ import {
           </div>
           <div class="form-group">
             <label for="password">Wagwoord</label>
-            <input id="password" type="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies ’n wagwoord"
-                   [class.invalid]="passwordError" (blur)="checkPassword()">
+            <app-password-input id="password" [(ngModel)]="password" (ngModelChange)="onPasswordChange($event)" name="password" required autocomplete="new-password" minlength="8" placeholder="Kies ’n wagwoord"
+                   [invalid]="!!passwordError" (inputBlur)="checkPassword()" />
             <ul class="pw-checklist" aria-live="polite">
               <li [class.ok]="checks().minLength">Minstens 8 karakters</li>
               <li [class.ok]="checks().hasNumber">’n Nommer</li>
@@ -71,8 +72,8 @@ import {
           </div>
           <div class="form-group">
             <label for="confirmPassword">Bevestig wagwoord</label>
-            <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
-                   [class.invalid]="confirmPasswordError" (blur)="checkConfirmPassword()">
+            <app-password-input id="confirmPassword" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password" minlength="8" placeholder="Tik wagwoord weer"
+                   [invalid]="!!confirmPasswordError" (inputBlur)="checkConfirmPassword()" />
             @if (confirmPasswordError) {
               <p class="field-error">{{ confirmPasswordError }}</p>
             }

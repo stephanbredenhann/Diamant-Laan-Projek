@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { afterNextRender, afterRenderEffect, Component, DestroyRef, ElementRef, HostListener, inject, signal, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { LangService } from '../../../i18n/lang.service';
@@ -9,15 +9,15 @@ import { TPipe } from '../../../i18n/t.pipe';
   standalone: true,
   imports: [RouterLink, RouterLinkActive, TPipe],
   template: `
-    <nav class="navbar" [attr.aria-label]="'Hoofnavigasie' | t">
-      <div class="container navbar-inner">
-        <a routerLink="/" class="nav-brand" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
-          <img src="stadsboufonds-logo-orange.png" alt="" width="36" height="36" />
-          <span class="brand-text">
-            <small>ORANIA</small>
-            <strong>Stadsboufonds</strong>
-          </span>
-        </a>
+    <nav class="navbar" [class.navbar--stacked]="stacked()" [attr.aria-label]="'Hoofnavigasie' | t">
+      <div class="navbar-inner" #inner>
+        <!-- Desktop only; on mobile these move to the footer. "Tuis" is the home link. -->
+        <div class="nav-logos">
+          <img src="stadsboufonds-logo-orange.png" [alt]="'Orania Stadsboufonds' | t" class="mark" />
+          <img src="dorpsraad-logo.png" [alt]="'Orania Dorpsraad' | t" />
+          <img src="oom-logo.png" [alt]="'Orania Ontwikkelingsmaatskappy' | t" />
+          <img src="ob-logo.png" [alt]="'Orania Beweging' | t" class="stacked" />
+        </div>
 
         <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="(menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop') | t">
           @if (menuOpen()) {
@@ -28,38 +28,45 @@ import { TPipe } from '../../../i18n/t.pipe';
         </button>
 
         <div class="navbar-links" [class.open]="menuOpen()">
-          <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Die projek' | t }}</a>
-          <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">{{ 'Hoe dit werk' | t }}</a>
-          <a routerLink="/vordering" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vordering' | t }}</a>
-          <a routerLink="/vrae" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vrae' | t }}</a>
-          @if (auth.currentUser(); as user) {
-            <a routerLink="/my-blokke" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My blokke' | t }}</a>
-            <a routerLink="/my-transaksies" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My transaksies' | t }}</a>
-            @if (auth.isAdmin()) {
-              <a routerLink="/admin" routerLinkActive="active" (click)="menuOpen.set(false)">Admin</a>
+          <div class="nav-cluster">
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="menuOpen.set(false)">{{ 'Tuis' | t }}</a>
+            <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Die projek' | t }}</a>
+            <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">{{ 'Hoe dit werk' | t }}</a>
+            <a routerLink="/vordering" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vordering' | t }}</a>
+            <a routerLink="/vrae" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Vrae' | t }}</a>
+            @if (auth.currentUser()) {
+              <a routerLink="/my-blokke" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My blokke' | t }}</a>
+              <a routerLink="/my-transaksies" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My transaksies' | t }}</a>
+              @if (auth.isAdmin()) {
+                <a routerLink="/admin" routerLinkActive="active" (click)="menuOpen.set(false)">Admin</a>
+              }
+              <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My profiel' | t }}</a>
+              <button class="btn-logout" (click)="logout()">{{ 'Meld af' | t }}</button>
             }
-            <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My profiel' | t }}</a>
-            <button class="btn-logout" (click)="logout()">{{ 'Meld af' | t }}</button>
-          } @else {
-            <a routerLink="/meld-aan" class="btn-nav-outline" (click)="menuOpen.set(false)">{{ 'Meld aan' | t }}</a>
-          }
+          </div>
 
-          <a routerLink="/bou" class="btn-nav-cta" (click)="menuOpen.set(false)">
-            {{ 'Borg 1 m²' | t }}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </a>
+          <div class="nav-end">
+            @if (!auth.currentUser()) {
+              <a routerLink="/meld-aan" class="btn-nav-outline" (click)="menuOpen.set(false)">{{ 'Meld aan' | t }}</a>
+            }
 
-          <button
-            type="button"
-            class="btn-lang"
-            (click)="lang.toggle()"
-            [attr.aria-label]="(lang.lang() === 'af' ? 'Wissel na Engels' : 'Wissel na Afrikaans') | t">
-            <span [class.on]="lang.lang() === 'af'">AF</span>
-            <span aria-hidden="true">/</span>
-            <span [class.on]="lang.lang() === 'en'">EN</span>
-          </button>
+            <a routerLink="/bou" class="btn-nav-cta" (click)="menuOpen.set(false)">
+              {{ 'Borg jou m²' | t }}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+
+            <button
+              type="button"
+              class="btn-lang"
+              (click)="lang.toggle()"
+              [attr.aria-label]="(lang.lang() === 'af' ? 'Wissel na Engels' : 'Wissel na Afrikaans') | t">
+              <!-- Names the language you get, not the one you are on. Never translated:
+                   a language name is always written in its own language. -->
+              {{ lang.lang() === 'af' ? 'English' : 'Afrikaans' }}
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -77,46 +84,41 @@ import { TPipe } from '../../../i18n/t.pipe';
       z-index: 1000;
       backdrop-filter: blur(8px);
     }
+    /* Full width on purpose: the 1200px .container left ~700px of dead margin on
+       a 1080p screen while the bar itself was wrapping. Three columns: logos,
+       links, CTA. Links only drop under the logos when they cannot sit in the
+       gap; see stacked(). */
     .navbar-inner {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
-      padding: 0.65rem 0;
-      gap: 1rem;
+      column-gap: 1rem;
+      row-gap: 0.25rem;
+      padding: 0.65rem clamp(1rem, 2vw, 2.5rem);
     }
 
-    .nav-brand {
-      display: inline-flex;
+    /* Sized by eye, not by a shared box: three are horizontal lockups, the
+       fourth stacks a wordmark under its mark and needs the extra height to
+       set its type at the same optical size. */
+    .nav-logos {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
       align-items: center;
-      gap: 0.65rem;
-      color: var(--ink);
-      text-decoration: none;
-      padding: 0.25rem 0;
-      min-height: var(--tap-min);
+      gap: 0.8rem;
       flex-shrink: 0;
     }
-    .nav-brand img {
-      width: 2.25rem;
-      height: 2.25rem;
+    /* Scaled to the viewport rather than fixed. The floor is the largest size
+       that still fits one row at the 1120px breakpoint; the ceiling lands at
+       1920 so a 1080p screen gets the full size. */
+    .nav-logos img {
+      height: clamp(2.15rem, 3.3vw - 0.16rem, 3.8rem);
+      width: auto;
       object-fit: contain;
+      flex-shrink: 0;
     }
-    .brand-text small {
-      display: block;
-      font-size: 0.65rem;
-      letter-spacing: 0.16em;
-      font-weight: 500;
-      color: var(--text-muted);
-      line-height: 1.2;
-    }
-    .brand-text strong {
-      display: block;
-      font-family: var(--font-display);
-      font-size: 1.25rem;
-      font-weight: 800;
-      line-height: 1;
-      color: var(--ink);
-    }
-    .nav-brand:hover strong { color: var(--action); }
+    .nav-logos img.mark { height: clamp(2.7rem, 4.2vw - 0.24rem, 4.8rem); }
+    .nav-logos img.stacked { height: clamp(2.85rem, 4.5vw - 0.3rem, 5.1rem); }
 
     .hamburger {
       display: none;
@@ -133,12 +135,32 @@ import { TPipe } from '../../../i18n/t.pipe';
       justify-content: center;
     }
 
-    .navbar-links {
+    .navbar-links { display: contents; }
+    .nav-cluster {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      justify-self: center;
+      gap: 0.15rem;
+      min-width: 0;
+    }
+    .nav-end {
+      grid-column: 3;
+      grid-row: 1;
       display: flex;
       align-items: center;
       gap: 0.15rem;
-      flex-wrap: wrap;
     }
+    .navbar--stacked .nav-cluster {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      flex-wrap: wrap;
+      justify-self: stretch;
+    }
+
     .navbar-links a {
       font-family: var(--font-body);
       font-size: 1rem;
@@ -159,17 +181,17 @@ import { TPipe } from '../../../i18n/t.pipe';
     }
     .navbar-links a.active { color: var(--action); }
 
-    .navbar-links > a.btn-nav-outline {
+    .nav-end > a.btn-nav-outline {
       border: 2px solid var(--route-blue);
       color: var(--route-blue);
       font-weight: 700;
     }
-    .navbar-links > a.btn-nav-outline:hover {
+    .nav-end > a.btn-nav-outline:hover {
       background: rgba(3, 78, 162, 0.08);
       color: var(--accent-hover);
     }
 
-    .navbar-links > a.btn-nav-cta {
+    .nav-end > a.btn-nav-cta {
       background: var(--action-strong);
       color: var(--on-action);
       font-family: var(--font-display);
@@ -179,7 +201,7 @@ import { TPipe } from '../../../i18n/t.pipe';
       gap: 0.4rem;
       margin-left: 0.35rem;
     }
-    .navbar-links > a.btn-nav-cta:hover {
+    .nav-end > a.btn-nav-cta:hover {
       background: var(--action-strong-hover);
       color: var(--on-action);
     }
@@ -223,14 +245,25 @@ import { TPipe } from '../../../i18n/t.pipe';
       opacity: 0.65;
     }
     .btn-lang:hover { opacity: 1; }
-    .btn-lang .on { color: var(--ink); }
 
     .backdrop { display: none; }
 
-    @media (max-width: 980px) {
+    @media (max-width: 1120px) {
       .hamburger { display: flex; }
 
+      /* Below here the bar is just the hamburger; the logos show in the footer. */
+      .nav-logos { display: none; }
+      .navbar-inner {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+      }
+
+      /* Dissolve the desktop zones so every link is a plain drawer row again. */
+      .nav-cluster, .nav-end { display: contents; }
+
       .navbar-links {
+        --nav-row: clamp(0.35rem, 1.5svh, 1rem);
         display: none;
         position: absolute;
         top: 100%;
@@ -238,6 +271,7 @@ import { TPipe } from '../../../i18n/t.pipe';
         right: 0;
         background: var(--surface);
         flex-direction: column;
+        flex-wrap: nowrap;
         align-items: stretch;
         gap: 0;
         padding: 0.5rem 0;
@@ -249,7 +283,8 @@ import { TPipe } from '../../../i18n/t.pipe';
       .navbar-links.open { display: flex; }
 
       .navbar-links a {
-        padding: 1rem 1.5rem;
+        padding: var(--nav-row) 1.5rem;
+        min-height: 0;
         border-bottom: 1px solid var(--border-soft);
         border-radius: 0;
       }
@@ -257,21 +292,23 @@ import { TPipe } from '../../../i18n/t.pipe';
       /* In the drawer "Meld aan" is just another row. Boxing it made two
          full-width buttons stacked on each other, with the desktop button
          padding on top of the row padding. */
-      .navbar-links > a.btn-nav-outline {
+      .nav-end > a.btn-nav-outline {
         border: none;
         border-bottom: 1px solid var(--border-soft);
       }
 
-      .navbar-links > a.btn-nav-cta {
-        margin: 0.75rem 1.25rem;
+      .nav-end > a.btn-nav-cta {
+        margin: var(--nav-row) 1.25rem;
         text-align: center;
         justify-content: center;
         border-bottom: none;
-        padding: 0.85rem 1.15rem;
+        padding: var(--nav-row) 1.15rem;
       }
 
       .btn-logout {
-        margin: 0.75rem 1.25rem;
+        margin: var(--nav-row) 1.25rem;
+        padding: var(--nav-row) 1rem;
+        min-height: 0;
         text-align: center;
         justify-content: center;
         display: flex;
@@ -282,20 +319,9 @@ import { TPipe } from '../../../i18n/t.pipe';
       .btn-lang {
         display: flex;
         justify-content: center;
-        margin: 0 1.25rem 0.75rem;
-        padding: 0.85rem 1rem;
-        font-size: 1rem;
-        opacity: 1;
-        gap: 0.35rem;
-      }
-
-      /* Muting it only makes sense on desktop, where it sits in the corner. In
-         the drawer it is just another row and has to stay readable. */
-      .btn-lang {
-        display: flex;
-        justify-content: center;
-        margin: 0 1.25rem 0.75rem;
-        padding: 0.85rem 1rem;
+        margin: 0 1.25rem var(--nav-row);
+        padding: var(--nav-row) 1rem;
+        min-height: 0;
         font-size: 1rem;
         opacity: 1;
         gap: 0.35rem;
@@ -315,6 +341,28 @@ export class NavbarComponent {
   auth = inject(AuthService);
   lang = inject(LangService);
   menuOpen = signal(false);
+  stacked = signal(false);
+
+  private inner = viewChild<ElementRef<HTMLElement>>('inner');
+  private observer?: ResizeObserver;
+  private destroyRef = inject(DestroyRef);
+
+  constructor() {
+    afterNextRender(() => {
+      const el = this.inner()?.nativeElement;
+      if (!el) return;
+      this.observer = new ResizeObserver(() => this.measure());
+      this.observer.observe(el);
+      for (const img of el.querySelectorAll('img')) this.observer.observe(img);
+      this.destroyRef.onDestroy(() => this.observer?.disconnect());
+    });
+
+    afterRenderEffect(() => {
+      this.auth.currentUser();
+      this.lang.lang();
+      this.measure();
+    });
+  }
 
   @HostListener('document:keydown.escape')
   closeMenu() {
@@ -324,5 +372,31 @@ export class NavbarComponent {
   logout() {
     this.menuOpen.set(false);
     this.auth.logout();
+  }
+
+  private measure() {
+    const inner = this.inner()?.nativeElement;
+    if (!inner || matchMedia('(max-width: 1120px)').matches) {
+      this.stacked.set(false);
+      return;
+    }
+
+    const logos = inner.querySelector('.nav-logos') as HTMLElement | null;
+    const cluster = inner.querySelector('.nav-cluster') as HTMLElement | null;
+    const end = inner.querySelector('.nav-end') as HTMLElement | null;
+    if (!logos || !cluster || !end) return;
+
+    const styles = getComputedStyle(inner);
+    const pad = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+    const gap = parseFloat(styles.columnGap) || 0;
+    const content = inner.clientWidth - pad;
+    const clusterGap = parseFloat(getComputedStyle(cluster).columnGap || getComputedStyle(cluster).gap) || 0;
+    const clusterW = Array.from(cluster.children).reduce((sum, node) => {
+      return sum + (node as HTMLElement).offsetWidth;
+    }, 0) + clusterGap * Math.max(0, cluster.childElementCount - 1);
+
+    const needed = logos.offsetWidth + clusterW + end.offsetWidth + gap * 2;
+    const slack = this.stacked() ? 8 : 0;
+    this.stacked.set(needed > content + slack);
   }
 }

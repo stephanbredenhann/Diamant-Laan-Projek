@@ -15,15 +15,15 @@ import { TPipe } from '../../i18n/t.pipe';
   imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent, TPipe],
   template: `
     <section class="hero">
-      <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" class="hero-img" />
+      <img src="oewerpad-03.jpg" [alt]="'Oewerpad, grondpad wat teerwerk nodig het' | t" class="hero-img" />
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">{{ 'Van grondpad tot teerpad' | t }}</p>
+        <p class="eyebrow hero-eyebrow">{{ 'Van grondpad tot teerpad tot stad tot Vryheid!' | t }}</p>
         <h1 class="display hero-title">
-          {{ 'Bou die volgende' | t }} <span class="accent">m²</span> {{ 'van die Oewerpad.' | t }}
+          {{ 'Bou saam aan Orania. Borg ’n' | t }} <span class="accent">m²</span> {{ 'van die Oewerpad.' | t }}
         </h1>
         <p class="hero-sub">
-          {{ 'Elke m² wat geborg word, sluit vir Orania nuwe moontlikhede oop. Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en dra Orania na die volgende vlak.' | t }}
+          {{ 'Elke blokkie m² wat jy borg help om nuwe moontlikhede vir Orania oop te sluit. Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en word deel van die bouwerk wat Orania na die volgende vlak neem.' | t }}
         </p>
         <div class="hero-actions">
           <a routerLink="/bou" class="btn btn-primary btn-xl hero-cta">
@@ -36,7 +36,7 @@ import { TPipe } from '../../i18n/t.pipe';
         <ul class="reassurance">
           <li>{{ 'Geen registrasie' | t }}</li>
           <li>{{ 'Veilige betaling' | t }}</li>
-          <li>{{ 'Bydraersertifikaat' | t }}</li>
+          <li>{{ 'Stadsbouersertifikaat' | t }}</li>
           <li>{{ 'Ontwikkel Orania' | t }}</li>
         </ul>
       </div>
@@ -69,16 +69,19 @@ import { TPipe } from '../../i18n/t.pipe';
           <p class="eyebrow">{{ 'Waarom hierdie projek?' | t }}</p>
           <h2 class="display section-title">{{ 'Nie net ’n donasie nie. ’n Belegging in ’n Afrikanertoekoms.' | t }}</h2>
           <p class="lead">
-            {{ 'Die Oewerpad (Diamantlaan) se teerwerk is ’n groot infrastruktuurprojek. Orania is ’n privaat Afrikanergemeenskap wat geen staatstoelae ontvang nie. Dit beteken dat elke sentimeter wat hier ontwikkel word, self gedoen word. Deur hierdie reuse projek in m² op te deel, kan elke bydraer presies sien waar sy of haar bydrae by die groter prentjie inpas.' | t }}
+            {{ 'Die teer van die Oewerpad (Diamantlaan) is ’n belangrike infrastruktuurprojek wat nuwe moontlikhede vir Orania se toerismebedryf en verdere ontwikkeling gaan ontsluit. As ’n selfstandige Afrikanergemeenskap ontvang Orania geen staatsubsidies vir infrastruktuurontwikkeling nie. Ons bou daarom self die infrastruktuur wat ons gemeenskap nodig het: m² vir m².' | t }}
+          </p>
+          <p class="lead">
+            {{ 'Deur ’n m² van die Oewerpad te borg, kan jy self deel word van hierdie ontwikkeling en ’n tasbare bydrae tot Orania se groei lewer.' | t }}
           </p>
           <div class="feature-pair">
             <article>
-              <h3>{{ 'Duidelike doelwit' | t }}</h3>
-              <p>{{ 'Ons bou ’n toekoms vir Afrikaners, en ons doen dit self!' | t }}</p>
+              <h3>{{ 'Sigbare vordering' | t }}</h3>
+              <p>{{ 'Deur groot projekte in kleiner segmente te verdeel, kan ons ons vordering stap vir stap sien. Só werk dit ook met hierdie pad: jy kan presies sien waar jou m² ’n verskil maak en deel word van die sukses.' | t }}</p>
             </article>
             <article>
-              <h3>{{ 'Sigbare vordering' | t }}</h3>
-              <p>{{ 'Deur reuse projekte in kleiner segmente te verdeel, kan ons sien presies waar ons vordering maak. Só ook met hierdie pad, waar jy presies kan sien waar jou m² ’n verskil maak.' | t }}</p>
+              <h3>{{ 'Duidelike doelwit' | t }}</h3>
+              <p>{{ 'Ons bou self aan ’n toekoms vir Afrikaners.' | t }}</p>
             </article>
           </div>
           <a routerLink="/projek" class="text-link">{{ 'Lees die volledige projekplan →' | t }}</a>
@@ -97,7 +100,7 @@ import { TPipe } from '../../i18n/t.pipe';
       <div class="container-wide">
         <p class="eyebrow">{{ 'Vier eenvoudige stappe' | t }}</p>
         <h2 class="display section-title">{{ 'Verstaan elke stap.' | t }}</h2>
-        <p class="lead narrow">{{ 'Vier eenvoudige stappe om jou bydrae te lewer.' | t }}</p>
+        <p class="lead narrow">{{ 'Dit was nog nooit so maklik om saam te bou nie.' | t }}</p>
 
         <div class="steps">
           @for (step of steps; track step.number; let last = $last) {
@@ -124,9 +127,9 @@ import { TPipe } from '../../i18n/t.pipe';
       <div class="container-wide recog-grid">
         <div>
           <p class="eyebrow">{{ 'Erkenning' | t }}</p>
-          <h2 class="display section-title">{{ 'Jou naam. Jou blokkie. Jou bydrae vir ewig sigbaar.' | t }}</h2>
+          <h2 class="display section-title">{{ 'Jou naam. Jou blokkie. Jou bydrae, sigbaar vir die toekoms.' | t }}</h2>
           <p class="lead">
-            {{ 'Elkeen wat bydra ontvang erkenning in die vorm van ’n Stadsbouersertifikaat. Jou sertifikaat vertoon jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog baie projekte op die horison, gaan hierdie sertifikate eindelik versamelstukke wees.' | t }}
+            {{ 'Elke borg ontvang ’n Stadsbouersertifikaat as erkenning vir sy of haar bydrae. Die sertifikaat dra jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog vele projekte op die horison, kan hierdie sertifikate mettertyd waardevolle versamelstukke word.' | t }}
           </p>
         </div>
         <div class="cert-preview surface-card">
@@ -143,16 +146,11 @@ import { TPipe } from '../../i18n/t.pipe';
     <section class="cta-band">
       <div class="container cta-inner">
         <div>
-          <p class="eyebrow" style="color: rgba(255,255,255,0.65)">{{ 'Jou volgende stap' | t }}</p>
-          <h2 class="display">{{ 'Bou die volgende m² saam met ons.' | t }}</h2>
-          <p>{{ 'Kies jou spesiale nommer voordat dit te laat is!' | t }}</p>
+          <p class="eyebrow cta-eyebrow">{{ 'Jou volgende stap' | t }}</p>
+          <h2 class="display">{{ 'Raak nou betrokke!' | t }}</h2>
+          <p>{{ 'Ontvang erkenning vir elke m² wat jy borg. Handel die proses binne minute af!' | t }}</p>
         </div>
-        <a routerLink="/bou" class="btn btn-on-orange">
-          {{ 'Borg jou m²' | t }}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-          </svg>
-        </a>
+        <a routerLink="/bou" class="btn btn-primary cta-btn">{{ 'Borg jou m²' | t }}</a>
       </div>
     </section>
   `,
@@ -459,23 +457,19 @@ import { TPipe } from '../../i18n/t.pipe';
       max-width: 16ch;
       margin: 0.5rem 0 0.75rem;
     }
-    .btn-on-orange {
-      background: #fff;
-      color: var(--action);
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: 1.2rem;
-      min-height: var(--tap-large);
-      padding: 1rem 1.75rem;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
+    .cta-eyebrow { color: rgba(255, 255, 255, 0.7); }
+    .cta-band h2 { margin: 0.5rem 0 0.75rem; }
+    .cta-band p { margin: 0; max-width: 36rem; }
+    .cta-btn {
+      background: var(--tar);
+      color: #fff;
       flex-shrink: 0;
+      min-width: 14rem;
+      justify-content: center;
     }
-    .btn-on-orange:hover {
-      background: var(--bg-chalk);
-      color: var(--action-hover);
+    .cta-btn:hover {
+      background: #2a2018;
+      color: #fff;
     }
 
     @media (max-width: 960px) {
@@ -518,25 +512,25 @@ export class HomeComponent implements OnInit, OnDestroy {
       number: '01',
       icon: 'ruler',
       title: 'Hoeveelheid',
-      body: 'Kies hoeveel m² jy wil borg.',
+      body: 'Besluit hoeveel m² jy wil borg.',
     },
     {
       number: '02',
       icon: 'map-pin',
       title: 'Kies jou blokkie',
-      body: 'Kies presies watter blokkie m² jy wil borg, of laat ons vir jou kies.',
+      body: 'Kies self watter blokkie m² jy wil borg, of laat ons ’n blokkie namens jou kies.',
     },
     {
       number: '03',
       icon: 'shield',
       title: 'Betaal',
-      body: 'Voltooi die transaksie deur aanlyn te betaal.',
+      body: 'Voltooi jou borgskap deur veilig en maklik aanlyn te betaal.',
     },
     {
       number: '04',
       icon: 'award',
       title: 'Erkenning',
-      body: 'Ontvang jou sertifikaat. Opsioneel: kies om die projek aktief te volg en jou sertifikaat op sosiale media te deel.',
+      body: 'Ontvang jou Stadsbouersertifikaat en kies, indien jy wil, om die projek te volg en jou bydrae op sosiale media te deel.',
     },
   ];
 

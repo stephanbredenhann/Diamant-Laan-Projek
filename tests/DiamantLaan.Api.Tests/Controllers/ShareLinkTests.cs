@@ -196,6 +196,61 @@ public class ShareLinkTests
     }
 
     [Fact]
+    public async Task Certificate_SummaryOfSeveralNames_PrintsOnlyTheAccountName()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 4);
+        user.ShareToken = "11111111111111111111111111111111";
+        user.CertificateName = "Jan van der Merwe";
+        user.CertificateIndividual = true;
+        db.Squares.First(s => s.Id == 2).CertificateName = "Anna van der Merwe";
+        db.Squares.First(s => s.Id == 3).CertificateName = "Anna van der Merwe";
+        db.Squares.First(s => s.Id == 4).CertificateName = "Piet van der Merwe";
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken));
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+
+        // The other names belong on their own sheets, not appended to this one.
+        Assert.Contains("\"name\":\"Jan van der Merwe\"", json);
+        Assert.DoesNotContain("ander", json);
+        Assert.Contains("\"blocks\":[1,2,3,4]", json);
+    }
+
+    [Fact]
+    public async Task Certificate_WithBlok_ReturnsThatBlockAloneInItsOwnName()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 3);
+        user.ShareToken = "22222222222222222222222222222222";
+        user.CertificateName = "Jan van der Merwe";
+        user.CertificateIndividual = true;
+        db.Squares.First(s => s.Id == 2).CertificateName = "Anna van der Merwe";
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken, blok: 2));
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+
+        Assert.Contains("\"name\":\"Anna van der Merwe\"", json);
+        Assert.Contains("\"firstName\":\"Anna\"", json);
+        Assert.Contains("\"blocks\":[2]", json);
+    }
+
+    [Fact]
+    public async Task Certificate_WithBlokSomeoneElseOwns_FallsBackToTheSummary()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 2);
+        user.ShareToken = "33333333333333333333333333333333";
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken, blok: 999));
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+
+        Assert.Contains("\"blocks\":[1,2]", json);
+    }
+
+    [Fact]
     public async Task Certificate_404_AfterRevoke()
     {
         await using var db = CreateDb();
