@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>e8541e83-4ebb-4b9d-bce2-39f699014081</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\DiamantLaan.Api\Services\EmailTemplates.cs" Link="EmailTemplates.cs" />
+    <Compile Include="..\..\src\DiamantLaan.Api\Models\Enums\SquareStatus.cs" Link="SquareStatus.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.1" />
+  </ItemGroup>
+</Project>

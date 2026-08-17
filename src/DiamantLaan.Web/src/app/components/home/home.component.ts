@@ -65,7 +65,7 @@ import { TPipe } from '../../i18n/t.pipe';
     </section>
 
     <section class="section" id="waarom">
-      <div class="container-wide why-grid">
+      <div class="why-grid">
         <div>
           <p class="eyebrow">{{ 'Waarom hierdie projek?' | t }}</p>
           <h2 class="display section-title">{{ 'Nie net ’n donasie nie. ’n Belegging in ’n Afrikanertoekoms.' | t }}</h2>
@@ -304,14 +304,18 @@ import { TPipe } from '../../i18n/t.pipe';
     .text-link:hover { text-decoration: underline; }
 
     .why-grid {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 3rem;
+      grid-template-columns: minmax(18rem, 28rem) minmax(0, 1fr);
+      gap: 2.25rem;
       align-items: center;
     }
+    .why-media { min-width: 0; }
     .feature-pair {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 1.25rem;
       margin-bottom: 1.5rem;
     }
@@ -447,7 +451,6 @@ import { TPipe } from '../../i18n/t.pipe';
       .hero { align-items: flex-start; padding-top: 5rem; flex-direction: column; }
     }
     @media (max-width: 560px) {
-      .feature-pair { grid-template-columns: 1fr; }
       .hero-stat-float { flex-direction: column; }
     }
   `]

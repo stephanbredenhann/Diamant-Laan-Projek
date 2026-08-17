@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -31,8 +32,27 @@ if (Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") != null && connectio
 {
     connectionString = "Data Source=/home/site/diamantlaan.db";
 }
+// Push the resolved value back into configuration. SqliteBackupBackgroundService reads the
+// connection string from IConfiguration, so without this it resolves the un-rewritten relative
+// path against AppContext.BaseDirectory, looks for the database in a folder it was never in,
+// and silently skips every backup with only a warning nobody reads.
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+
+// Linux App Service does no compression of its own, unlike the Windows one. Without this the
+// Angular bundle ships at ~357 KB where it gzips to ~112 KB. EnableForHttps is required or it
+// never fires in production, where every request is HTTPS. Safe here: responses carry no CSRF
+// token or other secret alongside attacker-controlled input, so BREACH has nothing to chew on.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "image/svg+xml", "application/manifest+json" });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -73,8 +93,8 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.Configure<ResendSettings>(builder.Configuration.GetSection("Resend"));
-builder.Services.AddSingleton<IEmailService, ResendEmailService>();
+builder.Services.Configure<MandrillSettings>(builder.Configuration.GetSection("Mandrill"));
+builder.Services.AddHttpClient<IEmailService, MandrillEmailService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<SiteSettingsService>();
@@ -176,10 +196,10 @@ if (string.IsNullOrWhiteSpace(appPayFastSettings.Passphrase))
     app.Logger.LogWarning("PayFast Passphrase is not configured. PayFast will reject payment signatures until it matches the merchant dashboard setting via user secrets or environment variables.");
 }
 
-var resendSettings = app.Configuration.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
-if (string.IsNullOrWhiteSpace(resendSettings.ApiKey) || string.IsNullOrWhiteSpace(resendSettings.FromEmail))
+var mandrillSettings = app.Configuration.GetSection("Mandrill").Get<MandrillSettings>() ?? new MandrillSettings();
+if (string.IsNullOrWhiteSpace(mandrillSettings.ApiKey) || string.IsNullOrWhiteSpace(mandrillSettings.FromEmail))
 {
-    app.Logger.LogWarning("Resend ApiKey and/or FromEmail are not configured. Transactional emails will be skipped until they are set via user secrets or environment variables.");
+    app.Logger.LogWarning("Mandrill ApiKey and/or FromEmail are not configured. Transactional emails will be skipped until they are set via user secrets or environment variables.");
 }
 
 if (!app.Environment.IsDevelopment())
@@ -205,6 +225,8 @@ app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseHttpsRedirection();
 
+app.UseResponseCompression();
+
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -221,15 +243,38 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevCors");
 }
 
-app.UseRateLimiter();
+// Angular content-hashes every js/css filename (angular.json outputHashing: "all"), so those can
+// never go stale and are safe to pin forever. index.html keeps its name across deploys and is the
+// file that points at the hashed chunks, so it must revalidate or a client can end up asking for
+// chunks that no longer exist. Everything else (public/ images, favicon) keeps its name too, so it
+// gets an hour rather than a year.
+var staticFileOptions = new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var name = ctx.File.Name;
+        ctx.Context.Response.Headers.CacheControl =
+            name.EndsWith(".js", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(".css", StringComparison.OrdinalIgnoreCase)
+                ? "public, max-age=31536000, immutable"
+                : name.EndsWith(".html", StringComparison.OrdinalIgnoreCase)
+                    ? "no-cache"
+                    : "public, max-age=3600";
+    }
+};
+
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(staticFileOptions);
 app.UseAuthentication();
 app.UseMiddleware<MustChangePasswordMiddleware>();
 app.UseAuthorization();
+// After UseAuthentication, or the "purchase" and "profile" policies partition on a claim that has
+// not been read yet and silently fall back to per-IP. South African mobile carriers use CGNAT, so
+// per-IP means dozens of real buyers sharing one bucket of 10 purchases a minute.
+app.UseRateLimiter();
 app.MapControllers();
 app.Map("/api/{**catchall}", () => Results.NotFound(new { message = "API-endpunt nie gevind nie." }));
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", staticFileOptions);
 
 app.Map("/error", () => Results.Json(new { message = "Interne bedienerfout." }, statusCode: 500));
 

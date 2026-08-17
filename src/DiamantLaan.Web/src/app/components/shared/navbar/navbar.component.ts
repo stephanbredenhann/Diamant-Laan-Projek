@@ -11,12 +11,10 @@ import { TPipe } from '../../../i18n/t.pipe';
   template: `
     <nav class="navbar" [class.navbar--stacked]="stacked()" [attr.aria-label]="'Hoofnavigasie' | t">
       <div class="navbar-inner" #inner>
-        <!-- Desktop only; on mobile these move to the footer. "Tuis" is the home link. -->
+        <!-- Desktop only; on mobile it moves to the footer. The partner logos live
+             in the footer on every size. -->
         <div class="nav-logos">
-          <img src="stadsboufonds-logo-orange.png" [alt]="'Orania Stadsboufonds' | t" class="mark" />
-          <img src="dorpsraad-logo.png" [alt]="'Orania Dorpsraad' | t" />
-          <img src="oom-logo.png" [alt]="'Orania Ontwikkelingsmaatskappy' | t" />
-          <img src="ob-logo.png" [alt]="'Orania Beweging' | t" class="stacked" />
+          <img src="stadsboufonds-logo-wide.png" [alt]="'Orania Stadsboufonds' | t" />
         </div>
 
         <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="(menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop') | t">
@@ -94,31 +92,25 @@ import { TPipe } from '../../../i18n/t.pipe';
       align-items: center;
       column-gap: 1rem;
       row-gap: 0.25rem;
-      padding: 0.65rem clamp(1rem, 2vw, 2.5rem);
+      padding: 0.4rem clamp(1rem, 2vw, 2.5rem);
     }
 
-    /* Sized by eye, not by a shared box: three are horizontal lockups, the
-       fourth stacks a wordmark under its mark and needs the extra height to
-       set its type at the same optical size. */
     .nav-logos {
       grid-column: 1;
       grid-row: 1;
       display: flex;
       align-items: center;
-      gap: 0.8rem;
       flex-shrink: 0;
     }
-    /* Scaled to the viewport rather than fixed. The floor is the largest size
-       that still fits one row at the 1120px breakpoint; the ceiling lands at
-       1920 so a 1080p screen gets the full size. */
+    /* stadsboufonds-logo-wide.png is the same artwork trimmed of its white
+       margin, so the height here is all logo. That keeps the bar thin while the
+       mark still reads big. */
     .nav-logos img {
-      height: clamp(2.15rem, 3.3vw - 0.16rem, 3.8rem);
+      height: clamp(2.4rem, 3vw, 3.3rem);
       width: auto;
       object-fit: contain;
       flex-shrink: 0;
     }
-    .nav-logos img.mark { height: clamp(2.7rem, 4.2vw - 0.24rem, 4.8rem); }
-    .nav-logos img.stacked { height: clamp(2.85rem, 4.5vw - 0.3rem, 5.1rem); }
 
     .hamburger {
       display: none;

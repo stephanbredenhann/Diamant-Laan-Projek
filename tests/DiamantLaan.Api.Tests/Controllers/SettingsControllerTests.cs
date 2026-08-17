@@ -25,7 +25,7 @@ public class SettingsControllerTests
     {
         await using var db = CreateDb();
         var service = new SiteSettingsService(db);
-        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings()));
+        var emailHealth = new EmailHealthService(Options.Create(new MandrillSettings()));
         var controller = new SettingsController(service, emailHealth);
 
         var result = await controller.GetHomeStatsSettings();
@@ -49,7 +49,7 @@ public class SettingsControllerTests
         await db.SaveChangesAsync();
 
         var service = new SiteSettingsService(db);
-        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings()));
+        var emailHealth = new EmailHealthService(Options.Create(new MandrillSettings()));
         var controller = new SettingsController(service, emailHealth);
 
         var result = await controller.GetHomeStatsSettings();
@@ -64,9 +64,9 @@ public class SettingsControllerTests
     public void Health_ReturnsEmailConfiguredStatus()
     {
         var service = new SiteSettingsService(CreateDb());
-        var emailHealth = new EmailHealthService(Options.Create(new ResendSettings
+        var emailHealth = new EmailHealthService(Options.Create(new MandrillSettings
         {
-            ApiKey = "re_test",
+            ApiKey = "md-test",
             FromEmail = "noreply@test.com"
         }));
         var controller = new SettingsController(service, emailHealth);

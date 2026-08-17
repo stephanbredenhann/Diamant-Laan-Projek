@@ -418,8 +418,8 @@ public async Task<IActionResult> DeleteTransaction(int id)
         if (proofOfPayment != null && !FileUploadService.IsPdf(proofOfPayment))
             return BadRequest(new { message = "Bewys van betaling moet ’n geldige PDF wees." });
 
-        if (proofOfPayment != null && dto.PaymentMethod != "EFT")
-            return BadRequest(new { message = "Bewys van betaling geld net vir EFT-aankope." });
+        if (proofOfPayment != null && !AllowsProofOfPayment(dto.PaymentMethod))
+            return BadRequest(new { message = ProofMethodError });
 
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -546,6 +546,11 @@ public async Task<IActionResult> DeleteTransaction(int id)
 
     private const long MaxProofOfPaymentBytes = 10 * 1024 * 1024;
 
+    private const string ProofMethodError = "Bewys van betaling geld net vir EFT-, Bitcoin- of PayPal-aankope.";
+
+    private static bool AllowsProofOfPayment(string? paymentMethod) =>
+        paymentMethod is "EFT" or "Bitcoin" or "PayPal";
+
     [HttpGet("purchases/{id}/proof")]
     public async Task<IActionResult> GetProofOfPayment(int id)
     {
@@ -579,8 +584,8 @@ public async Task<IActionResult> DeleteTransaction(int id)
         if (!PurchaseTransactionMapper.IsTelefonieseAankoop(purchase))
             return BadRequest(new { message = "Bewys van betaling kan net vir telefoniese aankope gestoor word." });
 
-        if (purchase.PaymentMethod != "EFT")
-            return BadRequest(new { message = "Bewys van betaling geld net vir EFT-aankope." });
+        if (!AllowsProofOfPayment(purchase.PaymentMethod))
+            return BadRequest(new { message = ProofMethodError });
 
         var uploadsDir = FileUploadService.GetPrivateUploadsPath(_env);
         var fileName = $"{purchase.Id}.pdf";
@@ -845,9 +850,9 @@ public async Task<IActionResult> DeleteTransaction(int id)
     [HttpGet("diagnostics")]
     public IActionResult GetDiagnostics()
     {
-        var resend = _config.GetSection("Resend").Get<ResendSettings>() ?? new ResendSettings();
-        var emailConfigured = !string.IsNullOrWhiteSpace(resend.ApiKey)
-            && !string.IsNullOrWhiteSpace(resend.FromEmail);
+        var mandrill = _config.GetSection("Mandrill").Get<MandrillSettings>() ?? new MandrillSettings();
+        var emailConfigured = !string.IsNullOrWhiteSpace(mandrill.ApiKey)
+            && !string.IsNullOrWhiteSpace(mandrill.FromEmail);
 
         var pendingEmails = _db.PendingEmails.Count(e => !e.Sent);
         var pendingBlockNotifications = _db.PendingBlockNotifications.Count(p => !p.Sent);
@@ -857,8 +862,8 @@ public async Task<IActionResult> DeleteTransaction(int id)
             email = new
             {
                 configured = emailConfigured,
-                fromEmailSet = !string.IsNullOrWhiteSpace(resend.FromEmail),
-                apiKeySet = !string.IsNullOrWhiteSpace(resend.ApiKey),
+                fromEmailSet = !string.IsNullOrWhiteSpace(mandrill.FromEmail),
+                apiKeySet = !string.IsNullOrWhiteSpace(mandrill.ApiKey),
                 pendingOutboxCount = pendingEmails
             },
             notifications = new

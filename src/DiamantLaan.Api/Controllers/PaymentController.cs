@@ -19,7 +19,9 @@ public class PaymentController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IPayFastService _payFastService;
     private readonly ILogger<PaymentController> _logger;
+#if DEBUG
     private readonly IWebHostEnvironment _environment;
+#endif
     private readonly GuestPurchaseService _guests;
     private readonly EmailOutboxService _emails;
     private readonly IConfiguration _config;
@@ -36,7 +38,9 @@ public class PaymentController : ControllerBase
         _db = db;
         _payFastService = payFastService;
         _logger = logger;
+#if DEBUG
         _environment = environment;
+#endif
         _guests = guests;
         _emails = emails;
         _config = config;
@@ -101,9 +105,13 @@ public class PaymentController : ControllerBase
         return Ok("OK");
     }
 
+#if DEBUG
     /// <summary>
-    /// Development-only endpoint to simulate a PayFast ITN callback.
-    /// Not available in production environments.
+    /// Development-only endpoint to simulate a PayFast ITN callback. It confirms a purchase from an
+    /// anonymous, unvalidated purchase id, bypassing signature, amount and postback checks entirely,
+    /// so on a public money site a runtime environment check is the wrong control: one app setting
+    /// (ASPNETCORE_ENVIRONMENT=Development) would turn it on and hand out free blocks. Compiled out
+    /// of Release builds instead, so it cannot exist in what gets published.
     /// </summary>
     [AllowAnonymous]
     [HttpPost("simulate-itn")]
@@ -130,6 +138,7 @@ public class PaymentController : ControllerBase
 
         return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
     }
+#endif
 
     /// <summary>
     /// Every confirmed purchase gets exactly one confirmation email: a guest gets the version with a

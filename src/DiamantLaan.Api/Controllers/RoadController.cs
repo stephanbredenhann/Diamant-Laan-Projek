@@ -3,6 +3,7 @@ using DiamantLaan.Api.Models.Dtos;
 using DiamantLaan.Api.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DiamantLaan.Api.Controllers;
 
@@ -11,25 +12,52 @@ namespace DiamantLaan.Api.Controllers;
 public class RoadController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
-    public RoadController(AppDbContext db) => _db = db;
+    public RoadController(AppDbContext db, IMemoryCache cache)
+    {
+        _db = db;
+        _cache = cache;
+    }
 
     private const int MaxSaleableId = 4000;
+
+    public const string SquaresCacheKey = "road:squares";
+
+    /// <summary>
+    /// How long the square grid may be stale. Deliberately a short absolute expiry rather than
+    /// invalidation from the nine places that mutate a square (PurchaseController, PaymentController,
+    /// GuestPurchaseService, PendingReservationCleanupService, AdminController and the progress-image
+    /// links): forgetting one of those would leave the map wrong forever, where this is wrong for at
+    /// most a few seconds. Nothing is sold off this response. It only decides what the map draws, and
+    /// PurchaseController re-reads ownership from the database before it reserves anything.
+    /// </summary>
+    private static readonly TimeSpan SquaresCacheTtl = TimeSpan.FromSeconds(5);
 
     [HttpGet("squares")]
     public async Task<IActionResult> GetSquares()
     {
-        var squares = await _db.Squares
-            .OrderBy(s => s.Id)
-            .Select(s => new SquareDto
-            {
-                Id = s.Id,
-                Status = s.Status,
-                IsSold = s.OwnerId != null,
-                IsReserved = s.IsReserved,
-                ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
-            })
-            .ToListAsync();
+        // The map, the purchase flow and the block picker all call this, and it projects ~4,500 rows
+        // with a correlated count per row. Uncached that is the heaviest thing on the site by a wide
+        // margin, and it is anonymous and unrate-limited.
+        // ponytail: GetOrCreateAsync does not lock, so a cold cache lets a handful of concurrent
+        // requests run the query together. Fine at this size; add a SemaphoreSlim around the miss if
+        // the stampede ever shows up in the logs.
+        var squares = await _cache.GetOrCreateAsync(SquaresCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = SquaresCacheTtl;
+            return _db.Squares
+                .OrderBy(s => s.Id)
+                .Select(s => new SquareDto
+                {
+                    Id = s.Id,
+                    Status = s.Status,
+                    IsSold = s.OwnerId != null,
+                    IsReserved = s.IsReserved,
+                    ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
+                })
+                .ToListAsync();
+        });
 
         return Ok(squares);
     }

@@ -100,6 +100,6 @@ Besoek die webwerf om die nuutste vordering op jou blokke te sien.
 
 Sien My Blokke ({werf}/my-blokke)
 
-Jy kan e-posse soos hierdie afskakel onder My Profiel.
+Jy kan e-posse soos hierdie onder [My Profiel]({werf}/my-profiel) afskakel.
 
 Diamant Laan

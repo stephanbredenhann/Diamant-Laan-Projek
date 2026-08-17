@@ -34,6 +34,7 @@ export const EN: Record<string, string> = {
   'Verken': 'Explore',
   'Belangrik': 'Important',
   'Privaatheidsbeleid': 'Privacy policy',
+  'Projek deur': 'Project by',
 
   // --- Home: hero ---
   'Van grondpad tot teerpad tot stad tot Vryheid!':

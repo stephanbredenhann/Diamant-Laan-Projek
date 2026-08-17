@@ -2,6 +2,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { AdminProgressImage, SquareStatus } from '../models/square';
 
+export type PaymentMethod = 'EFT' | 'Cash' | 'Card' | 'Bitcoin' | 'PayPal';
+
+/** Methods where an admin can attach a PDF proof of payment. */
+export const PROOF_METHODS: PaymentMethod[] = ['EFT', 'Bitcoin', 'PayPal'];
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  EFT: 'EFT',
+  Cash: 'Kontant',
+  Card: 'Kaart',
+  Bitcoin: 'Bitcoin',
+  PayPal: 'PayPal'
+};
+
 export interface AdminTransaction {
   id: number;
   purchaseDate: string;
@@ -15,7 +28,7 @@ export interface AdminTransaction {
   payFastPaymentId?: string | null;
   purchaseSource: 'PayFast' | 'TelefonieseAankoop';
   hasProof?: boolean;
-  paymentMethod?: 'EFT' | 'Cash' | 'Card' | null;
+  paymentMethod?: PaymentMethod | null;
 }
 
 export interface ImageConflictResult {

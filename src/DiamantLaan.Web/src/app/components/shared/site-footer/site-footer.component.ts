@@ -14,7 +14,6 @@ import { TPipe } from '../../../i18n/t.pipe';
         <div class="container footer-grid">
           <div class="footer-brand">
             <a routerLink="/" class="footer-logo" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
-              <img src="stadsboufonds-logo-orange.png" alt="" width="40" height="40" />
               <span>
                 <small>ORANIA</small>
                 <strong>Stadsboufonds</strong>
@@ -36,12 +35,15 @@ import { TPipe } from '../../../i18n/t.pipe';
             <a routerLink="/bou">{{ 'Borg jou m²' | t }}</a>
           </div>
         </div>
-        <!-- Mobile only; on desktop these sit in the navbar. -->
-        <div class="container footer-logos">
-          <img src="stadsboufonds-logo-orange.png" [alt]="'Orania Stadsboufonds' | t" class="mark" />
-          <img src="dorpsraad-logo.png" [alt]="'Orania Dorpsraad' | t" />
-          <img src="oom-logo.png" [alt]="'Orania Ontwikkelingsmaatskappy' | t" />
-          <img src="ob-logo.png" [alt]="'Orania Beweging' | t" class="stacked" />
+        <div class="container">
+          <p class="footer-heading">{{ 'Projek deur' | t }}</p>
+          <div class="footer-logos">
+            <!-- Mobile only; above 1120px the navbar carries it. -->
+            <img src="stadsboufonds-logo-wide.png" [alt]="'Orania Stadsboufonds' | t" class="mark" />
+            <img src="dorpsraad-logo.png" [alt]="'Orania Dorpsraad' | t" />
+            <img src="oom-logo.png" [alt]="'Orania Ontwikkelingsmaatskappy' | t" />
+            <img src="ob-logo.png" [alt]="'Orania Beweging' | t" class="stacked" />
+          </div>
         </div>
         <div class="container footer-meta">
           <span>© {{ year }} Orania Stadsboufonds</span>
@@ -77,11 +79,6 @@ import { TPipe } from '../../../i18n/t.pipe';
       text-decoration: none;
       color: #fff;
       margin-bottom: 1rem;
-    }
-    .footer-logo img {
-      width: 2.5rem;
-      height: 2.5rem;
-      object-fit: contain;
     }
     .footer-logo small {
       display: block;
@@ -121,28 +118,34 @@ import { TPipe } from '../../../i18n/t.pipe';
     }
     .footer-grid a:hover { color: #fff; text-decoration: underline; }
     /* Dark artwork on a dark footer, so it sits on a light plate rather than
-       being knocked out. Hidden above 1120px, where the navbar shows it. */
+       being knocked out. Warm cream, not white: the same paper the rest of the
+       site is on, so it reads as a plate and not as a hole in the footer. */
     .footer-logos {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: flex-start;
-      gap: 1.5rem 2.25rem;
-      margin-top: 2.5rem;
-      padding: 1.5rem;
-      background: #fff;
-      border-radius: var(--radius-sm);
+      gap: 1.5rem 2.5rem;
+      padding: 1.5rem 2rem;
+      background: var(--bg-warm);
+      border-radius: var(--radius-md);
+      /* Hugs the three logos instead of stretching the plate across the
+         container and leaving half of it empty. */
+      width: fit-content;
+      max-width: 100%;
     }
+    .container > .footer-heading { margin-top: 2.5rem; }
     .footer-logos img {
-      height: 7rem;
+      height: 4.5rem;
       width: auto;
       max-width: 100%;
       object-fit: contain;
     }
-    .footer-logos img.mark { height: 9rem; }
-    .footer-logos img.stacked { height: 9.75rem; }
+    .footer-logos img.mark { height: 4rem; }
+    .footer-logos img.stacked { height: 6rem; }
+    /* Above here the navbar already shows the Stadsboufonds mark. */
     @media (min-width: 1121px) {
-      .footer-logos { display: none; }
+      .footer-logos img.mark { display: none; }
     }
 
     .footer-meta {

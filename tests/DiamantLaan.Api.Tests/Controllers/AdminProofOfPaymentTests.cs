@@ -190,6 +190,23 @@ public class AdminProofOfPaymentTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    [Theory]
+    [InlineData("Bitcoin")]
+    [InlineData("PayPal")]
+    public async Task UploadProof_AllowsBitcoinAndPayPal(string method)
+    {
+        await using var db = CreateDb();
+        var purchase = await SeedTelephonePurchase(db);
+        purchase.PaymentMethod = method;
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.UploadProofOfPayment(purchase.Id, CreatePdfFormFile());
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("proofs/1.pdf", (await db.Purchases.FindAsync(purchase.Id))!.ProofOfPaymentPath);
+    }
+
     [Fact]
     public async Task UploadProof_ReplacesExistingFile()
     {

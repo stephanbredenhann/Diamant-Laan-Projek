@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 using DiamantLaan.Api.Controllers;
 using DiamantLaan.Api.Data;
@@ -192,7 +193,7 @@ public class AdminReserveTests : IDisposable
         SeedSquares(1, 2, 3, 4);
         Reserve(2);
 
-        var result = await new RoadController(_db).PickSquares(3);
+        var result = await new RoadController(_db, new MemoryCache(new MemoryCacheOptions())).PickSquares(3);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(new List<int> { 1, 3, 4 }, GetValue<List<int>>(ok.Value!, "squareIds"));

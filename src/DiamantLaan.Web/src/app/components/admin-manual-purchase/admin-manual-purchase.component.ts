@@ -1,7 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminService, AdminTransaction } from '../../services/admin.service';
+import {
+  AdminService,
+  AdminTransaction,
+  PAYMENT_METHOD_LABELS,
+  PROOF_METHODS,
+  PaymentMethod
+} from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-picker-modal.component';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
@@ -90,9 +96,11 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
               <option value="EFT">EFT</option>
               <option value="Cash">Kontant</option>
               <option value="Card">Kaart</option>
+              <option value="Bitcoin">Bitcoin</option>
+              <option value="PayPal">PayPal</option>
             </select>
           </div>
-          @if (paymentMethod === 'EFT') {
+          @if (allowsProof(paymentMethod)) {
             <div class="field">
               <label for="proof">Bewys van betaling (PDF, opsioneel)</label>
               <input id="proof" type="file" accept="application/pdf" (change)="onFileSelected($event)">
@@ -149,7 +157,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
                     <td class="numeric">R{{ tx.amount | number:'1.0-0' }}</td>
                     <td>{{ methodLabel(tx.paymentMethod) }}</td>
                     <td class="action-col">
-                      @if (tx.paymentMethod !== 'EFT') {
+                      @if (!allowsProof(tx.paymentMethod)) {
                         <span class="muted">n.v.t.</span>
                       } @else if (tx.hasProof) {
                         <div class="proof-actions">
@@ -418,7 +426,7 @@ export class AdminManualPurchaseComponent implements OnInit {
   isOraniaBewegingMember = false;
   selectedSquareIds: number[] = [];
   pickerOpen = false;
-  paymentMethod: 'EFT' | 'Cash' | 'Card' = 'EFT';
+  paymentMethod: PaymentMethod = 'EFT';
   proofFile: File | null = null;
   message = '';
   isError = false;
@@ -467,11 +475,15 @@ export class AdminManualPurchaseComponent implements OnInit {
   }
 
   methodLabel(method?: string | null): string {
-    return method === 'Cash' ? 'Kontant' : method === 'Card' ? 'Kaart' : method === 'EFT' ? 'EFT' : '';
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? '';
+  }
+
+  allowsProof(method?: string | null): boolean {
+    return PROOF_METHODS.includes(method as PaymentMethod);
   }
 
   onMethodChange() {
-    if (this.paymentMethod !== 'EFT') this.proofFile = null;
+    if (!this.allowsProof(this.paymentMethod)) this.proofFile = null;
   }
 
   onFileSelected(event: Event) {
@@ -598,7 +610,7 @@ export class AdminManualPurchaseComponent implements OnInit {
     formData.append('isOraniaBewegingMember', String(this.isOraniaBewegingMember));
     this.selectedSquareIds.forEach(id => formData.append('squareIds', String(id)));
     formData.append('paymentMethod', this.paymentMethod);
-    if (this.paymentMethod === 'EFT' && this.proofFile) {
+    if (this.allowsProof(this.paymentMethod) && this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
     }
 

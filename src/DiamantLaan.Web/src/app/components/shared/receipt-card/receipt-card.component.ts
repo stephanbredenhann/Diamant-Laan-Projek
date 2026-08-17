@@ -18,9 +18,13 @@ export interface ReceiptData {
   standalone: true,
   imports: [CommonModule],
   template: `
-  <div class="receipt-card">
-    <h1>Kwitansie</h1>
-    <p class="subtitle">Oewerpad teerprojek</p>
+  <div class="receipt-sheet">
+    <header class="kop">
+      <img class="ob-logo" src="ob-logo.png" alt="Orania Beweging" />
+      <h1>Kwitansie</h1>
+      <p class="subtitle">Oewerpad teerprojek</p>
+      <span class="reël" aria-hidden="true"></span>
+    </header>
 
     <dl class="receipt-details">
       <div>
@@ -47,14 +51,6 @@ export interface ReceiptData {
         <dt>Bedrag per m²</dt>
         <dd>{{ randBedrag(data.amountPerBlock) }}</dd>
       </div>
-      <div>
-        <dt>Totale bedrag</dt>
-        <dd><strong>{{ randBedrag(data.amount) }}</strong></dd>
-      </div>
-      <div>
-        <dt>Betalingstatus</dt>
-        <dd>Betaling bevestig</dd>
-      </div>
       @if (data.payFastPaymentId) {
         <div>
           <dt>PayFast verwysing</dt>
@@ -63,60 +59,158 @@ export interface ReceiptData {
       }
     </dl>
 
-    <p class="footer">Dankie vir jou bydrae</p>
+    <div class="totaal-blok">
+      <div class="totaal-ry">
+        <span class="totaal-etiket">Totale bedrag</span>
+        <span class="totaal-waarde">{{ randBedrag(data.amount) }}</span>
+      </div>
+      <p class="status">Betaling bevestig</p>
+    </div>
+
+    <!-- Pushes the footer to the foot of the A4 sheet however short the detail list is. -->
+    <div class="vul" aria-hidden="true"></div>
+
+    <footer class="voet">
+      <p class="dankie">Dankie vir jou bydrae</p>
+      <p class="fyn">Orania Beweging &middot; inligting&#64;orania.co.za &middot; 053 207 0062</p>
+    </footer>
   </div>
   `,
   styles: [`
-    .receipt-card {
-      background: #ffffff;
-      border: 2px solid var(--color-border, #ddd);
-      border-radius: 8px;
-      padding: 2.5rem 2rem;
-      width: 600px;
-      color: #1a1a1a;
-      font-family: var(--font-body, Georgia, serif);
+    /* A4 at 96dpi, the same sheet the certificate exports on, so html2canvas
+       fills the PDF page edge to edge instead of letterboxing a 600px card. */
+    .receipt-sheet {
+      width: 794px;
+      height: 1123px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      padding: 64px 72px 56px;
+      background: #FFFFFF;
+      color: var(--ink, #1A1A1A);
+      font-family: var(--font-body, 'Source Sans 3', sans-serif);
+    }
+
+    .kop { text-align: center; }
+    .ob-logo {
+      height: 88px;
+      width: auto;
+      object-fit: contain;
+      margin: 0 auto 28px;
+      display: block;
     }
     h1 {
-      font-family: var(--font-heading, Georgia, serif);
-      font-size: 1.75rem;
-      text-align: center;
-      margin: 0 0 0.25rem;
-      color: #1a1a1a;
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      margin: 0 0 6px;
+      color: var(--tar, #19120E);
     }
     .subtitle {
-      text-align: center;
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
       color: var(--text-muted, #55606E);
-      margin: 0 0 1.5rem;
-      font-size: 1.125rem;
+      margin: 0;
     }
+    .reël {
+      display: block;
+      width: 72px;
+      height: 4px;
+      margin: 22px auto 0;
+      background: var(--action, #F58220);
+    }
+
     .receipt-details {
       display: grid;
-      gap: 0.75rem;
-      margin: 0;
+      gap: 0;
+      margin: 44px 0 0;
     }
     .receipt-details > div {
       display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 0.5rem;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 0.5rem;
+      grid-template-columns: 210px 1fr;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-soft, #D8D2C6);
+      align-items: baseline;
     }
     dt {
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
       font-weight: 600;
-      font-size: 1rem;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: var(--text-muted, #55606E);
       margin: 0;
     }
     dd {
       margin: 0;
-      font-size: 1.125rem;
-      color: #1a1a1a;
+      font-size: 19px;
+      line-height: 1.45;
+      color: var(--ink, #1A1A1A);
       word-break: break-word;
+      font-variant-numeric: tabular-nums;
     }
-    .footer {
-      margin: 1.5rem 0 0;
+
+    /* The one number anyone checks twice, so it leaves the list and gets the
+       dark panel the site uses for its own headline figures. */
+    .totaal-blok {
+      margin-top: 32px;
+      background: var(--tar, #19120E);
+      color: #FFFFFF;
+      padding: 24px 28px;
+    }
+    .totaal-ry {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .totaal-etiket {
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .totaal-waarde {
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--action, #F58220);
+      font-variant-numeric: tabular-nums;
+    }
+    .status {
+      margin: 14px 0 0;
+      font-size: 15px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .vul { flex: 1; }
+
+    .voet {
       text-align: center;
-      font-size: 1rem;
+      border-top: 1px solid var(--border-soft, #D8D2C6);
+      padding-top: 24px;
+    }
+    .dankie {
+      font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      color: var(--tar, #19120E);
+    }
+    .fyn {
+      margin: 0;
+      font-size: 14px;
       color: var(--text-muted, #55606E);
     }
   `]
