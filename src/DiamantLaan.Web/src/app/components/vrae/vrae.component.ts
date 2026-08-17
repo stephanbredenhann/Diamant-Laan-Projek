@@ -27,7 +27,7 @@ interface FaqItem {
     <section class="section chalk">
       <div class="container container-narrow">
         <p class="eyebrow">{{ 'Gereelde vrae' | t }}</p>
-        <h2 class="display section-title">{{ 'Gereelde vrae oor dié projek:' | t }}</h2>
+        <h2 class="display section-title">{{ 'Alles wat jy oor die projek wil weet' | t }}</h2>
 
         <div class="faq-list">
           @for (item of faqs; track item.question) {
@@ -39,7 +39,7 @@ interface FaqItem {
         </div>
 
         <div class="vra-ons surface-card">
-          <h3 class="display">{{ 'Indien jou vraag nie hier beantwoord is nie, stuur gerus vir ons ’n e-pos:' | t }}</h3>
+          <h3 class="display">{{ 'Het jy nog vrae? Stuur gerus ’n e-pos na:' | t }}</h3>
           <a href="mailto:inligting&#64;orania.co.za?subject=Padprojek%20Navraag" class="btn btn-primary btn-terug">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
@@ -205,27 +205,32 @@ export class VraeComponent {
     {
       question: 'Wat finansier my R500?',
       answer:
-        'Jou R500 finansier presies een m² van die nuwe teerpad in Diamantlaan. Dit word direk aan hierdie projek gewy.',
+        'Jou R500 finansier een m² van die nuwe teerpad in Diamantlaan. Die volle bedrag word direk aangewend vir die uitvoering van hierdie projek.',
     },
     {
       question: 'Kan ek meer as een m² borg?',
       answer:
-        'Ja, jy kan borg soveel jy wil! Indien jy as ’n geskenk vir familie of vriende wil borg, kan jy ook so maak en dan elkeen se naam op hul eie sertifikaat skryf.',
+        'Ja, jy kan soveel borg as wat jy wil! Jy kan ook m² namens familie of vriende borg. Elke persoon kan dan ’n eie Stadsbouersertifikaat met sy of haar naam ontvang.',
     },
     {
-      question: 'Hoe word ek as ’n Stadsbouer erken?',
+      question: 'Hoe word my bydrae as ’n Stadsbouer erken?',
       answer:
-        'Sodra die transaksie finaliseer is, word jou sertifikaat met jou unieke blokkie beskikbaar gestel. Jy kan dit aflaai, deel op sosiale media en selfs laat druk om te raam. Verdere erkenning sal in die toekoms langs die pad aangebring word.',
+        'Sodra jou transaksie gefinaliseer is, word jou Stadsbouersertifikaat met jou unieke blokkienommer aan jou beskikbaar gestel. Jy kan dit aflaai, op sosiale media deel of laat druk en raam as ’n blywende herinnering aan jou bydrae.',
     },
     {
-      question: 'Kan ek slegs aanlyn betaal?',
+      question: 'Kan ek slegs op die webwerf borg?',
       answer:
-        'Nee, jy kan ons direk kontak indien jy nie deur die webblad wil borg nie, of sommer die Orania Beweging se kantore in Orania kom besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.',
+        'Nee. Indien jy verkies om nie deur die webblad te borg nie, kan jy ons direk kontak of die Orania Beweging se kantore in Orania besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.',
     },
     {
-      question: 'Koop ek die grond of padoppervlak?',
+      question: 'Kry ek ’n stukkie pad vir my bydrae?',
       answer:
-        'Nee. Jou bydrae finansier die projek; die blokkie is simboliese of digitale erkenning. Dit dra nie eiendoms-, toegang- of beheerregte oor nie.',
+        'Nee. Jou bydrae is finansiële ondersteuning tot die projek en die blokkie wat jy kies dien as simboliese en digitale erkenning van jou bydrae. Dit verleen geen eiendoms-, toegangs- of beheerregte ten opsigte van die grond of pad nie.',
+    },
+    {
+      question: 'Wat is die Stadsboufonds?',
+      answer:
+        'Die Stadsboufonds is ’n infrastruktuurfonds wat gestig is om die ontwikkeling van infrastruktuur in Orania te versnel. Omdat Orania geen staatsondersteuning vir infrastruktuurontwikkeling ontvang nie, moet die gemeenskap infrastruktuur uit eie bronne finansier. Bydraes tot die Stadsboufonds word aangewend vir noodsaaklike infrastruktuurprojekte wat die grondslag vir ekonomiese groei skep. Die Stadsboufonds is ’n projek van die Orania Ontwikkelingsmaatskappy, in samewerking met die Orania Beweging.',
     },
   ];
 }

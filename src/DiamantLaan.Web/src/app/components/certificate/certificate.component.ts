@@ -57,7 +57,7 @@ import { CertificateCardComponent, CertificateSquare } from '../shared/certifica
             </div>
           }
 
-          <p class="paneel-lei">Naam wat verskyn op jou Sertifikate</p>
+          <p class="paneel-lei">Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.</p>
 
           @if (sameForAll) {
             <div class="naam-veld">

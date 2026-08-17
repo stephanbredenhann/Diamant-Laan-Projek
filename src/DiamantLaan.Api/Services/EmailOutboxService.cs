@@ -68,7 +68,7 @@ public class EmailOutboxService
             pending.To,
             pending.Subject,
             pending.HtmlBody,
-            idempotencyKey: null,
+            idempotencyKey: pending.IdempotencyKey,
             cancellationToken);
 
         if (sent)

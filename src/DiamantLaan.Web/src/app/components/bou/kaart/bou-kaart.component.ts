@@ -39,7 +39,7 @@ const PRYS_PER_METER = 500;
   ],
   template: `
     <div class="kaart-shell bou-shell">
-      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou m²</p>
+      <p class="eyebrow page-eyebrow">Stap 2 van 4 · Kies jou blokkie</p>
       <div class="visually-hidden" aria-live="polite">{{ aankondiging() }}</div>
       <h1 class="page-title">{{ titel() }}</h1>
       <p class="page-lead">{{ leidraad() }}</p>
@@ -87,7 +87,7 @@ const PRYS_PER_METER = 500;
                 <span><i class="swatch verkoop"></i> Verkoop</span>
                 <span><i class="swatch onbeskikbaar"></i> Onbeskikbaar</span>
               </div>
-              <p class="strook-nota">Klik op ’n blokkie om dit te kies. Klik weer om dit af te haal.</p>
+              <p class="strook-nota">Klik op ’n blokkie om dit te kies. Klik weer daarop om jou keuse te verwyder.</p>
               <app-blok-strook
                 class="net-wyd"
                 [van]="s.van"
@@ -153,10 +153,10 @@ const PRYS_PER_METER = 500;
                     type="button"
                     class="gekose-blok"
                     (click)="verwyder(id)"
-                    [attr.aria-label]="'Haal blok ' + id + ' af'"
+                    [attr.aria-label]="'Verwyder blok ' + id"
                   >
                     <span class="gekose-nommer">{{ id }}</span>
-                    <span class="gekose-af" aria-hidden="true">Haal af</span>
+                    <span class="gekose-af" aria-hidden="true">Verwyder</span>
                   </button>
                 </li>
               }
@@ -604,14 +604,14 @@ export class BouKaartComponent implements OnInit {
   }
 
   titel(): string {
-    return `Blokke ${this.reeksNaam(this.seksie())}`;
+    return `Blokkies ${this.reeksNaam(this.seksie())}`;
   }
 
   leidraad(): string {
-    return 'Hier is die blokkies op die pad. Klik op ’n oop blokkie om dit te kies.';
+    return 'Hier is die blokkies op die pad. Klik op ’n beskikbare blokkie om dit te kies.';
   }
 
-  aankondiging = computed(() => `Blokke ${this.reeksNaam(this.seksie())} is oop.`);
+  aankondiging = computed(() => `Blokkies ${this.reeksNaam(this.seksie())} is oop.`);
 
   reeksNaam(r: Reeks): string {
     return `${nommer(r.van)} – ${nommer(r.tot)}`;
@@ -634,7 +634,7 @@ export class BouKaartComponent implements OnInit {
 
   oorblywendTeks(): string {
     const oor = this.aantal() - this.gekies().size;
-    if (oor <= 0) return 'Alles gekies. Gaan gerus voort.';
+    if (oor <= 0) return 'Alles gekies. Jy kan nou voortgaan.';
     return oor === 1 ? 'Kies nog 1 blokkie.' : `Kies nog ${oor} blokkies.`;
   }
 
@@ -700,7 +700,7 @@ export class BouKaartComponent implements OnInit {
     if (this.gekies().size >= this.aantal()) {
       this.boodskap.set(
         `Jy het reeds ${this.aantal()} ${this.aantal() === 1 ? 'blokkie' : 'blokkies'} gekies. ` +
-        'Haal een af om ’n ander te kies.'
+        'Verwyder een om ’n ander blokkie te kies.'
       );
       return false;
     }

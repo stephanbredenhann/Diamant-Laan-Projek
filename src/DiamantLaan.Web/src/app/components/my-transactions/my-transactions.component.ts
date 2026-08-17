@@ -51,7 +51,7 @@ type SortKey = 'purchaseDate' | 'id' | 'squareCount' | 'amountPerBlock' | 'amoun
                   <th (click)="sortBy('amount')" class="numeric" [class.sorted]="sortKey === 'amount'">
                     Totaal <span class="sort-icon">{{ sortIcon('amount') }}</span>
                   </th>
-                  <th>Blok-nommer</th>
+                  <th>Bloknommer(s)</th>
                   <th class="action-col">Kwitansie</th>
                 </tr>
               </thead>

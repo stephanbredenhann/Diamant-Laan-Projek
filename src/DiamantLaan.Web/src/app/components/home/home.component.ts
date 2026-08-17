@@ -7,12 +7,13 @@ import { SettingsService } from '../../services/settings.service';
 import { randBedrag } from '../../utils/afrikaans.util';
 import { IconComponent, IconName } from '../shared/icon/icon.component';
 import { FotoSliderComponent } from '../shared/foto-slider/foto-slider.component';
+import { CertificateCardComponent, CertificateSquare } from '../shared/certificate-card/certificate-card.component';
 import { TPipe } from '../../i18n/t.pipe';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent, TPipe],
+  imports: [CommonModule, RouterLink, IconComponent, FotoSliderComponent, CertificateCardComponent, TPipe],
   template: `
     <section class="hero">
       <img src="oewerpad-03.jpg" [alt]="'Oewerpad, grondpad wat teerwerk nodig het' | t" class="hero-img" />
@@ -88,10 +89,6 @@ import { TPipe } from '../../i18n/t.pipe';
         </div>
         <div class="why-media">
           <app-foto-slider />
-          <div class="meter-badge">
-            <span class="display">1 m²</span>
-            <small>R500</small>
-          </div>
         </div>
       </div>
     </section>
@@ -132,13 +129,11 @@ import { TPipe } from '../../i18n/t.pipe';
             {{ 'Elke borg ontvang ’n Stadsbouersertifikaat as erkenning vir sy of haar bydrae. Die sertifikaat dra jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog vele projekte op die horison, kan hierdie sertifikate mettertyd waardevolle versamelstukke word.' | t }}
           </p>
         </div>
-        <div class="cert-preview surface-card">
-          <img src="stadsboufonds-logo-orange.png" alt="" width="64" height="64" />
-          <p class="eyebrow">{{ 'Erkenning as' | t }}</p>
-          <h3 class="display">STADSBOUER</h3>
-          <p class="cert-name">{{ 'JOU NAAM' | t }}</p>
-          <p>{{ 'Vir die finansiering van 1 m² van die Oewerpad-teerprojek.' | t }}</p>
-          <span class="work-stamp stamp">1 m²</span>
+        <div class="cert-preview">
+          <app-certificate-card
+            ownerName="Klein Reus"
+            [squares]="voorbeeldSertifikaat"
+            [viewOnly]="true" />
         </div>
       </div>
     </section>
@@ -189,7 +184,7 @@ import { TPipe } from '../../i18n/t.pipe';
     .hero-eyebrow { color: #9ec0e0; }
     .hero-title {
       color: #fff;
-      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-size: clamp(3.75rem, 10vw, 6.5rem);
       margin: 0.75rem 0 1rem;
     }
     .hero-title .accent { color: var(--action); }
@@ -207,7 +202,7 @@ import { TPipe } from '../../i18n/t.pipe';
       align-items: center;
       margin-bottom: 1.5rem;
     }
-    .hero-cta { width: auto; box-shadow: var(--shadow-cta); }
+    .hero-cta { width: auto; }
     .reassurance {
       display: flex;
       flex-wrap: wrap;
@@ -326,27 +321,6 @@ import { TPipe } from '../../i18n/t.pipe';
       margin-bottom: 0.35rem;
     }
     .feature-pair p { color: var(--text-muted); font-size: 1rem; }
-    .why-media { position: relative; }
-    .meter-badge {
-      position: absolute;
-      left: 1rem;
-      bottom: 1rem;
-      z-index: 1;
-      background: #fff;
-      padding: 0.85rem 1rem;
-      box-shadow: var(--shadow);
-    }
-    .meter-badge .display {
-      display: block;
-      font-size: 2.5rem;
-      color: var(--action);
-      line-height: 1;
-    }
-    .meter-badge small {
-      font-family: var(--font-display);
-      font-weight: 700;
-      color: var(--text-muted);
-    }
 
     .steps {
       display: flex;
@@ -425,31 +399,22 @@ import { TPipe } from '../../i18n/t.pipe';
       align-items: center;
     }
     .cert-preview {
-      text-align: center;
-      padding: 2.5rem 2rem;
-    }
-    .cert-preview .display {
-      font-size: 3rem;
-      margin: 0.5rem 0;
-    }
-    .cert-name {
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.75rem;
-    }
-    .stamp {
-      margin-top: 1.25rem;
-      padding: 0.4rem 0.75rem;
-      font-size: 1.25rem;
+      min-width: 0;
     }
 
+    /* Same band as /projek, /vordering and /vrae: one action strip everywhere. */
     .cta-inner {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
+      flex-direction: column;
       gap: 2rem;
-      align-items: center;
+      align-items: flex-start;
+    }
+    @media (min-width: 900px) {
+      .cta-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
     }
     .cta-band .display {
       color: #fff;
@@ -501,6 +466,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   totalSquares = 4000;
 
   readonly randBedrag = randBedrag;
+
+  /** Sample sheet on the tuisblad so the recognition section shows the real artwork. */
+  readonly voorbeeldSertifikaat: CertificateSquare[] = [
+    { id: 68, purchaseDate: '2026-08-17' },
+  ];
 
   /** Rand goal follows the square count, so R500/m² stays the single source. */
   get randDoel(): number {

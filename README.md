@@ -9,7 +9,7 @@
 | Database | SQLite via Entity Framework Core 8.0 |
 | Auth | ASP.NET Core Identity + JWT Bearer |
 | Mapping | Leaflet 1.9 + OpenStreetMap |
-| Email | Mailchimp Transactional / Mandrill (pluggable via `IEmailService`) |
+| Email | Resend (pluggable via `IEmailService`) |
 | Payments | PayFast (merchant-hosted integration) |
 | Hosting | Azure App Service (F1 free tier, Linux) |
 
@@ -37,7 +37,7 @@ src/
 │   │   ├── Dtos/                   # Request/response DTOs
 │   │   ├── Enums/                  # SquareStatus, PaymentStatus
 │   │   ├── PayFastSettings.cs      # PayFast config POCO
-│   │   ├── MandrillSettings.cs     # Email config POCO
+│   │   ├── ResendSettings.cs       # Email config POCO
 │   │   └── *.cs                    # Entities: User, Square, Purchase, RefreshToken, etc.
 │   ├── Services/                   # Business logic (21 services)
 │   ├── Validation/                 # EmailValidator, PasswordValidator, PhoneValidator
@@ -116,8 +116,8 @@ dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Email" "admin@e
 dotnet user-secrets set --project src/DiamantLaan.Api "AdminUser:Password" "Admin123!"
 
 # --- OPTIONAL (emails won't send if omitted, see Email Subsystem) ---
-dotnet user-secrets set --project src/DiamantLaan.Api "Mandrill:ApiKey" "md-your_api_key"
-dotnet user-secrets set --project src/DiamantLaan.Api "Mandrill:FromEmail" "noreply@yourdomain.com"
+dotnet user-secrets set --project src/DiamantLaan.Api "Resend:ApiKey" "re_your_api_key"
+dotnet user-secrets set --project src/DiamantLaan.Api "Resend:FromEmail" "noreply@yourdomain.com"
 
 # --- OPTIONAL (PayFast sandbox, payments won't work if omitted) ---
 dotnet user-secrets set --project src/DiamantLaan.Api "PayFast:MerchantId" "10000100"
@@ -167,8 +167,8 @@ All configuration is read from `appsettings.json` and overridden by `dotnet user
 |-----|---------|-------------|
 | `Jwt:ExpireMinutes` | `60` | Access token lifetime in minutes. |
 | `Jwt:RefreshExpireDays` | `7` | Refresh token lifetime in days. |
-| `Mandrill:ApiKey` | *(empty)* | Mailchimp Transactional (Mandrill) API key. Emails silently skip if unset. |
-| `Mandrill:FromEmail` | *(empty)* | Sender "from" address for emails. Its domain must be verified in the Mailchimp Transactional dashboard. |
+| `Resend:ApiKey` | *(empty)* | Resend API key for transactional emails. Emails silently skip if unset. |
+| `Resend:FromEmail` | *(empty)* | Sender "from" address for emails. Must be verified in the Resend dashboard. |
 | `PayFast:MerchantId` | *(empty)* | PayFast merchant ID. |
 | `PayFast:MerchantKey` | *(empty)* | PayFast merchant key. |
 | `PayFast:Passphrase` | *(empty)* | PayFast signature passphrase. Must match the PayFast dashboard setting. |
@@ -188,8 +188,8 @@ ConnectionStrings__DefaultConnection="Data Source=/data/diamantlaan.db"
 Jwt__Key="your-super-secret-key-at-least-32-chars!!"
 AdminUser__Email="admin@example.com"
 AdminUser__Password="Admin123!"
-Mandrill__ApiKey="md-xxx"
-Mandrill__FromEmail="noreply@yourdomain.com"
+Resend__ApiKey="re_xxx"
+Resend__FromEmail="noreply@yourdomain.com"
 PayFast__MerchantId="10000100"
 PayFast__MerchantKey="46f0cd694581a"
 PayFast__Passphrase="your_passphrase"
@@ -216,10 +216,10 @@ User Action (register, forgot-pw, manual purchase)
        └──▶ Tries immediate send via IEmailService
               │
               ▼
-         MandrillEmailService (HttpClient)
+         ResendEmailService (Resend SDK)
               │
               ▼
-         Mandrill API (mandrillapp.com)
+         Resend API (resend.com)
 
 Background: EmailOutboxBackgroundService (every 2 min)
        │
@@ -244,18 +244,17 @@ All emails flow through `EmailOutboxService`, which persists every email to the 
 - **Background flush** — `EmailOutboxBackgroundService` runs every 2 minutes to retry any unsent emails
 - **Shutdown flush** — All pending emails are flushed when the app stops
 
-### Current Provider: Mailchimp Transactional (Mandrill)
+### Current Provider: Resend
 
-`MandrillEmailService.cs` implements `IEmailService` with a single `HttpClient` POST to
-`https://mandrillapp.com/api/1.0/messages/send.json`. No SDK package is needed.
+`ResendEmailService.cs` implements `IEmailService` with the `Resend` NuGet SDK.
 
-**Configuration:** `Mandrill:ApiKey` and `Mandrill:FromEmail` (set via user secrets or
-environment variables). The from-address domain must be verified in the Mailchimp
-Transactional dashboard. If either is blank the service logs a warning and returns
-`false`, so the email stays in the outbox instead of throwing.
+**Configuration:** `Resend:ApiKey` and `Resend:FromEmail` (set via user secrets or
+environment variables). The from-address domain must be verified in the Resend
+dashboard. If either is blank the service logs a warning and returns `false`, so
+the email stays in the outbox instead of throwing.
 
-Mandrill has no idempotency-key concept, so the `idempotencyKey` argument on
-`IEmailService.SendAsync` is ignored by this implementation.
+Retries pass the stored outbox `IdempotencyKey` so Resend will not send the same
+email twice.
 
 **To swap providers again:** write a new `IEmailService`, register it in `Program.cs`, and
 add its settings section. The outbox pattern, background services, and email templates are

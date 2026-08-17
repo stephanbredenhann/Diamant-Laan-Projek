@@ -130,9 +130,9 @@ export function formatBlockRanges(ids: number[]): string {
       @if (squares.length > 1 && !viewOnly && !lockedMode) {
         <div class="view-toggle" role="group" aria-label="Kies sertifikaat weergawe">
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'summary'"
-                  [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Opsomming</button>
+                  [attr.aria-pressed]="mode === 'summary'" (click)="stelModus('summary')">Al die bloknommers op een sertifikaat</button>
           <button type="button" class="toggle-btn" [class.is-active]="mode === 'block'"
-                  [attr.aria-pressed]="mode === 'block'" (click)="stelModus('block')">Individuele blokke</button>
+                  [attr.aria-pressed]="mode === 'block'" (click)="stelModus('block')">Elke bloknommer op sy eie sertifikaat</button>
         </div>
       }
 
@@ -165,18 +165,20 @@ export function formatBlockRanges(ids: number[]): string {
         </div>
       }
 
-      <div class="actions">
-        <ng-content></ng-content>
-        @if (squares.length > 0 && !viewOnly) {
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="downloading"
-            (click)="downloadPdf()">
-            {{ downloading ? 'Besig om PDF te genereer...' : downloadLabel }}
-          </button>
-        }
-      </div>
+      @if (!viewOnly) {
+        <div class="actions">
+          <ng-content></ng-content>
+          @if (squares.length > 0) {
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="downloading"
+              (click)="downloadPdf()">
+              {{ downloading ? 'Besig om PDF te genereer...' : downloadLabel }}
+            </button>
+          }
+        </div>
+      }
 
       @if (squares.length === 0) {
         <p class="empty">Geen vierkante meter gevind nie.</p>

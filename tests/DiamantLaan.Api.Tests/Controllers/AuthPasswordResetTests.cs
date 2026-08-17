@@ -100,7 +100,7 @@ public class AuthPasswordResetTests
             "user@test.com",
             It.Is<string>(s => s.Contains("wagwoord")),
             It.IsAny<string>(),
-            null,
+            It.Is<string>(k => !string.IsNullOrWhiteSpace(k)),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

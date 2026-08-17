@@ -100,10 +100,6 @@ export const EN: Record<string, string> = {
     'Your name. Your block. Your contribution, visible for the future.',
   'Elke borg ontvang ’n Stadsbouersertifikaat as erkenning vir sy of haar bydrae. Die sertifikaat dra jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog vele projekte op die horison, kan hierdie sertifikate mettertyd waardevolle versamelstukke word.':
     'Every sponsor receives a Stadsbouer certificate in recognition of their contribution. The certificate carries your name and the unique numbers of the blocks you sponsored. With many more projects on the horizon, these certificates could in time become valuable collector’s items.',
-  'Erkenning as': 'Recognised as',
-  'JOU NAAM': 'YOUR NAME',
-  'Vir die finansiering van 1 m² van die Oewerpad-teerprojek.':
-    'For funding 1 m² of the Oewerpad tarring project.',
 
   // --- Shared CTA band ---
   'Jou volgende stap': 'Your next step',
@@ -124,7 +120,6 @@ export const EN: Record<string, string> = {
     'Tarring the Oewerpad is therefore more than infrastructure development. It opens up Orania’s riverside area for a next phase of tourism development and creates new room for economic growth.',
   'Oewerpad, grondpad wat teerwerk nodig het':
     'The Oewerpad, a dirt road in need of tarring',
-  'Per volle vierkante meter.': 'Per full square metre.',
   'Besige roete': 'A busy route',
   'As een van Orania se besigste paaie, is die Oewerpad ’n belangrike roete wat opgegradeer moet word om by Orania se groeiende behoeftes te pas.':
     'As one of Orania’s busiest roads, the Oewerpad is an important route that needs upgrading to match Orania’s growing needs.',
@@ -140,21 +135,19 @@ export const EN: Record<string, string> = {
   'Welkom in Orania-bord langs die pad': 'Welcome to Orania sign beside the road',
   'Die inisiatief': 'The initiative',
   'Waar die projek vandaan kom.': 'Where the project comes from.',
-  'Die Oewerpad is lankal reeds as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder enige staatstoelae beteken dit dat Oraniërs alles wat hulle graag wil hê, self moet befonds.':
-    'The Oewerpad has long been identified as one of the most important and busiest routes in Orania. Oraniërs, however, work carefully and deliberately with limited resources. Without any state funding, Oraniërs have to fund everything they want themselves.',
-  'Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is die boublokke vir ’n vrye Afrikanertuiste. In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner wat tans in Suid-Afrika woon, maar óók binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan erf.':
-    'After 35 years of success, it is time for Orania to enter its next growth phase. Greater development, more people and a larger, established economy: these are the building blocks for a free Afrikaner homeland. In the same sense, Orania is not only a home for Oraniërs. Orania, the Afrikaner town developed with Afrikaner labour on Afrikaner land, belongs to Afrikaners. The growth and development of this community is in the interest of every Afrikaner living in South Africa today, and just as much in the interest of the Afrikaner generations who will inherit the best version of Orania.',
-  'Die stryd begin reeds vandag. ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds geen skaduwee nie.':
-    'The struggle begins today. You do not plant a tree to get shade tomorrow, but if we do not plant a tree today there will still be no shade in the future.',
-  'Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid. Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:':
-    'The Oewerpad is more than a road. It is a way to freedom. Not the infrastructure itself, but the symbol of what Afrikaners are capable of. Without begging. Without pleading. By simply doing what we are best known for:',
+  'Die Oewerpad is reeds lank as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder staatstoelaes beteken dit dat Oraniërs self moet betaal vir alles wat hulle graag wil hê en nodig het.':
+    'The Oewerpad has long been identified as one of the most important and busiest routes in Orania. Oraniërs, however, work carefully and deliberately with limited resources. Without state funding, Oraniërs have to pay for everything they want and need themselves.',
+  'Ná 35 jaar van sukses is dit weer tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is die boustene van ’n vrye Afrikanertuiste. Orania is egter nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat deur Afrikaner-arbeid op Afrikanergrond ontwikkel word, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is in die belang van elke Afrikaner wat vandag in Suid-Afrika woon, maar ook van die Afrikanernageslag wat eendag die erfenis in besit sal neem.':
+    'After 35 years of success, it is time once again for Orania to enter its next growth phase. Greater development, more people and a larger, established economy: these are the building blocks of a free Afrikaner homeland. But Orania is not only a home for Oraniërs. Orania, the Afrikaner town developed through Afrikaner labour on Afrikaner land, belongs to Afrikaners. The growth and development of this community is in the interest of every Afrikaner living in South Africa today, and of the Afrikaner generations who will one day take possession of that inheritance.',
+  'Die Oewerpad is meer as net ’n pad. Dit is ’n weg na vryheid. Nie vanweë die infrastruktuur self nie, maar vanweë die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig te doen waarvoor ons die beste bekend is:':
+    'The Oewerpad is more than just a road. It is a way to freedom. Not because of the infrastructure itself, but because of the symbol of what Afrikaners are capable of. Without begging. Without pleading. By simply doing what we are best known for:',
   'Deur self te bou!': 'Building it ourselves.',
 
   // --- Vordering page ---
   'Vordering · Orania-teerpad': 'Progress · Orania tarred road',
   'Hoe vorder die projek?': 'How is the project progressing?',
-  'Hier wys ons jou hoe ver die projek vorder. Kom loer elke week wat gaan aan!':
-    'Here we show you how far the project has come. Drop in every week to see what is happening.',
+  'Hier kan jy gereeld sien hoe die projek vorder. Kom loer in en volg die vordering van die Orania-teerpad!':
+    'Here you can check in regularly to see how the project is progressing. Drop by and follow the progress of the Orania tarred road.',
   'Finansiële vordering': 'Financial progress',
   'm² geborg': 'm² sponsored',
   'm² klaar geteer': 'm² tarred',
@@ -170,25 +163,26 @@ export const EN: Record<string, string> = {
   'Werk nog nie begin nie': 'Work not started yet',
   'Die pad self': 'The road itself',
   'Blokkie vir blokkie': 'Block by block',
-  'Elke blokkie m² is tans in een van vier fases:':
-    'Every m² block is currently in one of four phases:',
-  'Nog nie begin nie': 'Not started yet',
-  'Nog geen werk is op hierdie deel gedoen nie.':
-    'No work has been done on this section yet.',
-  'Voorberei': 'Prepared',
-  'Basiese voorbereiding is al gedoen, maar is nog nie geteer nie.':
-    'Basic preparation is done, but it has not been tarred yet.',
-  'Besig om te teer': 'Being tarred',
-  'Die span is tans besig om hierdie deel te teer!':
-    'The team is tarring this section right now.',
-  'Klaar geteer': 'Tarred',
-  'Hierdie blokkie is afgehandel!': 'This block is finished.',
-  'Jy kan die vordering op die bouwerk van jou eie blokkie volg.':
-    'You can follow the building work on your own block.',
-  'Sodra jy jou blokkies gekoop het, en op die webblad ingeteken is, kan jy na die vordering van jou blokke gaan kyk deur op die':
-    'Once you have bought your blocks and signed in to the site, you can check on their progress with the',
-  ' knoppie te klik. Daar sal ook foto’s van die vordering verskyn.':
-    ' button. Photos of the work appear there too.',
+  'Elke blokkie m² van die pad is tans in een van vier boufases:':
+    'Every m² block of the road is currently in one of four construction phases:',
+  'Bouwerk het nog nie begin nie': 'Construction has not started yet',
+  'Daar is nog geen werk aan hierdie deel van die pad gedoen nie.':
+    'No work has been done on this section of the road yet.',
+  'Voorbereiding het afgeskop': 'Preparation has started',
+  'Die voorbereiding vir die pad is in proses, maar hierdie deel moet nog geteer word.':
+    'Preparation of the road is under way, but this section still has to be tarred.',
+  'Teerwerk aan die gang': 'Tarring under way',
+  'Die span is tans besig om hierdie deel van die pad te teer.':
+    'The team is tarring this section of the road right now.',
+  'Teerwerk afgehandel': 'Tarring complete',
+  'Hierdie deel van die pad is voltooi!': 'This section of the road is finished.',
+  'Volg die vordering van jou eie blokkies': 'Follow the progress of your own blocks',
+  'Sodra jy jou blokkie(s) gekoop het en op die webblad ingeteken is, kan jy die vordering van jou eie blokkie(s) volg. Klik eenvoudig op':
+    'Once you have bought your block(s) and signed in to the site, you can follow the progress of your own block(s). Simply click on',
+  ' om te sien hoe ver die bouwerk gevorder het.':
+    ' to see how far the work has come.',
+  'Foto’s van die vordering sal ook hier verskyn, sodat jy kan sien hoe jou bydrae stap vir stap in ’n voltooide pad verander.':
+    'Photos of the progress will appear here too, so you can see how your contribution turns step by step into a finished road.',
 
   // --- Vrae page ---
   'Vrae · Orania bou ’n pad': 'Questions · Orania builds a road',
@@ -197,25 +191,29 @@ export const EN: Record<string, string> = {
   'Gereelde vrae word hieronder beantwoord. Stuur gerus vir ons ’n e-pos indien jou vraag nie hier beantwoord word nie.':
     'Frequently asked questions are answered below. Send us an email if your question is not answered here.',
   'Gereelde vrae': 'Frequently asked questions',
-  'Gereelde vrae oor dié projek:': 'Frequently asked questions about this project:',
-  'Indien jou vraag nie hier beantwoord is nie, stuur gerus vir ons ’n e-pos:':
-    'If your question is not answered here, send us an email:',
+  'Alles wat jy oor die projek wil weet': 'Everything you want to know about the project',
+  'Het jy nog vrae? Stuur gerus ’n e-pos na:':
+    'Still have questions? Send an email to:',
   'Wat finansier my R500?': 'What does my R500 fund?',
-  'Jou R500 finansier presies een m² van die nuwe teerpad in Diamantlaan. Dit word direk aan hierdie projek gewy.':
-    'Your R500 funds exactly one m² of the new tarred road in Diamantlaan. It goes directly to this project.',
+  'Jou R500 finansier een m² van die nuwe teerpad in Diamantlaan. Die volle bedrag word direk aangewend vir die uitvoering van hierdie projek.':
+    'Your R500 funds one m² of the new tarred road in Diamantlaan. The full amount goes directly towards carrying out this project.',
   'Kan ek meer as een m² borg?': 'Can I sponsor more than one m²?',
-  'Ja, jy kan borg soveel jy wil! Indien jy as ’n geskenk vir familie of vriende wil borg, kan jy ook so maak en dan elkeen se naam op hul eie sertifikaat skryf.':
-    'Yes, sponsor as many as you like. If you want to sponsor blocks as a gift for family or friends, you can do that too and put each person’s name on their own certificate.',
-  'Hoe word ek as ’n Stadsbouer erken?': 'How am I recognised as a Stadsbouer?',
-  'Sodra die transaksie finaliseer is, word jou sertifikaat met jou unieke blokkie beskikbaar gestel. Jy kan dit aflaai, deel op sosiale media en selfs laat druk om te raam. Verdere erkenning sal in die toekoms langs die pad aangebring word.':
-    'As soon as the transaction is finalised, your certificate with your unique block is made available. You can download it, share it on social media and even have it printed to frame. Further recognition will be placed alongside the road in future.',
-  'Kan ek slegs aanlyn betaal?': 'Can I only pay online?',
-  'Nee, jy kan ons direk kontak indien jy nie deur die webblad wil borg nie, of sommer die Orania Beweging se kantore in Orania kom besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.':
-    'No. Contact us directly if you would rather not sponsor through the website, or simply visit the Orania Beweging offices in Orania. Send an email to inligting@orania.co.za or call 053 207 0062.',
-  'Koop ek die grond of padoppervlak?':
-    'Am I buying the land or the road surface?',
-  'Nee. Jou bydrae finansier die projek; die blokkie is simboliese of digitale erkenning. Dit dra nie eiendoms-, toegang- of beheerregte oor nie.':
-    'No. Your contribution funds the project; the block is symbolic or digital recognition. It transfers no ownership, access or control rights.',
+  'Ja, jy kan soveel borg as wat jy wil! Jy kan ook m² namens familie of vriende borg. Elke persoon kan dan ’n eie Stadsbouersertifikaat met sy of haar naam ontvang.':
+    'Yes, sponsor as many as you like. You can also sponsor m² on behalf of family or friends. Each person can then receive their own Stadsbouer certificate in their name.',
+  'Hoe word my bydrae as ’n Stadsbouer erken?':
+    'How is my contribution recognised as a Stadsbouer?',
+  'Sodra jou transaksie gefinaliseer is, word jou Stadsbouersertifikaat met jou unieke blokkienommer aan jou beskikbaar gestel. Jy kan dit aflaai, op sosiale media deel of laat druk en raam as ’n blywende herinnering aan jou bydrae.':
+    'As soon as your transaction is finalised, your Stadsbouer certificate with your unique block number is made available to you. You can download it, share it on social media, or have it printed and framed as a lasting reminder of your contribution.',
+  'Kan ek slegs op die webwerf borg?': 'Can I only sponsor on the website?',
+  'Nee. Indien jy verkies om nie deur die webblad te borg nie, kan jy ons direk kontak of die Orania Beweging se kantore in Orania besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.':
+    'No. If you would rather not sponsor through the website, you can contact us directly or visit the Orania Beweging offices in Orania. Send an email to inligting@orania.co.za or call 053 207 0062.',
+  'Kry ek ’n stukkie pad vir my bydrae?':
+    'Do I get a piece of the road for my contribution?',
+  'Nee. Jou bydrae is finansiële ondersteuning tot die projek en die blokkie wat jy kies dien as simboliese en digitale erkenning van jou bydrae. Dit verleen geen eiendoms-, toegangs- of beheerregte ten opsigte van die grond of pad nie.':
+    'No. Your contribution is financial support for the project, and the block you choose serves as symbolic and digital recognition of that contribution. It grants no ownership, access or control rights over the land or the road.',
+  'Wat is die Stadsboufonds?': 'What is the Stadsboufonds?',
+  'Die Stadsboufonds is ’n infrastruktuurfonds wat gestig is om die ontwikkeling van infrastruktuur in Orania te versnel. Omdat Orania geen staatsondersteuning vir infrastruktuurontwikkeling ontvang nie, moet die gemeenskap infrastruktuur uit eie bronne finansier. Bydraes tot die Stadsboufonds word aangewend vir noodsaaklike infrastruktuurprojekte wat die grondslag vir ekonomiese groei skep. Die Stadsboufonds is ’n projek van die Orania Ontwikkelingsmaatskappy, in samewerking met die Orania Beweging.':
+    'The Stadsboufonds is an infrastructure fund established to accelerate infrastructure development in Orania. Because Orania receives no state support for infrastructure development, the community has to fund infrastructure from its own resources. Contributions to the Stadsboufonds go towards essential infrastructure projects that lay the foundation for economic growth. The Stadsboufonds is a project of the Orania Ontwikkelingsmaatskappy, in cooperation with the Orania Beweging.',
 
   // --- Password field ---
   'Wys wagwoord': 'Show password',

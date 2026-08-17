@@ -19,11 +19,11 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
     <div class="container-wide bou-shell">
       <div class="header-row">
         <div>
-          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Betaal</p>
+          <p class="eyebrow page-eyebrow">Stap 3 van 4 · Voltooi jou borgskap</p>
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Borg jou m²</h1>
           <p class="page-lead">
-            Voltooi die transaksie. Bevestig al die inligting is korrek, en klik op “Betaal”.
+            Handel die transaksie af. Bevestig dat al jou besonderhede korrek is en klik dan op “Betaal”.
           </p>
         </div>
         <span class="work-stamp stamp">STADSBOUER-TOEKENNING</span>
@@ -36,10 +36,11 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
         @if (isGuest) {
           <div class="guest-box">
             <p class="guest-note">
-              Jou e-pos word gebruik vir bevestiging, jou sertifikaat en die opsionele rekening-skakel.
+              Jou e-posadres word gebruik om jou bevestiging en sertifikaat te stuur, asook die
+              rekening-skakel indien jy besluit het om ’n rekening oop te maak.
             </p>
             <div class="form-group">
-              <label for="guest-email">E-pos <span class="required-mark" aria-hidden="true">*</span></label>
+              <label for="guest-email">E-posadres <span class="required-mark" aria-hidden="true">*</span></label>
               <input
                 id="guest-email"
                 type="email"
@@ -62,9 +63,9 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
 
         <div class="redirect-notice">
           <p>
-            Wanneer jy op <strong>Betaal</strong> klik, gaan jy na ’n betalingskerm op PayFast
-            geneem word. Voltooi die transaksie en wag om outomaties terug na hierdie blad
-            geneem te word.
+            Wanneer jy op <strong>Betaal</strong> klik, word jy na die veilige betalingskerm van
+            PayFast geneem. Voltooi die transaksie daar en wag totdat jy outomaties na die
+            volgende bladsy geneem word.
           </p>
         </div>
 

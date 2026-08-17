@@ -22,8 +22,8 @@ const PRYS_PER_METER = 500;
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Hoeveel blokkies m² gaan jy borg?</h1>
           <p class="page-lead">
-            Elke blokkie m² het sy eie unieke nommer. Borg meer as een om verskeie
-            sertifikate te versamel.
+            Elke blokkie m² het ’n unieke nommer. Kies hoeveel blokkies jy wil borg
+            en versamel ’n sertifikaat vir elke blokkie.
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ const PRYS_PER_METER = 500;
               (click)="kiesEie()"
             >
               <span class="choice-eie-label">Eie hoeveelheid</span>
-              <span class="choice-caption">Besluit self hoeveel jy wil borg</span>
+              <span class="choice-caption">Besluit self hoeveel blokkies jy wil borg</span>
             </button>
           </div>
 
@@ -75,7 +75,7 @@ const PRYS_PER_METER = 500;
               @if (eieFout()) {
                 <p class="error-alert">{{ eieFout() }}</p>
               }
-              <p class="eie-hint">Elke volle m² voeg R500 by.</p>
+              <p class="eie-hint">Elke blokkie verteenwoordig 1 m² van die pad en ’n bydrae van R500.</p>
             </div>
           }
         </div>

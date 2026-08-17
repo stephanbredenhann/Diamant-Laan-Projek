@@ -44,26 +44,26 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
             @if (fromEmail) {
               <h2 class="display auth-title">Welkom terug</h2>
             } @else {
-              <h2 class="display auth-title">Dankie, Stadsbouer.</h2>
+              <h2 class="display auth-title">Dankie, Stadsbouer!</h2>
             }
             <p class="lead">
-              Jy het <strong>{{ squareCount }}m²</strong> vir die nuwe pad in Orania geborg.
-              Met jou totale bydrae van <strong>{{ randBedrag(amount) }}</strong>, kan ons nou
-              hierdie stukkie teer. Dankie!
+              Jy het <strong>{{ squareCount }} m²</strong> van die nuwe pad in Orania geborg.
+              Met jou bydrae van <strong>{{ randBedrag(amount) }}</strong> help jy ons om hierdie
+              stukkie pad te teer. Dankie dat jy saam met ons bou!
             </p>
 
             <div class="pros">
-              <h3>Ons beveel dit ten sterkste aan om ’n rekening te skep.</h3>
-              <p class="pros-intro">Met ’n rekening kan jy:</p>
+              <h3>Skep jou rekening</h3>
+              <p class="pros-intro">Ons beveel sterk aan dat jy ’n rekening skep. Met ’n rekening kan jy:</p>
               <ul>
-                <li>Die vordering van jou m² aktief volg.</li>
-                <li>Foto’s sien van hoe die werk op jou blokkie vorder.</li>
-                <li>Opdaterings van hoe die werk vorder, ontvang.</li>
-                <li>Enige tyd toegang tot jou digitale sertifikaat ontvang.</li>
-                <li>Kwitansies van jou borgskap aflaai.</li>
-                <li>Later weer ’n m² borg, sonder om deur die hele proses te gaan.</li>
+                <li>Die vordering van jou m²-borgskap volg.</li>
+                <li>Foto’s van die vordering op jou blokkies sien.</li>
+                <li>Opdaterings oor die projek ontvang.</li>
+                <li>Enige tyd toegang tot jou digitale sertifikaat kry.</li>
+                <li>Kwitansies van jou borgskappe aflaai.</li>
+                <li>Later weer ’n m² borg sonder om die hele proses te herhaal.</li>
               </ul>
-              <p class="pros-note">Klik hier om jou rekening binne 30 sekondes te skep!</p>
+              <p class="pros-note">Skep jou rekening binne 30 sekondes.</p>
             </div>
 
             <div class="actions">
@@ -75,17 +75,18 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
         @case ('confirm') {
           <div class="card">
-            <h2>Hou ingedagte!</h2>
+            <h2>Hou dit in gedagte!</h2>
             <p class="lead">
-              Sonder ’n rekening kan ons nie jou m² aan jou koppel nie. Ons gaan jou nie kan inlig
-              wanneer jou blokkie geteer word nie. Jy sal ook net een keer jou sertifikaat kan
-              aflaai. Daarna is dit nie meer beskikbaar nie.
+              Sonder ’n rekening kan ons nie jou blokkie aan jou verbind nie. Jy sal dus nie in
+              kennis gestel kan word wanneer jou blokkie geteer word nie, en jy sal jou sertifikaat
+              slegs een keer kan aflaai. Daarna sal dit nie meer beskikbaar wees nie.
             </p>
             <p class="muted">
-              Jou bydrae bly natuurlik staan en gaan nie verlore nie. Die rekening is net nodig sodat
-              ons jou bydrae aan jou persoonlike m² kan koppel, en jy die vordering daarvan kan volg.
+              Jou bydrae bly natuurlik geldig en gaan nie verlore nie. ’n Rekening is bloot nodig om
+              jou bydrae aan jou persoonlike m² te koppel en jou in staat te stel om die vordering
+              daarvan te volg.
             </p>
-            <p class="muted">Ons raai dit ten sterkste aan om jou rekening te skep!</p>
+            <p class="muted">Ons beveel sterk aan dat jy jou rekening skep!</p>
             <div class="actions">
               <button type="button" class="btn btn-primary" (click)="createAccount()">Skep ’n rekening</button>
               <button type="button" class="btn btn-outline" (click)="confirmDecline()">Nee, gaan voort sonder ’n rekening</button>
@@ -97,8 +98,8 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
           <div class="card card--name">
             <h2>Naam op jou sertifikaat</h2>
             <p class="lead">
-              Die naam wat jy hier invul gaan verskyn op jou sertifikaat. Maak asseblief
-              doodseker dit is reg ingevul:
+              Die naam wat jy hier invul, sal op jou sertifikaat verskyn. Maak asseblief seker
+              dat dit korrek ingevul is.
             </p>
             <div class="form-group form-group--name">
               <label for="cert-name">Naam vir sertifikaat</label>

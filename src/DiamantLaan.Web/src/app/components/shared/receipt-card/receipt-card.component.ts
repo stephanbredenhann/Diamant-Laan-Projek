@@ -20,7 +20,7 @@ export interface ReceiptData {
   template: `
   <div class="receipt-card">
     <h1>Kwitansie</h1>
-    <p class="subtitle">Diamant Laan Teerprojek</p>
+    <p class="subtitle">Oewerpad teerprojek</p>
 
     <dl class="receipt-details">
       <div>
@@ -40,7 +40,7 @@ export interface ReceiptData {
         <dd>{{ meterFrase(data.squareCount) }}</dd>
       </div>
       <div>
-        <dt>Blok-ID’s</dt>
+        <dt>Bloknommer(s)</dt>
         <dd>{{ data.squareIds.join(', ') }}</dd>
       </div>
       <div>
@@ -48,12 +48,12 @@ export interface ReceiptData {
         <dd>{{ randBedrag(data.amountPerBlock) }}</dd>
       </div>
       <div>
-        <dt>Totaal bedrag</dt>
+        <dt>Totale bedrag</dt>
         <dd><strong>{{ randBedrag(data.amount) }}</strong></dd>
       </div>
       <div>
         <dt>Betalingstatus</dt>
-        <dd>Bevestig</dd>
+        <dd>Betaling bevestig</dd>
       </div>
       @if (data.payFastPaymentId) {
         <div>
@@ -63,7 +63,7 @@ export interface ReceiptData {
       }
     </dl>
 
-    <p class="footer">Dankie vir jou bydrae aan Diamant Laan.</p>
+    <p class="footer">Dankie vir jou bydrae</p>
   </div>
   `,
   styles: [`

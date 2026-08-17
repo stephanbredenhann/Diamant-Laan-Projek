@@ -25,7 +25,7 @@ import {
       <div class="page-header">
         <p class="eyebrow">My rekening</p>
         <h2 class="display page-title">My profiel</h2>
-        <p class="summary">{{ changesRemaining }} van {{ maxChanges }} veranderinge oor vir die volgende 12 uur</p>
+        <p class="summary">Jy kan binne die volgende 12 uur nog {{ changesRemaining }} wysigings aanbring.</p>
       </div>
 
       @if (loadError) {
@@ -133,13 +133,14 @@ import {
           </section>
 
           <section class="card danger-card">
-            <h3>Verwyder rekening</h3>
+            <h3>Sluit rekening</h3>
             <p class="danger-copy">
-              Jou vierkante meter bly joune en onbeskikbaar vir ander, maar word gewys as
-              &ldquo;Onaktiewe rekening&rdquo;. Jy sal nie weer met hierdie rekening kan aanmeld nie.
+              Jou blokkie m² bly aan jou naam gekoppel en bly vir ander onbeskikbaar, maar jou
+              rekening sal as ’n &ldquo;Geslote rekening&rdquo; aangedui word. Jy sal nie weer met
+              hierdie rekening kan aanmeld nie.
             </p>
             <button type="button" class="btn btn-outline danger" (click)="openDeleteModal()">
-              Verwyder rekening
+              Sluit rekening
             </button>
           </section>
         </div>
@@ -155,10 +156,10 @@ import {
           aria-labelledby="delete-account-title"
           (click)="$event.stopPropagation()"
         >
-          <h3 id="delete-account-title">Verwyder rekening?</h3>
+          <h3 id="delete-account-title">Sluit rekening?</h3>
           <p>
-            Tik jou wagwoord om te bevestig. Jou vierkante meter bly verkoop en verskyn as
-            &ldquo;Onaktiewe rekening&rdquo;.
+            Tik jou wagwoord om te bevestig. Jou blokkie m² bly aan jou naam gekoppel en verskyn as
+            &ldquo;Geslote rekening&rdquo;.
           </p>
           <div class="form-group">
             <label for="deletePassword">Huidige wagwoord</label>
@@ -185,7 +186,7 @@ import {
               [disabled]="deleteLoading || !deletePassword"
               (click)="confirmDeleteAccount()"
             >
-              {{ deleteLoading ? 'Besig...' : 'Verwyder permanent' }}
+              {{ deleteLoading ? 'Besig...' : 'Sluit rekening' }}
             </button>
           </div>
         </div>

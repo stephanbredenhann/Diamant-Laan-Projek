@@ -19,7 +19,7 @@ import { TPipe } from '../../i18n/t.pipe';
         <p class="eyebrow page-hero-eyebrow">{{ 'Vordering · Orania-teerpad' | t }}</p>
         <h1 class="display page-hero-title">{{ 'Hoe vorder die projek?' | t }}</h1>
         <p class="page-hero-body">
-          {{ 'Hier wys ons jou hoe ver die projek vorder. Kom loer elke week wat gaan aan!' | t }}
+          {{ 'Hier kan jy gereeld sien hoe die projek vorder. Kom loer in en volg die vordering van die Orania-teerpad!' | t }}
         </p>
       </div>
     </section>
@@ -38,10 +38,14 @@ import { TPipe } from '../../i18n/t.pipe';
                 <span>{{ 'Ingesamel' | t }}</span>
               </div>
             }
-            <div class="stat-dark">
-              <strong class="tabular">{{ klaarGeteer }}</strong>
-              <span>{{ 'm² klaar geteer' | t }}</span>
-            </div>
+            <!-- Tarring is the last phase, so this would sit on 0 for months.
+                 It only appears once there is something to report. -->
+            @if (klaarGeteer > 0) {
+              <div class="stat-dark">
+                <strong class="tabular">{{ klaarGeteer }}</strong>
+                <span>{{ 'm² klaar geteer' | t }}</span>
+              </div>
+            }
           </div>
         }
 
@@ -90,7 +94,7 @@ import { TPipe } from '../../i18n/t.pipe';
         <p class="eyebrow">{{ 'Die pad self' | t }}</p>
         <h2 class="display section-title">{{ 'Blokkie vir blokkie' | t }}</h2>
         <p class="lead">
-          {{ 'Elke blokkie m² is tans in een van vier fases:' | t }}
+          {{ 'Elke blokkie m² van die pad is tans in een van vier boufases:' | t }}
         </p>
 
         <div class="phase-cards">
@@ -109,10 +113,13 @@ import { TPipe } from '../../i18n/t.pipe';
           }
         </div>
 
-        <h3 class="phase-note-kop">{{ 'Jy kan die vordering op die bouwerk van jou eie blokkie volg.' | t }}</h3>
+        <h3 class="phase-note-kop">{{ 'Volg die vordering van jou eie blokkies' | t }}</h3>
         <p class="phase-note">
-          {{ 'Sodra jy jou blokkies gekoop het, en op die webblad ingeteken is, kan jy na die vordering van jou blokke gaan kyk deur op die' | t }}
-          <a routerLink="/my-blokke">{{ 'My blokke' | t }}</a>{{ ' knoppie te klik. Daar sal ook foto’s van die vordering verskyn.' | t }}
+          {{ 'Sodra jy jou blokkie(s) gekoop het en op die webblad ingeteken is, kan jy die vordering van jou eie blokkie(s) volg. Klik eenvoudig op' | t }}
+          <a routerLink="/my-blokke">{{ 'My blokke' | t }}</a>{{ ' om te sien hoe ver die bouwerk gevorder het.' | t }}
+        </p>
+        <p class="phase-note">
+          {{ 'Foto’s van die vordering sal ook hier verskyn, sodat jy kan sien hoe jou bydrae stap vir stap in ’n voltooide pad verander.' | t }}
         </p>
       </div>
     </section>
@@ -426,26 +433,26 @@ export class VorderingComponent implements OnInit, OnDestroy {
   phaseCards(): { title: string; body: string; count: number; icon: IconName }[] {
     return [
       {
-        title: 'Nog nie begin nie',
-        body: 'Nog geen werk is op hierdie deel gedoen nie.',
+        title: 'Bouwerk het nog nie begin nie',
+        body: 'Daar is nog geen werk aan hierdie deel van die pad gedoen nie.',
         count: this.nogNieBeginNie,
         icon: 'dirt-road',
       },
       {
-        title: 'Voorberei',
-        body: 'Basiese voorbereiding is al gedoen, maar is nog nie geteer nie.',
+        title: 'Voorbereiding het afgeskop',
+        body: 'Die voorbereiding vir die pad is in proses, maar hierdie deel moet nog geteer word.',
         count: this.voorberei,
         icon: 'calendar',
       },
       {
-        title: 'Besig om te teer',
-        body: 'Die span is tans besig om hierdie deel te teer!',
+        title: 'Teerwerk aan die gang',
+        body: 'Die span is tans besig om hierdie deel van die pad te teer.',
         count: this.besigOmTeTeer,
         icon: 'road',
       },
       {
-        title: 'Klaar geteer',
-        body: 'Hierdie blokkie is afgehandel!',
+        title: 'Teerwerk afgehandel',
+        body: 'Hierdie deel van die pad is voltooi!',
         count: this.klaarGeteer,
         icon: 'check-circle',
       },

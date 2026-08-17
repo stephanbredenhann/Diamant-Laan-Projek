@@ -47,10 +47,6 @@ import { TPipe } from '../../i18n/t.pipe';
         <aside class="callout-panel">
           <div class="callout-media">
             <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" />
-            <div class="price-chip">
-              <span class="display price-chip-value">R500</span>
-              <p>{{ 'Per volle vierkante meter.' | t }}</p>
-            </div>
           </div>
         </aside>
       </div>
@@ -63,16 +59,13 @@ import { TPipe } from '../../i18n/t.pipe';
             <p class="eyebrow">{{ 'Die inisiatief' | t }}</p>
             <h2 class="display section-title">{{ 'Waar die projek vandaan kom.' | t }}</h2>
             <p class="lead">
-              {{ 'Die Oewerpad is lankal reeds as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder enige staatstoelae beteken dit dat Oraniërs alles wat hulle graag wil hê, self moet befonds.' | t }}
+              {{ 'Die Oewerpad is reeds lank as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder staatstoelaes beteken dit dat Oraniërs self moet betaal vir alles wat hulle graag wil hê en nodig het.' | t }}
             </p>
             <p class="lead">
-              {{ 'Ná 35 jaar van sukses, is dit egter tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is die boublokke vir ’n vrye Afrikanertuiste. In dieselfde sin is Orania nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat met Afrikaner-arbeid op Afrikanergrond ontwikkel, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is binne die belange van elke Afrikaner wat tans in Suid-Afrika woon, maar óók binne die belange van die Afrikanernageslag wie die beste weergawe van Orania gaan erf.' | t }}
+              {{ 'Ná 35 jaar van sukses is dit weer tyd dat Orania sy volgende groeifase betree. Groter ontwikkeling, meer mense en ’n groter, gevestigde ekonomie: dit is die boustene van ’n vrye Afrikanertuiste. Orania is egter nie net ’n tuiste vir Oraniërs nie. Orania, die Afrikanerdorp wat deur Afrikaner-arbeid op Afrikanergrond ontwikkel word, behoort aan Afrikaners. Die groei en ontwikkeling van hierdie gemeenskap is in die belang van elke Afrikaner wat vandag in Suid-Afrika woon, maar ook van die Afrikanernageslag wat eendag die erfenis in besit sal neem.' | t }}
             </p>
             <p class="lead">
-              {{ 'Die stryd begin reeds vandag. ’n Mens plant nie ’n boom om môre koelte te kry nie, maar as ons nie vandag ’n boom plant nie, dan is daar in die toekoms steeds geen skaduwee nie.' | t }}
-            </p>
-            <p class="lead">
-              {{ 'Die Oewerpad is meer as ’n pad. Dit is ’n weg na vryheid. Nie die infrastruktuur self nie, maar die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig net te doen waarvoor ons die beste geken word:' | t }}
+              {{ 'Die Oewerpad is meer as net ’n pad. Dit is ’n weg na vryheid. Nie vanweë die infrastruktuur self nie, maar vanweë die simboliek van waartoe Afrikaners in staat is. Sonder om te smeek. Sonder om te pleit. Deur eenvoudig te doen waarvoor ons die beste bekend is:' | t }}
             </p>
             <p class="inisiatief-slot">{{ 'Deur self te bou!' | t }}</p>
           </div>
@@ -190,9 +183,6 @@ import { TPipe } from '../../i18n/t.pipe';
       padding: 0.25rem 0.55rem;
     }
 
-    .callout-media {
-      position: relative;
-    }
     .callout-media img {
       width: 100%;
       aspect-ratio: 4 / 5;
@@ -200,35 +190,6 @@ import { TPipe } from '../../i18n/t.pipe';
       display: block;
       box-shadow: var(--shadow-lg);
     }
-    .price-chip {
-      position: absolute;
-      left: -0.75rem;
-      bottom: -1.25rem;
-      max-width: 16rem;
-      background: var(--tar);
-      color: #fff;
-      padding: 1.5rem 1.75rem;
-    }
-    .price-chip-value {
-      display: block;
-      font-size: 3rem;
-      color: var(--action);
-      line-height: 1;
-    }
-    .price-chip p {
-      margin: 0.5rem 0 0;
-      font-size: var(--fs-sm);
-      color: rgba(255, 255, 255, 0.65);
-      line-height: 1.45;
-    }
-    @media (max-width: 639px) {
-      .price-chip {
-        position: static;
-        margin-top: 0;
-        max-width: none;
-      }
-    }
-
     .section-head {
       display: grid;
       gap: 3rem;

@@ -24,9 +24,9 @@ import {
         <div class="auth-header">
           <h2 class="display auth-title">Registreer</h2>
           <p>
-            Deur ’n rekening te skep verseker jy dat jou sertifikate deurlopend beskikbaar is,
-            ons jou kan opdateer oor die status van jou blokkie en vergemaklik jy die koopproses
-            in die toekoms.
+            Deur ’n rekening te skep, verseker jy dat jou sertifikate altyd beskikbaar is, dat ons
+            jou oor die vordering van jou blokkie kan opdateer en dat toekomstige aankope nóg
+            makliker sal wees.
           </p>
         </div>
         <form (ngSubmit)="submit()">

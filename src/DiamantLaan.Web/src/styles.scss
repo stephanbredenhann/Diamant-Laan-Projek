@@ -13,12 +13,16 @@
   --action-hover:   #D96E10;
   --on-action:      #FFFFFF;
 
-  /* Brand orange is a fill colour, not a text background: #F58220 carries white
-     at only 2.6:1, well under the WCAG AA 4.5:1 floor, and this audience skews
-     older. Use --action for decoration (borders, rules, big display numerals)
-     and --action-strong wherever the orange sits behind words. */
-  --action-strong:       #B85A08;  /* 4.7:1 on white */
-  --action-strong-hover: #9E4A00;  /* 6.1:1 on white */
+  /* Client directive: brand orange everywhere, including behind text. These two
+     were #B85A08 / #9E4A00, darkened for contrast; they now resolve to OB orange
+     so every CTA on the site is the exact brand colour.
+
+     Known trade-off, recorded so nobody silently reverts it: #F58220 carries
+     white at 2.6:1, under the WCAG AA 4.5:1 floor. The fix that keeps this exact
+     orange is dark text rather than white, i.e. --on-action: var(--ink), which
+     measures 8.1:1. Flip that one line if the buttons read as too light. */
+  --action-strong:       var(--ob-orange);
+  --action-strong-hover: var(--action-hover);
   --accent:         var(--ob-blue);
   --accent-hover:   #023A7A;
   --route-blue:     var(--ob-blue);

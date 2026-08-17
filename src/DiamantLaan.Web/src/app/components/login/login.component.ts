@@ -13,13 +13,13 @@ import { PasswordInputComponent } from '../shared/password-input/password-input.
     <div class="container">
       <div class="auth-card">
         <div class="auth-header">
-          <p class="eyebrow">Vir terugkerende ondersteuners</p>
+          <p class="eyebrow">Bly deurlopend op hoogte</p>
           <h2 class="display auth-title">Meld aan</h2>
-          <p>Jy hoef nie aan te meld om ’n vierkante meter te finansier nie. ’n Rekening help net om vorige bydraes, sertifikate en opdaterings later te bestuur.</p>
+          <p>’n Rekening maak dit vir jou moontlik om jou bydraes en sertifikate te bestuur en gereelde opdaterings te ontvang.</p>
         </div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label for="email">E-pos</label>
+            <label for="email">E-posadres</label>
             <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email" placeholder="jou@epos.co.za">
           </div>
           <div class="form-group">

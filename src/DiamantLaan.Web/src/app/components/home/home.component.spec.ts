@@ -52,6 +52,13 @@ describe('HomeComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('should show the real certificate sample', () => {
+    const card = fixture.nativeElement.querySelector('app-certificate-card') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.textContent).toContain('Klein Reus');
+    expect(card.textContent).toContain('68');
+  });
+
   it('should render the waarom foto slider', () => {
     expect(fixture.nativeElement.querySelector('app-foto-slider')).toBeTruthy();
   });

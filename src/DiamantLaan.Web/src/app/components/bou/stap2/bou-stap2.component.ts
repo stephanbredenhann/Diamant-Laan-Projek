@@ -20,8 +20,8 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
           <div class="visually-hidden" aria-live="polite">{{ stepAnnouncement }}</div>
           <h1 class="page-title">Hoe wil jy jou blokkie kies?</h1>
           <p class="page-lead">
-            Jou twee opsies: laat die stelsel self blokkies aan jou toeken, of gaan soek
-            presies op die pad watter m² jy wil borg!
+            Jy het twee keuses: laat die stelsel outomaties blokkies aan jou toeken, of kies
+            self presies waar op die pad jy jou blokkie wil borg.
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
             <span class="option-badge">Aanbeveel</span>
           </div>
           <h2>Kies beskikbare blokkies vir my</h2>
-          <p>Die stelsel kies outomaties die korrekte aantal beskikbare m² vir jou.</p>
+          <p>Die stelsel kies outomaties die korrekte aantal beskikbare blokkies vir jou.</p>
           @if (besig()) {
             <span class="option-status">Besig...</span>
           } @else {
