@@ -42,19 +42,21 @@ public class EmailTemplatesBlockStatusTests
         Assert.DoesNotContain("afskakel", mail.Value.Html);
     }
 
+    /// <summary>
+    /// The switch-to-English line is off while the client reads every email before readers can
+    /// change the language on themselves. Passing the URL must not put it back.
+    /// </summary>
     [Fact]
-    public void BlockStatusUpdate_OffersTheSwitchToEnglish_OnlyInAfrikaans()
+    public void BlockStatusUpdate_DoesNotOfferTheSwitchToEnglish()
     {
         const string line = "I would like to receive all further communication in English";
 
         var af = EmailTemplates.BlockStatusUpdate("Ann", SquareStatus.Voorberei, [12], Site, en: false, switchUrl: Switch);
         var en = EmailTemplates.BlockStatusUpdate("Ann", SquareStatus.Voorberei, [12], Site, en: true, switchUrl: Switch);
 
-        // The href is HTML-encoded, so the query separator arrives as &amp; — assert on what an
-        // inbox actually receives rather than on the raw URL we passed in.
         var href = System.Net.WebUtility.HtmlEncode(Switch);
-        Assert.Contains(line, af!.Value.Html);
-        Assert.Contains($"href=\"{href}\"", af.Value.Html);
+        Assert.DoesNotContain(line, af!.Value.Html);
+        Assert.DoesNotContain(href, af.Value.Html);
         Assert.DoesNotContain(line, en!.Value.Html);
         Assert.DoesNotContain(href, en.Value.Html);
     }

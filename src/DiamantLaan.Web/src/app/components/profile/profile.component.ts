@@ -72,14 +72,6 @@ import { Lang, LangService } from '../../i18n/lang.service';
                   <span class="toggle-label">{{ 'Ontvang e-posse oor die vordering van my vierkante meter' | t }}</span>
                 </label>
               </div>
-              <div class="form-group toggle-group">
-                <label class="toggle">
-                  <input id="englishPreferred" type="checkbox" [checked]="language === 'en'"
-                         (change)="language = $any($event.target).checked ? 'en' : 'af'" name="englishPreferred">
-                  <span class="toggle-ui" aria-hidden="true"></span>
-                  <span class="toggle-label">{{ 'Wys alles in Engels, e-posse en die webwerf' | t }}</span>
-                </label>
-              </div>
               @if (profileMessage) {
                 <app-alert [type]="profileMessageType" [message]="profileMessage | t" />
               }

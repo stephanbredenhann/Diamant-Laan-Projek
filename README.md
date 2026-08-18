@@ -494,7 +494,7 @@ Refresh Token (long-lived, 7 days default)
 | **Cookie Path Limitation** | Refresh cookie path is `/api/auth` — the browser only sends it to auth endpoints. |
 | **MustChangePassword Flag** | Manual-purchase users are flagged with `MustChangePassword=true`. A middleware (`MustChangePasswordMiddleware`) blocks all API access (except logout, profile GET, and complete-password-change) until they change their password. |
 | **Account Anonymization** | "Deleting" an account does not delete data; it anonymizes PII (email → `deleted-{id}@anonymized.invalid`, name → "Onaktiewe rekening", phone cleared, permanently locked out). Ownership records are preserved for data integrity. |
-| **Admin Self-Delete Prevention** | Admin accounts cannot delete themselves. Only the seed admin can promote other users to admin. |
+| **Admin Self-Delete Prevention** | Admin accounts cannot delete themselves. |
 | **JWT Validation** | Validates issuer, audience, lifetime, and signing key on every request. |
 | **Security Headers** | All responses include: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-XSS-Protection: 0`. |
 | **HSTS** | Enabled in non-development environments. |
@@ -560,7 +560,7 @@ Access control chain for admin routes:
 | **Buyer Summary** | `GET /api/admin/purchases` | Aggregated view: per-user total squares owned and total spent, with contact details. |
 | **Transaction List** | `GET /api/admin/transactions` | All purchases with user details, square counts, amounts, and payment status. |
 | **Registered Users (No Purchase)** | `GET /api/admin/registered-no-purchase` | Users who registered but haven't bought any squares. Excludes admins and anonymized accounts. |
-| **Promote to Admin** | `POST /api/admin/users/make-admin` | Promote a user to admin role. **Restricted to the seed admin only** (the user whose email matches `AdminUser:Email` in config). |
+| **Promote to Admin** | `POST /api/admin/users/make-admin` | Promote a user to admin role. Any admin may promote another user; the action is written to the audit log. |
 | **Site Settings** | `GET/PUT /api/admin/settings/home-stats` | Toggle visibility of the stats section and total raised amount on the public home page. |
 | **Proof of Payment** | `GET/POST/DELETE /api/admin/purchases/{id}/proof` | Manage uploaded proof-of-payment PDFs for manual purchases. |
 | **Diagnostics** | `GET /api/admin/diagnostics` | Check email configuration status, pending email outbox count, pending block notification count. |

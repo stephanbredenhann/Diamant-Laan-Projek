@@ -464,14 +464,6 @@ public class AdminController : ControllerBase
     [HttpPost("users/make-admin")]
     public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminDto dto)
     {
-        var seedAdminEmail = _config["AdminUser:Email"];
-        var callerEmail = User.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(seedAdminEmail)
-            || !string.Equals(callerEmail, seedAdminEmail, StringComparison.OrdinalIgnoreCase))
-        {
-            return Forbid();
-        }
-
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
             return NotFound(new { message = "Gebruiker nie gevind nie." });

@@ -307,8 +307,16 @@ public static class EmailTemplates
     /// signs in still has a way out, and an English email has nothing to offer. Written in English
     /// because the only person it is addressed to reads English.
     /// </summary>
+    /// <remarks>
+    /// Switched off at the client's request: they want to read every email that goes out before
+    /// readers can change the language on themselves. The callers still thread the URL through, so
+    /// turning it back on means deleting the early return and nothing else.
+    /// </remarks>
     private static string SwitchToEnglishLine(bool en, string? switchUrl)
     {
+        return "";
+
+#pragma warning disable CS0162 // Unreachable while the line is switched off.
         if (en || string.IsNullOrWhiteSpace(switchUrl)) return "";
         var url = WebUtility.HtmlEncode(switchUrl);
         return $"""
@@ -316,6 +324,7 @@ public static class EmailTemplates
               <a href="{url}" style="color:#034EA2;">I would like to receive all further communication in English</a>
             </p>
             """;
+#pragma warning restore CS0162
     }
 
     private static string Site(string siteUrl) =>
