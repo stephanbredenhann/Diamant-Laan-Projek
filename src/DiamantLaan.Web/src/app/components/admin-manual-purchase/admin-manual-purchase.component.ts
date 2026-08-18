@@ -89,6 +89,47 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
               <span class="total-label">Totaal</span>
               <span class="total-amount">R{{ totalAmount }}</span>
             </div>
+
+            <!-- Someone phoning an order will not sign in inside the 15-minute window to name
+                 their own certificates, so the admin takes the names down here instead. -->
+            <div class="field cert-block">
+              <label for="certificateName">Naam op sertifikaat</label>
+              <input
+                id="certificateName"
+                [(ngModel)]="certificateName"
+                name="certificateName"
+                maxlength="100"
+                [placeholder]="accountNamePlaceholder">
+              <p class="sub-hint">Los leeg om die koper se eie naam te gebruik.</p>
+
+              @if (selectedSquareIds.length > 1) {
+                <div class="field checkbox">
+                  <label>
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="certificateIndividual"
+                      name="certificateIndividual">
+                    Elke blok kry sy eie naam
+                  </label>
+                </div>
+
+                @if (certificateIndividual) {
+                  <p class="sub-hint">Los ’n blok leeg om die naam hierbo daarop te druk.</p>
+                  @for (id of selectedSquareIds; track id) {
+                    <div class="field cert-name-row">
+                      <label [attr.for]="'certName-' + id">Blok #{{ id }}</label>
+                      <input
+                        [id]="'certName-' + id"
+                        [ngModel]="blockNames[id]"
+                        (ngModelChange)="blockNames[id] = $event"
+                        [name]="'certName' + id"
+                        maxlength="100"
+                        [placeholder]="certificateName.trim() || accountNamePlaceholder">
+                    </div>
+                  }
+                }
+              }
+            </div>
           }
           <div class="field">
             <label for="paymentMethod">Betaalmetode</label>
@@ -333,6 +374,18 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
       font-weight: 700;
       color: var(--color-text);
     }
+    .cert-block {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+    .cert-block .field:last-child { margin-bottom: 0; }
+    .sub-hint {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin: 0.375rem 0 0;
+    }
+    .cert-name-row label { font-weight: 500; color: var(--color-muted); }
     .table-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -427,6 +480,10 @@ export class AdminManualPurchaseComponent implements OnInit {
   selectedSquareIds: number[] = [];
   pickerOpen = false;
   paymentMethod: PaymentMethod = 'EFT';
+  certificateName = '';
+  certificateIndividual = false;
+  /** Per-block names, keyed by block number. Only read when `certificateIndividual` is on. */
+  blockNames: Record<number, string> = {};
   proofFile: File | null = null;
   message = '';
   isError = false;
@@ -445,6 +502,11 @@ export class AdminManualPurchaseComponent implements OnInit {
 
   get totalAmount(): number {
     return this.selectedSquareIds.length * 500;
+  }
+
+  /** What a blank certificate name falls back to on the server, shown so the admin can see it. */
+  get accountNamePlaceholder(): string {
+    return `${this.firstName} ${this.lastName}`.trim() || 'Koper se naam';
   }
 
   get filteredProofs(): AdminTransaction[] {
@@ -610,6 +672,16 @@ export class AdminManualPurchaseComponent implements OnInit {
     formData.append('isOraniaBewegingMember', String(this.isOraniaBewegingMember));
     this.selectedSquareIds.forEach(id => formData.append('squareIds', String(id)));
     formData.append('paymentMethod', this.paymentMethod);
+    formData.append('certificateName', this.certificateName.trim());
+    // A single block has no per-block choice to make, so it can only ever be one certificate.
+    const individual = this.certificateIndividual && this.selectedSquareIds.length > 1;
+    formData.append('certificateIndividual', String(individual));
+    if (individual) {
+      this.selectedSquareIds.forEach(id => {
+        const name = (this.blockNames[id] ?? '').trim();
+        if (name) formData.append(`certificateNames[${id}]`, name);
+      });
+    }
     if (this.allowsProof(this.paymentMethod) && this.proofFile) {
       formData.append('proofOfPayment', this.proofFile);
     }
@@ -632,6 +704,9 @@ export class AdminManualPurchaseComponent implements OnInit {
         this.isOraniaBewegingMember = false;
         this.selectedSquareIds = [];
         this.paymentMethod = 'EFT';
+        this.certificateName = '';
+        this.certificateIndividual = false;
+        this.blockNames = {};
         this.proofFile = null;
         this.loading = false;
         this.loadProofs();

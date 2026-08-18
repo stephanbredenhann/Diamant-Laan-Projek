@@ -17,6 +17,10 @@ public class UpdateProfileDto
     public string PhoneCountryCode { get; set; } = "+27";
 
     public bool ReceiveBlockProgressEmails { get; set; } = true;
+
+    /// <summary>"af" or "en". Anything else is treated as Afrikaans, the default.</summary>
+    [MaxLength(2)]
+    public string Language { get; set; } = "af";
 }
 
 public class UpdateEmailDto

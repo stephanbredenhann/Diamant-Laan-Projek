@@ -16,6 +16,7 @@ import {
   validateName,
 } from '../../utils/validation.util';
 import { TPipe } from '../../i18n/t.pipe';
+import { Lang, LangService } from '../../i18n/lang.service';
 
 @Component({
   selector: 'app-profile',
@@ -69,6 +70,14 @@ import { TPipe } from '../../i18n/t.pipe';
                   <input id="receiveBlockProgressEmails" type="checkbox" [(ngModel)]="receiveBlockProgressEmails" name="receiveBlockProgressEmails">
                   <span class="toggle-ui" aria-hidden="true"></span>
                   <span class="toggle-label">{{ 'Ontvang e-posse oor die vordering van my vierkante meter' | t }}</span>
+                </label>
+              </div>
+              <div class="form-group toggle-group">
+                <label class="toggle">
+                  <input id="englishPreferred" type="checkbox" [checked]="language === 'en'"
+                         (change)="language = $any($event.target).checked ? 'en' : 'af'" name="englishPreferred">
+                  <span class="toggle-ui" aria-hidden="true"></span>
+                  <span class="toggle-label">{{ 'Wys alles in Engels, e-posse en die webwerf' | t }}</span>
                 </label>
               </div>
               @if (profileMessage) {
@@ -367,6 +376,7 @@ export class ProfileComponent implements OnInit {
   private profileService = inject(ProfileService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private langService = inject(LangService);
 
   loaded = false;
   loadError = '';
@@ -383,6 +393,7 @@ export class ProfileComponent implements OnInit {
   firstNameError = '';
   lastNameError = '';
   receiveBlockProgressEmails = true;
+  language: Lang = 'af';
   profileLoading = false;
   profileMessage = '';
   profileMessageType: 'success' | 'error' | 'info' = 'info';
@@ -447,7 +458,8 @@ export class ProfileComponent implements OnInit {
       lastName: this.lastName.trim(),
       phoneNumber: normalizePhoneLocal(this.phoneNumber, this.phoneCountryCode),
       phoneCountryCode: this.phoneCountryCode,
-      receiveBlockProgressEmails: this.receiveBlockProgressEmails
+      receiveBlockProgressEmails: this.receiveBlockProgressEmails,
+      language: this.language
     }).subscribe({
       next: (p) => {
         this.applyProfile(p);
@@ -456,8 +468,12 @@ export class ProfileComponent implements OnInit {
           lastName: p.lastName,
           phoneNumber: p.phoneNumber,
           phoneCountryCode: p.phoneCountryCode,
-          receiveBlockProgressEmails: p.receiveBlockProgressEmails
+          receiveBlockProgressEmails: p.receiveBlockProgressEmails,
+          language: p.language
         });
+        // Flip the site with the save rather than waiting for the next sign-in, so the toggle
+        // does visibly what its label says.
+        this.langService.set(p.language);
         this.profileMessage = 'Profiel is gestoor.';
         this.profileMessageType = 'success';
         this.profileLoading = false;
@@ -570,6 +586,7 @@ export class ProfileComponent implements OnInit {
     phoneNumber?: string;
     phoneCountryCode?: string;
     receiveBlockProgressEmails: boolean;
+    language: Lang;
     changesRemaining: number;
     changesAllowed: boolean;
     maxChanges: number;
@@ -580,6 +597,7 @@ export class ProfileComponent implements OnInit {
     this.phoneNumber = p.phoneNumber || '';
     this.phoneCountryCode = p.phoneCountryCode || '+27';
     this.receiveBlockProgressEmails = p.receiveBlockProgressEmails;
+    this.language = p.language;
     this.changesRemaining = p.changesRemaining;
     this.changesAllowed = p.changesAllowed;
     this.maxChanges = p.maxChanges;

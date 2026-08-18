@@ -19,15 +19,20 @@ public class ProfileController : ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly ProfileRateLimitService _rateLimit;
     private readonly RefreshTokenService _refreshTokens;
+    // Optional so a test can build the mailer without a signing key: without it the emails simply
+    // go out without the switch-to-English footer link. Always supplied by DI in production.
+    private readonly LanguageLinkService? _languageLinks;
 
     public ProfileController(
         UserManager<User> userManager,
         ProfileRateLimitService rateLimit,
-        RefreshTokenService refreshTokens)
+        RefreshTokenService refreshTokens,
+        LanguageLinkService? languageLinks = null)
     {
         _userManager = userManager;
         _rateLimit = rateLimit;
         _refreshTokens = refreshTokens;
+        _languageLinks = languageLinks;
     }
 
     [HttpGet]
@@ -49,6 +54,7 @@ public class ProfileController : ControllerBase
             user.IsOraniaResident,
             user.IsOraniaBewegingMember,
             user.ReceiveBlockProgressEmails,
+            user.Language,
             changesRemaining = remaining,
             changesAllowed = allowed,
             windowResetsAt = resetsAt,
@@ -73,6 +79,7 @@ public class ProfileController : ControllerBase
         user.PhoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim();
         user.PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164;
         user.ReceiveBlockProgressEmails = dto.ReceiveBlockProgressEmails;
+        user.Language = NormaliseLanguage(dto.Language);
 
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
@@ -80,6 +87,69 @@ public class ProfileController : ControllerBase
 
         await _rateLimit.LogAsync(user.Id, ProfileChangeTypes.Profile);
         return await Get();
+    }
+
+    /// <summary>
+    /// The one-click switch behind the link at the foot of every Afrikaans email. Anonymous on
+    /// purpose: someone who cannot read the email is the last person we should send to a login
+    /// form. The signature covers the account id and the target language together, so the link
+    /// cannot be enumerated or edited into a different language.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("taal/{lang}")]
+    public async Task<IActionResult> SwitchLanguage(string lang, [FromQuery] string u, [FromQuery] string s)
+    {
+        var target = NormaliseLanguage(lang);
+        if (_languageLinks == null || string.IsNullOrWhiteSpace(u) || !_languageLinks.Verify(u, target, s))
+            return NotFound();
+
+        var user = await _userManager.FindByIdAsync(u);
+        if (user == null || user.IsAnonymized)
+            return NotFound();
+
+        if (user.Language != target)
+        {
+            user.Language = target;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return Content(LanguageSwitchedPage(target), "text/html; charset=utf-8");
+    }
+
+    private static string NormaliseLanguage(string? lang) =>
+        string.Equals(lang?.Trim(), "en", StringComparison.OrdinalIgnoreCase) ? "en" : "af";
+
+    /// <summary>
+    /// Deliberately a standalone page rather than a redirect into the SPA: /my-profiel is behind
+    /// the auth guard, so redirecting there would bounce the reader to a login form and undo the
+    /// whole point of a one-click link.
+    /// </summary>
+    private static string LanguageSwitchedPage(string lang)
+    {
+        var en = lang == "en";
+        var heading = en ? "Done!" : "Klaar!";
+        var body = en
+            ? "All further communication will be sent to you in English. You can change this at any time under My Profile."
+            : "Alle verdere kommunikasie sal voortaan in Afrikaans aan jou gestuur word. Jy kan dit enige tyd onder My Profiel verander.";
+        return $"""
+            <!doctype html>
+            <html lang="{lang}">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <meta name="robots" content="noindex">
+              <title>Orania Oewerpad</title>
+            </head>
+            <body style="margin:0; padding:48px 16px; background:#FDF8F0; font-family:'Source Sans 3',Helvetica,Arial,sans-serif; color:#1A1A1A;">
+              <div style="max-width:520px; margin:0 auto; background:#FFFFFF; border:1px solid #D8D2C6; border-radius:4px; padding:36px;">
+                <p style="margin:0 0 10px; font-size:14px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#55606E;">Orania Oewerpad</p>
+                <h1 style="margin:0 0 4px; font-size:34px; line-height:1.1; color:#19120E;">{heading}</h1>
+                <div style="width:56px; height:4px; background:#F58220; margin:0 0 20px;"></div>
+                <p style="margin:0; font-size:16px; line-height:1.6;">{body}</p>
+              </div>
+            </body>
+            </html>
+            """;
     }
 
     [HttpPut("email")]

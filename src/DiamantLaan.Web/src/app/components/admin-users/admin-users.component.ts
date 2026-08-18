@@ -7,7 +7,14 @@ import { AlertComponent } from '../shared/alert/alert.component';
 import {
   CertificateCardComponent,
   CertificateSquare,
+  sanitizeFilename,
 } from '../shared/certificate-card/certificate-card.component';
+
+/** One row in the "which certificate?" chooser: a sheet the buyer's blocks add up to. */
+interface SheetChoice {
+  target: 'summary' | number;
+  label: string;
+}
 
 interface Buyer {
   userId: string;
@@ -91,6 +98,10 @@ interface Buyer {
             </table>
           </div>
         }
+
+        @if (certError) {
+          <p class="error-msg">{{ certError }}</p>
+        }
       </div>
 
       <!-- Make Admin Form -->
@@ -120,6 +131,52 @@ interface Buyer {
         [lockedMode]="'summary'"
         [viewOnly]="true" />
     </div>
+
+    <!-- A buyer holding several blocks has several sheets, so ask which one before rendering. -->
+    @if (sheetChoices.length > 0) {
+      <div class="modal-backdrop" (click)="closeChooser()">
+        <div
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cert-chooser-title"
+          (click)="$event.stopPropagation()">
+          <h3 id="cert-chooser-title">Sertifikate vir {{ certOwnerName }}</h3>
+          <p class="hint">Kies een sertifikaat, of laai almal saam af as ’n zip-lêer.</p>
+
+          <button
+            type="button"
+            class="btn btn-primary btn-sm btn-wide"
+            [disabled]="sheetBusy !== null"
+            (click)="downloadAllSheets()">
+            {{ sheetBusy === 'all' ? 'Besig... ' + zipProgress : 'Laai alles af (zip)' }}
+          </button>
+
+          <ul class="sheet-list">
+            @for (choice of sheetChoices; track choice.target) {
+              <li>
+                <span>{{ choice.label }}</span>
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm"
+                  [disabled]="sheetBusy !== null"
+                  (click)="downloadSheet(choice.target)">
+                  {{ sheetBusy === choice.target ? 'Besig...' : 'Laai af' }}
+                </button>
+              </li>
+            }
+          </ul>
+
+          @if (certError) {
+            <p class="error-msg">{{ certError }}</p>
+          }
+
+          <button type="button" class="btn btn-outline btn-sm btn-wide" (click)="closeChooser()">
+            Maak toe
+          </button>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     .admin-content { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -249,6 +306,48 @@ interface Buyer {
       pointer-events: none;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      max-height: 85vh;
+      overflow-y: auto;
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.25));
+    }
+    .modal h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      margin-bottom: 0.375rem;
+    }
+    .btn-wide { width: 100%; }
+    .sheet-list {
+      list-style: none;
+      margin: 1rem 0;
+      padding: 0;
+    }
+    .sheet-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
+
     @media (max-width: 992px) {
       .table-actions { width: 100%; }
       .table-actions input { flex: 1; }
@@ -272,6 +371,12 @@ export class AdminUsersComponent implements OnInit {
 
   certOwnerName = '';
   certSquares: CertificateSquare[] = [];
+  certError = '';
+  /** Non-empty while the chooser is open; the off-screen card must stay loaded until it closes. */
+  sheetChoices: SheetChoice[] = [];
+  /** Which sheet is rendering: a target, 'all' for the zip, or null when idle. */
+  sheetBusy: 'summary' | number | 'all' | null = null;
+  zipProgress = '';
 
   email = '';
   message = '';
@@ -343,6 +448,7 @@ export class AdminUsersComponent implements OnInit {
     if (this.downloadingUserId) return;
 
     this.downloadingUserId = buyer.userId;
+    this.certError = '';
 
     try {
       const summary = await firstValueFrom(this.admin.getCertificateSummary(buyer.userId));
@@ -350,19 +456,110 @@ export class AdminUsersComponent implements OnInit {
       this.certSquares = (summary.squares ?? []).map(s => ({
         id: s.id,
         purchaseDate: s.purchaseDate ?? undefined,
+        ownerName: s.ownerName,
       }));
       this.cdr.detectChanges();
 
       // Let the certificate card apply lockedMode / sheet layout before capture.
       await new Promise<void>(resolve => setTimeout(resolve, 50));
-      await this.certCard.downloadPdf();
+
+      const targets = this.certCard.sheetTargets();
+      if (targets.length === 0) {
+        this.certError = `${buyer.name} besit geen blokke nie.`;
+        this.clearCert();
+        return;
+      }
+
+      // A lone block is the only sheet there is, so there is nothing to ask about.
+      if (targets.length === 1) {
+        await this.saveSheet(targets[0]);
+        this.clearCert();
+        return;
+      }
+
+      this.sheetChoices = targets.map(target => ({
+        target,
+        label: this.certCard.sheetLabel(target),
+      }));
     } catch {
-      // Button re-enables in finally; certificate-card surfaces its own PDF errors when relevant.
+      this.certError = `Kon nie ${buyer.name} se sertifikate laai nie.`;
+      this.clearCert();
     } finally {
       this.downloadingUserId = null;
-      this.certSquares = [];
-      this.certOwnerName = '';
     }
+  }
+
+  async downloadSheet(target: 'summary' | number) {
+    if (this.sheetBusy !== null) return;
+
+    this.sheetBusy = target;
+    this.certError = '';
+    try {
+      await this.saveSheet(target);
+    } catch {
+      this.certError = 'Kon nie die PDF genereer nie. Probeer asseblief weer.';
+    } finally {
+      this.sheetBusy = null;
+    }
+  }
+
+  /**
+   * Every sheet in one zip, because a browser blocks the second of several downloads fired in a
+   * row. Rendered one at a time off the single off-screen card.
+   * ponytail: sequential render, roughly a second a sheet; only worth batching if a buyer with
+   * dozens of blocks makes the wait a complaint.
+   */
+  async downloadAllSheets() {
+    if (this.sheetBusy !== null) return;
+
+    this.sheetBusy = 'all';
+    this.certError = '';
+    this.zipProgress = `(0/${this.sheetChoices.length})`;
+
+    try {
+      const { default: JSZip } = await import('jszip');
+      const zip = new JSZip();
+
+      for (const [index, choice] of this.sheetChoices.entries()) {
+        const sheet = await this.certCard.sheetPdf(choice.target);
+        zip.file(sheet.filename, sheet.blob);
+        this.zipProgress = `(${index + 1}/${this.sheetChoices.length})`;
+        this.cdr.detectChanges();
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      this.saveBlob(blob, `sertifikate-${sanitizeFilename(this.certOwnerName)}.zip`);
+    } catch {
+      this.certError = 'Kon nie die zip-lêer maak nie. Probeer asseblief weer.';
+    } finally {
+      this.sheetBusy = null;
+      this.zipProgress = '';
+    }
+  }
+
+  closeChooser() {
+    if (this.sheetBusy !== null) return;
+    this.clearCert();
+  }
+
+  private async saveSheet(target: 'summary' | number) {
+    const sheet = await this.certCard.sheetPdf(target);
+    this.saveBlob(sheet.blob, sheet.filename);
+  }
+
+  private saveBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  private clearCert() {
+    this.sheetChoices = [];
+    this.certSquares = [];
+    this.certOwnerName = '';
   }
 
   submit() {

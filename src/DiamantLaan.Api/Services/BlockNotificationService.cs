@@ -13,17 +13,22 @@ public class BlockNotificationService
     private readonly IEmailService _email;
     private readonly IConfiguration _config;
     private readonly ILogger<BlockNotificationService> _logger;
+    // Optional so a test can build the mailer without a signing key: without it the emails simply
+    // go out without the switch-to-English footer link. Always supplied by DI in production.
+    private readonly LanguageLinkService? _languageLinks;
 
     public BlockNotificationService(
         AppDbContext db,
         IEmailService email,
         IConfiguration config,
-        ILogger<BlockNotificationService> logger)
+        ILogger<BlockNotificationService> logger,
+        LanguageLinkService? languageLinks = null)
     {
         _db = db;
         _email = email;
         _config = config;
         _logger = logger;
+        _languageLinks = languageLinks;
     }
 
     public async Task QueueOwnersAsync(
@@ -144,7 +149,13 @@ public class BlockNotificationService
         foreach (var status in statuses)
         {
             var blockIds = squares.Where(s => s.Status == status).Select(s => s.Id).ToList();
-            var mail = EmailTemplates.BlockStatusUpdate(user.FirstName, status, blockIds, siteUrl);
+            var mail = EmailTemplates.BlockStatusUpdate(
+                user.FirstName,
+                status,
+                blockIds,
+                siteUrl,
+                user.Language == "en",
+                _languageLinks?.BuildUrl(user.Id, "en"));
             if (mail == null) continue;
 
             var sent = await _email.SendAsync(

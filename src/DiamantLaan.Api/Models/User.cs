@@ -13,6 +13,14 @@ public class User : IdentityUser
     public bool MustChangePassword { get; set; }
 
     /// <summary>
+    /// "af" or "en". Drives the language every email to this account is written in, and the
+    /// language the site opens in once they sign in. Afrikaans is the default and the source
+    /// language; the navbar toggle stays a local, session-only override that is not stored here.
+    /// </summary>
+    [MaxLength(2)]
+    public string Language { get; set; } = "af";
+
+    /// <summary>
     /// True for placeholder accounts created by a checkout that was completed without signing up.
     /// A guest user has no password, no roles and usually no email; it exists so that
     /// <see cref="Square.OwnerId"/> and <see cref="Purchase.UserId"/> stay non-null for guest purchases.

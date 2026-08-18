@@ -104,6 +104,7 @@ builder.Services.AddScoped<BlockNotificationService>();
 builder.Services.AddScoped<AdminSaveUndoService>();
 builder.Services.AddScoped<EmailOutboxService>();
 builder.Services.AddScoped<GuestPurchaseService>();
+builder.Services.AddSingleton<LanguageLinkService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddSingleton<ShareOgImageService>();
 builder.Services.AddSingleton<SharePageRenderer>();

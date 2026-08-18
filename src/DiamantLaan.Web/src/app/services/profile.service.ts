@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ProfileResponse } from '../models/user';
+import { Lang } from '../i18n/lang.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
@@ -18,6 +19,7 @@ export class ProfileService {
     phoneNumber?: string;
     phoneCountryCode: string;
     receiveBlockProgressEmails: boolean;
+    language: Lang;
   }) {
     return this.http.put<ProfileResponse>(this.base, body);
   }

@@ -95,7 +95,9 @@ export class AdminService {
   getCertificateSummary(userId: string) {
     return this.http.get<{
       ownerName: string;
-      squares: { id: number; purchaseDate?: string | null }[];
+      /** False when the buyer split their blocks, so each one prints its own name. */
+      sameForAll: boolean;
+      squares: { id: number; purchaseDate?: string | null; ownerName: string }[];
     }>(`/api/admin/users/${encodeURIComponent(userId)}/certificate-summary`);
   }
 

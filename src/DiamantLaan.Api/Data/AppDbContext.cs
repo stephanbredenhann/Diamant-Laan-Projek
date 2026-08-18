@@ -133,6 +133,10 @@ public class AppDbContext : IdentityDbContext<User>
             .HasDefaultValue(true);
 
         builder.Entity<User>()
+            .Property(u => u.Language)
+            .HasDefaultValue("af");
+
+        builder.Entity<User>()
             .Property(u => u.PhoneCountryCode)
             .HasDefaultValue("+27");
 

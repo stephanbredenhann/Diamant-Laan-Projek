@@ -287,6 +287,7 @@ public class AuthController : ControllerBase
         user.IsOraniaResident,
         user.IsOraniaBewegingMember,
         user.ReceiveBlockProgressEmails,
+        user.Language,
         user.MustChangePassword,
         roles
     };

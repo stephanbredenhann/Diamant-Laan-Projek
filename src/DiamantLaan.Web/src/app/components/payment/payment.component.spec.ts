@@ -50,6 +50,13 @@ describe('PaymentComponent', () => {
 
   afterEach(() => fixture?.destroy());
 
+  it('puts selected blocks in the other-payment mailto', async () => {
+    await setup();
+    const decoded = decodeURIComponent(component.otherPayMailto);
+    expect(component.otherPayMailto.startsWith('mailto:ontvangs@orania.co.za')).toBeTrue();
+    expect(decoded).toContain('10, 11');
+  });
+
   it('shows guest email and login for visitors', async () => {
     await setup();
     const text = fixture.nativeElement.textContent as string;

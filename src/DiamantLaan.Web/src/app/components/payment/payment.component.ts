@@ -75,6 +75,12 @@ import { TPipe } from '../../i18n/t.pipe';
             {{ 'Betaal' | t }}
           }
         </button>
+        <a [href]="otherPayMailto" class="btn btn-outline kontak-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 6 12 13 22 6"/>
+          </svg>
+          {{ 'Indien jy graag deur middel van BTC, EFT, Paypal, of kontant wil betaal, klik hier' | t }}
+        </a>
         <a routerLink="/bou/kies" class="btn btn-outline btn-xl btn-full terug-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
@@ -295,6 +301,28 @@ import { TPipe } from '../../i18n/t.pipe';
       margin-top: 0.75rem;
       text-align: center;
     }
+    .kontak-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+      height: auto;
+      min-height: var(--tap-min);
+      padding: 0.85rem 1.15rem;
+      white-space: normal;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      line-height: 1.4;
+      font-size: 1rem;
+      background: var(--surface);
+      color: var(--action);
+      border: 2px solid var(--action);
+    }
+    .kontak-btn:hover {
+      background: color-mix(in srgb, var(--action) 10%, white);
+      color: var(--action-hover);
+      border-color: var(--action-hover);
+    }
+    .kontak-btn svg { flex-shrink: 0; }
     .btn-spinner {
       width: 18px;
       height: 18px;
@@ -353,6 +381,17 @@ export class PaymentComponent implements OnInit {
 
   get isGuest() {
     return !this.auth.currentUser();
+  }
+
+  get otherPayMailto(): string {
+    const subject = 'Ander betaalmetode — Oewerpad';
+    const blocks = this.squareIds.length
+      ? `Gekose blokke: ${this.squareIds.join(', ')}`
+      : '';
+    const body = ['Ek wil graag deur BTC, EFT, PayPal of kontant betaal.', blocks]
+      .filter(Boolean)
+      .join('\n\n');
+    return `mailto:ontvangs@orania.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   ngOnInit() {

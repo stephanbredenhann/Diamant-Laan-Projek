@@ -15,12 +15,20 @@ public class PasswordResetOtpService
     private readonly AppDbContext _db;
     private readonly UserManager<User> _userManager;
     private readonly EmailOutboxService _emailOutbox;
+    // Optional so a test can build the mailer without a signing key: without it the emails simply
+    // go out without the switch-to-English footer link. Always supplied by DI in production.
+    private readonly LanguageLinkService? _languageLinks;
 
-    public PasswordResetOtpService(AppDbContext db, UserManager<User> userManager, EmailOutboxService emailOutbox)
+    public PasswordResetOtpService(
+        AppDbContext db,
+        UserManager<User> userManager,
+        EmailOutboxService emailOutbox,
+        LanguageLinkService? languageLinks = null)
     {
         _db = db;
         _userManager = userManager;
         _emailOutbox = emailOutbox;
+        _languageLinks = languageLinks;
     }
 
     public async Task RequestAsync(string email, CancellationToken cancellationToken = default)
@@ -48,10 +56,15 @@ public class PasswordResetOtpService
         _db.PasswordResetOtps.Add(record);
         await _db.SaveChangesAsync(cancellationToken);
 
-        var html = EmailTemplates.PasswordResetOtp(user.FirstName, otp);
+        var en = user.Language == "en";
+        var html = EmailTemplates.PasswordResetOtp(
+            user.FirstName,
+            otp,
+            en,
+            _languageLinks?.BuildUrl(user.Id, "en"));
         await _emailOutbox.QueueAsync(
             user.Email,
-            EmailTemplates.SubjectPrefix + "Herstel jou wagwoord",
+            EmailTemplates.SubjectPrefix + EmailTemplates.T(en, "Herstel jou wagwoord", "Reset your password"),
             html,
             cancellationToken);
     }

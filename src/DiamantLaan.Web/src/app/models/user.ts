@@ -1,3 +1,5 @@
+import { Lang } from '../i18n/lang.service';
+
 export interface AuthResponse {
   token: string;
   email: string;
@@ -8,6 +10,7 @@ export interface AuthResponse {
   isOraniaResident?: boolean;
   isOraniaBewegingMember?: boolean;
   receiveBlockProgressEmails?: boolean;
+  language?: Lang;
   roles?: string[];
   mustChangePassword?: boolean;
 }
@@ -21,6 +24,7 @@ export interface ProfileResponse {
   isOraniaResident?: boolean;
   isOraniaBewegingMember?: boolean;
   receiveBlockProgressEmails: boolean;
+  language: Lang;
   changesRemaining: number;
   changesAllowed: boolean;
   windowResetsAt?: string | null;

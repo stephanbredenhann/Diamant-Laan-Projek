@@ -26,6 +26,9 @@ public class AdminController : ControllerBase
     private readonly AdminSaveUndoService _saveUndo;
     private readonly EmailOutboxService _emailOutbox;
     private readonly IConfiguration _config;
+    // Optional so a test can build the mailer without a signing key: without it the emails simply
+    // go out without the switch-to-English footer link. Always supplied by DI in production.
+    private readonly LanguageLinkService? _languageLinks;
 
     public AdminController(
         AppDbContext db,
@@ -36,7 +39,8 @@ public class AdminController : ControllerBase
         BlockNotificationService blockNotifications,
         AdminSaveUndoService saveUndo,
         EmailOutboxService emailOutbox,
-        IConfiguration config)
+        IConfiguration config,
+        LanguageLinkService? languageLinks = null)
     {
         _db = db;
         _userManager = userManager;
@@ -47,6 +51,7 @@ public class AdminController : ControllerBase
         _saveUndo = saveUndo;
         _emailOutbox = emailOutbox;
         _config = config;
+        _languageLinks = languageLinks;
     }
 
     [HttpPut("settings/home-stats")]
@@ -224,8 +229,9 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Summary certificate data for admin download: account name only (not CertificateName)
-    /// plus the blocks that user currently owns.
+    /// Certificate data for admin download: the names as the buyer will see them printed, plus the
+    /// blocks that user currently owns. A block carrying no name of its own prints the summary name,
+    /// which is the same fallback <c>MySquaresController</c> applies on the buyer's own page.
     /// </summary>
     [HttpGet("users/{userId}/certificate-summary")]
     public async Task<IActionResult> GetCertificateSummary(string userId)
@@ -234,12 +240,16 @@ public class AdminController : ControllerBase
         if (user == null)
             return NotFound(new { message = "Gebruiker nie gevind nie." });
 
-        var ownerName = (user.FirstName + " " + user.LastName).Trim();
+        var accountName = (user.FirstName + " " + user.LastName).Trim();
+        var ownerName = string.IsNullOrWhiteSpace(user.CertificateName) ? accountName : user.CertificateName;
 
-        var ownedIds = await _db.Squares
+        var owned = await _db.Squares
             .Where(s => s.OwnerId == userId)
-            .Select(s => s.Id)
+            .Select(s => new { s.Id, s.CertificateName })
             .ToListAsync();
+
+        var blockNames = owned.ToDictionary(s => s.Id, s => s.CertificateName);
+        var ownedIds = owned.Select(s => s.Id).ToList();
 
         var boughtOn = await _db.PurchaseSquares
             .Where(ps => ownedIds.Contains(ps.SquareId))
@@ -257,11 +267,19 @@ public class AdminController : ControllerBase
                 Id = id,
                 PurchaseDate = earliest.TryGetValue(id, out var date)
                     ? (DateTime?)date
-                    : null
+                    : null,
+                OwnerName = blockNames.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name)
+                    ? name
+                    : ownerName
             })
             .ToList();
 
-        return Ok(new { OwnerName = ownerName, Squares = squares });
+        return Ok(new
+        {
+            OwnerName = ownerName,
+            SameForAll = !user.CertificateIndividual,
+            Squares = squares
+        });
     }
 
     [HttpGet("transactions")]
@@ -553,6 +571,8 @@ public class AdminController : ControllerBase
                 purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = square.Id });
             }
 
+            ApplyCertificateNames(dto, user, squares);
+
             _db.Purchases.Add(purchase);
             await _db.SaveChangesAsync();
 
@@ -576,12 +596,14 @@ public class AdminController : ControllerBase
                 var siteUrl = AppPublicUrl.Resolve(_config);
                 // A brand new user needs the temporary password; an existing one just needs the
                 // same confirmation a PayFast buyer gets.
+                var en = user.Language == "en";
+                var switchUrl = _languageLinks?.BuildUrl(user.Id, "en");
                 var html = isNewUser && welcomeTempPassword != null
-                    ? EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl)
-                    : EmailTemplates.AccountPurchaseConfirmation(user.FirstName, squares.Count, purchase.Amount, siteUrl);
+                    ? EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl, en, switchUrl)
+                    : EmailTemplates.AccountPurchaseConfirmation(user.FirstName, squares.Count, purchase.Amount, siteUrl, en, switchUrl);
                 welcomeEmailSent = await _emailOutbox.QueueAsync(
                     user.Email,
-                    EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
+                    EmailTemplates.SubjectPrefix + EmailTemplates.T(en, "Jou borgskap is voltooi!", "Your sponsorship is complete!"),
                     html);
             }
 
@@ -600,6 +622,32 @@ public class AdminController : ControllerBase
         {
             await transaction.RollbackAsync();
             return Conflict(new { message = "Sommige blokke is intussen deur iemand anders gekoop." });
+        }
+    }
+
+    /// <summary>
+    /// Writes the certificate names the admin took down over the phone. The buyer would otherwise
+    /// have to sign in inside the 15-minute window to set them, which nobody phoning an order does.
+    /// Only the blocks on this order are touched: ones bought earlier keep the names they were
+    /// issued under. The summary name and the individual/summary choice live on the account, so a
+    /// returning buyer's answer on this call is the one that stands, exactly as on their own page.
+    /// </summary>
+    private static void ApplyCertificateNames(ManualPurchaseDto dto, User user, List<Square> squares)
+    {
+        var summaryName = string.IsNullOrWhiteSpace(dto.CertificateName)
+            ? $"{user.FirstName} {user.LastName}".Trim()
+            : dto.CertificateName.Trim();
+
+        user.CertificateName = summaryName;
+        user.CertificateIndividual = dto.CertificateIndividual;
+
+        if (!dto.CertificateIndividual)
+            return;
+
+        foreach (var square in squares)
+        {
+            var name = dto.CertificateNames.TryGetValue(square.Id, out var typed) ? typed.Trim() : string.Empty;
+            square.CertificateName = name.Length >= 2 ? name : summaryName;
         }
     }
 

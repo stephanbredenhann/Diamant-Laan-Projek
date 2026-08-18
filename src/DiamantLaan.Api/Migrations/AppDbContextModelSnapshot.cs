@@ -477,6 +477,13 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<bool>("IsOraniaResident")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("af");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("TEXT");

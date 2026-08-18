@@ -39,7 +39,7 @@ export const EN: Record<string, string> = {
   // --- Home: hero ---
   'Kyk hoe dit werk': 'See how it works',
   'Van grondpad tot teerpad tot stad tot Vryheid!':
-    'From dirt road to tarred road to town to Freedom!',
+    'From dirt road to tarred road to city to Freedom!',
   'Bou saam aan Orania. Borg ’n': 'Build Orania with us. Sponsor a',
   'van die Oewerpad.': 'of the Oewerpad.',
   'Elke blokkie m² wat jy borg help om nuwe moontlikhede vir Orania oop te sluit. Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en word deel van die bouwerk wat Orania na die volgende vlak neem.':
@@ -452,6 +452,8 @@ export const EN: Record<string, string> = {
   'Jou bloknommers': 'Your block numbers',
   'Kontroleer die nommers. Druk op': 'Check the numbers. Press',
   'om iets te verander.': 'to change anything.',
+  'Indien jy graag deur middel van BTC, EFT, Paypal, of kontant wil betaal, klik hier':
+    'If you would like to pay with BTC, EFT, PayPal or cash, click here',
   'Vir terugkerende ondersteuners': 'For returning supporters',
   'Meld aan. Hierdie aankoop word dan aan jou rekening gekoppel.':
     'Sign in. This purchase is then linked to your account.',
@@ -637,6 +639,8 @@ export const EN: Record<string, string> = {
   'Persoonlike besonderhede': 'Personal details',
   'Ontvang e-posse oor die vordering van my vierkante meter':
     'Send me emails about the progress of my square metres',
+  'Wys alles in Engels, e-posse en die webwerf':
+    'Show everything in English, emails and the website',
   'Stoor besonderhede': 'Save details',
   'Verander e-pos': 'Change email',
   'Verander wagwoord': 'Change password',

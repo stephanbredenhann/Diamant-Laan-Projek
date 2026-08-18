@@ -25,6 +25,9 @@ public class PaymentController : ControllerBase
     private readonly GuestPurchaseService _guests;
     private readonly EmailOutboxService _emails;
     private readonly IConfiguration _config;
+    // Optional so a test can build the mailer without a signing key: without it the emails simply
+    // go out without the switch-to-English footer link. Always supplied by DI in production.
+    private readonly LanguageLinkService? _languageLinks;
 
     public PaymentController(
         AppDbContext db,
@@ -33,7 +36,8 @@ public class PaymentController : ControllerBase
         IWebHostEnvironment environment,
         GuestPurchaseService guests,
         EmailOutboxService emails,
-        IConfiguration config)
+        IConfiguration config,
+        LanguageLinkService? languageLinks = null)
     {
         _db = db;
         _payFastService = payFastService;
@@ -44,6 +48,7 @@ public class PaymentController : ControllerBase
         _guests = guests;
         _emails = emails;
         _config = config;
+        _languageLinks = languageLinks;
     }
 
     [AllowAnonymous]
@@ -161,14 +166,18 @@ public class PaymentController : ControllerBase
             if (user == null || user.IsAnonymized || string.IsNullOrWhiteSpace(user.Email))
                 return;
 
+            var en = user.Language == "en";
+            var siteUrl = AppPublicUrl.Resolve(_config);
             await _emails.QueueAsync(
                 user.Email,
-                EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
+                EmailTemplates.SubjectPrefix + EmailTemplates.T(en, "Jou borgskap is voltooi!", "Your sponsorship is complete!"),
                 EmailTemplates.AccountPurchaseConfirmation(
                     user.FirstName,
                     purchase.PurchaseSquares.Count,
                     purchase.Amount,
-                    AppPublicUrl.Resolve(_config)));
+                    siteUrl,
+                    en,
+                    _languageLinks?.BuildUrl(user.Id, "en")));
         }
         catch (Exception ex)
         {
@@ -199,14 +208,20 @@ public class PaymentController : ControllerBase
             var siteUrl = AppPublicUrl.Resolve(_config).TrimEnd('/');
             var claimUrl = $"{siteUrl}/betalings/klaar?aankoop={purchase.Id}&sleutel={Uri.EscapeDataString(token)}";
 
+            // A guest has never been asked, so their placeholder account still says Afrikaans. The
+            // switch link works all the same: it targets the placeholder the claim would turn into
+            // their real account, so a switch made before claiming survives the claim.
+            var en = purchase.User?.Language == "en";
             await _emails.QueueAsync(
                 purchase.GuestEmail,
-                EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
+                EmailTemplates.SubjectPrefix + EmailTemplates.T(en, "Jou borgskap is voltooi!", "Your sponsorship is complete!"),
                 EmailTemplates.GuestPurchaseClaim(
                     purchase.PurchaseSquares.Count,
                     purchase.Amount,
                     claimUrl,
-                    (int)GuestPurchaseService.ClaimTokenLifetime.TotalDays));
+                    (int)GuestPurchaseService.ClaimTokenLifetime.TotalDays,
+                    en,
+                    _languageLinks?.BuildUrl(purchase.UserId, "en")));
         }
         catch (Exception ex)
         {

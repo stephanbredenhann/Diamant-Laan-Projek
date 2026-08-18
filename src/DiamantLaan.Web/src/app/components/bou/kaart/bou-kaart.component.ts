@@ -10,7 +10,6 @@ import { isEngels } from '../../../i18n/lang.service';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
 import { BlokRoosterComponent } from './blok-rooster.component';
 import { BlokStrookComponent } from './blok-strook.component';
-import { PadOorsigComponent } from './pad-oorsig.component';
 import {
   MAX_BLOK_ID,
   Reeks,
@@ -37,7 +36,7 @@ const PRYS_PER_METER = 500;
   standalone: true,
   imports: [
     FormsModule, RouterLink, BouStepBarComponent,
-    BlokStrookComponent, BlokRoosterComponent, PadOorsigComponent, TPipe,
+    BlokStrookComponent, BlokRoosterComponent, TPipe,
   ],
   template: `
     <div class="kaart-shell bou-shell">
@@ -50,9 +49,6 @@ const PRYS_PER_METER = 500;
 
       <div class="layout">
         <div class="werkarea">
-          <!-- A slim band under the blocks: it orients without pushing the thing
-               you came to use below the fold. On a phone it goes back on top. -->
-          <app-pad-oorsig [merk]="gemerk()" [aspek]="7" />
           <div class="inhoud">
           @if (laai()) {
             <p class="laai-nota">{{ 'Besig om die blokke te laai...' | t }}</p>
@@ -223,15 +219,11 @@ const PRYS_PER_METER = 500;
       align-items: start;
       margin-top: 1.5rem;
     }
-    /* DOM order puts the preview first, which is what a phone wants. On a wide
-       screen it belongs under the blocks instead: the blocks are the thing you
-       came to use, and a 486 px map above them pushed them below the fold. */
     .werkarea {
       display: flex;
       flex-direction: column;
       min-width: 0;
     }
-    .werkarea app-pad-oorsig { order: 2; margin: 1.5rem 0 0; }
     .laai-nota { color: var(--text-muted); font-size: var(--fs-lg); }
 
     .strook-paneel {
@@ -308,13 +300,6 @@ const PRYS_PER_METER = 500;
       font-size: var(--fs-base);
       font-weight: 700;
       color: #000;
-      text-align: center;
-    }
-    /* OpenStreetMap's licence requires this credit stays visible. */
-    .erkenning {
-      margin-top: 0.35rem;
-      font-size: 0.8rem;
-      color: var(--text-muted);
       text-align: center;
     }
 
@@ -456,9 +441,6 @@ const PRYS_PER_METER = 500;
       .layout { grid-template-columns: 1fr; }
       .keuse-kaart { position: static; }
       .strook-kop { justify-content: center; }
-      /* On a narrow screen the map goes back on top: it is the orientation you
-         want before you start tapping, and nothing is competing for the space. */
-      .werkarea app-pad-oorsig { order: -1; margin: 0 0 1.5rem; }
     }
 
     @media (max-width: 820px) {

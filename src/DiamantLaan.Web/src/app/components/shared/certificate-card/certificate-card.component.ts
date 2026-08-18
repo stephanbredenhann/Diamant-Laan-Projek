@@ -15,7 +15,7 @@ import { TPipe } from '../../../i18n/t.pipe';
 
 /**
  * The certificate artwork is the client's Canva design ("STADSBOUFONDS PADBOUFONDS FINAAL", page
- * one), exported to `sertifikaat-agtergrond.png` with its two fill-in fields — the sponsor's name
+ * one), exported to `sertifikaat-agtergrond.jpg` with its two fill-in fields — the sponsor's name
  * and the sentence carrying the block numbers — stripped out. We re-render those as live text on
  * top of the plate, so the geometry below has to stay in step with the artwork: the numbers are
  * lifted straight from the Canva document, whose page is 793.688x1171.64 (taller than A4). If the
@@ -63,8 +63,46 @@ const MAANDE = [
   'Julie', 'Augustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
-/** High enough that the artwork's hard orange edges stay clean, low enough to keep pages small. */
-const PDF_JPEG_QUALITY = 0.92;
+/**
+ * The PDF is built in two layers rather than as one screenshot of the sheet, because html2canvas
+ * can only raster what the DOM shows it: the plate came out at the preview image's resolution
+ * upscaled to the capture size, so the artwork reached the page at about 124dpi however good the
+ * source file was. Instead the print plate goes into the PDF as its own JPEG, byte for byte at
+ * 2480px across a 210mm page (300dpi, the print standard), and html2canvas only draws the live
+ * text over it. Nothing re-encodes the artwork, so it prints exactly as exported.
+ */
+const PRINT_PLATE_URL = 'sertifikaat-plaat-druk.jpg';
+
+/** The export sheet's fixed pixel box, mirrored from `.cert-sheet--export` in the styles below. */
+const EXPORT_W = 794;
+const EXPORT_H = 1172;
+
+/**
+ * Only the strip holding the three live fields is kept from the capture. Cropping is what keeps
+ * the transparent overlay cheap — jsPDF walks an alpha PNG pixel by pixel to split out its mask,
+ * and a full sheet at this scale is 8M of them against the strip's 1.6M. The bounds are derived
+ * from the field boxes, not typed in, so re-deriving the geometry moves the strip with it: half a
+ * name line of headroom above for Callstories' ascenders, and the lower of the two fields' floors
+ * below. It has to stay clear of the signature row at y 889, which the spec checks.
+ */
+const TEXT_BAND_TOP = NAME_BOX.top - NAME_BOX.lineHeight / 2;
+const TEXT_BAND_BOTTOM = Math.max(BODY_BOX.top + MAX_BODY_HEIGHT, DATE_BOX.top + DATE_BOX.fontSize * 2);
+
+/** Held as fractions of the sheet, the same units the fields are positioned in. */
+export const TEXT_BAND = {
+  top: TEXT_BAND_TOP / SHEET_H,
+  height: (TEXT_BAND_BOTTOM - TEXT_BAND_TOP) / SHEET_H,
+};
+
+/** The strip in export pixels. Both the crop and its PDF placement read these, so they agree. */
+const BAND_TOP_PX = Math.round(TEXT_BAND.top * EXPORT_H);
+const BAND_H_PX = Math.round(TEXT_BAND.height * EXPORT_H);
+
+/**
+ * 3 puts the text on the page at 288dpi, alongside the plate's 300. Higher is pointless in print
+ * and iOS caps a canvas dimension at 4096, which 1172 x 4 would break.
+ */
+const TEXT_LAYER_SCALE = 3;
 
 /**
  * The page is cut to the artwork's own shape rather than to A4, which the artwork is too tall for.
@@ -123,6 +161,45 @@ export function formatBlockRanges(ids: number[]): string {
     .join(', ');
 }
 
+/** A name as it can appear in a filename: lowercase, hyphenated, nothing a filesystem dislikes. */
+export function sanitizeFilename(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'sertifikaat';
+}
+
+/**
+ * The print plate as a data URL, fetched once per page load. Every sheet in a zip embeds the same
+ * 1.5MB of artwork, so fetching it per sheet would re-download it a dozen times over. Handed to
+ * jsPDF as JPEG bytes, which it stores without decoding or re-encoding them.
+ */
+let platePromise: Promise<string> | undefined;
+
+function printPlate(): Promise<string> {
+  platePromise ??= fetch(PRINT_PLATE_URL)
+    .then(res => {
+      if (!res.ok) throw new Error(`Kon nie die sertifikaat-plaat laai nie (${res.status}).`);
+      return res.blob();
+    })
+    .then(blob => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    }))
+    // A failed fetch must not be cached, or the retry the download button offers can never succeed.
+    .catch(err => {
+      platePromise = undefined;
+      throw err;
+    });
+
+  return platePromise;
+}
+
+/** One finished sheet: the PDF bytes and the filename it should be saved or zipped under. */
+export interface CertificateSheetPdf {
+  filename: string;
+  blob: Blob;
+}
+
 /**
  * Renders the sponsorship certificate and handles the PDF export. Used both by the signed-in
  * certificate page and by the guest flow after a checkout that skipped signing up, so it takes
@@ -148,7 +225,7 @@ export function formatBlockRanges(ids: number[]): string {
       }
 
       <div class="cert-sheet" #previewSheet>
-        <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" #bgImage />
+        <img class="cert-bg" src="sertifikaat-agtergrond.jpg" alt="" #bgImage />
         @if (bladNaam && previewView; as view) {
           <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
                [style.width]="nameStyle.width">{{ bladNaam }}</div>
@@ -195,12 +272,15 @@ export function formatBlockRanges(ids: number[]): string {
       }
     </div>
 
-    <!-- Rendered at the artwork's native width so html2canvas captures exact design geometry. -->
+    <!--
+      Rendered at the artwork's native width so html2canvas captures exact design geometry. It
+      carries no plate: the artwork is added to the PDF directly, and this sheet only supplies the
+      live text drawn over it.
+    -->
     <div class="cert-sheet cert-sheet--export" #exportSheet aria-hidden="true">
-      <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" #exportBgImage />
       @if (exportView; as view) {
         <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-             [style.width]="nameStyle.width">{{ bladNaam }}</div>
+             [style.width]="nameStyle.width">{{ exportName }}</div>
         <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
              [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
         @if (dateText(view); as datum) {
@@ -222,6 +302,12 @@ export function formatBlockRanges(ids: number[]): string {
       box-shadow: var(--shadow-lg);
       overflow: hidden;
     }
+    /*
+     * Transparent, unlike the preview: html2canvas paints the element's own background into the
+     * capture, so the white the preview wants behind the plate came out as an opaque strip across
+     * the artwork in the PDF. The plate is the background here, and it is added underneath in the
+     * PDF itself.
+     */
     .cert-sheet--export {
       position: fixed;
       left: -10000px;
@@ -230,6 +316,7 @@ export function formatBlockRanges(ids: number[]): string {
       height: 1172px;
       aspect-ratio: auto;
       --sheet-w: 794px;
+      background: transparent;
       box-shadow: none;
     }
     .cert-bg {
@@ -336,7 +423,6 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   @ViewChild('previewSheet') previewSheet!: ElementRef<HTMLElement>;
   @ViewChild('exportSheet') exportSheet!: ElementRef<HTMLElement>;
   @ViewChild('bgImage') bgImage!: ElementRef<HTMLImageElement>;
-  @ViewChild('exportBgImage') exportBgImage!: ElementRef<HTMLImageElement>;
 
   private cdr = inject(ChangeDetectorRef);
   private host = inject(ElementRef<HTMLElement>);
@@ -363,6 +449,8 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   downloadError = '';
   previewIndex = 0;
   exportView?: SheetView;
+  /** The name on the sheet currently being exported, which need not be the one on screen. */
+  exportName = '';
 
   private summaryBodyFit = 1;
   private viewReady = false;
@@ -550,7 +638,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     await document.fonts.ready;
 
     this.summaryBodyFit = this.computeBodyFit(this.bodyText(this.summaryView()));
-    this.fitName();
+    this.fitName(this.bladNaam);
 
     if (this.viewReady) {
       this.cdr.detectChanges();
@@ -562,8 +650,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
    * The ratio is resolution-independent, which is why it can be measured once against the
    * artwork's native width and then applied to both sheets.
    */
-  private fitName(): void {
-    const naam = this.bladNaam;
+  private fitName(naam: string): void {
     if (!naam) return;
 
     const ctx = document.createElement('canvas').getContext('2d');
@@ -577,6 +664,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     this.host.nativeElement.style.setProperty('--name-fit', `${fit}`);
   }
 
+  /** Saves whichever sheet is on screen, which is what the button under it says it will do. */
   async downloadPdf() {
     const view = this.previewView;
     if (this.downloading || !view) return;
@@ -585,36 +673,8 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     this.downloadError = '';
 
     try {
-      await this.refit();
-      await this.decodeBackgrounds();
-
-      const { default: html2canvas } = await import('html2canvas');
-      const { jsPDF } = await import('jspdf');
-
-      this.exportView = view;
-      this.cdr.detectChanges();
-
-      // scale 2 against the 794px sheet lands on 1588px, twice the artwork's design width.
-      const canvas = await html2canvas(this.exportSheet.nativeElement, {
-        scale: 2,
-        width: Math.round(SHEET_W),
-        height: Math.round(SHEET_H),
-        backgroundColor: '#ffffff',
-      });
-
-      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [PDF_WIDTH_MM, PDF_HEIGHT_MM] });
-
-      // JPEG, not PNG: the canvas PNG encoder barely compresses the artwork and lands about
-      // 10MB a page. At this quality the difference is invisible but the page is roughly 300KB.
-      pdf.addImage(
-        canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
-        'JPEG',
-        0, 0,
-        PDF_WIDTH_MM,
-        PDF_HEIGHT_MM,
-      );
-
-      pdf.save(this.filenameFor(view));
+      const pdf = await this.pdfFrom(await this.renderTextLayer(view, this.bladNaam));
+      pdf.save(this.filenameFor(view, this.bladNaam));
     } catch {
       this.downloadError = 'Kon nie PDF genereer nie. Probeer asseblief weer.';
     } finally {
@@ -622,20 +682,106 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     }
   }
 
-  private filenameFor(view: SheetView): string {
-    const owner = this.sanitizeFilename(this.bladNaam);
+  /**
+   * One sheet as PDF bytes, for a caller taking several at once. `target` is a block number, or
+   * 'summary' for the one sheet carrying every block. The preview is left as it was, so this can
+   * be called in a loop against an off-screen card without the page flickering through the sheets.
+   */
+  async sheetPdf(target: 'summary' | number): Promise<CertificateSheetPdf> {
+    const view = this.viewFor(target);
+    if (!view) throw new Error(`Geen sertifikaat vir ${target}.`);
+
+    const name = this.nameFor(target);
+    try {
+      const pdf = await this.pdfFrom(await this.renderTextLayer(view, name));
+      return { filename: this.filenameFor(view, name), blob: pdf.output('blob') };
+    } finally {
+      this.fitName(this.bladNaam);
+    }
+  }
+
+  /**
+   * Every sheet this account would get: the summary first, then one per block. A lone block has
+   * nothing to summarise, so it is the only sheet there is.
+   */
+  sheetTargets(): ('summary' | number)[] {
+    const blocks = this.squares.map(s => s.id);
+    return blocks.length > 1 ? ['summary', ...blocks] : blocks;
+  }
+
+  /** What one target's sheet would be called, for a chooser that lists them before rendering. */
+  sheetLabel(target: 'summary' | number): string {
+    return target === 'summary' ? 'Opsomming' : `Blok ${target}`;
+  }
+
+  private viewFor(target: 'summary' | number): SheetView | undefined {
+    return target === 'summary'
+      ? this.summaryView()
+      : this.blockView(this.squares.find(s => s.id === target));
+  }
+
+  /** A block may carry its own name; the summary sheet always prints the one shared name. */
+  private nameFor(target: 'summary' | number): string {
+    if (target === 'summary') return this.ownerName;
+    return this.squares.find(s => s.id === target)?.ownerName?.trim() || this.ownerName;
+  }
+
+  /**
+   * The live text for one sheet, cropped to the strip it occupies, as a transparent PNG data URL.
+   * PNG because the plate has to show through it; JPEG has no alpha and would bury the artwork
+   * under a rectangle of cream.
+   */
+  private async renderTextLayer(view: SheetView, sheetName: string): Promise<string> {
+    await this.refit();
+
+    const { default: html2canvas } = await import('html2canvas');
+
+    this.exportView = view;
+    this.exportName = sheetName;
+    this.fitName(sheetName);
+    this.cdr.detectChanges();
+
+    const sheet = await html2canvas(this.exportSheet.nativeElement, {
+      scale: TEXT_LAYER_SCALE,
+      width: EXPORT_W,
+      height: EXPORT_H,
+      backgroundColor: null,
+    });
+
+    const band = document.createElement('canvas');
+    band.width = sheet.width;
+    band.height = BAND_H_PX * TEXT_LAYER_SCALE;
+    band.getContext('2d')?.drawImage(sheet, 0, -BAND_TOP_PX * TEXT_LAYER_SCALE);
+
+    return band.toDataURL('image/png');
+  }
+
+  /** The plate, then the text strip over it at the same fraction of the page it was cropped from. */
+  private async pdfFrom(textLayer: string) {
+    const [{ jsPDF }, plate] = await Promise.all([import('jspdf'), printPlate()]);
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [PDF_WIDTH_MM, PDF_HEIGHT_MM] });
+
+    pdf.addImage(plate, 'JPEG', 0, 0, PDF_WIDTH_MM, PDF_HEIGHT_MM, 'plaat');
+    pdf.addImage(
+      textLayer,
+      'PNG',
+      0,
+      (BAND_TOP_PX / EXPORT_H) * PDF_HEIGHT_MM,
+      PDF_WIDTH_MM,
+      (BAND_H_PX / EXPORT_H) * PDF_HEIGHT_MM,
+    );
+
+    return pdf;
+  }
+
+  private filenameFor(view: SheetView, sheetName: string): string {
+    const owner = this.sanitizeFilename(sheetName);
     return view.count > 1
       ? `sertifikaat-${owner}-opsomming.pdf`
       : `sertifikaat-${owner}-blok-${view.blocks}.pdf`;
   }
 
-  /** html2canvas paints whatever the image currently holds, so make sure the plate is decoded. */
-  private async decodeBackgrounds(): Promise<void> {
-    const images = [this.bgImage?.nativeElement, this.exportBgImage?.nativeElement].filter(Boolean);
-    await Promise.all(images.map(img => (img.complete ? Promise.resolve() : img.decode().catch(() => undefined))));
-  }
-
   private sanitizeFilename(name: string): string {
-    return name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'sertifikaat';
+    return sanitizeFilename(name);
   }
 }

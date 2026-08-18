@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse } from '../models/user';
+import { LangService } from '../i18n/lang.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private base = '/api/auth';
   currentUser = signal<AuthResponse | null>(this.loadUser());
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router, private lang: LangService) {}
 
   register(
     firstName: string,
@@ -27,12 +28,12 @@ export class AuthService {
       firstName, lastName, email, password, confirmPassword, phoneNumber, phoneCountryCode, isOraniaResident, isOraniaBewegingMember,
       guestPurchaseId: guest?.purchaseId ?? null,
       guestToken: guest?.token ?? null
-    }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
+    }, { withCredentials: true }).pipe(tap(res => this.setSession(res, true)));
   }
 
   login(email: string, password: string) {
     return this.http.post<AuthResponse>(`${this.base}/login`, { email, password }, { withCredentials: true })
-      .pipe(tap(res => this.setSession(res)));
+      .pipe(tap(res => this.setSession(res, true)));
   }
 
   forgotPassword(email: string) {
@@ -48,7 +49,7 @@ export class AuthService {
   completeRequiredPasswordChange(newPassword: string, confirmPassword: string) {
     return this.http.post<AuthResponse>(`${this.base}/complete-required-password-change`, {
       newPassword, confirmPassword
-    }, { withCredentials: true }).pipe(tap(res => this.setSession(res)));
+    }, { withCredentials: true }).pipe(tap(res => this.setSession(res, true)));
   }
 
   refreshToken(): Observable<AuthResponse> {
@@ -83,10 +84,16 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  private setSession(res: AuthResponse) {
+  /**
+   * `applyLanguage` only on an actual sign-in, never on a token refresh: the account's stored
+   * language is the default the session opens in, but the navbar toggle stays a local override
+   * and a refresh on every page load would otherwise undo it.
+   */
+  private setSession(res: AuthResponse, applyLanguage = false) {
     localStorage.setItem('token', res.token);
     localStorage.setItem('user', JSON.stringify(res));
     this.currentUser.set(res);
+    if (applyLanguage && res.language) this.lang.set(res.language);
   }
 
   private loadUser(): AuthResponse | null {

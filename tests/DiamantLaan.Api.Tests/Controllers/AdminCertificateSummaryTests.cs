@@ -25,7 +25,7 @@ public class AdminCertificateSummaryTests
     }
 
     [Fact]
-    public async Task GetCertificateSummary_ReturnsAccountNameAndOwnedSquares_IgnoresCertificateName()
+    public async Task GetCertificateSummary_ReturnsCertificateNamesAndOwnedSquares()
     {
         await using var db = CreateDb();
         var user = new User
@@ -67,12 +67,47 @@ public class AdminCertificateSummaryTests
         using var doc = System.Text.Json.JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        Assert.Equal("Jan Boer", root.GetProperty("OwnerName").GetString());
+        // The admin download prints what the buyer sees, so the chosen certificate name wins over
+        // the account name, and a block with no name of its own falls back to it.
+        Assert.Equal("Sertifikaat Naam", root.GetProperty("OwnerName").GetString());
+        Assert.True(root.GetProperty("SameForAll").GetBoolean());
         var squares = root.GetProperty("Squares").EnumerateArray().ToList();
         Assert.Equal(2, squares.Count);
         Assert.Equal(101, squares[0].GetProperty("Id").GetInt32());
+        Assert.Equal("Blok Naam", squares[0].GetProperty("OwnerName").GetString());
         Assert.Equal(102, squares[1].GetProperty("Id").GetInt32());
-        Assert.DoesNotContain("Sertifikaat", root.GetProperty("OwnerName").GetString());
+        Assert.Equal("Sertifikaat Naam", squares[1].GetProperty("OwnerName").GetString());
+    }
+
+    [Fact]
+    public async Task GetCertificateSummary_NoCertificateName_FallsBackToAccountName()
+    {
+        await using var db = CreateDb();
+        var user = new User
+        {
+            Id = "u1",
+            UserName = "buyer@test.com",
+            Email = "buyer@test.com",
+            FirstName = "Jan",
+            LastName = "Boer",
+            CertificateIndividual = true
+        };
+        db.Users.Add(user);
+        db.Squares.Add(new Square { Id = 101, OwnerId = user.Id });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.GetCertificateSummary(user.Id);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Assert.Equal("Jan Boer", root.GetProperty("OwnerName").GetString());
+        Assert.False(root.GetProperty("SameForAll").GetBoolean());
+        var squares = root.GetProperty("Squares").EnumerateArray().ToList();
+        Assert.Equal("Jan Boer", squares[0].GetProperty("OwnerName").GetString());
     }
 
     [Fact]
