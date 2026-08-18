@@ -33,6 +33,12 @@ import { TPipe } from '../../i18n/t.pipe';
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
+          <a routerLink="/" fragment="hoe-dit-werk" class="btn btn-xl hero-secondary">
+            {{ 'Kyk hoe dit werk' | t }}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </a>
         </div>
         <ul class="reassurance">
           <li>{{ 'Geen registrasie' | t }}</li>
@@ -203,10 +209,16 @@ import { TPipe } from '../../i18n/t.pipe';
       margin-bottom: 1.5rem;
     }
     .hero-cta { width: auto; }
+    .hero-secondary { display: none; }
+    /* Fixed two-up, not wrap: the four items read as two pairs at every width
+       wide enough to hold them, however much room is going spare. */
     .reassurance {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      justify-content: start;
+      /* Fluid column gap: the copy column is only 38% of the viewport in the
+         split, so a fixed 2rem gap overflows the pair at the narrow end. */
+      gap: 0.85rem clamp(1.25rem, 2.2vw, 2rem);
       list-style: none;
       color: rgba(255,255,255,0.7);
       font-size: 0.95rem;
@@ -280,6 +292,126 @@ import { TPipe } from '../../i18n/t.pipe';
     }
     @media (prefers-reduced-motion: reduce) {
       .scroll-cue { animation: none; }
+    }
+
+    /* Client split: cream copy, photo fading in from the right.
+
+       Not 961px: at 38/62 the copy column is only ~38% of the viewport, and below
+       ~1100px that is too narrow to hold the two-up checkmarks without them
+       spilling. Everything under this width keeps the original full-bleed overlay
+       hero, which has the whole viewport to lay out in. */
+    @media (min-width: 1100px) {
+      .hero {
+        display: flex;
+        align-items: center;
+        padding: 0;
+        background: var(--bg-warm);
+      }
+      /* Explicit width: an absolutely-positioned <img> with width:auto sizes from
+         its intrinsic ratio and overflows instead of cropping, which throws the
+         road off-centre. left + width must stay complementary. */
+      .hero-img {
+        inset: 0 0 0 38%;
+        width: 62%;
+        height: 100%;
+        opacity: 1;
+        border-radius: 0;
+        object-fit: cover;
+        /* Not plain 50%: the feather veils the panel's left half, so the road is
+           pushed right to sit centred in the part actually visible.
+
+           A bare percentage will not do it. Percentage object-position is a
+           fraction of the crop overflow, and the overflow swings roughly 3x
+           between 980px and 1920px because the panel's width grows while its
+           height stays pinned at 820px, so any single percentage is only correct
+           at one viewport. The shift we want tracks the panel's width instead,
+           which is what the vw term is. Retune it with the feather and the panel
+           width: 7.7vw is 0.62 (panel width) x 0.124 (how far the feather drags
+           the visual centre past the middle), and the 12.5px covers the road
+           sitting at 49% rather than dead centre of the source photo. */
+        /* ponytail: past ~1860px the shift exceeds what the crop can absorb and
+           the panel's left edge runs out of image. It lands in the first couple of
+           percent of the panel, where the feather is all but fully transparent, so
+           nothing shows; the right edge is always covered because the shift only
+           ever moves the image rightward. The fix if it ever does show is a wider
+           source photo, not more CSS: oewerpad-03.jpg is 1024x576 and is already
+           upscaled past 1200px. */
+        object-position: calc(50% + 7.7vw + 12.5px) center;
+        /* Eased and long. A linear ramp has a hard kink where it reaches full
+           opacity and the eye reads that kink as the image's edge; the stops
+           below round the kink off at both ends. */
+        --hero-feather: linear-gradient(
+          90deg,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.015) 5%,
+          rgba(0, 0, 0, 0.06) 10%,
+          rgba(0, 0, 0, 0.14) 14%,
+          rgba(0, 0, 0, 0.25) 19%,
+          rgba(0, 0, 0, 0.38) 23%,
+          rgba(0, 0, 0, 0.52) 28%,
+          rgba(0, 0, 0, 0.66) 32%,
+          rgba(0, 0, 0, 0.78) 36%,
+          rgba(0, 0, 0, 0.88) 40%,
+          rgba(0, 0, 0, 0.95) 43%,
+          rgba(0, 0, 0, 0.99) 47%,
+          rgba(0, 0, 0, 1) 50%
+        );
+        -webkit-mask-image: var(--hero-feather);
+        mask-image: var(--hero-feather);
+      }
+      /* The feather rides on the image itself, so it stays put whatever the
+         viewport does. The scrim is the mobile overlay only. */
+      .hero-scrim { display: none; }
+      .hero-content {
+        align-self: center;
+        max-width: min(44rem, 38%);
+        width: auto;
+        margin: 0 auto 0 0;
+        color: var(--ink);
+        padding: 4.5rem clamp(1.5rem, 3vw, 3rem) 5.5rem clamp(1.5rem, 5vw, 5rem);
+      }
+      .hero-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        color: var(--route-blue);
+      }
+      .hero-eyebrow::before {
+        content: '';
+        width: 1.6rem;
+        height: 2px;
+        background: var(--action);
+        flex-shrink: 0;
+      }
+      .hero-title {
+        color: var(--ink);
+        font-size: clamp(2.75rem, 4.4vw, 4.75rem);
+      }
+      .hero-sub { color: var(--text-body); }
+      .hero-sub strong { color: var(--ink); }
+      .reassurance { color: var(--text-muted); }
+      .hero-cta,
+      .hero-secondary,
+      .hero-stat-float,
+      .stat-dark,
+      .stat-orange { border-radius: 0; }
+      .hero-secondary {
+        display: inline-flex;
+        width: auto;
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--border-soft);
+      }
+      .hero-secondary:hover {
+        background: var(--surface-alt);
+        color: var(--ink);
+      }
+      .scroll-cue {
+        background: var(--bg-warm);
+        border-color: var(--ink);
+        color: var(--ink);
+      }
+      .scroll-cue:hover { background: var(--surface); border-color: var(--ink); }
     }
 
     .section { padding: 5rem 0; }
@@ -452,6 +584,13 @@ import { TPipe } from '../../i18n/t.pipe';
     }
     @media (max-width: 560px) {
       .hero-stat-float { flex-direction: column; }
+    }
+    /* The point they genuinely stop fitting. The two longest labels side by side
+       measure 319px (af) / 315px (en) plus the gap, against a viewport less the
+       container's 48px of padding, so two columns hold to ~355px. Breaking at
+       364px leaves 375px phones two-up with room to spare and 360px ones stacked. */
+    @media (max-width: 364px) {
+      .reassurance { grid-template-columns: max-content; }
     }
   `]
 })

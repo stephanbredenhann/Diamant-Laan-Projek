@@ -1,3 +1,15 @@
+/*
+ * The sponsor's name on the certificate is set in Callstories, the font the client uploaded to
+ * their Canva brand kit for the same field in the source artwork. It is only ever used there.
+ */
+@font-face {
+  font-family: 'Callstories';
+  src: url('/fonts/callstories.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* === Orania Beweging Brand Colors === */
   --ob-orange: #F58220;

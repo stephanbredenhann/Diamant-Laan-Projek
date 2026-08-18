@@ -37,6 +37,7 @@ export const EN: Record<string, string> = {
   'Projek deur': 'Project by',
 
   // --- Home: hero ---
+  'Kyk hoe dit werk': 'See how it works',
   'Van grondpad tot teerpad tot stad tot Vryheid!':
     'From dirt road to tarred road to town to Freedom!',
   'Bou saam aan Orania. Borg ’n': 'Build Orania with us. Sponsor a',

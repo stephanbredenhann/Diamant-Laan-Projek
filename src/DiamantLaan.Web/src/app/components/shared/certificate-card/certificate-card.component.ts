@@ -14,66 +14,76 @@ import {
 import { TPipe } from '../../../i18n/t.pipe';
 
 /**
- * The certificate artwork is the client's Canva design, exported to `sertifikaat-agtergrond.png`
- * with the fill-in fields stripped out. We re-render those fields as live text on top of the
- * plate, so the geometry below has to stay in step with the artwork: the numbers are lifted
- * straight from the Canva document, whose page is 794×1123 (A4 at 96dpi). If the plate is ever
- * re-exported, re-check these against the new document rather than nudging them by eye.
+ * The certificate artwork is the client's Canva design ("STADSBOUFONDS PADBOUFONDS FINAAL", page
+ * one), exported to `sertifikaat-agtergrond.png` with its two fill-in fields — the sponsor's name
+ * and the sentence carrying the block numbers — stripped out. We re-render those as live text on
+ * top of the plate, so the geometry below has to stay in step with the artwork: the numbers are
+ * lifted straight from the Canva document, whose page is 793.688x1171.64 (taller than A4). If the
+ * plate is ever re-exported, re-check these against the new document rather than nudging them by
+ * eye. Every `top` here is the box Canva reports less 0.1em, which is the baseline shift Canva
+ * applies to a text frame's contents.
  */
-const SHEET_W = 794;
-const SHEET_H = 1123;
+const SHEET_W = 793.688;
+const SHEET_H = 1171.64;
 
-const NAME_BOX = { left: 148.6520, top: 476.0433, width: 500.9908, height: 79.6667, fontSize: 66.6667 };
-const BODY_BOX = { left: 148.6520, top: 574.7090, width: 500.9908, height: 82.0852, fontSize: 21.3334 };
+const NAME_BOX = { left: 162.82, top: 644.66, width: 468.06, fontSize: 43.3354, lineHeight: 60 };
+const BODY_BOX = { left: 104.38, top: 693.51, width: 584.94, fontSize: 20 };
 
 /**
- * The date row is drawn into the artwork as an orange rule (x 314→469 at y 941.5) with two
- * slashes over it, at x 362.5 and x 413. These three boxes are the gaps between them, so the
- * day/month/year sit on the rule the way they would if someone had written them in.
+ * The design carries no date field. The client asked for one written out in Afrikaans, centred in
+ * the empty band between the block sentence (which ends at y 749) and the signature row (which
+ * starts at y 889) — that puts it directly above Frans de Klerk's signature, the middle column.
  */
-const DATE_ROW = { top: 920, height: 20 };
-const DATE_DAY = { left: 314, width: 48 };
-const DATE_MONTH = { left: 372, width: 41 };
-const DATE_YEAR = { left: 423, width: 46 };
+const DATE_BOX = { left: 196.84, top: 805, width: 400, fontSize: 20 };
 
-/** Smallest the name may shrink to before we let it wrap onto a second line instead. */
-const MIN_NAME_FIT = 0.42;
+/** The plate's own lettering. Callstories is the client's uploaded Canva font for the name. */
+const NAME_FONT = `'Callstories', cursive`;
+const BODY_FONT = `'Montserrat', 'Segoe UI', sans-serif`;
 
 /**
- * Shrinking to exactly the box width still wraps, because layout rounds up where measureText
- * does not. Leaving a sliver spare keeps the name on one line, sitting on the orange rule.
+ * Shrinking to exactly the box width still wraps, because layout rounds up where measureText does
+ * not. Leaving a sliver spare keeps the name on the one line the artwork has room for.
  */
 const NAME_FIT_SAFETY = 0.98;
 
 /**
  * A summary listing many blocks runs longer than the design's sentence, so the body is allowed to
- * shrink. The ceiling is the gap between the body's top edge and the signature row at y 717,
- * less a little breathing room, so a long list can never collide with the signatures.
+ * shrink. The ceiling is the gap between the body's top edge and the signature row at y 889, less
+ * breathing room, so a long list can never collide with the signatures.
  */
-const MAX_BODY_HEIGHT = 130;
+const MAX_BODY_HEIGHT = 150;
 const MIN_BODY_FIT = 0.55;
 const BODY_LINE_HEIGHT = 1.4;
 
 /** Runs this short read better spelled out ("5, 6, 7") than collapsed into a range ("5-7"). */
 const MAX_RUN_AS_LIST = 3;
 
+const MAANDE = [
+  'Januarie', 'Februarie', 'Maart', 'April', 'Mei', 'Junie',
+  'Julie', 'Augustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
 /** High enough that the artwork's hard orange edges stay clean, low enough to keep pages small. */
 const PDF_JPEG_QUALITY = 0.92;
+
+/**
+ * The page is cut to the artwork's own shape rather than to A4, which the artwork is too tall for.
+ * Fitting it inside an A4 page left white bands down both sides, and against the plate's cream
+ * paper they read as a printing mistake. A4's width is kept, so the sheet needs 310mm of height.
+ */
+const PDF_WIDTH_MM = 210;
+const PDF_HEIGHT_MM = PDF_WIDTH_MM * (SHEET_H / SHEET_W);
 
 const pctW = (v: number) => `${(v / SHEET_W) * 100}%`;
 const pctH = (v: number) => `${(v / SHEET_H) * 100}%`;
 
-const dateSlotStyle = (slot: { left: number; width: number }) => ({
-  left: pctW(slot.left),
-  top: pctH(DATE_ROW.top),
-  width: pctW(slot.width),
-  height: pctH(DATE_ROW.height),
-});
+/** Sizes that scale with the sheet are expressed against its rendered width. */
+const sheetUnits = (v: number) => `calc(var(--sheet-w, 100%) * ${v / SHEET_W})`;
 
 export interface CertificateSquare {
   id: number;
   status?: number;
-  /** ISO timestamp from the API. Absent for older purchases, which simply leave the row blank. */
+  /** ISO timestamp from the API. Absent for older purchases, which simply leave the date blank. */
   purchaseDate?: string;
   /** Name for this block's own sheet. Absent means it prints the summary name. */
   ownerName?: string;
@@ -140,18 +150,13 @@ export function formatBlockRanges(ids: number[]): string {
       <div class="cert-sheet" #previewSheet>
         <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" #bgImage />
         @if (bladNaam && previewView; as view) {
-          <div class="cert-name" [class.cert-name--wrap]="nameWraps"
-               [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-               [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ bladNaam }}</div>
+          <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
+               [style.width]="nameStyle.width">{{ bladNaam }}</div>
           <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
                [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
-          @if (dateParts(view); as d) {
-            <div class="cert-date" [style.left]="dayStyle.left" [style.top]="dayStyle.top"
-                 [style.width]="dayStyle.width" [style.height]="dayStyle.height">{{ d.day }}</div>
-            <div class="cert-date" [style.left]="monthStyle.left" [style.top]="monthStyle.top"
-                 [style.width]="monthStyle.width" [style.height]="monthStyle.height">{{ d.month }}</div>
-            <div class="cert-date" [style.left]="yearStyle.left" [style.top]="yearStyle.top"
-                 [style.width]="yearStyle.width" [style.height]="yearStyle.height">{{ d.year }}</div>
+          @if (dateText(view); as datum) {
+            <div class="cert-date" [style.left]="dateStyle.left" [style.top]="dateStyle.top"
+                 [style.width]="dateStyle.width">{{ datum }}</div>
           }
         }
       </div>
@@ -190,22 +195,17 @@ export function formatBlockRanges(ids: number[]): string {
       }
     </div>
 
-    <!-- Rendered at the artwork's native 794px so html2canvas captures exact design geometry. -->
+    <!-- Rendered at the artwork's native width so html2canvas captures exact design geometry. -->
     <div class="cert-sheet cert-sheet--export" #exportSheet aria-hidden="true">
       <img class="cert-bg" src="sertifikaat-agtergrond.png" alt="" #exportBgImage />
       @if (exportView; as view) {
-        <div class="cert-name" [class.cert-name--wrap]="nameWraps"
-             [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-             [style.width]="nameStyle.width" [style.height]="nameStyle.height">{{ bladNaam }}</div>
+        <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
+             [style.width]="nameStyle.width">{{ bladNaam }}</div>
         <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
              [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
-        @if (dateParts(view); as d) {
-          <div class="cert-date" [style.left]="dayStyle.left" [style.top]="dayStyle.top"
-               [style.width]="dayStyle.width" [style.height]="dayStyle.height">{{ d.day }}</div>
-          <div class="cert-date" [style.left]="monthStyle.left" [style.top]="monthStyle.top"
-               [style.width]="monthStyle.width" [style.height]="monthStyle.height">{{ d.month }}</div>
-          <div class="cert-date" [style.left]="yearStyle.left" [style.top]="yearStyle.top"
-               [style.width]="yearStyle.width" [style.height]="yearStyle.height">{{ d.year }}</div>
+        @if (dateText(view); as datum) {
+          <div class="cert-date" [style.left]="dateStyle.left" [style.top]="dateStyle.top"
+               [style.width]="dateStyle.width">{{ datum }}</div>
         }
       }
     </div>
@@ -217,7 +217,7 @@ export function formatBlockRanges(ids: number[]): string {
     .cert-sheet {
       position: relative;
       width: 100%;
-      aspect-ratio: 794 / 1123;
+      aspect-ratio: 794 / 1172;
       background: #fff;
       box-shadow: var(--shadow-lg);
       overflow: hidden;
@@ -227,7 +227,7 @@ export function formatBlockRanges(ids: number[]): string {
       left: -10000px;
       top: 0;
       width: 794px;
-      height: 1123px;
+      height: 1172px;
       aspect-ratio: auto;
       --sheet-w: 794px;
       box-shadow: none;
@@ -242,32 +242,27 @@ export function formatBlockRanges(ids: number[]): string {
 
     .cert-name, .cert-body, .cert-date {
       position: absolute;
-      color: #000;
-      font-family: 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif;
-      font-weight: 400;
       text-align: center;
+      font-weight: 400;
     }
+    /*
+     * The line box is held at the design's 60px whatever --name-fit does to the glyphs, so a long
+     * name shrinks in place instead of drifting up the sheet. There is no room for a second line
+     * between the artwork's two fixed sentences, hence nowrap and a fit that always succeeds.
+     */
     .cert-name {
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      font-size: calc(var(--sheet-w, 100%) * 0.0839632 * var(--name-fit));
-      line-height: 1.15;
+      font-family: 'Callstories', cursive;
+      color: var(--ob-orange);
+      font-size: calc(var(--sheet-w, 100%) * 0.0546 * var(--name-fit));
+      line-height: calc(var(--sheet-w, 100%) * 0.0756);
       white-space: nowrap;
     }
-    .cert-name--wrap {
-      white-space: normal;
-      overflow-wrap: anywhere;
+    .cert-body, .cert-date {
+      font-family: 'Montserrat', 'Segoe UI', sans-serif;
+      color: #000;
+      line-height: 1.4;
     }
-    .cert-body { line-height: 1.4; }
-    .cert-date {
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      font-size: calc(var(--sheet-w, 100%) * 0.0176322);
-      line-height: 1.1;
-      white-space: nowrap;
-    }
+    .cert-date { font-size: calc(var(--sheet-w, 100%) * 0.0252); }
 
     .view-toggle {
       display: flex;
@@ -348,7 +343,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   private resizeObserver?: ResizeObserver;
 
   @Input() ownerName = '';
-  /** `purchaseDate` is the ISO date the block was bought; without it the date row stays blank. */
+  /** `purchaseDate` is the ISO date the block was bought; without it the date stays blank. */
   @Input() squares: CertificateSquare[] = [];
   /**
    * Someone else's certificate, on the public share link: the summary sheet and nothing else.
@@ -368,7 +363,6 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   downloadError = '';
   previewIndex = 0;
   exportView?: SheetView;
-  nameWraps = false;
 
   private summaryBodyFit = 1;
   private viewReady = false;
@@ -377,7 +371,6 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     left: pctW(NAME_BOX.left),
     top: pctH(NAME_BOX.top),
     width: pctW(NAME_BOX.width),
-    height: pctH(NAME_BOX.height),
   };
 
   readonly bodyStyle = {
@@ -386,9 +379,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     width: pctW(BODY_BOX.width),
   };
 
-  readonly dayStyle = dateSlotStyle(DATE_DAY);
-  readonly monthStyle = dateSlotStyle(DATE_MONTH);
-  readonly yearStyle = dateSlotStyle(DATE_YEAR);
+  readonly dateStyle = {
+    left: pctW(DATE_BOX.left),
+    top: pctH(DATE_BOX.top),
+    width: pctW(DATE_BOX.width),
+  };
 
   get previewSquare(): CertificateSquare | undefined {
     return this.squares[this.previewIndex];
@@ -464,28 +459,31 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
    */
   bodyText(view?: SheetView): string {
     if (!view) return '';
-    const nommer = view.count === 1 ? 'nommer' : 'nommers';
-    return `blok ${nommer} ${view.blocks} geborg het ter ondersteuning van die teer van die Oewerpad in Orania.`;
+    const nommer = view.count === 1 ? 'bloknommer' : 'bloknommers';
+    return `${nommer} ${view.blocks} ter ondersteuning van die bou van die Oewerpad in Orania geborg het.`;
   }
 
   /** Only the summary can outgrow the design's sentence, so only it is ever scaled down. */
   bodyFontSize(view: SheetView): string {
     const fit = view.count > 1 ? this.summaryBodyFit : 1;
-    return `calc(var(--sheet-w, 100%) * ${(BODY_BOX.fontSize / SHEET_W) * fit})`;
+    return sheetUnits(BODY_BOX.fontSize * fit);
   }
 
   /**
-   * Split the purchase date into the artwork's three slots. The server records the date in UTC, so
-   * read the calendar fields straight off the ISO string: converting through a local `Date` would
-   * shift a late-evening purchase onto the wrong day for anyone east of UTC, ourselves included.
+   * The purchase date written out in Afrikaans. The server records it in UTC, so read the calendar
+   * fields straight off the ISO string: converting through a local `Date` would shift a
+   * late-evening purchase onto the wrong day for anyone east of UTC, ourselves included.
    */
-  dateParts(view?: SheetView): { day: string; month: string; year: string } | null {
-    if (!view?.date) return null;
+  dateText(view?: SheetView): string {
+    if (!view?.date) return '';
 
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(view.date);
-    if (!match) return null;
+    if (!match) return '';
 
-    return { day: match[3], month: match[2], year: match[1] };
+    const maand = MAANDE[Number(match[2]) - 1];
+    if (!maand) return '';
+
+    return `${Number(match[3])} ${maand} ${match[1]}`;
   }
 
   private blockView(square?: CertificateSquare): SheetView | undefined {
@@ -518,7 +516,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
     for (let fit = 1; fit >= MIN_BODY_FIT; fit -= 0.04) {
       const size = BODY_BOX.fontSize * fit;
-      ctx.font = `400 ${size}px 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif`;
+      ctx.font = `400 ${size}px ${BODY_FONT}`;
 
       let lines = 1;
       let current = '';
@@ -540,10 +538,15 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
   /**
    * Both fits are measured with canvas text metrics, which silently fall back to a system font
-   * until the webfont has loaded — so everything waits on `fonts.ready` rather than measuring
-   * whatever happens to be available on first paint.
+   * until the webfont has loaded — so everything waits on the two design faces rather than
+   * measuring whatever happens to be available on first paint. `fonts.ready` alone is not enough:
+   * a face nothing has painted yet is not pending, so it would never be waited for.
    */
   private async refit(): Promise<void> {
+    await Promise.all([
+      document.fonts.load(`400 ${NAME_BOX.fontSize}px ${NAME_FONT}`),
+      document.fonts.load(`400 ${BODY_BOX.fontSize}px ${BODY_FONT}`),
+    ]).catch(() => undefined);
     await document.fonts.ready;
 
     this.summaryBodyFit = this.computeBodyFit(this.bodyText(this.summaryView()));
@@ -566,22 +569,10 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     const ctx = document.createElement('canvas').getContext('2d');
     if (!ctx) return;
 
-    ctx.font = `400 ${NAME_BOX.fontSize}px 'Open Sans', 'Noto Sans', 'Segoe UI', sans-serif`;
+    ctx.font = `400 ${NAME_BOX.fontSize}px ${NAME_FONT}`;
     const measured = ctx.measureText(naam).width;
     const required = NAME_BOX.width / measured;
-
-    let fit: number;
-    if (required >= 1) {
-      fit = 1;
-      this.nameWraps = false;
-    } else if (required * NAME_FIT_SAFETY >= MIN_NAME_FIT) {
-      fit = required * NAME_FIT_SAFETY;
-      this.nameWraps = false;
-    } else {
-      // Beyond this the name would be too small to read, so let it run onto a second line.
-      fit = MIN_NAME_FIT;
-      this.nameWraps = true;
-    }
+    const fit = required >= 1 ? 1 : required * NAME_FIT_SAFETY;
 
     this.host.nativeElement.style.setProperty('--name-fit', `${fit}`);
   }
@@ -603,24 +594,24 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
       this.exportView = view;
       this.cdr.detectChanges();
 
-      // scale 2 against the 794px sheet lands on 1588px — the plate's native resolution.
+      // scale 2 against the 794px sheet lands on 1588px, twice the artwork's design width.
       const canvas = await html2canvas(this.exportSheet.nativeElement, {
         scale: 2,
-        width: SHEET_W,
-        height: SHEET_H,
+        width: Math.round(SHEET_W),
+        height: Math.round(SHEET_H),
         backgroundColor: '#ffffff',
       });
 
-      // A4 portrait in mm; the artwork is full-bleed so the page is drawn edge to edge.
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [PDF_WIDTH_MM, PDF_HEIGHT_MM] });
+
       // JPEG, not PNG: the canvas PNG encoder barely compresses the artwork and lands about
       // 10MB a page. At this quality the difference is invisible but the page is roughly 300KB.
       pdf.addImage(
         canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY),
         'JPEG',
         0, 0,
-        pdf.internal.pageSize.getWidth(),
-        pdf.internal.pageSize.getHeight(),
+        PDF_WIDTH_MM,
+        PDF_HEIGHT_MM,
       );
 
       pdf.save(this.filenameFor(view));
