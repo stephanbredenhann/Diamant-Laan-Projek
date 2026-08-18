@@ -13,6 +13,14 @@ public static class AppPublicUrl
         if (payFast is not null && !IsLocalhost(payFast))
             return payFast;
 
+        // Nothing usable was configured. On App Service the platform tells us our own hostname,
+        // and the API serves the Angular app off that same origin, so it is the site URL. Taken
+        // from the environment rather than Request.Host, which a caller can forge into a link we
+        // then email out with a claim token attached.
+        var azureHost = Normalize(config["WEBSITE_HOSTNAME"]);
+        if (azureHost is not null && !IsLocalhost(azureHost))
+            return azureHost.Contains("://") ? azureHost : $"https://{azureHost}";
+
         return app ?? payFast ?? "http://localhost:4200";
     }
 

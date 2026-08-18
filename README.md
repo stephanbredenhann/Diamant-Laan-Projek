@@ -177,7 +177,7 @@ All configuration is read from `appsettings.json` and overridden by `dotnet user
 | `PayFast:QueryUrl` | Sandbox/live auto | Override the PayFast ITN validation URL. |
 | `PayFast:NotifyUrl` | Auto-generated | Override the ITN callback URL. Defaults to `{baseUrl}api/payment/itn`. |
 | `PayFast:FrontendBaseUrl` | *(empty)* | Base URL of the frontend (used for `return_url` and `cancel_url` on the PayFast form). Falls back to the API base URL if unset. |
-| `App:PublicUrl` | `http://localhost:4200` | Public frontend base URL. Used to generate login links in emails. |
+| `App:PublicUrl` | `https://bou.orania.co.za` | Public site base URL. Every link in every email is built from it. `appsettings.Development.json` overrides it to `http://localhost:4200` for local work, so the shipped default is the live site and no hosting-level setting is required. A localhost value is ignored in production anyway: it falls back to `PayFast:FrontendBaseUrl`, then to `https://{WEBSITE_HOSTNAME}` (set by App Service). |
 
 ### Environment Variable Mapping
 

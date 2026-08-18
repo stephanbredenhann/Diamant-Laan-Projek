@@ -150,7 +150,7 @@ public class BlockNotificationServiceTests
 
         email.Verify(e => e.SendAsync(
             "a@b.com",
-            "Orania Oewerpad: Beweging op jou blokkie!",
+            "Orania Oewerpad: Vordering op jou blokkie!",
             It.Is<string>(html => html.Contains("<strong>#2</strong>") && !html.Contains("<strong>#1</strong>") && !html.Contains("<strong>#3</strong>")),
             null,
             It.IsAny<CancellationToken>()), Times.Once);

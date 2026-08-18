@@ -8,8 +8,9 @@ APP_NAME="diamantlaan-sb"
 RESOURCE_GROUP="diamantlaan-rg"
 API_PROJECT="src/DiamantLaan.Api/DiamantLaan.Api.csproj"
 
-FRONTEND_BASE_URL="https://${APP_NAME}.azurewebsites.net/"
-NOTIFY_URL="https://${APP_NAME}.azurewebsites.net/api/payment/itn"
+PUBLIC_URL="https://bou.orania.co.za"
+FRONTEND_BASE_URL="${PUBLIC_URL}/"
+NOTIFY_URL="${PUBLIC_URL}/api/payment/itn"
 
 echo "Reading local user-secrets from ${API_PROJECT}..."
 
@@ -31,7 +32,7 @@ done < <(dotnet user-secrets list --project "${API_PROJECT}")
 # Add/override Azure-specific settings.
 settings+=(
     "ConnectionStrings__DefaultConnection=Data Source=/home/site/diamantlaan.db"
-    "App__PublicUrl=https://${APP_NAME}.azurewebsites.net"
+    "App__PublicUrl=${PUBLIC_URL}"
     "PayFast__FrontendBaseUrl=${FRONTEND_BASE_URL}"
     "PayFast__NotifyUrl=${NOTIFY_URL}"
 )

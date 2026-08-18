@@ -7,12 +7,16 @@ using Microsoft.Extensions.Configuration;
 var recipients = args.Length > 0
     ? args
     : ["fransdk@orania.co.za", "joost@orania.co.za"];
-var site = "http://localhost:4200";
 
 var config = new ConfigurationBuilder()
     .AddUserSecrets("e8541e83-4ebb-4b9d-bce2-39f699014081")
     .AddEnvironmentVariables()
     .Build();
+
+// These land in a real inbox, so the links have to be the live site. Override with
+// App__PublicUrl when testing against somewhere else.
+var site = config["App:PublicUrl"] ?? "https://bou.orania.co.za";
+var en = Environment.GetEnvironmentVariable("EMAIL_LANG") == "en";
 
 var apiKey = config["Mandrill:ApiKey"];
 var from = config["Mandrill:FromEmail"];
@@ -25,20 +29,20 @@ if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(from))
 var to = recipients.Select(r => new Recipient(r, "to")).ToArray();
 SendMessage Mail(string subject, string html) => new(from, "[TEST] " + subject, html, to);
 
-var voorberei = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.Voorberei, [12, 13], site)!.Value;
-var teer = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.BesigOmTeTeer, [12], site)!.Value;
-var klaar = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.KlaarGeteer, [12, 13, 14], site)!.Value;
+var voorberei = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.Voorberei, [12, 13], site, en)!.Value;
+var teer = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.BesigOmTeTeer, [12], site, en)!.Value;
+var klaar = EmailTemplates.BlockStatusUpdate("Stephan", SquareStatus.KlaarGeteer, [12, 13, 14], site, en)!.Value;
 
 var messages = new[]
 {
     Mail(EmailTemplates.SubjectPrefix + "Herstel jou wagwoord",
-        EmailTemplates.PasswordResetOtp("Stephan", "ABC123")),
+        EmailTemplates.PasswordResetOtp("Stephan", "ABC123", en)),
     Mail(EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
-        EmailTemplates.ManualPurchaseWelcome("Stephan", recipients[0], "TempPass1!", site)),
+        EmailTemplates.ManualPurchaseWelcome("Stephan", recipients[0], "TempPass1!", site, en)),
     Mail(EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
-        EmailTemplates.GuestPurchaseClaim(3, 1500, site + "/eis?token=test", 14)),
+        EmailTemplates.GuestPurchaseClaim(3, 1500, site + "/eis?token=test", 14, en)),
     Mail(EmailTemplates.SubjectPrefix + "Jou borgskap is voltooi!",
-        EmailTemplates.AccountPurchaseConfirmation("Stephan", 2, 1000, site)),
+        EmailTemplates.AccountPurchaseConfirmation("Stephan", 2, 1000, site, en)),
     Mail(voorberei.Subject, voorberei.Html),
     Mail(teer.Subject, teer.Html),
     Mail(klaar.Subject, klaar.Html)
