@@ -22,17 +22,22 @@ import { TPipe } from '../../i18n/t.pipe';
     </section>
 
     <section class="section chalk">
-      <div class="container-wide why-grid">
-        <div>
-          <p class="eyebrow">{{ 'Waarom die Oewerpad?' | t }}</p>
-          <h2 class="display section-title">{{ 'Van grondpad tot teerpad.' | t }}</h2>
-          <p class="lead">
-            {{ 'Die Oewerpad is een van Orania se besigste paaie en speel ’n belangrike rol in die toegang tot die oewergebied. Dit is ’n belangrike roete vir besoekers wat Orania se gastehuise, kampeerterreine en ander toerismegeriewe, asook die Oranjerivier, besoek. Vir baie besoekers is dit ook een van die eerste roetes wat hulle in Orania ry. Eerste indrukke maak saak.' | t }}
-          </p>
-          <p class="lead">
-            {{ 'Die teer van die Oewerpad is daarom meer as net infrastruktuurontwikkeling. Dit ontsluit Orania se oewergebied vir ’n volgende fase van toerismeontwikkeling en skep nuwe ruimte vir ekonomiese groei.' | t }}
-          </p>
+      <div class="container-wide">
+        <p class="eyebrow">{{ 'Waarom die Oewerpad?' | t }}</p>
+        <h2 class="display section-title">{{ 'Van grondpad tot teerpad.' | t }}</h2>
+        <p class="lead">
+          {{ 'Die Oewerpad is een van Orania se besigste paaie en speel ’n belangrike rol in die toegang tot die oewergebied. Dit is ’n belangrike roete vir besoekers wat Orania se gastehuise, kampeerterreine en ander toerismegeriewe, asook die Oranjerivier, besoek. Vir baie besoekers is dit ook een van die eerste roetes wat hulle in Orania ry. Eerste indrukke maak saak.' | t }}
+        </p>
+        <p class="lead">
+          {{ 'Die teer van die Oewerpad is daarom meer as net infrastruktuurontwikkeling. Dit ontsluit Orania se oewergebied vir ’n volgende fase van toerismeontwikkeling en skep nuwe ruimte vir ekonomiese groei.' | t }}
+        </p>
 
+        <div class="why-grid">
+          <aside class="callout-panel">
+            <div class="callout-media">
+              <img src="orania-scooter-teken.jpg" [alt]="'Scooter-padteken langs die pad in Orania' | t" />
+            </div>
+          </aside>
           <div class="scope-grid">
             @for (card of scopeCards; track card.title) {
               <article class="surface-card scope-card">
@@ -43,12 +48,6 @@ import { TPipe } from '../../i18n/t.pipe';
             }
           </div>
         </div>
-
-        <aside class="callout-panel">
-          <div class="callout-media">
-            <img src="oewerpad-hero.jpg" [alt]="'Oewerpad wat van grondpad na teerpad verander' | t" />
-          </div>
-        </aside>
       </div>
     </section>
 
@@ -70,7 +69,7 @@ import { TPipe } from '../../i18n/t.pipe';
             <p class="inisiatief-slot">{{ 'Deur self te bou!' | t }}</p>
           </div>
           <aside class="inisiatief-foto">
-            <img src="orania-welkom.jpg" [alt]="'Welkom in Orania-bord langs die pad' | t" />
+            <img src="orania-paar.jpg" [alt]="'Jong man en vrou wat voor ’n huis in Orania glimlag' | t" />
           </aside>
         </div>
 
@@ -154,7 +153,8 @@ import { TPipe } from '../../i18n/t.pipe';
       align-items: start;
     }
     @media (min-width: 960px) {
-      .why-grid { grid-template-columns: 1.15fr 0.85fr; gap: 3.5rem; }
+      .why-grid { grid-template-columns: 0.85fr 1.15fr; gap: 3.5rem; }
+      .scope-grid { grid-template-columns: 1fr 1fr; }
     }
 
     .scope-grid {
@@ -185,7 +185,7 @@ import { TPipe } from '../../i18n/t.pipe';
 
     .callout-media img {
       width: 100%;
-      aspect-ratio: 4 / 5;
+      aspect-ratio: 2 / 3;
       object-fit: cover;
       display: block;
       box-shadow: var(--shadow-lg);
@@ -196,10 +196,8 @@ import { TPipe } from '../../i18n/t.pipe';
       align-items: start;
       margin-bottom: 2.5rem;
     }
-    .inisiatief-foto { display: none; }
     @media (min-width: 960px) {
       .section-head { grid-template-columns: 1.15fr 0.85fr; gap: 3.5rem; }
-      .inisiatief-foto { display: block; }
     }
     .inisiatief-foto img {
       width: 100%;

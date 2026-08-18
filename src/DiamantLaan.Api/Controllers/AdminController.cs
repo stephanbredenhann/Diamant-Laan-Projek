@@ -65,6 +65,30 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Where "Kies vir my" starts handing out blocks. Inclusive, 0 means the normal
+    /// lowest-first assignment. Admin-only: nothing outside the admin panel reads it.
+    /// </summary>
+    [HttpGet("settings/kies-offset")]
+    public async Task<IActionResult> GetKiesVirMyOffset()
+        => Ok(await _siteSettings.GetKiesVirMyOffsetAsync());
+
+    [HttpPut("settings/kies-offset")]
+    public async Task<IActionResult> UpdateKiesVirMyOffset([FromBody] KiesVirMyOffsetDto dto)
+    {
+        if (dto == null)
+            return BadRequest(new { message = "Instellings mag nie leeg wees nie." });
+
+        if (dto.Offset < 0 || dto.Offset > Square.MaxSaleableId)
+            return BadRequest(new { message = $"Offset moet tussen 0 en {Square.MaxSaleableId} wees." });
+
+        var result = await _siteSettings.SetKiesVirMyOffsetAsync(dto.Offset);
+
+        await _audit.LogAsync(User, "UpdateKiesVirMyOffset", $"Offset={result.Offset}");
+
+        return Ok(result);
+    }
+
     [HttpPut("squares/status")]
     public async Task<IActionResult> BulkUpdateStatus([FromBody] BulkStatusUpdateDto dto)
     {
@@ -255,31 +279,66 @@ public class AdminController : ControllerBase
 
         return Ok(transactions);
     }
-[HttpDelete("transactions/{id}")]
-public async Task<IActionResult> DeleteTransaction(int id)
-{
-    var purchase = await _db.Purchases
-        .Include(p => p.PurchaseSquares)
-        .FirstOrDefaultAsync(p => p.Id == id);
-
-    if (purchase == null)
-        return NotFound();
-
-    if (purchase.PaymentStatus == PaymentStatus.Confirmed)
+    /// <summary>
+    /// Permanently deletes a transaction, including a confirmed telefoniese aankoop, and hands its
+    /// blocks back to the public pool. The admin re-enters their own password because there is no undo.
+    /// </summary>
+    [HttpPost("transactions/{id}/delete")]
+    public async Task<IActionResult> DeleteTransaction(int id, [FromBody] DeleteTransactionDto dto)
     {
-        return BadRequest(new
+        var admin = await _userManager.GetUserAsync(User);
+        if (admin == null || !await _userManager.CheckPasswordAsync(admin, dto.Password))
         {
-            message = "Bevestigde aankope kan nie verwyder word nie."
-        });
+            await _audit.LogAsync(User, "DeleteTransactionDenied", $"Purchase #{id}");
+            // 403, not 401: a 401 sends the auth interceptor off to refresh the token and can log the admin out.
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Wagwoord is verkeerd." });
+        }
+
+        var purchase = await _db.Purchases
+            .Include(p => p.PurchaseSquares)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (purchase == null)
+            return NotFound();
+
+        var squareIds = purchase.PurchaseSquares.Select(ps => ps.SquareId).ToList();
+        var details = $"Purchase #{purchase.Id}, {squareIds.Count} blokke, R{purchase.Amount:0}, {purchase.PaymentStatus}";
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var squares = await _db.Squares.Where(s => squareIds.Contains(s.Id)).ToListAsync();
+            foreach (var square in squares)
+            {
+                // Only release what this buyer still owns: the block may since have been resold.
+                if (square.OwnerId != purchase.UserId)
+                    continue;
+
+                square.OwnerId = null;
+                square.CertificateName = null;
+            }
+
+            var proofPath = FileUploadService.ResolveProofFilePath(_env, purchase.ProofOfPaymentPath);
+
+            // The PurchaseSquare rows cascade with the purchase.
+            _db.Purchases.Remove(purchase);
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            if (proofPath != null && System.IO.File.Exists(proofPath))
+                System.IO.File.Delete(proofPath);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync();
+            return Conflict(new { message = "Die transaksie het intussen verander. Probeer weer." });
+        }
+
+        await _audit.LogAsync(User, "DeleteTransaction", details);
+
+        return NoContent();
     }
 
-    _db.PurchaseSquares.RemoveRange(purchase.PurchaseSquares);
-    _db.Purchases.Remove(purchase);
-
-    await _db.SaveChangesAsync();
-
-    return NoContent();
-}
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {

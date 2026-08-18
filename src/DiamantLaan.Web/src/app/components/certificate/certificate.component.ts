@@ -31,34 +31,37 @@ import { TPipe } from '../../i18n/t.pipe';
         <div class="naam-paneel">
           <div class="paneel-kop">
             <span class="paneel-titel">
-              {{ (squares.length > 1 ? 'Hoe wil jy jou sertifikate hê?' : 'Naam op jou sertifikaat') | t }}
+              {{ (squares.length > 1 ? 'Hoe verkies jy jou Stadsbouer-sertifikate?' : 'Naam op jou sertifikaat') | t }}
             </span>
             @if (sluitTyd) {
-              <span class="kop-tyd">{{ 'Jy kan dit tot' | t }} {{ sluitTyd }} {{ 'verander. Daarna is dit vasgestel.' | t }}</span>
+              <span class="kop-tyd">{{ 'Jy kan die name tot' | t }} {{ sluitTyd }} {{ 'verander. Daarna is dit vasgestel.' | t }}</span>
             }
           </div>
 
           <div class="paneel-lyf">
           @if (squares.length > 1) {
-            <div class="keuse" role="group" [attr.aria-label]="'Hoe wil jy jou sertifikate hê' | t">
+            <p class="paneel-lei">{{ 'Opsie een: een Stadsbouer-sertifikaat met jou naam. Al die blokkies sal daarop verskyn.' | t }}</p>
+            <p class="paneel-lei">{{ 'Opsie twee: ‘n Individuele sertifikaat vir elke blokkie. Kies self ‘n naam vir elke blokkie, ideaal wanneer jy vir jou gade, kinders of vriende ‘n blokkie borg.' | t }}</p>
+
+            <div class="keuse" role="group" [attr.aria-label]="'Hoe verkies jy jou Stadsbouer-sertifikate' | t">
               <button
                 type="button"
                 class="keuse-btn"
                 [class.is-active]="sameForAll"
                 [attr.aria-pressed]="sameForAll"
                 (click)="stelSelfde(true)"
-              >{{ 'Een sertifikaat' | t }}<small>{{ 'Al' | t }} {{ squares.length }} {{ 'blokke saam, op een naam' | t }}</small></button>
+              >{{ 'Een sertifikaat' | t }}<small>{{ 'Een naam, met al' | t }} {{ squares.length }} {{ 'blokkies' | t }}</small></button>
               <button
                 type="button"
                 class="keuse-btn"
                 [class.is-active]="!sameForAll"
                 [attr.aria-pressed]="!sameForAll"
                 (click)="stelSelfde(false)"
-              >{{ 'Een per blok' | t }}<small>{{ 'Elke blok op sy eie naam' | t }}</small></button>
+              >{{ 'Verskeie sertifikate' | t }}<small>{{ 'Elke blokkie pad vir ‘n ander persoon' | t }}</small></button>
             </div>
+          } @else {
+            <p class="paneel-lei">{{ 'Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.' | t }}</p>
           }
-
-          <p class="paneel-lei">{{ 'Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.' | t }}</p>
 
           @if (sameForAll) {
             <div class="naam-veld">

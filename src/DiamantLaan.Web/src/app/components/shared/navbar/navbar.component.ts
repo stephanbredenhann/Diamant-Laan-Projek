@@ -14,7 +14,9 @@ import { TPipe } from '../../../i18n/t.pipe';
         <!-- Desktop only; on mobile it moves to the footer. The partner logos live
              in the footer on every size. -->
         <div class="nav-logos">
-          <img src="stadsboufonds-logo-wide.png" [alt]="'Orania Stadsboufonds' | t" />
+          <a routerLink="/" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
+            <img src="stadsboufonds-logo-wide.png" [alt]="'Orania Stadsboufonds' | t" />
+          </a>
         </div>
 
         <button class="hamburger" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="(menuOpen() ? 'Maak spyskaart toe' : 'Maak spyskaart oop') | t">
@@ -101,6 +103,11 @@ import { TPipe } from '../../../i18n/t.pipe';
       display: flex;
       align-items: center;
       flex-shrink: 0;
+    }
+    .nav-logos a {
+      display: flex;
+      line-height: 0;
+      text-decoration: none;
     }
     /* stadsboufonds-logo-wide.png is the same artwork trimmed of its white
        margin, so the height here is all logo. That keeps the bar thin while the

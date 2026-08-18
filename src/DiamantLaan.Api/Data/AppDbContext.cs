@@ -32,7 +32,8 @@ public class AppDbContext : IdentityDbContext<User>
         {
             Id = 1,
             ShowStatsSection = true,
-            ShowTotalRaised = true
+            ShowTotalRaised = true,
+            KiesVirMyOffset = 0
         });
 
         builder.Entity<PurchaseSquare>()

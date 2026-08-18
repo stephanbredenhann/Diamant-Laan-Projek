@@ -5,6 +5,13 @@ namespace DiamantLaan.Api.Models;
 
 public class Square
 {
+    /// <summary>
+    /// Highest block that is actually on sale. The DB seeds rows past this as headroom
+    /// beyond the current road. RoadController and PurchaseController still carry their
+    /// own copies of this number; new code should use this one.
+    /// </summary>
+    public const int MaxSaleableId = 4000;
+
     public int Id { get; set; }
     public SquareStatus Status { get; set; } = SquareStatus.NogNieBeginNie;
     public string? OwnerId { get; set; }

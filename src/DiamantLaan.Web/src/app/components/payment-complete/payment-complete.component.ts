@@ -88,26 +88,71 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
         @case ('name') {
           <div class="card card--name">
-            <h2>{{ 'Naam op jou sertifikaat' | t }}</h2>
-            <p class="lead">{{ 'Die naam wat jy hier invul, sal op jou sertifikaat verskyn. Maak asseblief seker dat dit korrek ingevul is.' | t }}</p>
-            <div class="form-group form-group--name">
-              <label for="cert-name">{{ 'Naam vir sertifikaat' | t }}</label>
-              <input
-                id="cert-name"
-                type="text"
-                name="certName"
-                maxlength="100"
-                [placeholder]="'Bv. Jan van der Merwe' | t"
-                autofocus
-                [(ngModel)]="certificateName"
-                (keyup.enter)="submitName()">
-              @if (nameError) {
-                <p class="field-error">{{ nameError | t }}</p>
+            <h2>{{ (squareCount > 1 ? 'Hoe verkies jy jou Stadsbouer-sertifikate?' : 'Naam op jou sertifikaat') | t }}</h2>
+
+            <!-- Same choice a signed-in buyer gets on the certificate page: one sheet in one
+                 name, or a sheet per block for a spouse, a child, a friend. One block has
+                 nothing to choose between, so it keeps the plain single-name form. -->
+            @if (squareCount > 1) {
+              <p class="paneel-lei">{{ 'Opsie een: een Stadsbouer-sertifikaat met jou naam. Al die blokkies sal daarop verskyn.' | t }}</p>
+              <p class="paneel-lei">{{ 'Opsie twee: ‘n Individuele sertifikaat vir elke blokkie. Kies self ‘n naam vir elke blokkie, ideaal wanneer jy vir jou gade, kinders of vriende ‘n blokkie borg.' | t }}</p>
+
+              <div class="keuse" role="group" [attr.aria-label]="'Hoe verkies jy jou Stadsbouer-sertifikate' | t">
+                <button
+                  type="button"
+                  class="keuse-btn"
+                  [class.is-active]="sameForAll"
+                  [attr.aria-pressed]="sameForAll"
+                  (click)="stelSelfde(true)"
+                >{{ 'Een sertifikaat' | t }}<small>{{ 'Een naam, met al' | t }} {{ squareCount }} {{ 'blokkies' | t }}</small></button>
+                <button
+                  type="button"
+                  class="keuse-btn"
+                  [class.is-active]="!sameForAll"
+                  [attr.aria-pressed]="!sameForAll"
+                  (click)="stelSelfde(false)"
+                >{{ 'Verskeie sertifikate' | t }}<small>{{ 'Elke blokkie pad vir ‘n ander persoon' | t }}</small></button>
+              </div>
+            } @else {
+              <p class="lead">{{ 'Die naam wat jy hier invul, sal op jou sertifikaat verskyn. Maak asseblief seker dat dit korrek ingevul is.' | t }}</p>
+            }
+
+            @if (sameForAll) {
+              <div class="form-group form-group--name">
+                <label for="cert-name">{{ (squareCount > 1 ? 'Naam op alle sertifikate' : 'Naam vir sertifikaat') | t }}</label>
+                <input
+                  id="cert-name"
+                  type="text"
+                  name="certName"
+                  maxlength="100"
+                  [placeholder]="'Bv. Jan van der Merwe' | t"
+                  autofocus
+                  [(ngModel)]="certificateName"
+                  (keyup.enter)="submitName()">
+              </div>
+            } @else {
+              @for (blok of blocks; track blok.squareId) {
+                <div class="form-group">
+                  <label [attr.for]="'naam-' + blok.squareId">{{ 'Blok' | t }} {{ blok.squareId }}</label>
+                  <input
+                    [id]="'naam-' + blok.squareId"
+                    type="text"
+                    [name]="'naam' + blok.squareId"
+                    maxlength="100"
+                    [placeholder]="'Bv. Anna van der Merwe' | t"
+                    [(ngModel)]="blok.name"
+                    (keyup.enter)="submitName()">
+                </div>
               }
-            </div>
+            }
+
+            @if (nameError) {
+              <p class="field-error">{{ nameError | t }}</p>
+            }
+
             <div class="actions">
               <button type="button" class="btn btn-primary btn-xl" (click)="submitName()" [disabled]="saving">
-                {{ (saving ? 'Besig...' : 'Wys my sertifikaat') | t }}
+                {{ (saving ? 'Besig...' : (squareCount > 1 ? 'Stoor en wys my sertifikate' : 'Wys my sertifikaat')) | t }}
               </button>
               <button type="button" class="btn btn-outline" (click)="step = 'prompt'">{{ 'Terug' | t }}</button>
             </div>
@@ -117,7 +162,8 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
         @case ('certificate') {
           <app-certificate-card
             [ownerName]="certificateName"
-            [squares]="certificateSquares">
+            [squares]="certificateSquares"
+            [lockedMode]="vasteModus">
             <button type="button" class="btn btn-outline" (click)="finish()">{{ 'Terug na tuisblad' | t }}</button>
           </app-certificate-card>
           @if (hasEmail) {
@@ -235,6 +281,51 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
       font-size: var(--fs-base);
       color: var(--text-muted);
     }
+    .paneel-lei {
+      font-size: var(--fs-lg);
+      color: var(--text-body);
+      margin: 0 0 1.25rem;
+    }
+    /* Two big, unmissable choices rather than a switch: the audience reads words
+       far more reliably than a toggle's on/off state. */
+    .keuse {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .keuse-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      min-height: var(--tap-large);
+      padding: 1.25rem 0.75rem;
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 800;
+      line-height: 1.15;
+      cursor: pointer;
+    }
+    .keuse-btn small {
+      font-family: var(--font-body, inherit);
+      font-size: var(--fs-base);
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text-muted);
+    }
+    .keuse-btn:hover { border-color: var(--action); }
+    .keuse-btn.is-active {
+      background: var(--action);
+      border-color: var(--action);
+      color: #fff;
+    }
+    .keuse-btn.is-active small { color: rgba(255, 255, 255, 0.85); }
+
     .form-group { margin-bottom: 1.5rem; }
     .form-group label {
       display: block;
@@ -296,6 +387,7 @@ type Step = 'loading' | 'prompt' | 'confirm' | 'name' | 'certificate' | 'error';
 
     @media (max-width: 480px) {
       .card { padding: 1.5rem 1.25rem; }
+      .keuse { grid-template-columns: 1fr; }
       .actions { flex-direction: column; }
       .actions .btn { width: 100%; }
     }
@@ -317,9 +409,22 @@ export class PaymentCompleteComponent implements OnInit {
   squareCount = 0;
   certificateName = '';
   certificateSquares: CertificateSquare[] = [];
+  sameForAll = true;
+  blocks: { squareId: number; name: string }[] = [];
+  /** False once the naming window has closed. Never surfaced: the page just stops asking. */
+  kanWysig = true;
   readonly randBedrag = randBedrag;
 
   private ref?: GuestPurchaseRef;
+
+  /**
+   * The shape they settled on, which the card then renders without offering a toggle of its own.
+   * A single block has nothing to summarise, so it keeps the card's own default.
+   */
+  get vasteModus(): 'summary' | 'block' | null {
+    if (this.squareCount <= 1) return null;
+    return this.sameForAll ? 'summary' : 'block';
+  }
 
   ngOnInit() {
     const ref = this.readEmailedLink() ?? this.purchase.guestPurchase;
@@ -350,32 +455,84 @@ export class PaymentCompleteComponent implements OnInit {
   }
 
   confirmDecline() {
-    this.step = 'name';
+    // A purchase whose window has closed keeps the name it was issued under, so there is nothing
+    // left to ask; the certificate is what they came back for.
+    this.step = this.kanWysig ? 'name' : 'certificate';
+  }
+
+  /**
+   * Switching to a certificate per block starts every block on the shared name, so they correct
+   * the one or two that differ instead of retyping all of them.
+   */
+  stelSelfde(same: boolean) {
+    if (this.sameForAll === same) return;
+    this.sameForAll = same;
+    this.nameError = '';
+    if (!same) {
+      for (const blok of this.blocks) {
+        if (blok.name.trim().length < 2) {
+          blok.name = this.certificateName;
+        }
+      }
+    }
   }
 
   submitName() {
     if (this.saving) return;
 
-    const name = this.certificateName.trim();
-    if (name.length < 2) {
-      this.nameError = 'Voer asseblief die naam in wat op die sertifikaat moet verskyn.';
-      return;
+    // The summary name goes to the server either way: it is what a block without a name of its
+    // own falls back to, here and on the certificate page after the purchase is claimed.
+    let name = this.certificateName.trim();
+    if (this.sameForAll) {
+      if (name.length < 2) {
+        this.nameError = 'Voer asseblief die naam in wat op die sertifikaat moet verskyn.';
+        return;
+      }
+    } else {
+      const leeg = this.blocks.find(b => b.name.trim().length < 2);
+      if (leeg) {
+        this.nameError = `Voer asseblief ’n naam vir blok ${leeg.squareId} in.`;
+        return;
+      }
+      if (name.length < 2) {
+        name = this.blocks[0].name.trim();
+      }
     }
+
+    const blocks = this.blocks.map(b => ({ squareId: b.squareId, name: b.name.trim() }));
 
     this.nameError = '';
     this.saving = true;
 
-    this.purchase.setGuestCertificateName(this.ref!, name).subscribe({
+    this.purchase.setGuestCertificateName(this.ref!, name, this.sameForAll, blocks).subscribe({
       next: () => {
         this.certificateName = name;
+        this.blocks = blocks;
+        this.wysNaKaart();
         this.saving = false;
         this.step = 'certificate';
       },
       error: (err) => {
         this.saving = false;
         this.nameError = err.error?.message || 'Kon nie die naam stoor nie. Probeer asseblief weer.';
+        // The window closed while they were typing. Show the certificate as it stands rather than
+        // leaving them in an editor whose save can no longer succeed.
+        if (err.status === 403) {
+          this.kanWysig = false;
+          this.step = 'certificate';
+        }
       }
     });
+  }
+
+  /** Pushes the saved names onto the sheets. A new array so the card re-fits the name. */
+  private wysNaKaart() {
+    this.certificateSquares = this.certificateSquares.map(square => ({
+      ...square,
+      ownerName: this.sameForAll
+        ? this.certificateName
+        : this.blocks.find(b => b.squareId === square.id)?.name || this.certificateName,
+    }));
   }
 
   finish() {
@@ -415,6 +572,13 @@ export class PaymentCompleteComponent implements OnInit {
     this.squareCount = p.squares.length;
     this.certificateSquares = p.squares.map(id => ({ id, purchaseDate: p.purchaseDate }));
     this.certificateName = p.certificateName ?? '';
+    // Prefilled from the server so someone returning through the follow-up email sees the choice
+    // they already made rather than an empty form.
+    this.sameForAll = p.sameForAll ?? true;
+    this.kanWysig = p.canEdit ?? true;
+    this.blocks = (p.blocks ?? p.squares.map(id => ({ squareId: id, name: this.certificateName })))
+      .map(b => ({ ...b }));
+    this.wysNaKaart();
 
     // Someone who signed in on the way back can have the purchase attached to that account.
     if (this.auth.currentUser()) {

@@ -154,10 +154,16 @@ public class GuestPurchaseService
     }
 
     /// <summary>
-    /// Sets the name that appears on a guest's certificate. Stored on the shadow user so the
-    /// certificate renders from the same fields as a signed-in buyer's.
+    /// Sets the names that appear on a guest's certificates. The summary name is stored on the
+    /// shadow user so the certificate renders from the same fields as a signed-in buyer's, and
+    /// <paramref name="blockNames"/> lands on the blocks themselves, exactly where the signed-in
+    /// certificate page writes them. Pass null (or nothing) for one name across every sheet.
     /// </summary>
-    public async Task SetCertificateNameAsync(Purchase purchase, string name, CancellationToken cancellationToken = default)
+    public async Task SetCertificateNameAsync(
+        Purchase purchase,
+        string name,
+        IReadOnlyDictionary<int, string>? blockNames = null,
+        CancellationToken cancellationToken = default)
     {
         var user = purchase.User ?? await _db.Users.FirstAsync(u => u.Id == purchase.UserId, cancellationToken);
         var trimmed = name.Trim();
@@ -165,6 +171,22 @@ public class GuestPurchaseService
 
         user.FirstName = split > 0 ? trimmed[..split] : trimmed;
         user.LastName = split > 0 ? trimmed[(split + 1)..] : string.Empty;
+        user.CertificateIndividual = blockNames is { Count: > 0 };
+
+        // Only this purchase's own blocks, so a token can never rename someone else's sheet.
+        var ids = purchase.PurchaseSquares.Select(ps => ps.SquareId).ToList();
+        var squares = await _db.Squares
+            .Where(s => ids.Contains(s.Id) && s.OwnerId == purchase.UserId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var square in squares)
+        {
+            // Null is what tells a sheet to print the summary name, so switching back to one
+            // name for everything has to clear whatever was set before.
+            square.CertificateName = blockNames != null && blockNames.TryGetValue(square.Id, out var blockName)
+                ? blockName
+                : null;
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
     }

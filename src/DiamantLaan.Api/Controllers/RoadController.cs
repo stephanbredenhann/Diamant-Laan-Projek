@@ -73,9 +73,16 @@ public class RoadController : ControllerBase
         if (count > MaxPickCount)
             return BadRequest(new { message = "Maksimum 4000 blokke kan gekies word." });
 
+        // Admins can steer new auto-assignments into a higher part of the road. The offset is
+        // inclusive and 0 means off. Ordering by the predicate rather than filtering on it is what
+        // makes the fallback free: a batch takes what it can at or above the offset, then tops up
+        // from the lowest blocks below it, and an offset of 0 sorts identically to plain Id order.
+        var offset = (await _db.SiteSettings.AsNoTracking().FirstOrDefaultAsync())?.KiesVirMyOffset ?? 0;
+
         var squareIds = await _db.Squares
             .Where(s => s.OwnerId == null && !s.IsReserved && s.Id <= MaxSaleableId)
-            .OrderBy(s => s.Id)
+            .OrderBy(s => s.Id < offset ? 1 : 0)
+            .ThenBy(s => s.Id)
             .Take(count)
             .Select(s => s.Id)
             .ToListAsync();

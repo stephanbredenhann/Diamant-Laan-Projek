@@ -23,8 +23,15 @@ public class GuestTokenDto
 
 public class GuestCertificateNameDto : GuestTokenDto
 {
+    /// <summary>The name on the summary certificate, and the fallback for every block.</summary>
     [Required, MaxLength(100)]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>False when each block of this purchase gets its own name from <see cref="Blocks"/>.</summary>
+    public bool SameForAll { get; set; } = true;
+
+    /// <summary>Per-block names. Ignored when <see cref="SameForAll"/> is true.</summary>
+    public List<BlockCertificateNameDto> Blocks { get; set; } = new();
 }
 
 public class GuestClaimDto : GuestTokenDto

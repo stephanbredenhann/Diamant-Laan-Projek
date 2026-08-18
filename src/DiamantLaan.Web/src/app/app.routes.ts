@@ -40,6 +40,8 @@ export const routes: Routes = [
       { path: 'telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent) },
       { path: 'reserveer', loadComponent: () => import('./components/admin-reserveer/admin-reserveer.component').then(m => m.AdminReserveerComponent) },
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
+      { path: 'verwyder-transaksie', loadComponent: () => import('./components/admin-delete-transaction/admin-delete-transaction.component').then(m => m.AdminDeleteTransactionComponent) },
+      { path: 'kies-offset', loadComponent: () => import('./components/admin-kies-offset/admin-kies-offset.component').then(m => m.AdminKiesOffsetComponent) },
     ]
   },
   { path: 'betalings/terug', loadComponent: () => import('./components/payment-return/payment-return.component').then(m => m.PaymentReturnComponent), canActivate: [mustChangePasswordGuard] },

@@ -30,6 +30,37 @@ public class SiteSettingsService
         };
     }
 
+    /// <summary>
+    /// Where "Kies vir my" should start handing out blocks. Inclusive, 0 means off.
+    /// </summary>
+    public async Task<KiesVirMyOffsetDto> GetKiesVirMyOffsetAsync()
+    {
+        var settings = await _db.SiteSettings.AsNoTracking().FirstOrDefaultAsync();
+        return await BuildOffsetDtoAsync(settings?.KiesVirMyOffset ?? 0);
+    }
+
+    public async Task<KiesVirMyOffsetDto> SetKiesVirMyOffsetAsync(int offset)
+    {
+        var settings = await _db.SiteSettings.FirstOrDefaultAsync();
+        if (settings == null)
+        {
+            settings = new SiteSettings { Id = 1 };
+            _db.SiteSettings.Add(settings);
+        }
+
+        settings.KiesVirMyOffset = offset;
+        await _db.SaveChangesAsync();
+
+        return await BuildOffsetDtoAsync(offset);
+    }
+
+    private async Task<KiesVirMyOffsetDto> BuildOffsetDtoAsync(int offset) => new()
+    {
+        Offset = offset,
+        AvailableAtOrAboveOffset = await _db.Squares.CountAsync(
+            s => s.OwnerId == null && !s.IsReserved && s.Id <= Square.MaxSaleableId && s.Id >= offset)
+    };
+
     public async Task<HomeStatsSettingsDto> UpdateHomeStatsSettingsAsync(UpdateHomeStatsSettingsDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);

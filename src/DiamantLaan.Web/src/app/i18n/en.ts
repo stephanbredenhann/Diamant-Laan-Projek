@@ -41,14 +41,12 @@ export const EN: Record<string, string> = {
     'From dirt road to tarred road to town to Freedom!',
   'Bou saam aan Orania. Borg ’n': 'Build Orania with us. Sponsor a',
   'van die Oewerpad.': 'of the Oewerpad.',
-  'Oewerpad wat van grondpad na teerpad verander':
-    'The Oewerpad changing from a dirt road into a tarred road',
   'Elke blokkie m² wat jy borg help om nuwe moontlikhede vir Orania oop te sluit. Kies die blokkie wat jy wil borg, ontvang jou Stadsbouersertifikaat en word deel van die bouwerk wat Orania na die volgende vlak neem.':
-    'Every m² block you sponsor helps unlock new possibilities for Orania. Choose the block you want to sponsor, receive your Stadsbouer certificate and become part of the work that carries Orania to the next level.',
+    'Every m² block you sponsor helps unlock new possibilities for Orania. Choose the block you want to sponsor, receive your Stadsbouer Certificate and become part of the work that carries Orania to the next level.',
   'Borg jou m²': 'Sponsor your m²',
   'Geen registrasie': 'No registration',
   'Veilige betaling': 'Secure payment',
-  'Stadsbouersertifikaat': 'Stadsbouer certificate',
+  'Stadsbouersertifikaat': 'Stadsbouer Certificate',
   'Ontwikkel Orania': 'Develop Orania',
   'Reeds geborg': 'Already sponsored',
   'Ingesamel': 'Raised',
@@ -94,13 +92,13 @@ export const EN: Record<string, string> = {
     'Complete your sponsorship by paying online, safely and easily.',
   'Erkenning': 'Recognition',
   'Ontvang jou Stadsbouersertifikaat en kies, indien jy wil, om die projek te volg en jou bydrae op sosiale media te deel.':
-    'Receive your Stadsbouer certificate and choose, if you wish, to follow the project and share your contribution on social media.',
+    'Receive your Stadsbouer Certificate and choose, if you wish, to follow the project and share your contribution on social media.',
 
   // --- Home: recognition ---
   'Jou naam. Jou blokkie. Jou bydrae, sigbaar vir die toekoms.':
     'Your name. Your block. Your contribution, visible for the future.',
   'Elke borg ontvang ’n Stadsbouersertifikaat as erkenning vir sy of haar bydrae. Die sertifikaat dra jou naam en die unieke nommers van die blokkies wat jy geborg het. Met nog vele projekte op die horison, kan hierdie sertifikate mettertyd waardevolle versamelstukke word.':
-    'Every sponsor receives a Stadsbouer certificate in recognition of their contribution. The certificate carries your name and the unique numbers of the blocks you sponsored. With many more projects on the horizon, these certificates could in time become valuable collector’s items.',
+    'Every sponsor receives a Stadsbouer Certificate in recognition of their contribution. The certificate carries your name and the unique numbers of the blocks you sponsored. With many more projects on the horizon, these certificates could in time become valuable collector’s items.',
 
   // --- Shared CTA band ---
   'Jou volgende stap': 'Your next step',
@@ -121,6 +119,8 @@ export const EN: Record<string, string> = {
     'Tarring the Oewerpad is therefore more than infrastructure development. It opens up Orania’s riverside area for a next phase of tourism development and creates new room for economic growth.',
   'Oewerpad, grondpad wat teerwerk nodig het':
     'The Oewerpad, a dirt road in need of tarring',
+  'Scooter-padteken langs die pad in Orania':
+    'Scooter road sign beside the road in Orania',
   'Besige roete': 'A busy route',
   'As een van Orania se besigste paaie, is die Oewerpad ’n belangrike roete wat opgegradeer moet word om by Orania se groeiende behoeftes te pas.':
     'As one of Orania’s busiest roads, the Oewerpad is an important route that needs upgrading to match Orania’s growing needs.',
@@ -133,7 +133,7 @@ export const EN: Record<string, string> = {
   'Vele hande, ligte werk': 'Many hands make light work',
   'Dit is ’n belangrike én omvangryke projek. Deur die pad in kleiner blokkies op te deel, maak ons dit moontlik vir elkeen om ’n deel by te dra. Só dra ons almal saam verantwoordelikheid om hierdie groot visie stap vir stap ’n werklikheid te maak.':
     'This is an important and a substantial project. By dividing the road into smaller blocks, we make it possible for everyone to contribute a part. That way we all share the responsibility of making this big vision a reality, step by step.',
-  'Welkom in Orania-bord langs die pad': 'Welcome to Orania sign beside the road',
+  'Jong man en vrou wat voor ’n huis in Orania glimlag': 'Young man and woman smiling in front of a house in Orania',
   'Die inisiatief': 'The initiative',
   'Waar die projek vandaan kom.': 'Where the project comes from.',
   'Die Oewerpad is reeds lank as een van die belangrikste en besigste roetes in Orania geïdentifiseer. Oraniërs werk egter sorgvuldig en berekend met beperkte hulpbronne. Sonder staatstoelaes beteken dit dat Oraniërs self moet betaal vir alles wat hulle graag wil hê en nodig het.':
@@ -200,11 +200,11 @@ export const EN: Record<string, string> = {
     'Your R500 funds one m² of the new tarred road in Diamantlaan. The full amount goes directly towards carrying out this project.',
   'Kan ek meer as een m² borg?': 'Can I sponsor more than one m²?',
   'Ja, jy kan soveel borg as wat jy wil! Jy kan ook m² namens familie of vriende borg. Elke persoon kan dan ’n eie Stadsbouersertifikaat met sy of haar naam ontvang.':
-    'Yes, sponsor as many as you like. You can also sponsor m² on behalf of family or friends. Each person can then receive their own Stadsbouer certificate in their name.',
+    'Yes, sponsor as many as you like. You can also sponsor m² on behalf of family or friends. Each person can then receive their own Stadsbouer Certificate in their name.',
   'Hoe word my bydrae as ’n Stadsbouer erken?':
     'How is my contribution recognised as a Stadsbouer?',
   'Sodra jou transaksie gefinaliseer is, word jou Stadsbouersertifikaat met jou unieke blokkienommer aan jou beskikbaar gestel. Jy kan dit aflaai, op sosiale media deel of laat druk en raam as ’n blywende herinnering aan jou bydrae.':
-    'As soon as your transaction is finalised, your Stadsbouer certificate with your unique block number is made available to you. You can download it, share it on social media, or have it printed and framed as a lasting reminder of your contribution.',
+    'As soon as your transaction is finalised, your Stadsbouer Certificate with your unique block number is made available to you. You can download it, share it on social media, or have it printed and framed as a lasting reminder of your contribution.',
   'Kan ek slegs op die webwerf borg?': 'Can I only sponsor on the website?',
   'Nee. Indien jy verkies om nie deur die webblad te borg nie, kan jy ons direk kontak of die Orania Beweging se kantore in Orania besoek. Stuur gerus ’n e-pos na inligting@orania.co.za of skakel 053 207 0062.':
     'No. If you would rather not sponsor through the website, you can contact us directly or visit the Orania Beweging offices in Orania. Send an email to inligting@orania.co.za or call 053 207 0062.',
@@ -369,6 +369,7 @@ export const EN: Record<string, string> = {
   'R500 per blokkie': 'R500 per block',
   'R500 per blok': 'R500 per block',
   'Voer ’n geldige aantal in.': 'Enter a valid amount.',
+  'Maksimum van 50 blokkies per transaksie': 'Maximum of 50 squares per transaction',
 
   // --- Step 2: choosing blocks ---
   'Stap 2 van 4 · Kies jou blokkie': 'Step 2 of 4 · Choose your block',
@@ -533,16 +534,20 @@ export const EN: Record<string, string> = {
 
   // --- Certificates ---
   'My rekening': 'My account',
-  'Sertifikaat': 'Certificate',
-  'Hoe wil jy jou sertifikate hê?': 'How do you want your certificates?',
-  'Hoe wil jy jou sertifikate hê': 'How do you want your certificates',
-  'Jy kan dit tot': 'You can change this until',
-  'verander. Daarna is dit vasgestel.': '. After that it is fixed.',
+  'Sertifikaat': 'Stadsbouer Certificate',
+  'Hoe verkies jy jou Stadsbouer-sertifikate?': 'How would you like your Stadsbouer Certificates?',
+  'Hoe verkies jy jou Stadsbouer-sertifikate': 'How would you like your Stadsbouer Certificates',
+  'Jy kan die name tot': 'You can change the names until',
+  'verander. Daarna is dit vasgestel.': '. After that they are fixed.',
+  'Opsie een: een Stadsbouer-sertifikaat met jou naam. Al die blokkies sal daarop verskyn.':
+    'Option one: one Stadsbouer Certificate in your name. All the blocks will appear on it.',
+  'Opsie twee: ‘n Individuele sertifikaat vir elke blokkie. Kies self ‘n naam vir elke blokkie, ideaal wanneer jy vir jou gade, kinders of vriende ‘n blokkie borg.':
+    'Option two: an individual certificate for each block. Choose a name for each block yourself, ideal when you sponsor a block for your spouse, children or friends.',
   'Een sertifikaat': 'One certificate',
-  'Al': 'All',
-  'blokke saam, op een naam': 'blocks together, in one name',
-  'Een per blok': 'One per block',
-  'Elke blok op sy eie naam': 'Each block in its own name',
+  'Een naam, met al': 'One name, with all',
+  'blokkies': 'blocks',
+  'Verskeie sertifikate': 'Several certificates',
+  'Elke blokkie pad vir ‘n ander persoon': 'Each block for a different person',
   'Dit is die naam wat op jou sertifikate gedruk sal word. Maak seker dat dit korrek is en stoor jou veranderinge.':
     'This is the name that will be printed on your certificates. Make sure it is correct and save your changes.',
   'Naam op alle sertifikate': 'Name on all certificates',

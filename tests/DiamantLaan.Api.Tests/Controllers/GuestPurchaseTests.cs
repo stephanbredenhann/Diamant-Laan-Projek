@@ -210,6 +210,105 @@ public class GuestPurchaseTests : IDisposable
         Assert.Equal("Boer", owner.LastName);
     }
 
+    /// <summary>
+    /// A guest who bought more than one block gets the same choice a signed-in buyer gets on the
+    /// certificate page: one name for everything, or a name per block.
+    /// </summary>
+    [Fact]
+    public async Task SetGuestCertificateName_PerBlock_NamesEachSquareAndSwitchesBackCleanly()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1, 2);
+        await ConfirmAsync(purchaseId);
+        var controller = CreateController();
+
+        var perBlock = await controller.SetGuestCertificateName(purchaseId, new GuestCertificateNameDto
+        {
+            Token = token,
+            Name = "Jan Boer",
+            SameForAll = false,
+            Blocks = new()
+            {
+                new BlockCertificateNameDto { SquareId = 1, Name = "Jan Boer" },
+                new BlockCertificateNameDto { SquareId = 2, Name = "Anna Boer" }
+            }
+        });
+
+        Assert.IsType<OkObjectResult>(perBlock);
+        Assert.Equal("Jan Boer", (await _db.Squares.SingleAsync(s => s.Id == 1)).CertificateName);
+        Assert.Equal("Anna Boer", (await _db.Squares.SingleAsync(s => s.Id == 2)).CertificateName);
+        Assert.True((await _db.Users.SingleAsync(u => u.IsGuest)).CertificateIndividual);
+
+        // Every block needs a name of its own; a short one is not a certificate anybody wants.
+        var incomplete = await controller.SetGuestCertificateName(purchaseId, new GuestCertificateNameDto
+        {
+            Token = token,
+            Name = "Jan Boer",
+            SameForAll = false,
+            Blocks = new() { new BlockCertificateNameDto { SquareId = 1, Name = "Jan Boer" } }
+        });
+        Assert.IsType<BadRequestObjectResult>(incomplete);
+
+        // Going back to one name has to clear the per-block names, or the sheets keep printing them.
+        var shared = await controller.SetGuestCertificateName(
+            purchaseId, new GuestCertificateNameDto { Token = token, Name = "Jan Boer" });
+
+        Assert.IsType<OkObjectResult>(shared);
+        Assert.All(await _db.Squares.ToListAsync(), s => Assert.Null(s.CertificateName));
+        Assert.False((await _db.Users.SingleAsync(u => u.IsGuest)).CertificateIndividual);
+    }
+
+    /// <summary>
+    /// The same 15-minute window a signed-in buyer gets. A guest can still claim the purchase days
+    /// later off the emailed link, so without this the certificate would stay renameable forever.
+    /// </summary>
+    [Fact]
+    public async Task SetGuestCertificateName_LocksFifteenMinutesAfterConfirmation()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1);
+        await ConfirmAsync(purchaseId);
+        var controller = CreateController();
+
+        var named = await controller.SetGuestCertificateName(
+            purchaseId, new GuestCertificateNameDto { Token = token, Name = "Jan Boer" });
+        Assert.IsType<OkObjectResult>(named);
+
+        var purchase = await _db.Purchases.SingleAsync(p => p.Id == purchaseId);
+        purchase.ConfirmedAt = DateTime.UtcNow - TimeSpan.FromMinutes(16);
+        await _db.SaveChangesAsync();
+
+        var tooLate = await controller.SetGuestCertificateName(
+            purchaseId, new GuestCertificateNameDto { Token = token, Name = "Iemand Anders" });
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(tooLate).StatusCode);
+        var owner = await _db.Users.SingleAsync(u => u.IsGuest);
+        Assert.Equal("Jan", owner.FirstName);
+
+        var stillLocked = Assert.IsType<OkObjectResult>(await controller.GetGuestPurchase(purchaseId, token));
+        Assert.False(GetValue<bool>(stillLocked.Value!, "canEdit"));
+    }
+
+    /// <summary>
+    /// An abandoned checkout coming back through the emailed link has never been named, so it may
+    /// still be named however long it has been. The alternative is printing a blank certificate.
+    /// </summary>
+    [Fact]
+    public async Task SetGuestCertificateName_StaysOpenForAPurchaseThatWasNeverNamed()
+    {
+        var (purchaseId, token) = await CreateGuestPurchaseAsync(1);
+        await ConfirmAsync(purchaseId);
+
+        var purchase = await _db.Purchases.SingleAsync(p => p.Id == purchaseId);
+        purchase.ConfirmedAt = DateTime.UtcNow - TimeSpan.FromDays(3);
+        await _db.SaveChangesAsync();
+
+        var controller = CreateController();
+        var result = await controller.SetGuestCertificateName(
+            purchaseId, new GuestCertificateNameDto { Token = token, Name = "Jan Boer" });
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("Jan", (await _db.Users.SingleAsync(u => u.IsGuest)).FirstName);
+    }
+
     [Fact]
     public async Task UpgradeShadowUser_KeepsPurchaseAndSquaresInPlace()
     {

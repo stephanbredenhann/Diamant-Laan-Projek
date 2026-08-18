@@ -7,6 +7,7 @@ import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.comp
 import { TPipe } from '../../../i18n/t.pipe';
 
 const PRYS_PER_METER = 500;
+const MAKS_PER_TRANSAKSIE = 50;
 
 /**
  * Step 1 of the donation wizard — amount selection (Bydrae).
@@ -63,6 +64,7 @@ const PRYS_PER_METER = 500;
                   type="number"
                   name="eieAantal"
                   min="1"
+                  max="50"
                   inputmode="numeric"
                   [attr.aria-label]="'Aantal vierkante meter' | t"
                   [ngModel]="eieWaarde()"
@@ -367,14 +369,17 @@ export class BouStap1Component implements OnInit {
     }
     if (!Number.isFinite(n) || n < 1) {
       this.eieFout.set('Voer ’n geldige aantal in.');
+    } else if (n > MAKS_PER_TRANSAKSIE) {
+      this.eieFout.set('Maksimum van 50 blokkies per transaksie');
     } else {
-      // No upper limit here on purpose: availability is the real ceiling, and the
-      // API says so in step 2 if there are not enough blocks left.
+      // Availability is the other ceiling; the API says so in step 2 if there
+      // are not enough blocks left.
       this.eieFout.set(null);
     }
   }
 
   gaanVoort() {
+    this.opEieVerander(this.eieWaarde());
     if (!this.kanGaanVoort()) return;
     this.purchase.bouAantal = this.gekoseAantal();
     this.router.navigate(['/bou/kies']);

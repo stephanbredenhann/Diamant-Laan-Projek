@@ -4,6 +4,7 @@ using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Enums;
 using DiamantLaan.Api.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Xunit;
@@ -34,6 +35,18 @@ public class RoadControllerTests
             });
         }
         await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedOffset(AppDbContext db, int offset)
+    {
+        db.SiteSettings.Add(new SiteSettings { Id = 1, KiesVirMyOffset = offset });
+        await db.SaveChangesAsync();
+    }
+
+    private static List<int> PickedIds(IActionResult result)
+    {
+        var value = Assert.IsType<OkObjectResult>(result).Value!;
+        return (List<int>)value.GetType().GetProperty("squareIds")!.GetValue(value)!;
     }
 
     private static List<SquareDto> SquaresFrom(IActionResult result) =>
@@ -154,5 +167,80 @@ public class RoadControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var message = badRequest.Value!.GetType().GetProperty("message")!.GetValue(badRequest.Value)!.ToString();
         Assert.Equal("Ongeldige aantal blokke.", message);
+    }
+
+    /// <summary>
+    /// The admin offset steers new auto-assignments into a higher part of the road. It is
+    /// inclusive: an offset of 5 makes block 5 itself the first one handed out.
+    /// </summary>
+    [Fact]
+    public async Task PickSquares_PrefersBlocksAtOrAboveTheOffset()
+    {
+        await using var db = CreateDb();
+        await SeedSquares(db, Enumerable.Range(1, 10).Select(id => (id, (string?)null)));
+        await SeedOffset(db, 5);
+
+        var result = await new RoadController(db, NewCache()).PickSquares(3);
+
+        Assert.Equal(new[] { 5, 6, 7 }, PickedIds(result));
+    }
+
+    /// <summary>
+    /// The offset is a preference, not a filter. Once the range above it runs short the batch
+    /// tops up from the lowest blocks below, rather than failing with blocks still available.
+    /// </summary>
+    [Fact]
+    public async Task PickSquares_TopsUpFromBelowWhenTheHighRangeRunsShort()
+    {
+        await using var db = CreateDb();
+        await SeedSquares(db, new[]
+        {
+            (1, (string?)null),
+            (2, (string?)null),
+            (3, (string?)null),
+            (5, (string?)null),
+            (6, (string?)null),
+        });
+        await SeedOffset(db, 5);
+
+        var result = await new RoadController(db, NewCache()).PickSquares(4);
+
+        Assert.Equal(new[] { 5, 6, 1, 2 }, PickedIds(result));
+    }
+
+    [Fact]
+    public async Task PickSquares_WithZeroOffsetIsUnchanged()
+    {
+        await using var db = CreateDb();
+        await SeedSquares(db, Enumerable.Range(1, 10).Select(id => (id, (string?)null)));
+        await SeedOffset(db, 0);
+
+        var result = await new RoadController(db, NewCache()).PickSquares(3);
+
+        Assert.Equal(new[] { 1, 2, 3 }, PickedIds(result));
+    }
+
+    /// <summary>
+    /// Every other test here runs on the in-memory provider, which is LINQ-to-objects and would
+    /// happily "pass" an ORDER BY that SQLite cannot translate. This one runs the real migration
+    /// chain against real SQLite, so it fails if the offset ordering stops being valid SQL.
+    /// </summary>
+    [Fact]
+    public async Task PickSquares_OffsetOrderingTranslatesOnSqlite()
+    {
+        using var conn = new SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        await using var db = new AppDbContext(
+            new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn).Options);
+        await db.Database.MigrateAsync();
+
+        foreach (var id in Enumerable.Range(1, 10))
+            db.Squares.Add(new Square { Id = id });
+        db.SiteSettings.Single().KiesVirMyOffset = 5;
+        await db.SaveChangesAsync();
+
+        var result = await new RoadController(db, NewCache()).PickSquares(4);
+
+        Assert.Equal(new[] { 5, 6, 7, 8 }, PickedIds(result));
     }
 }

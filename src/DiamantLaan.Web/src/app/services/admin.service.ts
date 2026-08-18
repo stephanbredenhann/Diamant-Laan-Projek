@@ -45,6 +45,12 @@ export interface UploadProgressImageResult {
   skippedCount?: number;
 }
 
+export interface KiesVirMyOffset {
+  /** Inclusive lowest block "Kies vir my" hands out first. 0 = normal lowest-first. */
+  offset: number;
+  availableAtOrAboveOffset: number;
+}
+
 export interface UndoLastSummary {
   statusChangeCount: number;
   hasPhoto: boolean;
@@ -101,9 +107,20 @@ export class AdminService {
       })
     });
   }
-deleteTransaction(id: number) {
-  return this.http.delete(`/api/admin/transactions/${id}`);
-}
+
+  /** Permanent: releases the blocks too. The admin's own password is re-checked server-side. */
+  deleteTransaction(id: number, password: string) {
+    return this.http.post(`/api/admin/transactions/${id}/delete`, { password });
+  }
+
+  getKiesVirMyOffset() {
+    return this.http.get<KiesVirMyOffset>('/api/admin/settings/kies-offset');
+  }
+
+  setKiesVirMyOffset(offset: number) {
+    return this.http.put<KiesVirMyOffset>('/api/admin/settings/kies-offset', { offset });
+  }
+
   getStats() {
     return this.http.get<any>('/api/admin/stats');
   }

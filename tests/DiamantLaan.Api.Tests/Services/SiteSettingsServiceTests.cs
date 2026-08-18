@@ -99,4 +99,60 @@ public class SiteSettingsServiceTests
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             service.UpdateHomeStatsSettingsAsync(null!));
     }
+
+    [Fact]
+    public async Task GetKiesVirMyOffsetAsync_WhenMissing_IsOff()
+    {
+        await using var db = CreateDb();
+
+        var dto = await new SiteSettingsService(db).GetKiesVirMyOffsetAsync();
+
+        Assert.Equal(0, dto.Offset);
+    }
+
+    /// <summary>
+    /// The count is what the admin tab shows to tell when the range is about to run dry, so it
+    /// has to mean the same thing PickSquares means: unowned, not reserved, on the saleable road,
+    /// and at or above the offset.
+    /// </summary>
+    [Fact]
+    public async Task SetKiesVirMyOffsetAsync_PersistsAndCountsOnlyBlocksItWouldActuallyHandOut()
+    {
+        await using var db = CreateDb();
+        db.Squares.AddRange(
+            new Square { Id = 1 },                                  // below the offset
+            new Square { Id = 10 },                                 // counts
+            new Square { Id = 11 },                                 // counts
+            new Square { Id = 12, OwnerId = "owner-1" },            // sold
+            new Square { Id = 13, IsReserved = true },              // admin-held
+            new Square { Id = Square.MaxSaleableId + 1 });          // past the saleable road
+        await db.SaveChangesAsync();
+
+        var service = new SiteSettingsService(db);
+        var result = await service.SetKiesVirMyOffsetAsync(10);
+
+        Assert.Equal(10, result.Offset);
+        Assert.Equal(2, result.AvailableAtOrAboveOffset);
+        Assert.Equal(10, (await db.SiteSettings.SingleAsync()).KiesVirMyOffset);
+
+        // ...and a fresh read agrees with what the write reported.
+        var reread = await service.GetKiesVirMyOffsetAsync();
+        Assert.Equal(10, reread.Offset);
+        Assert.Equal(2, reread.AvailableAtOrAboveOffset);
+    }
+
+    [Fact]
+    public async Task SetKiesVirMyOffsetAsync_LeavesTheHomeStatsFlagsAlone()
+    {
+        await using var db = CreateDb();
+        db.SiteSettings.Add(new SiteSettings { Id = 1, ShowStatsSection = false, ShowTotalRaised = false });
+        await db.SaveChangesAsync();
+
+        await new SiteSettingsService(db).SetKiesVirMyOffsetAsync(2000);
+
+        var fromDb = await db.SiteSettings.SingleAsync();
+        Assert.Equal(2000, fromDb.KiesVirMyOffset);
+        Assert.False(fromDb.ShowStatsSection);
+        Assert.False(fromDb.ShowTotalRaised);
+    }
 }

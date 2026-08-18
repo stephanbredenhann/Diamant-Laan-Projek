@@ -23,6 +23,12 @@ export interface GuestPurchase {
   paymentStatus: string;
   squares: number[];
   certificateName: string | null;
+  /** False when this purchase's blocks each carry their own name. */
+  sameForAll: boolean;
+  /** Every block of this purchase, already resolved to the name it will print. */
+  blocks: { squareId: number; name: string }[];
+  /** False once the naming window has closed. No closing time comes with it, by design. */
+  canEdit: boolean;
   email: string | null;
 }
 
@@ -161,9 +167,19 @@ export class PurchaseService {
     );
   }
 
-  setGuestCertificateName(ref: GuestPurchaseRef, name: string) {
+  /**
+   * One name for every sheet, or one per block when `sameForAll` is false. `name` is still sent
+   * either way: it is what a block without a name of its own falls back to.
+   */
+  setGuestCertificateName(
+    ref: GuestPurchaseRef,
+    name: string,
+    sameForAll = true,
+    blocks: { squareId: number; name: string }[] = []
+  ) {
     return this.http.post<{ certificateName: string }>(
-      `/api/purchase/guest/${ref.purchaseId}/certificate-name`, { token: ref.token, name }
+      `/api/purchase/guest/${ref.purchaseId}/certificate-name`,
+      { token: ref.token, name, sameForAll, blocks }
     );
   }
 

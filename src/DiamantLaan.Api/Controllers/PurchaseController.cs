@@ -199,14 +199,30 @@ public class PurchaseController : ControllerBase
         if (purchase == null)
             return NotFound();
 
+        var summaryName = BuildCertificateName(purchase.User);
+        var ids = purchase.PurchaseSquares.Select(ps => ps.SquareId).ToList();
+
+        // Per-block names, so someone returning from the follow-up email sees the choice they
+        // already made rather than an empty form.
+        var blockNames = await _db.Squares
+            .Where(s => ids.Contains(s.Id))
+            .Select(s => new BlockCertificateNameDto { SquareId = s.Id, Name = s.CertificateName ?? summaryName ?? string.Empty })
+            .OrderBy(b => b.SquareId)
+            .ToListAsync();
+
         return Ok(new
         {
             purchase.Id,
             purchase.Amount,
             purchase.PurchaseDate,
             paymentStatus = purchase.PaymentStatus.ToString(),
-            squares = purchase.PurchaseSquares.Select(ps => ps.SquareId).OrderBy(squareId => squareId),
-            certificateName = BuildCertificateName(purchase.User),
+            squares = ids.OrderBy(squareId => squareId),
+            certificateName = summaryName,
+            sameForAll = purchase.User?.CertificateIndividual != true,
+            blocks = blockNames,
+            // So the page knows to skip straight to the finished certificate. Deliberately no
+            // closing time alongside it: the guest flow shows no countdown.
+            canEdit = CertificateWindowIsOpen(purchase),
             email = purchase.GuestEmail
         });
     }
@@ -260,11 +276,41 @@ public class PurchaseController : ControllerBase
         if (purchase.PaymentStatus != PaymentStatus.Confirmed)
             return BadRequest(new { message = "Die betaling is nog nie bevestig nie." });
 
+        // The same 15-minute window a signed-in buyer gets, and for the same reason: a guest can
+        // still create an account days later off the emailed link, and the certificate must not
+        // stay renameable that whole time. Enforced here only; the guest page shows no countdown.
+        if (!CertificateWindowIsOpen(purchase))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Die name op jou sertifikate is nou vasgestel. Kontak ons as iets verkeerd is."
+            });
+        }
+
         var name = dto.Name.Trim();
         if (name.Length < 2)
             return BadRequest(new { message = "Voer asseblief ’n naam in." });
 
-        await _guests.SetCertificateNameAsync(purchase, name);
+        Dictionary<int, string>? blockNames = null;
+        if (!dto.SameForAll)
+        {
+            var owned = purchase.PurchaseSquares.Select(ps => ps.SquareId).ToHashSet();
+            blockNames = new Dictionary<int, string>();
+
+            foreach (var block in dto.Blocks.Where(b => owned.Contains(b.SquareId)))
+            {
+                var blockName = block.Name.Trim();
+                if (blockName.Length < 2)
+                    return BadRequest(new { message = $"Voer asseblief ’n naam vir blok {block.SquareId} in." });
+
+                blockNames[block.SquareId] = blockName;
+            }
+
+            if (blockNames.Count != owned.Count)
+                return BadRequest(new { message = "Voer asseblief ’n naam vir elke blok in." });
+        }
+
+        await _guests.SetCertificateNameAsync(purchase, name, blockNames);
 
         return Ok(new { certificateName = name });
     }
@@ -289,6 +335,20 @@ public class PurchaseController : ControllerBase
             return BadRequest(new { message = "Hierdie aankoop is reeds aan ’n rekening gekoppel." });
 
         return Ok(new { purchaseId = purchase.Id });
+    }
+
+    /// <summary>
+    /// Whether a guest purchase's certificate names may still be changed. A purchase that was
+    /// never named stays open however long it has been: an abandoned checkout coming back through
+    /// the emailed link must be able to name its certificate rather than print a blank one.
+    /// </summary>
+    private static bool CertificateWindowIsOpen(Purchase purchase)
+    {
+        if (string.IsNullOrWhiteSpace(BuildCertificateName(purchase.User)))
+            return true;
+
+        var confirmedAt = purchase.ConfirmedAt ?? purchase.PurchaseDate;
+        return confirmedAt + MySquaresController.CertificateEditWindow > DateTime.UtcNow;
     }
 
     private static string? BuildCertificateName(User? user)
