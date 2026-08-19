@@ -185,7 +185,7 @@ export class BlockPickerModalComponent implements OnInit {
 
   toggleSquare(sqId: number) {
     const sq = this.squares.find(s => s.id === sqId);
-    if (!sq || sq.isSold) return;
+    if (!sq || sq.isSold || sq.isPending) return;
     if (sqId > this.maxBlockId) return;
 
     const selected = new Set(this.selectedIds());
@@ -198,7 +198,7 @@ export class BlockPickerModalComponent implements OnInit {
     const selected = new Set(this.selectedIds());
     for (const id of ids) {
       const sq = this.squares.find(s => s.id === id);
-      if (sq && !sq.isSold && id <= this.maxBlockId) selected.add(id);
+      if (sq && !sq.isSold && !sq.isPending && id <= this.maxBlockId) selected.add(id);
     }
     this.selectedIds.set(selected);
   }
@@ -215,7 +215,7 @@ export class BlockPickerModalComponent implements OnInit {
     const sq = this.squares.find(s => s.id === id);
     this.roadMap?.focusSquare(id, { showTooltip: true });
 
-    if (sq?.isSold) {
+    if (sq?.isSold || sq?.isPending) {
       this.searchError.set('Hierdie blok is reeds toegeken.');
       return;
     }

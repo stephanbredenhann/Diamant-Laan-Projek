@@ -63,6 +63,13 @@ export interface UndoLastInfo {
   summary?: UndoLastSummary | null;
 }
 
+export interface CertificateSummary {
+  ownerName: string;
+  /** False when the buyer split their blocks, so each one prints its own name. */
+  sameForAll: boolean;
+  squares: { id: number; purchaseDate?: string | null; ownerName: string }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
@@ -93,12 +100,18 @@ export class AdminService {
   }
 
   getCertificateSummary(userId: string) {
-    return this.http.get<{
-      ownerName: string;
-      /** False when the buyer split their blocks, so each one prints its own name. */
-      sameForAll: boolean;
-      squares: { id: number; purchaseDate?: string | null; ownerName: string }[];
-    }>(`/api/admin/users/${encodeURIComponent(userId)}/certificate-summary`);
+    return this.http.get<CertificateSummary>(
+      `/api/admin/users/${encodeURIComponent(userId)}/certificate-summary`);
+  }
+
+  /** Admin override for a buyer who never named their own certificates (guest checkout). */
+  saveCertificateNames(userId: string, body: {
+    sameForAll: boolean;
+    summaryName: string;
+    blocks: { squareId: number; name: string }[];
+  }) {
+    return this.http.put<CertificateSummary>(
+      `/api/admin/users/${encodeURIComponent(userId)}/certificate-names`, body);
   }
 
   getTransactions() {

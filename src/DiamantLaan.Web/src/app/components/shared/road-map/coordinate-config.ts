@@ -81,6 +81,7 @@ export function generateSquareGeoJson(squares: Square[]): L.GeoJSON {
         status: sq?.status ?? 0,
         isSold: sq?.isSold ?? false,
         isReserved: sq?.isReserved ?? false,
+        isPending: sq?.isPending ?? false,
         imageCount: sq?.imageCount ?? 0,
       },
     };

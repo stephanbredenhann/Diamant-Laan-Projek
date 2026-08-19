@@ -13,11 +13,12 @@ import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-pi
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import { blokLabel } from '../../utils/afrikaans.util';
 import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util';
+import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 @Component({
   selector: 'app-admin-manual-purchase',
   standalone: true,
-  imports: [CommonModule, FormsModule, AlertComponent, BlockPickerModalComponent, PhoneInputComponent],
+  imports: [CommonModule, FormsModule, AlertComponent, BlockPickerModalComponent, PhoneInputComponent, PaginatorComponent],
   template: `
     <div class="admin-content">
       <div class="form-card">
@@ -188,7 +189,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
                 </tr>
               </thead>
               <tbody>
-                @for (tx of filteredProofs; track tx.id) {
+                @for (tx of filteredProofs | slice:proofPage * pageSize:(proofPage + 1) * pageSize; track tx.id) {
                   <tr>
                     <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
                     <td>#{{ tx.id }}</td>
@@ -244,6 +245,7 @@ import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util'
               </tbody>
             </table>
           </div>
+          <app-paginator [total]="filteredProofs.length" [(page)]="proofPage" />
         }
 
         @if (proofActionError) {
@@ -493,6 +495,8 @@ export class AdminManualPurchaseComponent implements OnInit {
   proofsLoading = true;
   proofsLoadError = '';
   proofSearch = '';
+  proofPage = 0;
+  readonly pageSize = PAGE_SIZE;
   proofActionId: number | null = null;
   proofAction: 'open' | 'upload' | 'delete' | null = null;
   proofActionError = '';

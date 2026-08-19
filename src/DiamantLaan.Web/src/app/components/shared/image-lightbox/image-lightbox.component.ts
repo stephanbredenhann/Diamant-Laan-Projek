@@ -12,53 +12,62 @@ import { TPipe } from '../../../i18n/t.pipe';
     @if (open) {
       <div class="lightbox-backdrop" (click)="close()">
         <div class="lightbox" (click)="$event.stopPropagation()">
+          <header class="lightbox-head">
+            <div class="lightbox-meta">
+              <span class="lightbox-title">{{ 'Blok' | t }} #{{ squareId }}</span>
+              @if (currentStatusLabel) {
+                <span class="lightbox-status">{{ currentStatusLabel | t }}</span>
+              }
+            </div>
+            <button class="lightbox-close" type="button" (click)="close()" [attr.aria-label]="'Sluit' | t">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </header>
+
           @if (loading) {
             <div class="lightbox-loading">{{ 'Laai foto’s...' | t }}</div>
           } @else if (images.length === 0) {
             <div class="lightbox-empty">{{ 'Geen foto’s beskikbaar nie.' | t }}</div>
           } @else {
             <div class="lightbox-body">
+              @if (images.length > 1) {
+                <button
+                  class="nav-btn"
+                  type="button"
+                  [disabled]="currentIndex === 0"
+                  (click)="prev()"
+                  [attr.aria-label]="'Vorige foto' | t"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+              }
               <div class="image-frame">
                 @if (currentBlobUrl) {
                   <img [src]="currentBlobUrl" [alt]="currentCaption || ('Vorderingsfoto' | t)" />
                 }
-                <div class="lightbox-overlay lightbox-overlay-top">
-                  <div class="lightbox-meta">
-                    <span class="lightbox-title">{{ 'Blok' | t }} #{{ squareId }}</span>
-                    <span class="lightbox-status">{{ currentStatusLabel | t }}</span>
-                  </div>
-                  <button class="lightbox-close" type="button" (click)="close()" [attr.aria-label]="'Sluit' | t">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </div>
-                @if (images.length > 1) {
-                  <button
-                    class="nav-btn prev"
-                    type="button"
-                    [disabled]="currentIndex === 0"
-                    (click)="prev()"
-                    [attr.aria-label]="'Vorige foto' | t"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button
-                    class="nav-btn next"
-                    type="button"
-                    [disabled]="currentIndex >= images.length - 1"
-                    (click)="next()"
-                    [attr.aria-label]="'Volgende foto' | t"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                }
-                <div class="lightbox-overlay lightbox-overlay-bottom">
-                  @if (currentCaption) {
-                    <p class="lightbox-caption">{{ currentCaption }}</p>
-                  }
-                  <p class="lightbox-counter">{{ currentIndex + 1 }} / {{ images.length }}</p>
-                </div>
               </div>
+              @if (images.length > 1) {
+                <button
+                  class="nav-btn"
+                  type="button"
+                  [disabled]="currentIndex >= images.length - 1"
+                  (click)="next()"
+                  [attr.aria-label]="'Volgende foto' | t"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              }
             </div>
+            @if (currentCaption || images.length > 1) {
+              <footer class="lightbox-foot">
+                @if (currentCaption) {
+                  <p class="lightbox-caption">{{ currentCaption }}</p>
+                }
+                @if (images.length > 1) {
+                  <p class="lightbox-counter">{{ currentIndex + 1 }} / {{ images.length }}</p>
+                }
+              </footer>
+            }
           }
         </div>
       </div>
@@ -76,145 +85,139 @@ import { TPipe } from '../../../i18n/t.pipe';
       padding: 1rem;
     }
     .lightbox {
+      display: flex;
+      flex-direction: column;
       width: fit-content;
-      max-width: 90vw;
-      max-height: 90vh;
-      position: relative;
-      border-radius: var(--radius);
+      max-width: min(96vw, 60rem);
+      max-height: 92vh;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
       overflow: hidden;
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
     }
-    .lightbox-loading, .lightbox-empty {
-      padding: 3rem 2rem;
-      text-align: center;
-      color: var(--color-muted);
-      background: var(--color-surface);
-      border-radius: var(--radius);
-    }
-    .lightbox-body {
+    .lightbox-head {
       display: flex;
       align-items: center;
-      justify-content: center;
-    }
-    .image-frame {
-      position: relative;
-      display: inline-block;
-      line-height: 0;
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: #0a0a0a;
-    }
-    .image-frame img {
-      display: block;
-      max-width: 90vw;
-      max-height: 80vh;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-    }
-    .lightbox-overlay {
-      position: absolute;
-      left: 0;
-      right: 0;
-      z-index: 2;
-      pointer-events: none;
-    }
-    .lightbox-overlay-top {
-      top: 0;
-      display: flex;
-      align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      padding: 0.75rem 0.875rem;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent);
-    }
-    .lightbox-overlay-bottom {
-      bottom: 0;
-      padding: 1.5rem 1rem 0.75rem;
-      text-align: center;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--surface-alt);
     }
     .lightbox-meta {
       display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.75rem;
       min-width: 0;
     }
     .lightbox-title {
       font-family: var(--font-heading);
       font-weight: 600;
-      font-size: 0.9375rem;
-      color: #fff;
+      font-size: var(--fs-lg);
+      color: var(--ink);
     }
     .lightbox-status {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.875rem;
+      color: var(--text-muted);
       font-weight: 500;
     }
     .lightbox-close {
       flex-shrink: 0;
-      pointer-events: auto;
-      width: 2.25rem;
-      height: 2.25rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      min-height: 2.5rem;
       padding: 0;
-      border: none;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      border: 2px solid var(--action);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--action);
       cursor: pointer;
-      color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, transform 0.2s;
     }
     .lightbox-close:hover {
-      background: rgba(255, 255, 255, 0.25);
-      transform: scale(1.05);
-    }
-    .nav-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 3;
-      width: 2.75rem;
-      height: 2.75rem;
-      padding: 0;
-      border: none;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      cursor: pointer;
+      background: var(--action-strong);
+      border-color: var(--action-strong);
       color: #fff;
+    }
+    .lightbox-loading, .lightbox-empty {
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .lightbox-body {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, transform 0.2s, opacity 0.2s;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      gap: 0.75rem;
+      padding: 0.75rem;
+      min-height: 0;
+      background: var(--tar);
     }
-    .nav-btn.prev { left: 0.75rem; }
-    .nav-btn.next { right: 0.75rem; }
-    .nav-btn:disabled {
-      opacity: 0;
-      pointer-events: none;
+    .image-frame {
+      line-height: 0;
+      min-width: 0;
+    }
+    .image-frame img {
+      display: block;
+      max-width: 100%;
+      max-height: 70vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+    .nav-btn {
+      flex-shrink: 0;
+      width: 3rem;
+      height: 3rem;
+      min-height: 3rem;
+      padding: 0;
+      border: 2px solid var(--action);
+      border-radius: var(--radius-sm);
+      background: var(--tar);
+      color: var(--action);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .nav-btn:not(:disabled):hover {
-      background: rgba(0, 0, 0, 0.65);
-      transform: translateY(-50%) scale(1.08);
+      background: var(--action-strong);
+      border-color: var(--action-strong);
+      color: #fff;
+    }
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .lightbox-foot {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border-soft);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
     }
     .lightbox-caption {
       margin: 0;
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.95);
+      font-size: 0.9375rem;
+      color: var(--text-body);
       line-height: 1.4;
     }
     .lightbox-counter {
-      margin: 0.25rem 0 0;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.7);
+      margin: 0;
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
       font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 640px) {
+      .lightbox-body { gap: 0.375rem; padding: 0.375rem; }
+      .nav-btn { width: 2.5rem; height: 2.5rem; min-height: 2.5rem; }
+      .image-frame img { max-height: 60vh; }
     }
   `]
 })

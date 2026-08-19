@@ -243,4 +243,41 @@ public class RoadControllerTests
 
         Assert.Equal(new[] { 5, 6, 7, 8 }, PickedIds(result));
     }
+
+    /// <summary>
+    /// Blocks reserved by a purchase whose ITN has not landed must not count as funded, or the
+    /// public headline stops dividing out to R500 a block and rolls back when the hold expires.
+    /// </summary>
+    [Fact]
+    public async Task GetStats_ExcludesSquaresHeldByPendingPurchases()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new User { Id = "u1", UserName = "u1" });
+        await SeedSquares(db, new (int, string?)[] { (1, "u1"), (2, "u1"), (3, null) });
+
+        db.Purchases.Add(new Purchase
+        {
+            Id = 1,
+            UserId = "u1",
+            Amount = 500m,
+            PaymentStatus = PaymentStatus.Confirmed,
+            PurchaseSquares = { new PurchaseSquare { SquareId = 1 } }
+        });
+        db.Purchases.Add(new Purchase
+        {
+            Id = 2,
+            UserId = "u1",
+            Amount = 500m,
+            PaymentStatus = PaymentStatus.Pending,
+            PurchaseSquares = { new PurchaseSquare { SquareId = 2 } }
+        });
+        await db.SaveChangesAsync();
+
+        var value = Assert.IsType<OkObjectResult>(
+            await new RoadController(db, NewCache()).GetStats()).Value!;
+        object? Read(string name) => value.GetType().GetProperty(name)!.GetValue(value);
+
+        Assert.Equal(1, Read("fundedSquares"));
+        Assert.Equal(500d, Read("totalRaised"));
+    }
 }

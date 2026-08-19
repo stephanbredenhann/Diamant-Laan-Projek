@@ -44,10 +44,11 @@ public static class EmailTemplates
               {CodePanel(code)}
               {Fine(T(en,
                 "Hierdie kode is slegs vir ’n beperkte tyd geldig. Indien jy nie hierdie versoek gerig het nie, kan jy hierdie e-pos ignoreer.",
-                "This code is valid for a limited time only. If you did not make this request, you can ignore this email."))}
+                "This code is only valid for a limited time. If you did not make this request, you can ignore this email."))}
             """,
             en,
-            switchUrl);
+            switchUrl,
+            T(en, "Groete", "Kind regards"));
     }
 
     public static string ManualPurchaseWelcome(string firstName, string email, string tempPassword, string loginUrl, bool en, string? switchUrl = null)
@@ -61,16 +62,17 @@ public static class EmailTemplates
             $"""
               <p style="margin:0 0 16px;">{T(en,
                 $"Jou aankoop is suksesvol verwerk en ons het ’n rekening vir jou geskep met die e-posadres <strong>{encodedEmail}</strong>.",
-                $"Your purchase was processed successfully and we have created an account for you with the email address <strong>{encodedEmail}</strong>.")}</p>
+                $"Your purchase has been successfully processed, and we have created an account for you using the email address <strong>{encodedEmail}</strong>.")}</p>
               <p style="margin:0 0 12px;">{T(en, "Jou tydelike wagwoord:", "Your temporary password:")}</p>
               {CodePanel(password, mono: true)}
               <p style="margin:16px 0 0;">{T(en,
                 $"Meld aan by <a href=\"{url}\" style=\"color:#034EA2;\">{url}</a>. Jy sal gevra word om jou wagwoord te verander wanneer jy die eerste keer aanmeld.",
-                $"Log in at <a href=\"{url}\" style=\"color:#034EA2;\">{url}</a>. You will be asked to change your password the first time you log in.")}</p>
+                $"Log in at <a href=\"{url}\" style=\"color:#034EA2;\">{url}</a>. You will be asked to change your password when you log in for the first time.")}</p>
               {Button(url, T(en, "Meld aan", "Log in"))}
             """,
             en,
-            switchUrl);
+            switchUrl,
+            T(en, "Groete", "Regards"));
     }
 
     /// <summary>
@@ -82,25 +84,26 @@ public static class EmailTemplates
         var url = WebUtility.HtmlEncode(claimUrl);
         return Shell(
             T(en, "Jou borgskap is voltooi!", "Your sponsorship is complete!"),
-            "Stadsbouer",
+            T(en, "Stadsbouer", "Orania-supporter"),
             $"""
               {PaymentConfirmedLine(blockCount, amount, en)}
               <p style="margin:0 0 16px;">{T(en,
                 "Jy het sonder ’n rekening bygedra. Indien jy later ’n rekening wil skep, kan jy dit met die onderstaande skakel doen en jou blokke daaraan koppel:",
-                "You contributed without an account. If you would like to create one later, you can do so with the link below and connect your blocks to it:")}</p>
+                "You contributed without an account. If you would like to create an account later, you can do so using the link below and link your blocks to it:")}</p>
               {Button(url, T(en, "Skep ’n rekening", "Create an account"))}
-              <p style="margin:0 0 12px;">{T(en, "Met ’n rekening kan jy:", "With an account you can:")}</p>
+              <p style="margin:0 0 12px;">{T(en, "Met ’n rekening kan jy:", "With an account, you can:")}</p>
               {List(
-                T(en, "Die vordering van jou m² aktief volg.", "Actively follow the progress of your m²."),
+                T(en, "Die vordering van jou m² aktief volg.", "Actively track the progress of your m²."),
                 T(en, "Foto’s sien van hoe die werk vorder.", "See photos of how the work is progressing."),
-                T(en, "Opdaterings oor die vordering ontvang.", "Receive updates about the progress."),
+                T(en, "Opdaterings oor die vordering ontvang.", "Receive updates on the progress."),
                 T(en, "Enige tyd toegang tot jou digitale sertifikaat kry.", "Access your digital certificate at any time."),
                 T(en, "Kwitansies van jou borgskap aflaai.", "Download receipts for your sponsorship."),
-                T(en, "Later weer m² borg sonder om deur die hele proses te gaan.", "Sponsor more m² later without going through the whole process again."))}
-              {Fine(T(en, $"Die skakel werk vir {validDays} dae.", $"The link works for {validDays} days."))}
+                T(en, "Later weer m² borg sonder om deur die hele proses te gaan.", "Sponsor more m² later without going through the entire process again."))}
+              {Fine(T(en, $"Die skakel werk vir {validDays} dae.", $"The link is valid for {validDays} days."))}
             """,
             en,
-            switchUrl);
+            switchUrl,
+            T(en, "Groete uit Orania!", "Greetings from Orania!"));
     }
 
     /// <summary>Confirmation for a buyer who already had an account, so there is nothing to claim.</summary>
@@ -115,14 +118,14 @@ public static class EmailTemplates
               {PaymentConfirmedLine(blockCount, amount, en)}
               <p style="margin:0 0 16px;">{T(en,
                 "Jou borgskap is nou aan jou rekening gekoppel. Jy kan enige tyd aanmeld om jou borgskap en die vordering van jou m² te volg.",
-                "Your sponsorship is now linked to your account. You can log in at any time to follow your sponsorship and the progress of your m².")}</p>
+                "Your sponsorship is now linked to your account. You can log in at any time to track your sponsorship and the progress of your m².")}</p>
               <p style="margin:0;">{T(en,
                 "Ons stuur vir jou ’n opdatering as daar aan jou blokkie m² begin werk word.",
-                "We will send you an update when work begins on your m².")}</p>
+                "We will send you an update when work begins on your block's m².")}</p>
               {Button(url, T(en, "Meld aan", "Log in"))}
               <p style="margin:0;">{T(en,
                 $"Baie dankie vir jou bydrae tot die Oewerpad, {name}!",
-                $"Thank you very much for your contribution to the Oewerpad, {name}!")}</p>
+                "Thank you very much for your contribution to the Oewerpad!")}</p>
             """,
             en,
             switchUrl);
@@ -154,36 +157,36 @@ public static class EmailTemplates
             SquareStatus.Voorberei => (
                 T(en, "Vordering op jou blokkie!", "Progress on your block!"),
                 $"""
-                  <p style="margin:0 0 16px;">{T(en, "Die bal is aan die rol!", "The ball is rolling!")}</p>
+                  <p style="margin:0 0 16px;">{T(en, "Die bal is aan die rol!", "There has been a development!")}</p>
                   <p style="margin:0 0 16px;">{T(en,
                     $"Jou {blocks} <strong>{numbers}</strong> word tans voorberei om geteer te word. Dit beteken dat jou {blocks} nou ’n tree nader aan die voltooide pad is.",
-                    $"Your {blocks} <strong>{numbers}</strong> are currently being prepared for tarring. That means your {blocks} are now a step closer to the finished road.")}</p>
+                    $"Your {blocks} <strong>{numbers}</strong> are currently being prepared for paving. This means that your {blocks} are now one step closer to becoming a completed road.")}</p>
                   <p style="margin:0;">{T(en,
                     "Jy help ons om van hierdie projek ’n sukses te maak. Ons hou jou op hoogte van die vordering!",
-                    "You are helping us make this project a success. We will keep you posted on the progress!")}</p>
+                    "You are helping us make this project a success. We will keep you updated on the progress!")}</p>
                 """),
             SquareStatus.BesigOmTeTeer => (
-                T(en, "Jou blokkie word geteer!", "Your block is being tarred!"),
+                T(en, "Jou blokkie word geteer!", "Your block is being paved!"),
                 $"""
                   <p style="margin:0 0 16px;">{T(en,
                     $"Ons is tans besig om jou {blocks} <strong>{numbers}</strong> te teer! Die werk aan jou gedeelte van die pad is nou in volle gang.",
-                    $"We are busy tarring your {blocks} <strong>{numbers}</strong>! The work on your section of the road is now in full swing.")}</p>
+                    $"We are currently paving your {blocks} <strong>{numbers}</strong>! Work on your section of the road is now fully underway.")}</p>
                   <p style="margin:0;">{T(en,
                     $"Baie dankie, {name}. Ons waardeer jou ondersteuning en hou jou op hoogte soos die werk verder vorder.",
-                    $"Thank you very much, {name}. We appreciate your support and will keep you posted as the work progresses.")}</p>
+                    $"Thank you very much, {name}. We appreciate your support and will keep you updated as the work progresses.")}</p>
                 """),
             SquareStatus.KlaarGeteer => (
-                T(en, "Teerwerk op jou blokkie is voltooi!", "Tarring of your block is complete!"),
+                T(en, "Teerwerk op jou blokkie is voltooi!", "Completed!"),
                 $"""
                   <p style="margin:0 0 16px;">{T(en,
                     $"Te danke aan jou bydrae is die teerpad op {blocks} <strong>{numbers}</strong> nou ’n werklikheid. Jy kan jouself met trots ’n volwaardige Stadsbouer noem!",
-                    $"Thanks to your contribution, the tarred road on {blocks} <strong>{numbers}</strong> is now a reality. You can proudly call yourself a full Stadsbouer!")}</p>
+                    $"Thanks to your contribution, the paved road on {blocks} <strong>{numbers}</strong> is now a reality. You can proudly call yourself a full-fledged City Builder (Stadsbouer)!")}</p>
                   <p style="margin:0 0 16px;">{T(en,
                     "Wat eens net ’n stuk grondpad was, is nou ’n voltooide gedeelte van die Oewerpad. Jou bydrae het gehelp om hierdie belangrike infrastruktuurprojek ’n werklikheid te maak.",
-                    "What was once just a stretch of dirt road is now a completed section of the Oewerpad. Your contribution helped make this important infrastructure project a reality.")}</p>
+                    "What was once just a dirt road is now a completed section of the Oewerpad. Your contribution helped make this important infrastructure project a reality.")}</p>
                   <p style="margin:0 0 16px;">{T(en,
                     "Hierdie pad sal nog vir jare deur Oraniërs en besoekers gebruik word, en jy kan weet dat jy gehelp het om dit moontlik te maak. Projekte soos dié is die bewys van wat moontlik is wanneer ons kragte saamspan.",
-                    "This road will be used by Oraniërs and visitors for years to come, and you can know that you helped make it possible. Projects like this one show what is possible when we join forces.")}</p>
+                    "This road will be used by Oranians and visitors for many years to come, and you can know that you helped make it possible. Projects like this are proof of what is possible when we stand together.")}</p>
                   <p style="margin:0;">{T(en,
                     "Kom kyk gerus hoe die nuwe Afrikanerpad in Orania lyk!",
                     "Come and see what the new Afrikanerpad in Orania looks like!")}</p>
@@ -225,7 +228,7 @@ public static class EmailTemplates
         var blocks = Blocks(blockCount, en);
         return $"""<p style="margin:0 0 16px;">{T(en,
             $"Jou betaling is bevestig. Jy het <strong>{blockCount}</strong> {blocks} ter waarde van <strong>{Rand(amount)}</strong> in totaal geborg.",
-            $"Your payment is confirmed. You have sponsored <strong>{blockCount}</strong> {blocks} worth <strong>{Rand(amount)}</strong> in total.")}</p>""";
+            $"Your payment has been confirmed. You sponsored <strong>{blockCount}</strong> {blocks}, with a total value of <strong>{Rand(amount)}</strong>.")}</p>""";
     }
 
     /// <summary>
@@ -307,16 +310,8 @@ public static class EmailTemplates
     /// signs in still has a way out, and an English email has nothing to offer. Written in English
     /// because the only person it is addressed to reads English.
     /// </summary>
-    /// <remarks>
-    /// Switched off at the client's request: they want to read every email that goes out before
-    /// readers can change the language on themselves. The callers still thread the URL through, so
-    /// turning it back on means deleting the early return and nothing else.
-    /// </remarks>
     private static string SwitchToEnglishLine(bool en, string? switchUrl)
     {
-        return "";
-
-#pragma warning disable CS0162 // Unreachable while the line is switched off.
         if (en || string.IsNullOrWhiteSpace(switchUrl)) return "";
         var url = WebUtility.HtmlEncode(switchUrl);
         return $"""
@@ -324,7 +319,6 @@ public static class EmailTemplates
               <a href="{url}" style="color:#034EA2;">I would like to receive all further communication in English</a>
             </p>
             """;
-#pragma warning restore CS0162
     }
 
     private static string Site(string siteUrl) =>
@@ -337,7 +331,7 @@ public static class EmailTemplates
     /// Table-based and inline-styled throughout, in px rather than rem: Outlook renders
     /// through Word, which drops flex and grid outright and resolves rem unpredictably.
     /// </summary>
-    private static string Shell(string heading, string firstName, string body, bool en, string? switchUrl)
+    private static string Shell(string heading, string firstName, string body, bool en, string? switchUrl, string? signOff = null)
     {
         var name = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(firstName) ? "Stadsbouer" : firstName);
         return $"""
@@ -360,7 +354,7 @@ public static class EmailTemplates
                     </tr>
                     <tr>
                       <td style="padding:22px 36px 32px; border-top:1px solid {BorderSoft}; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
-                        <p style="margin:0;">{T(en, "Orania groete,<br>Die Orania Beweging-span", "Orania greetings,<br>The Orania Beweging team")}</p>
+                        <p style="margin:0;">{signOff ?? T(en, "Orania groete,", "Orania regards,")}<br>{T(en, "Die Orania Beweging-span", "The Orania Movement team")}</p>
                         <p style="margin:12px 0 0; font-size:14px; color:{Muted};">inligting&#64;orania.co.za &middot; 053 207 0062</p>
                         {SwitchToEnglishLine(en, switchUrl)}
                       </td>

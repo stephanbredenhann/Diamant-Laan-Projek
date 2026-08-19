@@ -22,7 +22,7 @@ public class LanguageLinkServiceTests
 
         var url = links.BuildUrl("user-1", "en");
 
-        Assert.StartsWith("https://oewerpad.orania.co.za/api/profile/taal/en?u=user-1&s=", url);
+        Assert.StartsWith($"{AppPublicUrl.LiveSite}/api/profile/taal/en?u=user-1&s=", url);
         Assert.True(links.Verify("user-1", "en", url[(url.IndexOf("&s=", StringComparison.Ordinal) + 3)..]));
     }
 

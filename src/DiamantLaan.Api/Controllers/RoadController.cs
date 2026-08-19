@@ -43,10 +43,20 @@ public class RoadController : ControllerBase
         // ponytail: GetOrCreateAsync does not lock, so a cold cache lets a handful of concurrent
         // requests run the query together. Fine at this size; add a SemaphoreSlim around the miss if
         // the stampede ever shows up in the logs.
-        var squares = await _cache.GetOrCreateAsync(SquaresCacheKey, entry =>
+        var squares = await _cache.GetOrCreateAsync(SquaresCacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = SquaresCacheTtl;
-            return _db.Squares
+
+            // A square is owned from the moment it is reserved, so this second query is what keeps
+            // "sold" meaning paid for. Fetched separately rather than as a correlated EXISTS per row
+            // because there are only ever a handful of live reservations against ~4,500 squares.
+            var pendingIds = (await _db.PurchaseSquares
+                .Where(ps => ps.Purchase.PaymentStatus == PaymentStatus.Pending)
+                .Select(ps => ps.SquareId)
+                .ToListAsync())
+                .ToHashSet();
+
+            var dtos = await _db.Squares
                 .OrderBy(s => s.Id)
                 .Select(s => new SquareDto
                 {
@@ -57,6 +67,14 @@ public class RoadController : ControllerBase
                     ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
                 })
                 .ToListAsync();
+
+            foreach (var dto in dtos.Where(d => pendingIds.Contains(d.Id)))
+            {
+                dto.IsPending = true;
+                dto.IsSold = false;
+            }
+
+            return dtos;
         });
 
         return Ok(squares);
@@ -111,8 +129,16 @@ public class RoadController : ControllerBase
     .Where(p => p.PaymentStatus == PaymentStatus.Confirmed)
     .SumAsync(p => (double?)p.Amount) ?? 0;
 
+        // A square gets its OwnerId the moment it is reserved, before the PayFast ITN lands, but
+        // totalRaised only counts confirmed money. Counting those reserved squares here is what made
+        // the headline numbers stop dividing out to R500 a block, and made the count roll back
+        // publicly when a reservation expired. Blocks held by a still-pending purchase are excluded
+        // so the two numbers stay in step; they remain unbuyable on the map either way.
         var fundedSquares = await _db.Squares
-            .CountAsync(s => s.OwnerId != null && s.Id <= MaxSaleableId);
+            .CountAsync(s => s.OwnerId != null
+                             && s.Id <= MaxSaleableId
+                             && !_db.PurchaseSquares.Any(ps => ps.SquareId == s.Id
+                                                               && ps.Purchase.PaymentStatus == PaymentStatus.Pending));
 
         var byPhase = await _db.Squares
             .Where(s => s.Id <= MaxSaleableId)

@@ -13,6 +13,8 @@ export interface Square {
   isSold?: boolean;
   /** Held back by an admin: not publicly buyable, still sellable via manual purchase. */
   isReserved?: boolean;
+  /** Held by an unpaid purchase: drawn as reserved, only turns sold once the ITN lands. */
+  isPending?: boolean;
   imageCount?: number;
 }
 

@@ -47,7 +47,7 @@ export type BlokRede = 'onbeskikbaar' | 'verkoop';
 
 export function blokRede(id: number, sq: Square | undefined): BlokRede | null {
   if (id < 1 || id > MAX_BLOK_ID) return 'onbeskikbaar';
-  if (sq?.isReserved) return 'onbeskikbaar';
+  if (sq?.isReserved || sq?.isPending) return 'onbeskikbaar';
   if (sq?.isSold) return 'verkoop';
   return null;
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { AdminService } from '../../services/admin.service';
 import { STATUS_LABELS, SquareStatus, STATUS_COLORS } from '../../models/square';
+import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 interface Buyer {
   userId: string;
@@ -56,7 +57,7 @@ type DailyChartMode = 'daily' | 'cumulative';
 @Component({
   selector: 'app-admin-stats',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective],
+  imports: [CommonModule, FormsModule, BaseChartDirective, PaginatorComponent],
   providers: [provideCharts(withDefaultRegisterables())],
   template: `
     <div class="admin-content">
@@ -245,7 +246,7 @@ type DailyChartMode = 'daily' | 'cumulative';
                 </tr>
               </thead>
               <tbody>
-                @for (b of filteredBuyers; track b.userId) {
+                @for (b of pagedBuyers; track b.userId) {
                   <tr>
                     <td>{{ b.name }}</td>
                     <td>{{ b.email }}</td>
@@ -264,6 +265,7 @@ type DailyChartMode = 'daily' | 'cumulative';
               </tbody>
             </table>
           </div>
+          <app-paginator class="pdf-hide" [total]="filteredBuyers.length" [(page)]="buyerPage" />
         </div>
 
         <div class="table-card">
@@ -289,7 +291,7 @@ type DailyChartMode = 'daily' | 'cumulative';
                 </tr>
               </thead>
               <tbody>
-                @for (u of filteredNonPurchasers; track u.id) {
+                @for (u of pagedNonPurchasers; track u.id) {
                   <tr>
                     <td>{{ u.name }}</td>
                     <td>{{ u.email }}</td>
@@ -306,6 +308,7 @@ type DailyChartMode = 'daily' | 'cumulative';
               </tbody>
             </table>
           </div>
+          <app-paginator class="pdf-hide" [total]="filteredNonPurchasers.length" [(page)]="nonPurchaserPage" />
         </div>
         </div>
       }
@@ -578,6 +581,21 @@ export class AdminStatsComponent implements OnInit {
   filteredNonPurchasers: NonPurchaser[] = [];
   search = '';
   nonPurchaserSearch = '';
+  buyerPage = 0;
+  nonPurchaserPage = 0;
+
+  /** PDF export renders the whole page, so it must not be cut off at one page of rows. */
+  get pagedBuyers(): Buyer[] {
+    return this.exportingPdf
+      ? this.filteredBuyers
+      : this.filteredBuyers.slice(this.buyerPage * PAGE_SIZE, (this.buyerPage + 1) * PAGE_SIZE);
+  }
+
+  get pagedNonPurchasers(): NonPurchaser[] {
+    return this.exportingPdf
+      ? this.filteredNonPurchasers
+      : this.filteredNonPurchasers.slice(this.nonPurchaserPage * PAGE_SIZE, (this.nonPurchaserPage + 1) * PAGE_SIZE);
+  }
   sortKey: keyof Buyer = 'totalSpent';
   sortDesc = true;
   loading = true;

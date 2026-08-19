@@ -109,7 +109,7 @@ public class ShareLinkTests
         var secondDto = Assert.IsType<ShareLinkDto>(second.Value);
 
         Assert.Equal(firstDto.Url, secondDto.Url);
-        Assert.StartsWith("https://diamantlaan.example/deel/", firstDto.Url);
+        Assert.StartsWith($"{AppPublicUrl.LiveSite}/deel/", firstDto.Url);
         Assert.StartsWith("/deel/", firstDto.Path);
         Assert.Equal(firstDto.Path, new Uri(firstDto.Url).AbsolutePath);
         Assert.Equal(1, db.Users.Count(u => u.ShareToken != null));

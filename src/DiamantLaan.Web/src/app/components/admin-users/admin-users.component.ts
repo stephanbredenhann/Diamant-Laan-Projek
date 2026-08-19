@@ -2,13 +2,14 @@ import { ChangeDetectorRef, Component, OnInit, ViewChild, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { AdminService } from '../../services/admin.service';
+import { AdminService, CertificateSummary } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import {
   CertificateCardComponent,
   CertificateSquare,
   sanitizeFilename,
 } from '../shared/certificate-card/certificate-card.component';
+import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 /** One row in the "which certificate?" chooser: a sheet the buyer's blocks add up to. */
 interface SheetChoice {
@@ -30,7 +31,7 @@ interface Buyer {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, AlertComponent, CertificateCardComponent],
+  imports: [CommonModule, FormsModule, AlertComponent, CertificateCardComponent, PaginatorComponent],
   template: `
     <div class="admin-content">
 
@@ -72,7 +73,7 @@ interface Buyer {
                 </tr>
               </thead>
               <tbody>
-                @for (b of filteredBuyers; track b.userId) {
+                @for (b of filteredBuyers | slice:page * pageSize:(page + 1) * pageSize; track b.userId) {
                   <tr>
                     <td>{{ b.name }}</td>
                     <td>{{ b.email }}</td>
@@ -97,6 +98,7 @@ interface Buyer {
               </tbody>
             </table>
           </div>
+          <app-paginator [total]="filteredBuyers.length" [(page)]="page" />
         }
 
         @if (certError) {
@@ -131,6 +133,75 @@ interface Buyer {
         [lockedMode]="'summary'"
         [viewOnly]="true" />
     </div>
+
+    <!-- Guest checkout leaves no name to print, so the admin fills it in before the PDF renders. -->
+    @if (namePrompt) {
+      <div class="modal-backdrop" (click)="closeNamePrompt()">
+        <div
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cert-name-title"
+          (click)="$event.stopPropagation()">
+          <h3 id="cert-name-title">Naam op sertifikaat</h3>
+          <p class="hint">Hierdie gebruiker het nie hulle naam gelos nie, vul dit hier in.</p>
+
+          <div class="field">
+            <label for="prompt-name">Naam op sertifikaat</label>
+            <input
+              id="prompt-name"
+              [(ngModel)]="promptName"
+              name="promptName"
+              maxlength="100"
+              placeholder="Koper se naam">
+          </div>
+
+          @if (namePrompt.squares.length > 1) {
+            <div class="field checkbox">
+              <label>
+                <input type="checkbox" [(ngModel)]="promptIndividual" name="promptIndividual">
+                Elke blok kry sy eie naam
+              </label>
+            </div>
+
+            @if (promptIndividual) {
+              <p class="sub-hint">Los ’n blok leeg om die naam hierbo daarop te druk.</p>
+              @for (id of namePrompt.squares; track id) {
+                <div class="field cert-name-row">
+                  <label [attr.for]="'promptBlock-' + id">Blok #{{ id }}</label>
+                  <input
+                    [id]="'promptBlock-' + id"
+                    [ngModel]="promptBlockNames[id]"
+                    (ngModelChange)="promptBlockNames[id] = $event"
+                    [name]="'promptBlock' + id"
+                    maxlength="100"
+                    [placeholder]="promptName.trim() || 'Koper se naam'">
+                </div>
+              }
+            }
+          }
+
+          @if (certError) {
+            <p class="error-msg">{{ certError }}</p>
+          }
+
+          <button
+            type="button"
+            class="btn btn-primary btn-sm btn-wide"
+            [disabled]="promptSaving || promptName.trim().length < 2"
+            (click)="saveNamesAndContinue()">
+            {{ promptSaving ? 'Besig...' : 'Stoor en laai af' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm btn-wide"
+            [disabled]="promptSaving"
+            (click)="closeNamePrompt()">
+            Kanselleer
+          </button>
+        </div>
+      </div>
+    }
 
     <!-- A buyer holding several blocks has several sheets, so ask which one before rendering. -->
     @if (sheetChoices.length > 0) {
@@ -332,6 +403,19 @@ interface Buyer {
       margin-bottom: 0.375rem;
     }
     .btn-wide { width: 100%; }
+    .btn-wide + .btn-wide { margin-top: 0.5rem; }
+    .modal .field { margin-bottom: 0.75rem; }
+    .modal .field.checkbox label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 400;
+    }
+    .sub-hint {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
     .sheet-list {
       list-style: none;
       margin: 1rem 0;
@@ -363,6 +447,8 @@ export class AdminUsersComponent implements OnInit {
   buyers: Buyer[] = [];
   filteredBuyers: Buyer[] = [];
   search = '';
+  page = 0;
+  readonly pageSize = PAGE_SIZE;
   sortKey: keyof Buyer = 'totalSpent';
   sortDesc = true;
   loadingBuyers = true;
@@ -377,6 +463,13 @@ export class AdminUsersComponent implements OnInit {
   /** Which sheet is rendering: a target, 'all' for the zip, or null when idle. */
   sheetBusy: 'summary' | number | 'all' | null = null;
   zipProgress = '';
+
+  /** Set while the admin is typing the missing names for a buyer who left none. */
+  namePrompt: { buyer: Buyer; squares: number[] } | null = null;
+  promptName = '';
+  promptIndividual = false;
+  promptBlockNames: Record<number, string> = {};
+  promptSaving = false;
 
   email = '';
   message = '';
@@ -452,41 +545,98 @@ export class AdminUsersComponent implements OnInit {
 
     try {
       const summary = await firstValueFrom(this.admin.getCertificateSummary(buyer.userId));
-      this.certOwnerName = summary.ownerName;
-      this.certSquares = (summary.squares ?? []).map(s => ({
-        id: s.id,
-        purchaseDate: s.purchaseDate ?? undefined,
-        ownerName: s.ownerName,
-      }));
-      this.cdr.detectChanges();
 
-      // Let the certificate card apply lockedMode / sheet layout before capture.
-      await new Promise<void>(resolve => setTimeout(resolve, 50));
-
-      const targets = this.certCard.sheetTargets();
-      if (targets.length === 0) {
-        this.certError = `${buyer.name} besit geen blokke nie.`;
-        this.clearCert();
+      // A guest who checked out without an account often left no name at all, and a blank
+      // certificate is worse than no certificate. Ask before anything renders.
+      if (!summary.ownerName.trim()) {
+        const squares = (summary.squares ?? []).map(s => s.id);
+        if (squares.length === 0) {
+          this.certError = `${buyer.name} besit geen blokke nie.`;
+          return;
+        }
+        this.namePrompt = { buyer, squares };
+        this.promptName = '';
+        this.promptIndividual = false;
+        this.promptBlockNames = {};
         return;
       }
 
-      // A lone block is the only sheet there is, so there is nothing to ask about.
-      if (targets.length === 1) {
-        await this.saveSheet(targets[0]);
-        this.clearCert();
-        return;
-      }
-
-      this.sheetChoices = targets.map(target => ({
-        target,
-        label: this.certCard.sheetLabel(target),
-      }));
+      await this.renderSummary(summary, buyer);
     } catch {
       this.certError = `Kon nie ${buyer.name} se sertifikate laai nie.`;
       this.clearCert();
     } finally {
       this.downloadingUserId = null;
     }
+  }
+
+  /** Writes the names the admin just typed, then carries straight on to the download. */
+  async saveNamesAndContinue() {
+    const prompt = this.namePrompt;
+    if (!prompt || this.promptSaving) return;
+
+    const summaryName = this.promptName.trim();
+    if (summaryName.length < 2) return;
+
+    this.promptSaving = true;
+    this.certError = '';
+    try {
+      const individual = this.promptIndividual && prompt.squares.length > 1;
+      const summary = await firstValueFrom(this.admin.saveCertificateNames(prompt.buyer.userId, {
+        sameForAll: !individual,
+        summaryName,
+        blocks: individual
+          ? prompt.squares.map(id => ({ id, name: (this.promptBlockNames[id] ?? '').trim() }))
+              .filter(b => b.name.length >= 2)
+              .map(b => ({ squareId: b.id, name: b.name }))
+          : [],
+      }));
+      this.namePrompt = null;
+      await this.renderSummary(summary, prompt.buyer);
+    } catch {
+      this.certError = 'Kon nie die name stoor nie. Probeer asseblief weer.';
+    } finally {
+      this.promptSaving = false;
+    }
+  }
+
+  closeNamePrompt() {
+    if (this.promptSaving) return;
+    this.namePrompt = null;
+    this.certError = '';
+  }
+
+  /** Renders the off-screen card, then either downloads the one sheet or opens the chooser. */
+  private async renderSummary(summary: CertificateSummary, buyer: Buyer) {
+    this.certOwnerName = summary.ownerName;
+    this.certSquares = (summary.squares ?? []).map(s => ({
+      id: s.id,
+      purchaseDate: s.purchaseDate ?? undefined,
+      ownerName: s.ownerName,
+    }));
+    this.cdr.detectChanges();
+
+    // Let the certificate card apply lockedMode / sheet layout before capture.
+    await new Promise<void>(resolve => setTimeout(resolve, 50));
+
+    const targets = this.certCard.sheetTargets();
+    if (targets.length === 0) {
+      this.certError = `${buyer.name} besit geen blokke nie.`;
+      this.clearCert();
+      return;
+    }
+
+    // A lone block is the only sheet there is, so there is nothing to ask about.
+    if (targets.length === 1) {
+      await this.saveSheet(targets[0]);
+      this.clearCert();
+      return;
+    }
+
+    this.sheetChoices = targets.map(target => ({
+      target,
+      label: this.certCard.sheetLabel(target),
+    }));
   }
 
   async downloadSheet(target: 'summary' | number) {

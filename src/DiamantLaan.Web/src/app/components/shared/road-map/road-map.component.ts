@@ -335,7 +335,10 @@ export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       const id = props?.['id'] as number;
       const status = (props?.['status'] as number) ?? SquareStatus.NogNieBeginNie;
       const isSold = props?.['isSold'] as boolean;
-      const isReserved = props?.['isReserved'] === true;
+      // A block held by an unpaid purchase is off the market exactly like an admin-reserved one,
+      // and draws the same colour. It only turns sold once the ITN confirms the payment.
+      const isPending = props?.['isPending'] === true;
+      const isReserved = props?.['isReserved'] === true || isPending;
       const imageCount = (props?.['imageCount'] as number) ?? 0;
 
       let fillColor: string;
@@ -396,7 +399,7 @@ export class RoadMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           id,
           props?.['status'] as number | undefined,
           props?.['isSold'] === true,
-          props?.['isReserved'] === true,
+          props?.['isReserved'] === true || props?.['isPending'] === true,
         ),
         {
           sticky: true,

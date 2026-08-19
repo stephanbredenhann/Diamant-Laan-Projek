@@ -4,11 +4,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService, AdminTransaction } from '../../services/admin.service';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 @Component({
   selector: 'app-admin-delete-transaction',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatorComponent],
   template: `
     <div class="admin-content">
       <div class="warning-card">
@@ -54,7 +55,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
                 </tr>
               </thead>
               <tbody>
-                @for (tx of filteredTransactions; track tx.id) {
+                @for (tx of filteredTransactions | slice:page * pageSize:(page + 1) * pageSize; track tx.id) {
                   <tr>
                     <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
                     <td>#{{ tx.id }}</td>
@@ -134,6 +135,7 @@ import { blokLabel } from '../../utils/afrikaans.util';
               </tbody>
             </table>
           </div>
+          <app-paginator [total]="filteredTransactions.length" [(page)]="page" />
         }
       </div>
     </div>
@@ -261,6 +263,8 @@ export class AdminDeleteTransactionComponent implements OnInit {
   loading = true;
   loadError = '';
   search = '';
+  page = 0;
+  readonly pageSize = PAGE_SIZE;
 
   confirmingId: number | null = null;
   deletingId: number | null = null;

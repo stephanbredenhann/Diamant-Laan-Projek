@@ -15,20 +15,30 @@ public class AppPublicUrlTests
             })
             .Build();
 
+    /// <summary>
+    /// The live site is hardcoded, so no hosting-level setting can repoint links that have already
+    /// been emailed out. A non-localhost App:PublicUrl is ignored rather than obeyed.
+    /// </summary>
     [Fact]
-    public void Resolve_PrefersTheConfiguredPublicUrl()
+    public void Resolve_IgnoresAConfiguredPublicUrl()
     {
         Assert.Equal(
-            "https://oewerpad.orania.co.za",
-            AppPublicUrl.Resolve(Config(app: "https://oewerpad.orania.co.za/", azureHost: "app.azurewebsites.net")));
+            AppPublicUrl.LiveSite,
+            AppPublicUrl.Resolve(Config(app: "https://someone-elses-host.example", azureHost: "app.azurewebsites.net")));
     }
 
     [Fact]
-    public void Resolve_FallsBackToTheAzureHostnameWhenOnlyLocalhostIsConfigured()
+    public void Resolve_IgnoresTheAzureHostname()
     {
         Assert.Equal(
-            "https://diamantlaan-sb.azurewebsites.net",
-            AppPublicUrl.Resolve(Config(app: "http://localhost:4200", azureHost: "diamantlaan-sb.azurewebsites.net")));
+            AppPublicUrl.LiveSite,
+            AppPublicUrl.Resolve(Config(azureHost: "diamantlaan-sb.azurewebsites.net")));
+    }
+
+    [Fact]
+    public void Resolve_IsTheLiveSiteWhenNothingIsConfigured()
+    {
+        Assert.Equal("https://bou.orania.co.za", AppPublicUrl.Resolve(Config()));
     }
 
     /// <summary>

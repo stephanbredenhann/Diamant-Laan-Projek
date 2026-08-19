@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using DiamantLaan.Api.Controllers;
+using DiamantLaan.Api.Models.Dtos;
+using Microsoft.AspNetCore.Http;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
 using DiamantLaan.Api.Models.Enums;
@@ -121,6 +124,90 @@ public class AdminCertificateSummaryTests
         Assert.IsType<NotFoundObjectResult>(result);
     }
 
+    [Fact]
+    public async Task SaveCertificateNames_GuestWithNoName_SetsOneNameOnEverySheet()
+    {
+        await using var db = CreateDb();
+        // A guest checkout: no account name, no certificate name, nothing to print.
+        db.Users.Add(new User { Id = "g1", UserName = "gas@test.com", Email = "gas@test.com", IsGuest = true });
+        db.Squares.AddRange(
+            new Square { Id = 101, OwnerId = "g1", CertificateName = "ou naam" },
+            new Square { Id = 102, OwnerId = "g1" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.SaveCertificateNames("g1", new SaveCertificateNamesDto
+        {
+            SameForAll = true,
+            SummaryName = "  Anna Botha  "
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var root = Json(ok);
+        Assert.Equal("Anna Botha", root.GetProperty("OwnerName").GetString());
+        Assert.True(root.GetProperty("SameForAll").GetBoolean());
+        // Every block prints the one name, so no block keeps a name of its own.
+        Assert.All(root.GetProperty("Squares").EnumerateArray(),
+            sq => Assert.Equal("Anna Botha", sq.GetProperty("OwnerName").GetString()));
+        Assert.All(await db.Squares.Where(s => s.OwnerId == "g1").ToListAsync(),
+            s => Assert.Null(s.CertificateName));
+    }
+
+    [Fact]
+    public async Task SaveCertificateNames_Individual_KeepsPerBlockNamesAndFallsBack()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new User { Id = "g1", UserName = "gas@test.com", Email = "gas@test.com", IsGuest = true });
+        db.Squares.AddRange(
+            new Square { Id = 101, OwnerId = "g1" },
+            new Square { Id = 102, OwnerId = "g1" },
+            new Square { Id = 999, OwnerId = "other" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.SaveCertificateNames("g1", new SaveCertificateNamesDto
+        {
+            SameForAll = false,
+            SummaryName = "Anna Botha",
+            Blocks =
+            {
+                new BlockCertificateNameDto { SquareId = 101, Name = "Klein Anna" },
+                // Blank falls back to the summary name; a block owned by someone else is ignored.
+                new BlockCertificateNameDto { SquareId = 102, Name = " " },
+                new BlockCertificateNameDto { SquareId = 999, Name = "Kaper" }
+            }
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var squares = Json(ok).GetProperty("Squares").EnumerateArray().ToList();
+        Assert.Equal("Klein Anna", squares[0].GetProperty("OwnerName").GetString());
+        Assert.Equal("Anna Botha", squares[1].GetProperty("OwnerName").GetString());
+        Assert.Null((await db.Squares.FindAsync(999))!.CertificateName);
+    }
+
+    [Fact]
+    public async Task SaveCertificateNames_BlankName_ReturnsBadRequest()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new User { Id = "g1", UserName = "gas@test.com", Email = "gas@test.com" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var result = await controller.SaveCertificateNames("g1", new SaveCertificateNamesDto
+        {
+            SameForAll = true,
+            SummaryName = "A"
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    private static System.Text.Json.JsonElement Json(OkObjectResult ok)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+        return System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
+    }
+
     private static Mock<UserManager<User>> CreateUserManagerMock()
     {
         var store = new Mock<IUserStore<User>>();
@@ -143,7 +230,7 @@ public class AdminCertificateSummaryTests
             env,
             Mock.Of<ILogger<AdminSaveUndoService>>());
 
-        return new AdminController(
+        var controller = new AdminController(
             db,
             CreateUserManagerMock().Object,
             env,
@@ -153,5 +240,15 @@ public class AdminCertificateSummaryTests
             saveUndo,
             new EmailOutboxService(db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>()),
             config);
+
+        // The name-fix endpoint writes an audit row, which needs an admin on the request.
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.NameIdentifier, "admin1") }, "TestAuth"));
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = principal }
+        };
+
+        return controller;
     }
 }

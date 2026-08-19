@@ -628,7 +628,7 @@ export class MapComponent implements OnInit {
   toggleSquare(sqId: number) {
     const sq = this.squares.find(s => s.id === sqId);
     if (!sq) return;
-    if (sq.isSold || sq.isReserved) return;
+    if (sq.isSold || sq.isReserved || sq.isPending) return;
     if (sqId > this.segments[this.segments.length - 1].endId) return;
 
     const selected = new Set(this.selectedIds());
@@ -645,7 +645,7 @@ export class MapComponent implements OnInit {
     for (const id of ids) {
       const sq = this.squares.find(s => s.id === id);
       if (!sq) continue;
-      if (sq.isSold || sq.isReserved) continue;
+      if (sq.isSold || sq.isReserved || sq.isPending) continue;
       if (id > this.segments[this.segments.length - 1].endId) continue;
       selected.add(id);
     }
@@ -730,7 +730,7 @@ export class MapComponent implements OnInit {
 
     this.roadMap?.focusSquare(id, { showTooltip: true });
 
-    if (sq.isReserved) {
+    if (sq.isReserved || sq.isPending) {
       this.searchError.set('Hierdie blok is nie beskikbaar nie.');
       return;
     }

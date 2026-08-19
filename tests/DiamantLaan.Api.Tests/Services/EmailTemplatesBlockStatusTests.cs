@@ -34,7 +34,7 @@ public class EmailTemplatesBlockStatusTests
         Assert.NotNull(mail);
         Assert.Contains("Dear Ann!", mail.Value.Html);
         Assert.Contains("You can turn off emails like this one under", mail.Value.Html);
-        Assert.Contains("The Orania Beweging team", mail.Value.Html);
+        Assert.Contains("The Orania Movement team", mail.Value.Html);
         // Nothing Afrikaans may survive: the greeting, the sign-off and the opt-out line are the
         // three that live in the shell rather than the body, so they are the ones that get missed.
         Assert.DoesNotContain("Beste Ann!", mail.Value.Html);
@@ -42,21 +42,19 @@ public class EmailTemplatesBlockStatusTests
         Assert.DoesNotContain("afskakel", mail.Value.Html);
     }
 
-    /// <summary>
-    /// The switch-to-English line is off while the client reads every email before readers can
-    /// change the language on themselves. Passing the URL must not put it back.
-    /// </summary>
     [Fact]
-    public void BlockStatusUpdate_DoesNotOfferTheSwitchToEnglish()
+    public void BlockStatusUpdate_OffersTheSwitchToEnglish_OnlyInAfrikaans()
     {
         const string line = "I would like to receive all further communication in English";
 
         var af = EmailTemplates.BlockStatusUpdate("Ann", SquareStatus.Voorberei, [12], Site, en: false, switchUrl: Switch);
         var en = EmailTemplates.BlockStatusUpdate("Ann", SquareStatus.Voorberei, [12], Site, en: true, switchUrl: Switch);
 
+        // The href is HTML-encoded, so the query separator arrives as &amp; — assert on what an
+        // inbox actually receives rather than on the raw URL we passed in.
         var href = System.Net.WebUtility.HtmlEncode(Switch);
-        Assert.DoesNotContain(line, af!.Value.Html);
-        Assert.DoesNotContain(href, af.Value.Html);
+        Assert.Contains(line, af!.Value.Html);
+        Assert.Contains($"href=\"{href}\"", af.Value.Html);
         Assert.DoesNotContain(line, en!.Value.Html);
         Assert.DoesNotContain(href, en.Value.Html);
     }

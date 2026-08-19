@@ -282,6 +282,51 @@ public class AdminController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Fills in the certificate names for a buyer who never left one — a guest checkout, usually.
+    /// No 15-minute window here: the point of this is that the buyer's own window is long gone and
+    /// only an admin can still fix it.
+    /// </summary>
+    [HttpPut("users/{userId}/certificate-names")]
+    public async Task<IActionResult> SaveCertificateNames(string userId, [FromBody] SaveCertificateNamesDto dto)
+    {
+        var summaryName = dto.SummaryName.Trim();
+        if (summaryName.Length < 2)
+            return BadRequest(new { message = "Voer asseblief ’n naam vir die sertifikaat in." });
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return NotFound(new { message = "Gebruiker nie gevind nie." });
+
+        var squares = await _db.Squares.Where(s => s.OwnerId == userId).ToListAsync();
+
+        if (dto.SameForAll)
+        {
+            // Null means "print the summary name", which is exactly what one-name-for-all is.
+            foreach (var square in squares)
+                square.CertificateName = null;
+        }
+        else
+        {
+            var byId = squares.ToDictionary(s => s.Id);
+            foreach (var block in dto.Blocks)
+            {
+                if (!byId.TryGetValue(block.SquareId, out var square))
+                    continue;
+
+                var name = block.Name.Trim();
+                square.CertificateName = name.Length >= 2 ? name : null;
+            }
+        }
+
+        user.CertificateName = summaryName;
+        user.CertificateIndividual = !dto.SameForAll;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(User, "SetCertificateNames", $"User {userId}, \"{summaryName}\"");
+
+        return await GetCertificateSummary(userId);
+    }
+
     [HttpGet("transactions")]
     public async Task<IActionResult> GetTransactions()
     {

@@ -6,13 +6,14 @@ import { AdminService, AdminTransaction } from '../../services/admin.service';
 import { ReceiptCardComponent, ReceiptData } from '../shared/receipt-card/receipt-card.component';
 import { downloadElementAsPdf } from '../../utils/pdf-export.util';
 import { blokLabel } from '../../utils/afrikaans.util';
+import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBlock' | 'amount';
 
 @Component({
   selector: 'app-admin-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReceiptCardComponent],
+  imports: [CommonModule, FormsModule, ReceiptCardComponent, PaginatorComponent],
   template: `
     <div class="admin-content">
       <div class="table-card">
@@ -22,7 +23,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
             <input
               type="text"
               [(ngModel)]="search"
-              placeholder="Soek naam, e-pos of aankoop #...">
+              placeholder="Soek naam, e-pos, aankoop # of blok #...">
           </div>
         </div>
 
@@ -61,7 +62,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
                 </tr>
               </thead>
               <tbody>
-                @for (tx of sortedTransactions; track tx.id) {
+                @for (tx of sortedTransactions | slice:page * pageSize:(page + 1) * pageSize; track tx.id) {
                   <tr>
                     <td>{{ tx.purchaseDate | date:'dd MMM yyyy HH:mm' }}</td>
                     <td>#{{ tx.id }}</td>
@@ -101,6 +102,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
               </tbody>
             </table>
           </div>
+          <app-paginator [total]="sortedTransactions.length" [(page)]="page" />
         }
 
         @if (downloadError) {
@@ -249,6 +251,8 @@ export class AdminTransactionsComponent implements OnInit {
   downloadingId: number | null = null;
   receiptData: ReceiptData | null = null;
   search = '';
+  page = 0;
+  readonly pageSize = PAGE_SIZE;
 
   sortKey: SortKey = 'purchaseDate';
   sortDir: 'asc' | 'desc' = 'desc';
@@ -292,10 +296,13 @@ paymentStatusLabel(status: string): string {
   get filteredTransactions(): AdminTransaction[] {
     const q = this.search.trim().toLowerCase();
     if (!q) return this.transactions;
+    // Block numbers match whole, not as a substring: typing 5 must not drag in blocks 15 and 500.
+    const blockNo = Number(q);
     return this.transactions.filter(tx =>
       tx.userName?.toLowerCase().includes(q) ||
       tx.userEmail?.toLowerCase().includes(q) ||
-      String(tx.id).includes(q)
+      String(tx.id).includes(q) ||
+      (Number.isInteger(blockNo) && tx.squareIds.includes(blockNo))
     );
   }
 
