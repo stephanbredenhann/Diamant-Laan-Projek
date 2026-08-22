@@ -80,13 +80,22 @@ interface Buyer {
                     <td class="numeric">{{ b.squares }}</td>
                     <td class="numeric">R{{ b.totalSpent | number:'1.0-0' }}</td>
                     <td class="cert-col">
-                      <button
-                        class="btn btn-outline btn-sm"
-                        type="button"
-                        [disabled]="downloadingUserId === b.userId"
-                        (click)="downloadCertificate(b)">
-                        {{ downloadingUserId === b.userId ? 'Besig...' : 'Laai af' }}
-                      </button>
+                      <div class="cert-actions">
+                        <button
+                          class="btn btn-outline btn-sm"
+                          type="button"
+                          [disabled]="busyUserId !== null"
+                          (click)="downloadCertificate(b)">
+                          {{ downloadingUserId === b.userId ? 'Besig...' : 'Laai af' }}
+                        </button>
+                        <button
+                          class="btn btn-outline btn-sm"
+                          type="button"
+                          [disabled]="busyUserId !== null"
+                          (click)="editNames(b)">
+                          {{ namingUserId === b.userId ? 'Besig...' : 'Naam' }}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 }
@@ -144,7 +153,11 @@ interface Buyer {
           aria-labelledby="cert-name-title"
           (click)="$event.stopPropagation()">
           <h3 id="cert-name-title">Naam op sertifikaat</h3>
-          <p class="hint">Hierdie gebruiker het nie hulle naam gelos nie, vul dit hier in.</p>
+          <p class="hint">
+            {{ namePrompt.download
+              ? 'Hierdie gebruiker het nie hulle naam gelos nie, vul dit hier in.'
+              : 'Verander die naam wat op hierdie gebruiker se sertifikate gedruk word.' }}
+          </p>
 
           <div class="field">
             <label for="prompt-name">Naam op sertifikaat</label>
@@ -190,7 +203,7 @@ interface Buyer {
             class="btn btn-primary btn-sm btn-wide"
             [disabled]="promptSaving || promptName.trim().length < 2"
             (click)="saveNamesAndContinue()">
-            {{ promptSaving ? 'Besig...' : 'Stoor en laai af' }}
+            {{ promptSaving ? 'Besig...' : (namePrompt.download ? 'Stoor en laai af' : 'Stoor') }}
           </button>
           <button
             type="button"
@@ -334,6 +347,11 @@ interface Buyer {
       color: var(--color-muted);
     }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+    .cert-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
 
     /* Make Admin form */
     .form-card {
@@ -361,7 +379,10 @@ interface Buyer {
       font-weight: 600;
       margin-bottom: 0.375rem;
     }
-    .field input {
+    /* Not the checkbox: this rule outranks the global input[type="checkbox"] sizing (the
+       encapsulation attribute adds specificity), and a 100%-wide checkbox pushed its own
+       label clean out of the modal. */
+    .field input:not([type="checkbox"]) {
       width: 100%;
       padding: 0.625rem 0.75rem;
       border: 1px solid var(--color-border);
@@ -454,6 +475,7 @@ export class AdminUsersComponent implements OnInit {
   loadingBuyers = true;
   loadError = '';
   downloadingUserId: string | null = null;
+  namingUserId: string | null = null;
 
   certOwnerName = '';
   certSquares: CertificateSquare[] = [];
@@ -464,8 +486,11 @@ export class AdminUsersComponent implements OnInit {
   sheetBusy: 'summary' | number | 'all' | null = null;
   zipProgress = '';
 
-  /** Set while the admin is typing the missing names for a buyer who left none. */
-  namePrompt: { buyer: Buyer; squares: number[] } | null = null;
+  /**
+   * Set while the admin is typing certificate names: either the missing ones for a buyer who
+   * left none (download follows), or a correction to names already printed (download does not).
+   */
+  namePrompt: { buyer: Buyer; squares: number[]; download: boolean } | null = null;
   promptName = '';
   promptIndividual = false;
   promptBlockNames: Record<number, string> = {};
@@ -537,8 +562,13 @@ export class AdminUsersComponent implements OnInit {
     return this.sortDesc ? '▼' : '▲';
   }
 
+  /** Whichever row is mid-request, so every button in the table stays disabled until it lands. */
+  get busyUserId(): string | null {
+    return this.downloadingUserId ?? this.namingUserId;
+  }
+
   async downloadCertificate(buyer: Buyer) {
-    if (this.downloadingUserId) return;
+    if (this.busyUserId) return;
 
     this.downloadingUserId = buyer.userId;
     this.certError = '';
@@ -554,7 +584,7 @@ export class AdminUsersComponent implements OnInit {
           this.certError = `${buyer.name} besit geen blokke nie.`;
           return;
         }
-        this.namePrompt = { buyer, squares };
+        this.namePrompt = { buyer, squares, download: true };
         this.promptName = '';
         this.promptIndividual = false;
         this.promptBlockNames = {};
@@ -567,6 +597,38 @@ export class AdminUsersComponent implements OnInit {
       this.clearCert();
     } finally {
       this.downloadingUserId = null;
+    }
+  }
+
+  /**
+   * Corrects names that are already on issued certificates. The buyer's own 15-minute window is
+   * long shut by then; an admin's is never shut, because a wrong name has to stay fixable.
+   */
+  async editNames(buyer: Buyer) {
+    if (this.busyUserId) return;
+
+    this.namingUserId = buyer.userId;
+    this.certError = '';
+
+    try {
+      const summary = await firstValueFrom(this.admin.getCertificateSummary(buyer.userId));
+      const squares = (summary.squares ?? []).map(s => s.id);
+      if (squares.length === 0) {
+        this.certError = `${buyer.name} besit geen blokke nie.`;
+        return;
+      }
+
+      this.namePrompt = { buyer, squares, download: false };
+      this.promptName = summary.ownerName;
+      this.promptIndividual = !summary.sameForAll;
+      // Prefilled with what each sheet prints today, so an admin fixing one name does not
+      // have to retype the rest.
+      this.promptBlockNames = Object.fromEntries(
+        (summary.squares ?? []).map(sq => [sq.id, sq.ownerName]));
+    } catch {
+      this.certError = `Kon nie ${buyer.name} se sertifikaatname laai nie.`;
+    } finally {
+      this.namingUserId = null;
     }
   }
 
@@ -585,14 +647,14 @@ export class AdminUsersComponent implements OnInit {
       const summary = await firstValueFrom(this.admin.saveCertificateNames(prompt.buyer.userId, {
         sameForAll: !individual,
         summaryName,
+        // Blanks go through too: the API reads a short name as "print the summary name", which
+        // is what the hint above the fields promises.
         blocks: individual
-          ? prompt.squares.map(id => ({ id, name: (this.promptBlockNames[id] ?? '').trim() }))
-              .filter(b => b.name.length >= 2)
-              .map(b => ({ squareId: b.id, name: b.name }))
+          ? prompt.squares.map(id => ({ squareId: id, name: (this.promptBlockNames[id] ?? '').trim() }))
           : [],
       }));
       this.namePrompt = null;
-      await this.renderSummary(summary, prompt.buyer);
+      if (prompt.download) await this.renderSummary(summary, prompt.buyer);
     } catch {
       this.certError = 'Kon nie die name stoor nie. Probeer asseblief weer.';
     } finally {

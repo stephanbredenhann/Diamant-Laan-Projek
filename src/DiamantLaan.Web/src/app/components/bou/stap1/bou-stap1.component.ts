@@ -40,6 +40,7 @@ const MAKS_PER_TRANSAKSIE = 50;
                 (click)="kiesPreset(opt)"
               >
                 <span class="choice-number">{{ opt }} <small>m²</small></span>
+                <span class="choice-caption">{{ presetOnderskrif[opt] | t }}</span>
                 <span class="choice-price">{{ randBedrag(opt * prysPerMeter) }}</span>
               </button>
             }
@@ -299,6 +300,11 @@ export class BouStap1Component implements OnInit {
   private purchase = inject(PurchaseService);
 
   readonly presets = [1, 2, 5] as const;
+  readonly presetOnderskrif: Record<number, string> = {
+    1: 'Maak jou bydrae!',
+    2: 'Vir jou en jou gade!',
+    5: 'Ideaal vir ’n gesin!',
+  };
   readonly prysPerMeter = PRYS_PER_METER;
   readonly randBedrag = randBedrag;
 

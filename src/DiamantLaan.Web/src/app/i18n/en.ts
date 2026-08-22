@@ -358,6 +358,9 @@ export const EN: Record<string, string> = {
   'Elke blokkie m² het ’n unieke nommer. Kies hoeveel blokkies jy wil borg en versamel ’n sertifikaat vir elke blokkie.':
     'Every m² block has a unique number. Choose how many blocks you want to sponsor and collect a certificate for each one.',
   'Hoeveel vierkante meter': 'How many square metres',
+  'Maak jou bydrae!': 'Make your contribution!',
+  'Vir jou en jou gade!': 'For you and your spouse!',
+  'Ideaal vir ’n gesin!': 'Ideal for a family!',
   'Eie hoeveelheid': 'Own amount',
   'Besluit self hoeveel blokkies jy wil borg': 'Decide for yourself how many blocks to sponsor',
   'Jou hoeveelheid': 'Your amount',
