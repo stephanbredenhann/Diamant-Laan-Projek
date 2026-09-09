@@ -111,7 +111,8 @@ describe('AdminComponent', () => {
 
       http.expectNone(r => r.url.endsWith('/api/admin/squares/status'));
       const konflik = http.expectOne(r => r.url.endsWith('/api/admin/squares/images/conflicts'));
-      expect(konflik.request.method).toBe('GET');
+      expect(konflik.request.method).toBe('POST');
+      expect(konflik.request.body.squareIds).toEqual([1, 2]);
 
       konflik.flush({ conflictingSquareIds: [1], totalSelected: 2 });
       expect(komponent.imageConflictPrompt).not.toBeNull();

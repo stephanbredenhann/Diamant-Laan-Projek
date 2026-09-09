@@ -785,14 +785,15 @@ public class AdminController : ControllerBase
         }));
     }
 
-    [HttpGet("squares/images/conflicts")]
-    public async Task<IActionResult> GetImageConflicts([FromQuery] List<int> squareIds, [FromQuery] SquareStatus status)
+    // POST, not GET: 500 selected squares overflow the query string and the host rejects the URL.
+    [HttpPost("squares/images/conflicts")]
+    public async Task<IActionResult> GetImageConflicts([FromBody] ImageConflictQueryDto dto)
     {
-        if (squareIds == null || squareIds.Count == 0)
+        if (dto?.SquareIds == null || dto.SquareIds.Count == 0)
             return BadRequest(new { message = "Geen blokke gekies nie." });
 
-        var distinctIds = squareIds.Distinct().ToList();
-        var conflictingSquareIds = await GetConflictingSquareIdsAsync(distinctIds, status);
+        var distinctIds = dto.SquareIds.Distinct().ToList();
+        var conflictingSquareIds = await GetConflictingSquareIdsAsync(distinctIds, dto.Status);
 
         return Ok(new
         {
