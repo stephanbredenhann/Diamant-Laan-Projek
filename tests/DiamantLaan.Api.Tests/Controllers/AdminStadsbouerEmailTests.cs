@@ -190,7 +190,7 @@ public class AdminStadsbouerEmailTests : IDisposable
     }
 
     [Fact]
-    public async Task Oorhandig_StoresPhotoAndQueuesEmailWithPhotoUrl_AndRedoReplacesTheFile()
+    public async Task Oorhandig_StoresPhotoAndQueuesEmail_AndRedoOverwritesInPlaceWithoutEmailing()
     {
         _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com", FirstName = "Piet" });
         _db.Squares.Add(new Square { Id = 5 });
@@ -216,16 +216,16 @@ public class AdminStadsbouerEmailTests : IDisposable
             Assert.Equal("koper@test.com", email.To);
             Assert.Contains(AppPublicUrl.LiveSite + url1, email.HtmlBody);
 
+            var handedOverAt = saved.HandedOverAt;
             var second = Assert.IsType<OkObjectResult>(await controller.HandOverStadsbouer(builder.Id, ImageFile(), CancellationToken.None));
             var url2 = (string)second.Value!.GetType().GetProperty("handoverPhotoUrl")!.GetValue(second.Value)!;
-            Assert.NotEqual(url1, url2);
-            Assert.False(File.Exists(path1));
-            Assert.Equal(2, _db.PendingEmails.Count());
+            Assert.Equal(url1, url2);
+            Assert.True(File.Exists(path1));
+            Assert.Single(_db.PendingEmails);
+            Assert.Equal(handedOverAt, (await _db.Stadsbouers.SingleAsync()).HandedOverAt);
 
             var publicController = new StadsbouersController(_db, new SiteSettingsService(_db), CreateEnv());
-            Assert.IsType<NotFoundResult>(await publicController.GetHandoverPhoto(fileName1, CancellationToken.None));
-            Assert.IsType<PhysicalFileResult>(
-                await publicController.GetHandoverPhoto(url2.Substring("/api/stadsbouers/oorhandig/".Length), CancellationToken.None));
+            Assert.IsType<PhysicalFileResult>(await publicController.GetHandoverPhoto(fileName1, CancellationToken.None));
         }
         finally
         {
@@ -233,6 +233,25 @@ public class AdminStadsbouerEmailTests : IDisposable
             foreach (var f in Directory.GetFiles(dir, "oorhandig-*"))
                 File.Delete(f);
         }
+    }
+
+    [Fact]
+    public async Task Rename_CarriesOverToSponsoredBlocks_ButKeepsANameChosenSince()
+    {
+        _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com" });
+        _db.Squares.Add(new Square { Id = 5, CertificateName = "Kobus Nell" });
+        _db.Squares.Add(new Square { Id = 6, CertificateName = "Oom Kobus" });
+        _db.Squares.Add(new Square { Id = 7, CertificateName = "Kobus Nell" });
+        var builder = new Stadsbouer { Name = "Kobus Nell" };
+        _db.Stadsbouers.Add(builder);
+        _db.SaveChanges();
+        SeedSponsorship(builder.Id, 5, 6);
+
+        await CreateController(false, out _).UpdateStadsbouer(builder.Id, new StadsbouerUploadDto { Name = "Kobus Nel" }, null);
+
+        Assert.Equal("Kobus Nel", (await _db.Squares.SingleAsync(s => s.Id == 5)).CertificateName);
+        Assert.Equal("Oom Kobus", (await _db.Squares.SingleAsync(s => s.Id == 6)).CertificateName);
+        Assert.Equal("Kobus Nell", (await _db.Squares.SingleAsync(s => s.Id == 7)).CertificateName);
     }
 
     [Fact]

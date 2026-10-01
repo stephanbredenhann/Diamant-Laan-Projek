@@ -128,16 +128,20 @@ public static class EmailTemplates
             T(en, "Groete uit Orania!", "Greetings from Orania!"));
     }
 
-    /// <summary>Thanks the sponsor once their payment for a stadsbouer is confirmed. Afrikaans only.</summary>
-    public static string StadsbouerThanks(string sponsorFirstName, string builderName)
+    /// <summary>Thanks the sponsor once, for every stadsbouer on a just-confirmed purchase. Afrikaans only.</summary>
+    public static string StadsbouerThanks(string sponsorFirstName, IReadOnlyList<string> builderNames)
     {
-        var person = WebUtility.HtmlEncode(builderName);
+        var names = builderNames.Select(n => $"<strong>{WebUtility.HtmlEncode(n)}</strong>").ToList();
+        var people = names.Count == 1 ? names[0] : $"{string.Join(", ", names.Take(names.Count - 1))} en {names[^1]}";
+        var handover = names.Count == 1
+            ? $"Ons gaan {WebUtility.HtmlEncode(builderNames[0])} se sertifikaat aan hom/haar oorhandig. Ons laat weet jou wanneer hulle dit in ontvangs neem."
+            : "Ons gaan elkeen se sertifikaat aan hulle oorhandig. Ons laat weet jou wanneer hulle dit in ontvangs neem.";
         return Shell(
             "Dankie!",
             sponsorFirstName,
             $"""
-              <p style="margin:0 0 16px;">Baie dankie dat jy vir <strong>{person}</strong> geborg het!</p>
-              <p style="margin:0 0 16px;">Met jou hulp kry ons hierdie nuwe pad sommer vinnig geteer. Ons gaan {person} se sertifikaat aan hom/haar oorhandig. Ons laat weet jou wanneer hulle dit in ontvangs neem.</p>
+              <p style="margin:0 0 16px;">Baie dankie dat jy vir {people} geborg het!</p>
+              <p style="margin:0 0 16px;">Met jou hulp kry ons hierdie nuwe pad sommer vinnig geteer. {handover}</p>
               <p style="margin:0;">Dankie vir jou spanwerk!</p>
             """,
             false,

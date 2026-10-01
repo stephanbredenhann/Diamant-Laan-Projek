@@ -131,7 +131,7 @@ const LEE_VORM: Vorm = {
       <div class="modal-backdrop" (click)="closeHandover()">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oh-title" (click)="$event.stopPropagation()">
           <h3 id="oh-title">Oorhandig aan {{ handover.name }}</h3>
-          <p class="hint">Die foto word saam met 'n dankie-e-pos aan die borg gestuur.</p>
+          <p class="hint">{{ handover.redo ? 'Die nuwe foto vervang die vorige een. Die borg kry nie weer ’n e-pos nie.' : 'Die foto word saam met ’n dankie-e-pos aan die borg gestuur.' }}</p>
 
           <div class="field">
             <input type="file" accept="image/*" capture="environment" aria-label="Foto" (change)="kiesHandoverFoto($event)">
@@ -349,7 +349,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   certBusy = false;
   certOwnerName = '';
   certSquares: CertificateSquare[] = [];
-  handover: { id: number; name: string; photo: File | null } | null = null;
+  handover: { id: number; name: string; redo: boolean; photo: File | null } | null = null;
   handoverPreview = '';
 
   ngOnInit() {
@@ -508,7 +508,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
 
   openHandover(b: AdminStadsbouer) {
     this.formError = '';
-    this.handover = { id: b.id, name: b.name, photo: null };
+    this.handover = { id: b.id, name: b.name, redo: !!b.handedOverAt, photo: null };
   }
 
   closeHandover() {

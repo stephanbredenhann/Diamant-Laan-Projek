@@ -187,6 +187,10 @@ public class PaymentController : ControllerBase
     /// </summary>
     private async Task SendConfirmationEmailAsync(Purchase purchase, bool justConfirmed)
     {
+        // The "Dankie!" email covers a purchase of only stadsbouer blocks: the sponsor owns nothing to claim or name.
+        if (_sponsorships != null && purchase.PurchaseSquares.Count > 0 && purchase.PurchaseSquares.All(ps => ps.StadsbouerId != null))
+            return;
+
         if (purchase.GuestTokenHash != null)
         {
             await SendGuestClaimEmailAsync(purchase);
@@ -194,10 +198,6 @@ public class PaymentController : ControllerBase
         }
 
         if (!justConfirmed || purchase.PaymentStatus != PaymentStatus.Confirmed)
-            return;
-
-        // The "Dankie!" email already covers an account sponsor whose purchase is only stadsbouer blocks.
-        if (_sponsorships != null && purchase.PurchaseSquares.Count > 0 && purchase.PurchaseSquares.All(ps => ps.StadsbouerId != null))
             return;
 
         try

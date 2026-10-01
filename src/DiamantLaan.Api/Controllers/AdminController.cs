@@ -1085,7 +1085,10 @@ public class AdminController : ControllerBase
         });
     }
 
-    /// <summary>Records the certificate handover: stores the photo and emails the sponsor. Redoing it replaces the photo.</summary>
+    /// <summary>
+    /// Records the certificate handover: stores the photo and emails the sponsor. A redo overwrites the
+    /// photo under the same URL, so the email already sent shows the new one, and does not email again.
+    /// </summary>
     [HttpPost("stadsbouers/{id}/oorhandig")]
     [RequestSizeLimit(8 * 1024 * 1024)]
     public async Task<IActionResult> HandOverStadsbouer(int id, IFormFile? photo, CancellationToken cancellationToken)
@@ -1101,33 +1104,41 @@ public class AdminController : ControllerBase
         if (photo == null || !FileUploadService.IsImage(photo))
             return BadRequest(new { message = PhotoTypeError });
 
+        var redo = builder.HandedOverAt != null;
+        var extension = FileUploadService.GetImageExtension(photo.ContentType);
         var oldPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.HandoverPhotoPath);
-        var fileName = $"oorhandig-{Guid.NewGuid():N}{FileUploadService.GetImageExtension(photo.ContentType)}";
+        var keepName = oldPath != null && oldPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
+        var fileName = keepName ? Path.GetFileName(oldPath)! : $"oorhandig-{Guid.NewGuid():N}{extension}";
         var newPath = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(_env), fileName);
-        await using (var stream = new FileStream(newPath, FileMode.Create))
+
+        // Written beside the target and moved over it, so a failed upload never leaves half a photo behind the sent URL.
+        var tempPath = newPath + ".tmp";
+        await using (var stream = new FileStream(tempPath, FileMode.Create))
         {
             await photo.CopyToAsync(stream, cancellationToken);
         }
+        System.IO.File.Move(tempPath, newPath, overwrite: true);
 
         builder.HandoverPhotoPath = $"stadsbouers/{fileName}";
-        builder.HandedOverAt = DateTime.UtcNow;
+        builder.HandedOverAt ??= DateTime.UtcNow;
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch
         {
-            // Nothing points at the new file yet, so do not leave it behind.
-            System.IO.File.Delete(newPath);
+            // Nothing points at a new file yet, so do not leave it behind.
+            if (!keepName)
+                System.IO.File.Delete(newPath);
             throw;
         }
 
-        if (oldPath != null && System.IO.File.Exists(oldPath))
+        if (!keepName && oldPath != null && System.IO.File.Exists(oldPath))
             System.IO.File.Delete(oldPath);
 
         var relativeUrl = "/api/stadsbouers/oorhandig/" + fileName;
         string? emailedTo = null;
-        if (_sponsorships != null)
+        if (_sponsorships != null && !redo)
         {
             try
             {
@@ -1140,13 +1151,16 @@ public class AdminController : ControllerBase
             }
         }
 
-        await _audit.LogAsync(User, "HandOverStadsbouer", $"Stadsbouer #{builder.Id} ({emailedTo ?? "geen borg-e-pos"})");
+        await _audit.LogAsync(User, "HandOverStadsbouer",
+            $"Stadsbouer #{builder.Id} ({(redo ? "foto vervang" : emailedTo ?? "geen borg-e-pos")})");
 
         return Ok(new
         {
-            message = emailedTo != null
-                ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
-                : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
+            message = redo
+                ? "Foto vervang. Die borg is nie weer ge-e-pos nie."
+                : emailedTo != null
+                    ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
+                    : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
             handedOverAt = builder.HandedOverAt,
             handoverPhotoUrl = relativeUrl
         });
@@ -1199,7 +1213,22 @@ public class AdminController : ControllerBase
             return NotFound();
 
         var previousEmail = string.Equals(builder.Email, email, StringComparison.OrdinalIgnoreCase) ? null : builder.Email;
+        var previousName = builder.Name;
         builder.Name = dto.Name.Trim();
+
+        // The handover copied the old name onto the blocks; carry a correction over, but leave a name someone chose since.
+        if (builder.Name != previousName)
+        {
+            var sponsoredIds = _db.PurchaseSquares
+                .Where(ps => ps.StadsbouerId == id && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
+                .Select(ps => ps.SquareId);
+            var named = await _db.Squares
+                .Where(s => sponsoredIds.Contains(s.Id) && s.CertificateName == previousName)
+                .ToListAsync();
+            foreach (var square in named)
+                square.CertificateName = builder.Name;
+        }
+
         builder.Title = Trimmed(dto.Title);
         builder.About = Trimmed(dto.About);
         builder.Email = email;

@@ -230,20 +230,35 @@ public class StadsbouerPurchaseTests : IDisposable
     }
 
     [Fact]
-    public async Task Itn_GuestSponsor_GetsClaimEmailPlusDankie_AndRepeatSendsNothingMore()
+    public async Task Itn_GuestSponsor_GetsOnlyTheDankie_AndRepeatSendsNothingMore()
     {
         var purchase = SeedPendingSponsorship(guest: true);
 
         var controller = CreatePaymentController(out _);
         await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
-        var afterFirst = await _db.PendingEmails.ToListAsync();
-
-        Assert.Equal(2, afterFirst.Count);
-        Assert.Single(afterFirst, e => e.Subject == "Orania-pad: Dankie!" && e.To == "gas@sponsor.test");
-        Assert.Single(afterFirst, e => e.Subject != "Orania-pad: Dankie!" && e.To == "gas@sponsor.test");
-
         await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
-        Assert.Equal(2, await _db.PendingEmails.CountAsync());
+
+        var thanks = Assert.Single(await _db.PendingEmails.ToListAsync());
+        Assert.Equal("Orania-pad: Dankie!", thanks.Subject);
+        Assert.Equal("gas@sponsor.test", thanks.To);
+        Assert.Null((await _db.Purchases.SingleAsync()).ClaimTokenHash);
+    }
+
+    [Fact]
+    public async Task Itn_SponsorOfSeveralBuilders_GetsOneDankieNamingAllOfThem()
+    {
+        var purchase = SeedPendingSponsorship(guest: false);
+        SeedSquares(201);
+        var second = new Stadsbouer { Name = "Sarie Marais" };
+        _db.Stadsbouers.Add(second);
+        _db.SaveChanges();
+        purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = 201, StadsbouerId = second.Id });
+        _db.SaveChanges();
+
+        await CreatePaymentController(out _).SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
+
+        var thanks = Assert.Single(await _db.PendingEmails.Where(e => e.To == "koper@test.com").ToListAsync());
+        Assert.Contains("<strong>Kobus Nel</strong> en <strong>Sarie Marais</strong>", thanks.HtmlBody);
     }
 
     private Purchase SeedPendingSponsorship(bool guest)

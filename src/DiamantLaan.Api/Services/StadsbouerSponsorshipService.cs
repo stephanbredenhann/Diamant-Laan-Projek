@@ -176,7 +176,7 @@ public class StadsbouerSponsorshipService
         return (email.Trim(), user.FirstName);
     }
 
-    /// <summary>Queues the "Dankie!" email for each builder on a just-confirmed purchase. Never throws.</summary>
+    /// <summary>Queues one "Dankie!" email naming every builder on a just-confirmed purchase. Never throws.</summary>
     public async Task SendThanksAsync(Purchase purchase, CancellationToken cancellationToken = default)
     {
         try
@@ -190,18 +190,17 @@ public class StadsbouerSponsorshipService
 
             var names = await _db.PurchaseSquares
                 .Where(ps => ps.PurchaseId == purchase.Id && ps.StadsbouerId != null)
-                .Select(ps => new { ps.StadsbouerId, ps.Stadsbouer!.Name })
-                .Distinct()
+                .OrderBy(ps => ps.StadsbouerId)
+                .Select(ps => ps.Stadsbouer!.Name)
                 .ToListAsync(cancellationToken);
+            if (names.Count == 0)
+                return;
 
-            foreach (var name in names.Select(n => n.Name))
-            {
-                await _emails.QueueAsync(
-                    sponsor.Value.Email,
-                    "Orania-pad: Dankie!",
-                    EmailTemplates.StadsbouerThanks(sponsor.Value.FirstName, name),
-                    cancellationToken);
-            }
+            await _emails.QueueAsync(
+                sponsor.Value.Email,
+                "Orania-pad: Dankie!",
+                EmailTemplates.StadsbouerThanks(sponsor.Value.FirstName, names),
+                cancellationToken);
         }
         catch (Exception ex)
         {
