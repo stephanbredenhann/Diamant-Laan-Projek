@@ -24,6 +24,10 @@ public class AdminStadsbouerDto : StadsbouerDto
     public string? Email { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? HandedOverAt { get; set; }
+
+    /// <summary>Relative URL of the handover photo, null until handed over.</summary>
+    public string? HandoverPhotoUrl { get; set; }
 }
 
 public class StadsbouerUploadDto

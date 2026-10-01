@@ -1,8 +1,14 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { AdminService, AdminStadsbouer } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
+import {
+  CertificateCardComponent,
+  CertificateSquare,
+  sanitizeFilename,
+} from '../shared/certificate-card/certificate-card.component';
 import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
 interface Vorm {
@@ -26,7 +32,7 @@ const LEE_VORM: Vorm = {
 @Component({
   selector: 'app-admin-stadsbouers',
   standalone: true,
-  imports: [CommonModule, FormsModule, AlertComponent, PaginatorComponent],
+  imports: [CommonModule, FormsModule, AlertComponent, PaginatorComponent, CertificateCardComponent],
   template: `
     <app-alert [message]="message" [type]="messageType" />
 
@@ -75,6 +81,9 @@ const LEE_VORM: Vorm = {
                   <td>
                     @if (b.isSponsored) {
                       <span class="merk geborg">Geborg</span>
+                      @if (b.handedOverAt) {
+                        <a class="merk oorhandig" [href]="b.handoverPhotoUrl" target="_blank" rel="noopener">Oorhandig {{ b.handedOverAt | date:'d MMM y' }}</a>
+                      }
                     } @else if (b.isPending) {
                       <span class="merk hangend">Hangend</span>
                     } @else if (!b.isActive) {
@@ -89,6 +98,10 @@ const LEE_VORM: Vorm = {
                       <button type="button" class="btn btn-outline btn-sm danger" [disabled]="busy" (click)="remove(b)">Ja, verwyder</button>
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="confirmDeleteId = null">Nee</button>
                     } @else {
+                      @if (b.isSponsored) {
+                        <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="downloadCertificate(b)">Sertifikaat</button>
+                        <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="openHandover(b)">{{ b.handedOverAt ? 'Oorhandig weer' : 'Oorhandig' }}</button>
+                      }
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="openEdit(b)">Wysig</button>
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || b.isSponsored" (click)="confirmDeleteId = b.id">Verwyder</button>
                     }
@@ -103,6 +116,41 @@ const LEE_VORM: Vorm = {
         <app-paginator [total]="filtered.length" [(page)]="page" />
       }
     </div>
+
+    <!-- Off-screen certificate used only for PDF export -->
+    <div class="cert-export-host" aria-hidden="true">
+      <app-certificate-card
+        #certCard
+        [ownerName]="certOwnerName"
+        [squares]="certSquares"
+        [lockedMode]="'summary'"
+        [viewOnly]="true" />
+    </div>
+
+    @if (handover) {
+      <div class="modal-backdrop" (click)="closeHandover()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oh-title" (click)="$event.stopPropagation()">
+          <h3 id="oh-title">Oorhandig aan {{ handover.name }}</h3>
+          <p class="hint">{{ handover.redo ? 'Die nuwe foto vervang die vorige een. Die borg kry nie weer ’n e-pos nie.' : 'Die foto word saam met ’n dankie-e-pos aan die borg gestuur.' }}</p>
+
+          <div class="field">
+            <input type="file" accept="image/*" capture="environment" aria-label="Foto" (change)="kiesHandoverFoto($event)">
+            @if (handoverPreview) {
+              <img class="voorskou" [src]="handoverPreview" alt="Voorskou van die foto">
+            }
+          </div>
+
+          @if (formError) {
+            <p class="error-msg">{{ formError }}</p>
+          }
+
+          <button type="button" class="btn btn-primary btn-sm btn-wide" [disabled]="saving || !handover.photo" (click)="stuurHandover()">
+            {{ saving ? 'Besig...' : 'Stuur' }}
+          </button>
+          <button type="button" class="btn btn-outline btn-sm btn-wide" [disabled]="saving" (click)="closeHandover()">Kanselleer</button>
+        </div>
+      </div>
+    }
 
     @if (vorm) {
       <div class="modal-backdrop" (click)="close()">
@@ -222,12 +270,16 @@ const LEE_VORM: Vorm = {
     .merk.oop { background: #E8ECD8; color: #5A6A32; }
     .merk.geborg { background: #FEF2F2; color: #DC2626; }
     .merk.hangend { background: #FDF6E3; color: #8A6D1F; }
+    .merk.oorhandig { background: #E8ECD8; color: #5A6A32; margin-left: 0.375rem; text-decoration: none; }
     .merk.uit { background: var(--color-border); color: var(--color-muted); }
     .rye-knoppies { display: flex; gap: 0.5rem; align-items: center; white-space: nowrap; }
     .bevestig { font-weight: 600; color: var(--color-text); }
     .danger { color: #DC2626; border-color: #FECACA; }
     .danger:hover:not(:disabled) { background: #FEF2F2; }
     .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
+
+    .cert-export-host { position: fixed; left: -10000px; top: 0; width: 820px; pointer-events: none; }
+    .voorskou { display: block; max-width: 100%; max-height: 240px; margin-top: 0.75rem; border-radius: var(--radius-sm); }
 
     .modal-backdrop {
       position: fixed;
@@ -275,7 +327,10 @@ const LEE_VORM: Vorm = {
   `]
 })
 export class AdminStadsbouersComponent implements OnInit, OnDestroy {
+  @ViewChild('certCard') certCard!: CertificateCardComponent;
+
   private admin = inject(AdminService);
+  private cdr = inject(ChangeDetectorRef);
 
   bouers: AdminStadsbouer[] = [];
   filtered: AdminStadsbouer[] = [];
@@ -291,6 +346,11 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   formError = '';
   confirmDeleteId: number | null = null;
   vorm: Vorm | null = null;
+  certBusy = false;
+  certOwnerName = '';
+  certSquares: CertificateSquare[] = [];
+  handover: { id: number; name: string; redo: boolean; photo: File | null } | null = null;
+  handoverPreview = '';
 
   ngOnInit() {
     this.load();
@@ -298,6 +358,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.loslaatFotos();
+    this.vryHandoverVoorskou();
   }
 
   /** Object URLs, because the admin photo endpoint needs the bearer token an <img> cannot send. */
@@ -401,6 +462,103 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
         this.setMessage(err.error?.message ?? 'Kon nie verwyder nie.', 'error');
       }
     });
+  }
+
+  async downloadCertificate(b: AdminStadsbouer) {
+    if (this.certBusy) return;
+    this.certBusy = true;
+    try {
+      const summary = await firstValueFrom(this.admin.getStadsbouerCertificate(b.id));
+      this.certOwnerName = summary.ownerName;
+      this.certSquares = summary.squares.map(s => ({ id: s.id, purchaseDate: s.purchaseDate ?? undefined, ownerName: s.ownerName }));
+      this.cdr.detectChanges();
+      // Let the certificate card apply lockedMode / sheet layout before capture.
+      await new Promise<void>(resolve => setTimeout(resolve, 50));
+
+      const targets = this.certCard.sheetTargets();
+      if (targets.length === 1) {
+        const sheet = await this.certCard.sheetPdf(targets[0]);
+        this.saveBlob(sheet.blob, sheet.filename);
+      } else {
+        const { default: JSZip } = await import('jszip');
+        const zip = new JSZip();
+        for (const target of targets) {
+          const sheet = await this.certCard.sheetPdf(target);
+          zip.file(sheet.filename, sheet.blob);
+        }
+        this.saveBlob(await zip.generateAsync({ type: 'blob' }), `sertifikate-${sanitizeFilename(b.name)}.zip`);
+      }
+    } catch {
+      this.setMessage('Kon nie die sertifikaat genereer nie. Probeer weer.', 'error');
+    } finally {
+      this.certBusy = false;
+      this.certSquares = [];
+      this.certOwnerName = '';
+    }
+  }
+
+  private saveBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  openHandover(b: AdminStadsbouer) {
+    this.formError = '';
+    this.handover = { id: b.id, name: b.name, redo: !!b.handedOverAt, photo: null };
+  }
+
+  closeHandover() {
+    if (this.saving) return;
+    this.handover = null;
+    this.vryHandoverVoorskou();
+  }
+
+  kiesHandoverFoto(event: Event) {
+    if (!this.handover) return;
+    this.vryHandoverVoorskou();
+    this.handover.photo = (event.target as HTMLInputElement).files?.[0] ?? null;
+    if (this.handover.photo) this.handoverPreview = URL.createObjectURL(this.handover.photo);
+  }
+
+  async stuurHandover() {
+    if (!this.handover?.photo || this.saving) return;
+    const { id, photo } = this.handover;
+    this.saving = true;
+    this.formError = '';
+    try {
+      const blob = await this.verklein(photo);
+      const res = await firstValueFrom(this.admin.handOverStadsbouer(id, blob));
+      this.saving = false;
+      this.handover = null;
+      this.vryHandoverVoorskou();
+      this.setMessage(res.message, 'success');
+      this.load();
+    } catch (err: any) {
+      this.saving = false;
+      this.formError = err?.error?.message ?? 'Kon nie die foto stuur nie. Probeer weer.';
+    }
+  }
+
+  private vryHandoverVoorskou() {
+    if (this.handoverPreview) URL.revokeObjectURL(this.handoverPreview);
+    this.handoverPreview = '';
+  }
+
+  /** Longest side 1600px as JPEG, so a phone photo stays under the upload limit. */
+  private async verklein(file: File): Promise<Blob> {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return new Promise((resolve, reject) =>
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob'))), 'image/jpeg', 0.85));
   }
 
   private load() {

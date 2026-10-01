@@ -1037,7 +1037,11 @@ public class AdminController : ControllerBase
                 Email = s.Email,
                 IsActive = s.IsActive,
                 CreatedAt = s.CreatedAt,
-                HasPhoto = s.PhotoPath != null
+                HasPhoto = s.PhotoPath != null,
+                HandedOverAt = s.HandedOverAt,
+                HandoverPhotoUrl = s.HandoverPhotoPath == null
+                    ? null
+                    : "/api/stadsbouers/oorhandig/" + s.HandoverPhotoPath.Substring("stadsbouers/".Length)
             })
             .ToListAsync(cancellationToken);
 
@@ -1048,6 +1052,119 @@ public class AdminController : ControllerBase
         }
 
         return Ok(builders);
+    }
+
+    /// <summary>One builder's certificate summary, in the shape of the sponsored-certificates list.</summary>
+    [HttpGet("stadsbouers/{id}/certificate-summary")]
+    public async Task<IActionResult> GetStadsbouerCertificateSummary(int id)
+    {
+        var rows = await _db.PurchaseSquares
+            .Where(ps => ps.StadsbouerId == id && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
+            .Select(ps => new
+            {
+                BuilderName = ps.Stadsbouer!.Name,
+                ps.SquareId,
+                ps.Purchase.PurchaseDate,
+                SquareName = _db.Squares.Where(s => s.Id == ps.SquareId).Select(s => s.CertificateName).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        if (rows.Count == 0)
+            return NotFound();
+
+        var ownerName = rows[0].BuilderName;
+        return Ok(new
+        {
+            OwnerName = ownerName,
+            SameForAll = true,
+            Squares = rows.OrderBy(r => r.SquareId).Select(r => new
+            {
+                Id = r.SquareId,
+                PurchaseDate = (DateTime?)r.PurchaseDate,
+                OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? ownerName : r.SquareName
+            }).ToList()
+        });
+    }
+
+    /// <summary>
+    /// Records the certificate handover: stores the photo and emails the sponsor. A redo overwrites the
+    /// photo under the same URL, so the email already sent shows the new one, and does not email again.
+    /// </summary>
+    [HttpPost("stadsbouers/{id}/oorhandig")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> HandOverStadsbouer(int id, IFormFile? photo, CancellationToken cancellationToken)
+    {
+        var builder = await _db.Stadsbouers.FindAsync(new object[] { id }, cancellationToken);
+        if (builder == null)
+            return NotFound();
+
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db, cancellationToken);
+        if (!taken.Sponsored.Contains(id))
+            return BadRequest(new { message = "Hierdie stadsbouer is nog nie geborg nie." });
+
+        if (photo == null || !FileUploadService.IsImage(photo))
+            return BadRequest(new { message = PhotoTypeError });
+
+        var redo = builder.HandedOverAt != null;
+        var extension = FileUploadService.GetImageExtension(photo.ContentType);
+        var oldPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.HandoverPhotoPath);
+        var keepName = oldPath != null && oldPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
+        var fileName = keepName ? Path.GetFileName(oldPath)! : $"oorhandig-{Guid.NewGuid():N}{extension}";
+        var newPath = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(_env), fileName);
+
+        // Written beside the target and moved over it, so a failed upload never leaves half a photo behind the sent URL.
+        var tempPath = newPath + ".tmp";
+        await using (var stream = new FileStream(tempPath, FileMode.Create))
+        {
+            await photo.CopyToAsync(stream, cancellationToken);
+        }
+        System.IO.File.Move(tempPath, newPath, overwrite: true);
+
+        builder.HandoverPhotoPath = $"stadsbouers/{fileName}";
+        builder.HandedOverAt ??= DateTime.UtcNow;
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // Nothing points at a new file yet, so do not leave it behind.
+            if (!keepName)
+                System.IO.File.Delete(newPath);
+            throw;
+        }
+
+        if (!keepName && oldPath != null && System.IO.File.Exists(oldPath))
+            System.IO.File.Delete(oldPath);
+
+        var relativeUrl = "/api/stadsbouers/oorhandig/" + fileName;
+        string? emailedTo = null;
+        if (_sponsorships != null && !redo)
+        {
+            try
+            {
+                emailedTo = await _sponsorships.SendHandedOverAsync(
+                    builder, AppPublicUrl.Resolve(_config).TrimEnd('/') + relativeUrl, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Could not send handover email for stadsbouer {StadsbouerId}", builder.Id);
+            }
+        }
+
+        await _audit.LogAsync(User, "HandOverStadsbouer",
+            $"Stadsbouer #{builder.Id} ({(redo ? "foto vervang" : emailedTo ?? "geen borg-e-pos")})");
+
+        return Ok(new
+        {
+            message = redo
+                ? "Foto vervang. Die borg is nie weer ge-e-pos nie."
+                : emailedTo != null
+                    ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
+                    : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
+            handedOverAt = builder.HandedOverAt,
+            handoverPhotoUrl = relativeUrl
+        });
     }
 
     [HttpPost("stadsbouers")]
@@ -1097,7 +1214,22 @@ public class AdminController : ControllerBase
             return NotFound();
 
         var previousEmail = string.Equals(builder.Email, email, StringComparison.OrdinalIgnoreCase) ? null : builder.Email;
+        var previousName = builder.Name;
         builder.Name = dto.Name.Trim();
+
+        // The handover copied the old name onto the blocks; carry a correction over, but leave a name someone chose since.
+        if (builder.Name != previousName)
+        {
+            var sponsoredIds = _db.PurchaseSquares
+                .Where(ps => ps.StadsbouerId == id && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
+                .Select(ps => ps.SquareId);
+            var named = await _db.Squares
+                .Where(s => sponsoredIds.Contains(s.Id) && s.CertificateName == previousName)
+                .ToListAsync();
+            foreach (var square in named)
+                square.CertificateName = builder.Name;
+        }
+
         builder.Title = Trimmed(dto.Title);
         builder.About = Trimmed(dto.About);
         builder.Email = email;

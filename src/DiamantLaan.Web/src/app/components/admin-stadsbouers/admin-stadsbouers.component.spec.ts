@@ -12,7 +12,7 @@ describe('AdminStadsbouersComponent', () => {
     {
       id: 1, name: 'Jan van der Merwe', title: 'Voorman', about: 'Bou al drie jaar.',
       email: 'jan@bou.test', hasPhoto: false, isActive: true, isSponsored: false, isPending: false,
-      createdAt: '2026-09-01T00:00:00Z'
+      createdAt: '2026-09-01T00:00:00Z', handedOverAt: null, handoverPhotoUrl: null
     },
   ];
 
@@ -83,5 +83,43 @@ describe('AdminStadsbouersComponent', () => {
 
     const img: HTMLImageElement = fixture.nativeElement.querySelector('img.duim');
     expect(img.src).toMatch(/^blob:/);
+  });
+
+  it('shows Sertifikaat only on sponsored rows and fetches the summary', async () => {
+    const component = fixture.componentInstance;
+    const buttons = () => [...fixture.nativeElement.querySelectorAll('button')].filter((b: HTMLElement) => b.textContent?.trim() === 'Sertifikaat');
+    expect(buttons().length).toBe(0);
+
+    component.bouers = [{ ...bouers[0], isSponsored: true }];
+    component.applyFilter();
+    fixture.detectChanges();
+    expect(buttons().length).toBe(1);
+
+    const done = component.downloadCertificate(component.bouers[0]);
+    http.expectOne('/api/admin/stadsbouers/1/certificate-summary').flush({ ownerName: 'Jan van der Merwe', sameForAll: true, squares: [] });
+    await done.catch(() => {});
+  });
+
+  it('hands over through the service, reloads, and shows the badge', async () => {
+    const component = fixture.componentInstance;
+    const sponsored = { ...bouers[0], isSponsored: true };
+    component.bouers = [sponsored];
+    component.applyFilter();
+    component.openHandover(sponsored);
+    component.handover!.photo = new File([new Uint8Array([1])], 'x.jpg', { type: 'image/jpeg' });
+    spyOn<any>(component, 'verklein').and.resolveTo(new Blob(['x'], { type: 'image/jpeg' }));
+
+    const done = component.stuurHandover();
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne('/api/admin/stadsbouers/1/oorhandig');
+    expect(request.request.method).toBe('POST');
+    expect((request.request.body as FormData).has('photo')).toBe(true);
+    request.flush({ message: 'Gestuur.', handedOverAt: '2026-10-01T00:00:00Z', handoverPhotoUrl: '/api/stadsbouers/oorhandig/oorhandig-a.jpg' });
+    await done;
+
+    http.expectOne('/api/admin/stadsbouers').flush([{ ...sponsored, handedOverAt: '2026-10-01T00:00:00Z', handoverPhotoUrl: '/api/stadsbouers/oorhandig/oorhandig-a.jpg' }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('a.merk.oorhandig').textContent).toContain('Oorhandig');
   });
 });

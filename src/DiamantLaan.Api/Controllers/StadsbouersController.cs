@@ -78,4 +78,25 @@ public class StadsbouersController : ControllerBase
         var contentType = FileUploadService.GetContentTypeFromExtension(Path.GetExtension(filePath));
         return PhysicalFile(filePath, contentType);
     }
+
+    /// <summary>Serves the current handover photo. Not gated on settings or IsActive: old emails must keep showing it.</summary>
+    [HttpGet("oorhandig/{fileName}")]
+    public async Task<IActionResult> GetHandoverPhoto(string fileName, CancellationToken cancellationToken)
+    {
+        if (!HandoverFileName.IsMatch(fileName))
+            return NotFound();
+
+        var storedPath = "stadsbouers/" + fileName;
+        if (!await _db.Stadsbouers.AnyAsync(s => s.HandoverPhotoPath == storedPath, cancellationToken))
+            return NotFound();
+
+        var filePath = FileUploadService.ResolveStadsbouerFilePath(_env, storedPath);
+        if (filePath == null || !System.IO.File.Exists(filePath))
+            return NotFound();
+
+        return PhysicalFile(filePath, FileUploadService.GetContentTypeFromExtension(Path.GetExtension(filePath)));
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex HandoverFileName =
+        new(@"^oorhandig-[0-9a-f]{32}\.(jpg|png|webp)$", System.Text.RegularExpressions.RegexOptions.Compiled);
 }

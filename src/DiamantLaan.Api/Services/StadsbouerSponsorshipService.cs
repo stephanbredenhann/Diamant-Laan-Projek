@@ -151,6 +151,80 @@ public class StadsbouerSponsorshipService
         _logger.LogInformation("Handed {Count} block(s) to stadsbouer {StadsbouerId}", moved.Count, builder.Id);
     }
 
+    /// <summary>The paying sponsor of a builder's confirmed purchase: guest email first, else the account's.</summary>
+    private async Task<(string Email, string FirstName)?> FindSponsorAsync(int stadsbouerId, CancellationToken cancellationToken)
+    {
+        var purchase = await _db.Purchases
+            .Include(p => p.User)
+            .Where(p => p.PaymentStatus == PaymentStatus.Confirmed && p.PurchaseSquares.Any(ps => ps.StadsbouerId == stadsbouerId))
+            .OrderByDescending(p => p.ConfirmedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return SponsorOf(purchase);
+    }
+
+    private static (string Email, string FirstName)? SponsorOf(Purchase? purchase)
+    {
+        var user = purchase?.User;
+        if (purchase == null || user == null || user.IsAnonymized)
+            return null;
+
+        var email = string.IsNullOrWhiteSpace(purchase.GuestEmail) ? user.Email : purchase.GuestEmail;
+        if (string.IsNullOrWhiteSpace(email) || string.Equals(email, HoldingEmail, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return (email.Trim(), user.FirstName);
+    }
+
+    /// <summary>Queues one "Dankie!" email naming every builder on a just-confirmed purchase. Never throws.</summary>
+    public async Task SendThanksAsync(Purchase purchase, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var full = await _db.Purchases
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == purchase.Id, cancellationToken);
+            var sponsor = SponsorOf(full);
+            if (sponsor == null)
+                return;
+
+            var names = await _db.PurchaseSquares
+                .Where(ps => ps.PurchaseId == purchase.Id && ps.StadsbouerId != null)
+                .OrderBy(ps => ps.StadsbouerId)
+                .Select(ps => ps.Stadsbouer!.Name)
+                .ToListAsync(cancellationToken);
+            if (names.Count == 0)
+                return;
+
+            await _emails.QueueAsync(
+                sponsor.Value.Email,
+                "Orania-pad: Dankie!",
+                EmailTemplates.StadsbouerThanks(sponsor.Value.FirstName, names),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // The payment is already taken; a failed email must not fail the ITN.
+            _logger.LogError(ex, "Could not send stadsbouer thanks for purchase {PurchaseId}", purchase.Id);
+        }
+    }
+
+    /// <summary>Queues the handover email with the photo. Returns the address used, or null if no sponsor email exists.</summary>
+    public async Task<string?> SendHandedOverAsync(Stadsbouer builder, string photoUrl, CancellationToken cancellationToken = default)
+    {
+        var sponsor = await FindSponsorAsync(builder.Id, cancellationToken);
+        if (sponsor == null)
+            return null;
+
+        await _emails.QueueAsync(
+            sponsor.Value.Email,
+            "Orania-pad: Borg oorhandig!",
+            EmailTemplates.StadsbouerHandedOver(sponsor.Value.FirstName, builder.Name, photoUrl),
+            cancellationToken);
+
+        return sponsor.Value.Email;
+    }
+
     /// <summary>A locked account with no password that owns blocks nobody can be emailed about yet.</summary>
     private async Task<User?> FindOrCreateHoldingUserAsync()
     {

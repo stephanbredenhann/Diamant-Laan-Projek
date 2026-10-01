@@ -32,5 +32,12 @@ public class Stadsbouer
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>When the printed certificate was handed over. Null until then.</summary>
+    public DateTime? HandedOverAt { get; set; }
+
+    /// <summary>Relative path of the handover photo, e.g. "stadsbouers/oorhandig-&lt;guid&gt;.jpg".</summary>
+    [MaxLength(260)]
+    public string? HandoverPhotoPath { get; set; }
+
     public ICollection<PurchaseSquare> PurchaseSquares { get; set; } = new List<PurchaseSquare>();
 }
