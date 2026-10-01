@@ -106,6 +106,18 @@ describe('AdminComponent', () => {
       komponent.gaanNaStap(3);
     });
 
+    it('rejects an oversized photo before anything is written', () => {
+      const groot = new File(['x'], 'groot.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(groot, 'size', { value: 26 * 1024 * 1024 });
+      const input = { files: [groot], value: 'c:/groot.jpg' } as unknown as HTMLInputElement;
+
+      komponent.onImageSelected({ target: input } as unknown as Event);
+
+      expect(komponent.draftImageFile).toBeNull();
+      expect(komponent.isError).toBe(true);
+      expect(input.value).toBe('');
+    });
+
     it('checks conflicts before writing anything', () => {
       komponent.saveChanges();
 

@@ -27,6 +27,9 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
   SquareStatus.KlaarGeteer
 ];
 
+const MAX_FOTO_MB = 25;
+const MAX_FOTO_BYTES = MAX_FOTO_MB * 1024 * 1024;
+
 @Component({
   selector: 'app-admin',
   standalone: true,
@@ -114,6 +117,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
             </div>
           </div>
 
+          <p class="lêer-hint">JPEG, PNG of WebP, hoogstens {{ maxFotoMb }} MB.</p>
           @if (draftImageFile) {
             <p class="lêer-naam">Gekose lêer: {{ draftImageFile.name }}</p>
             @if (effectiveImageStatus() !== null) {
@@ -368,6 +372,7 @@ const PHOTO_VIEW_STATUSES: SquareStatus[] = [
       font-size: 0.9375rem;
     }
     .lêer-naam { font-size: 0.8125rem; color: var(--color-muted); margin: 0; }
+    .lêer-hint { font-size: 0.75rem; color: var(--color-muted); margin: 0; }
     .foto-status { font-size: 0.875rem; color: var(--color-text); margin: 0; }
     .opsomming { margin: 0; padding-left: 1.25rem; font-size: 0.9375rem; color: var(--color-text); }
     .opsomming li { margin-bottom: 0.375rem; }
@@ -503,6 +508,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   draftStatus: SquareStatus | null = null;
   draftImageCaption = '';
   draftImageFile: File | null = null;
+  readonly maxFotoMb = MAX_FOTO_MB;
 
   message = '';
   isError = false;
@@ -659,9 +665,23 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   onImageSelected(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.draftImageFile = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
     this.imageConflictPrompt = null;
     this.pendingImageStatus = null;
+
+    // Caught here, not on save: over the limit the server rejects the form before the action
+    // runs, so the only feedback is a bare 400 and the status change has already been written.
+    if (file && file.size > MAX_FOTO_BYTES) {
+      this.draftImageFile = null;
+      input.value = '';
+      this.message = `Foto is te groot (${(file.size / 1024 / 1024).toFixed(1)} MB). Maksimum is ${MAX_FOTO_MB} MB.`;
+      this.isError = true;
+      return;
+    }
+
+    this.draftImageFile = file;
+    this.message = '';
+    this.isError = false;
   }
 
   saveChanges() {

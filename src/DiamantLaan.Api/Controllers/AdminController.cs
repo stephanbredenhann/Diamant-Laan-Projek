@@ -847,7 +847,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("squares/images")]
-    [RequestSizeLimit(8 * 1024 * 1024)]
+    [RequestSizeLimit(25 * 1024 * 1024)]
     public async Task<IActionResult> UploadProgressImage([FromForm] ProgressImageUploadDto dto, IFormFile image)
     {
         if (image == null || image.Length == 0)
@@ -926,7 +926,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpPut("squares/images/{id}")]
-    [RequestSizeLimit(8 * 1024 * 1024)]
+    [RequestSizeLimit(25 * 1024 * 1024)]
     public async Task<IActionResult> ReplaceProgressImage(int id, IFormFile image)
     {
         if (image == null || image.Length == 0)
