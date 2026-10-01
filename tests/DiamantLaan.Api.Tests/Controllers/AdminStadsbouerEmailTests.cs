@@ -51,6 +51,20 @@ public class AdminStadsbouerEmailTests : IDisposable
     }
 
     [Fact]
+    public async Task SetAllActive_FlipsEveryBuilder()
+    {
+        _db.Stadsbouers.AddRange(new Stadsbouer { Name = "A", IsActive = true }, new Stadsbouer { Name = "B", IsActive = false });
+        _db.SaveChanges();
+        var controller = CreateController(false, out _);
+
+        Assert.IsType<OkObjectResult>(await controller.SetAllStadsbouersActive(new StadsbouersEnabledDto { Enabled = false }));
+        Assert.All(await _db.Stadsbouers.AsNoTracking().ToListAsync(), s => Assert.False(s.IsActive));
+
+        await controller.SetAllStadsbouersActive(new StadsbouersEnabledDto { Enabled = true });
+        Assert.All(await _db.Stadsbouers.AsNoTracking().ToListAsync(), s => Assert.True(s.IsActive));
+    }
+
+    [Fact]
     public async Task Create_BadEmail_ReturnsBadRequest()
     {
         var result = await CreateController(false, out _).CreateStadsbouer(new StadsbouerUploadDto { Name = "Kobus Nel", Email = "nie-'n-epos" }, null);

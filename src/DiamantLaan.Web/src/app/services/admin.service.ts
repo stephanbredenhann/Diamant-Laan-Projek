@@ -232,6 +232,10 @@ export class AdminService {
     return this.http.put<{ id: number; message: string }>(`/api/admin/stadsbouers/${id}`, formData);
   }
 
+  setAllStadsbouersActive(enabled: boolean) {
+    return this.http.put<{ message: string }>('/api/admin/stadsbouers/active', { enabled });
+  }
+
   getStadsbouerFoto(id: number) {
     return this.http.get(`/api/admin/stadsbouers/${id}/foto`, { responseType: 'blob' });
   }

@@ -1008,6 +1008,21 @@ public class AdminController : ControllerBase
         return Ok(new { enabled });
     }
 
+    [HttpPut("stadsbouers/active")]
+    public async Task<IActionResult> SetAllStadsbouersActive([FromBody] StadsbouersEnabledDto dto)
+    {
+        if (dto == null)
+            return BadRequest(new { message = "Instellings mag nie leeg wees nie." });
+
+        var changed = await _db.Stadsbouers
+            .Where(s => s.IsActive != dto.Enabled)
+            .ExecuteUpdateAsync(set => set.SetProperty(s => s.IsActive, dto.Enabled));
+
+        await _audit.LogAsync(User, "SetAllStadsbouersActive", $"IsActive={dto.Enabled}, {changed} verander");
+
+        return Ok(new { message = dto.Enabled ? "Alle stadsbouers is aktief." : "Alle stadsbouers is onaktief." });
+    }
+
     /// <summary>Every builder's photo, inactive ones included, which the public endpoint no longer serves.</summary>
     [HttpGet("stadsbouers/{id}/foto")]
     public async Task<IActionResult> GetStadsbouerPhoto(int id, CancellationToken cancellationToken)
@@ -1304,6 +1319,7 @@ public class AdminController : ControllerBase
         {
             await photo.CopyToAsync(stream);
         }
+        await FileUploadService.ShrinkStadsbouerPhotoAsync(Path.Combine(uploadsDir, fileName));
 
         builder.PhotoPath = $"stadsbouers/{fileName}";
         await _db.SaveChangesAsync();

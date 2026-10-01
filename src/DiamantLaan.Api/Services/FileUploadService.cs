@@ -1,3 +1,6 @@
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+
 namespace DiamantLaan.Api.Services;
 
 public static class FileUploadService
@@ -94,6 +97,30 @@ public static class FileUploadService
         var path = Path.Combine(GetUploadsRoot(env), "stadsbouers");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private const int StadsbouerPhotoMaxSide = 600;
+
+    /// <summary>Downscales a builder portrait in place so the gallery does not ship phone-camera originals.</summary>
+    public static async Task ShrinkStadsbouerPhotoAsync(string filePath)
+    {
+        try
+        {
+            var info = await Image.IdentifyAsync(filePath);
+            if (info.Width <= StadsbouerPhotoMaxSide && info.Height <= StadsbouerPhotoMaxSide)
+                return;
+
+            using var image = await Image.LoadAsync(filePath);
+            image.Mutate(ctx => ctx
+                .AutoOrient()
+                .Resize(new ResizeOptions { Size = new(StadsbouerPhotoMaxSide), Mode = ResizeMode.Max }));
+            image.Metadata.ExifProfile = null;
+            await image.SaveAsync(filePath);
+        }
+        catch (ImageFormatException)
+        {
+            // Undecodable files are left as uploaded; IsImage already vetted the header.
+        }
     }
 
     public static string? ResolveStadsbouerFilePath(IWebHostEnvironment env, string? storedPath)
