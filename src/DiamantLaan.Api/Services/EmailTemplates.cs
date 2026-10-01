@@ -150,11 +150,13 @@ public static class EmailTemplates
             "Stadsboufonds-span");
     }
 
-    /// <summary>Tells the sponsor the certificate was handed over, with the photo. Afrikaans only.</summary>
-    public static string StadsbouerHandedOver(string sponsorFirstName, string builderName, string photoUrl)
+    /// <summary>Tells the sponsor the certificate was handed over, with the photo if one was taken. Afrikaans only.</summary>
+    public static string StadsbouerHandedOver(string sponsorFirstName, string builderName, string? photoUrl)
     {
         var person = WebUtility.HtmlEncode(builderName);
-        var url = WebUtility.HtmlEncode(photoUrl);
+        var image = photoUrl == null
+            ? ""
+            : $"""<img src="{WebUtility.HtmlEncode(photoUrl)}" width="488" style="display:block;max-width:100%;height:auto;border-radius:4px;" alt="{person} met hulle sertifikaat">""";
         return Shell(
             "Borg oorhandig!",
             sponsorFirstName,
@@ -162,7 +164,7 @@ public static class EmailTemplates
               <p style="margin:0 0 16px;"><strong>{person}</strong> het hulle sertifikaat in ontvangs geneem!</p>
               <p style="margin:0 0 16px;">Ons het dit pas oorhandig. Baie dankie dat jy aan hierdie projek deelgeneem het. Jy bring meer as net jou kant, jy is 'n staatmaak Stadsbouer!</p>
               <p style="margin:0 0 16px;">Ons sien daarna uit om jou vir nog baie projekte deel van span te hê!</p>
-              <img src="{url}" width="488" style="display:block;max-width:100%;height:auto;border-radius:4px;" alt="{person} met hulle sertifikaat">
+              {image}
             """,
             false,
             null,

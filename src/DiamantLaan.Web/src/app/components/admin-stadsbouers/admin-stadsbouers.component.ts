@@ -87,7 +87,11 @@ const LEE_VORM: Vorm = {
                     @if (b.isSponsored) {
                       <span class="merk geborg">Geborg</span>
                       @if (b.handedOverAt) {
-                        <a class="merk oorhandig" [href]="b.handoverPhotoUrl" target="_blank" rel="noopener">Oorhandig {{ b.handedOverAt | date:'d MMM y' }}</a>
+                        @if (b.handoverPhotoUrl) {
+                          <a class="merk oorhandig" [href]="b.handoverPhotoUrl" target="_blank" rel="noopener">Oorhandig {{ b.handedOverAt | date:'d MMM y' }}</a>
+                        } @else {
+                          <span class="merk oorhandig">Oorhandig {{ b.handedOverAt | date:'d MMM y' }}</span>
+                        }
                       }
                     } @else if (b.isPending) {
                       <span class="merk hangend">Hangend</span>
@@ -105,7 +109,9 @@ const LEE_VORM: Vorm = {
                     } @else {
                       @if (b.isSponsored) {
                         <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="downloadCertificate(b)">Sertifikaat</button>
-                        <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="openHandover(b)">{{ b.handedOverAt ? 'Oorhandig weer' : 'Oorhandig' }}</button>
+                        @if (!b.handedOverAt) {
+                          <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="openHandover(b)">Oorhandig</button>
+                        }
                       }
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="openEdit(b)">Wysig</button>
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || b.isSponsored" (click)="confirmDeleteId = b.id">Verwyder</button>
@@ -136,7 +142,7 @@ const LEE_VORM: Vorm = {
       <div class="modal-backdrop" (click)="closeHandover()">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oh-title" (click)="$event.stopPropagation()">
           <h3 id="oh-title">Oorhandig aan {{ handover.name }}</h3>
-          <p class="hint">{{ handover.redo ? 'Die nuwe foto vervang die vorige een. Die borg kry nie weer ’n e-pos nie.' : 'Die foto word saam met ’n dankie-e-pos aan die borg gestuur.' }}</p>
+          <p class="hint">Dit kan net een keer gebeur. Die borg kry ’n dankie-e-pos, met die foto as jy een kies.</p>
 
           <div class="field">
             <input type="file" accept="image/*" capture="environment" aria-label="Foto" (change)="kiesHandoverFoto($event)">
@@ -149,7 +155,7 @@ const LEE_VORM: Vorm = {
             <p class="error-msg">{{ formError }}</p>
           }
 
-          <button type="button" class="btn btn-primary btn-sm btn-wide" [disabled]="saving || !handover.photo" (click)="stuurHandover()">
+          <button type="button" class="btn btn-primary btn-sm btn-wide" [disabled]="saving" (click)="stuurHandover()">
             {{ saving ? 'Besig...' : 'Stuur' }}
           </button>
           <button type="button" class="btn btn-outline btn-sm btn-wide" [disabled]="saving" (click)="closeHandover()">Kanselleer</button>
@@ -354,7 +360,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   certBusy = false;
   certOwnerName = '';
   certSquares: CertificateSquare[] = [];
-  handover: { id: number; name: string; redo: boolean; photo: File | null } | null = null;
+  handover: { id: number; name: string; photo: File | null } | null = null;
   handoverPreview = '';
 
   ngOnInit() {
@@ -534,7 +540,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
 
   openHandover(b: AdminStadsbouer) {
     this.formError = '';
-    this.handover = { id: b.id, name: b.name, redo: !!b.handedOverAt, photo: null };
+    this.handover = { id: b.id, name: b.name, photo: null };
   }
 
   closeHandover() {
@@ -551,12 +557,12 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   }
 
   async stuurHandover() {
-    if (!this.handover?.photo || this.saving) return;
+    if (!this.handover || this.saving) return;
     const { id, photo } = this.handover;
     this.saving = true;
     this.formError = '';
     try {
-      const blob = await this.verklein(photo);
+      const blob = photo ? await this.verklein(photo) : null;
       const res = await firstValueFrom(this.admin.handOverStadsbouer(id, blob));
       this.saving = false;
       this.handover = null;
@@ -565,7 +571,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
       this.load();
     } catch (err: any) {
       this.saving = false;
-      this.formError = err?.error?.message ?? 'Kon nie die foto stuur nie. Probeer weer.';
+      this.formError = err?.error?.message ?? 'Kon nie die oorhandiging stuur nie. Probeer weer.';
     }
   }
 

@@ -120,6 +120,7 @@ describe('AdminStadsbouersComponent', () => {
 
     http.expectOne('/api/admin/stadsbouers').flush([{ ...sponsored, handedOverAt: '2026-10-01T00:00:00Z', handoverPhotoUrl: '/api/stadsbouers/oorhandig/oorhandig-a.jpg' }]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('a.merk.oorhandig').textContent).toContain('Oorhandig');
+    expect(fixture.nativeElement.querySelector('a.merk.oorhandig').textContent).toContain('Oorhandig');    const labels = Array.from(fixture.nativeElement.querySelectorAll('button')).map((b: any) => b.textContent.trim());
+    expect(labels).not.toContain('Oorhandig');
   });
 });

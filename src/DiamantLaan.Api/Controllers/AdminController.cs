@@ -1101,10 +1101,7 @@ public class AdminController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Records the certificate handover: stores the photo and emails the sponsor. A redo overwrites the
-    /// photo under the same URL, so the email already sent shows the new one, and does not email again.
-    /// </summary>
+    /// <summary>Records the one-time certificate handover: stores the optional photo and emails the sponsor.</summary>
     [HttpPost("stadsbouers/{id}/oorhandig")]
     [RequestSizeLimit(8 * 1024 * 1024)]
     public async Task<IActionResult> HandOverStadsbouer(int id, IFormFile? photo, CancellationToken cancellationToken)
@@ -1117,49 +1114,46 @@ public class AdminController : ControllerBase
         if (!taken.Sponsored.Contains(id))
             return BadRequest(new { message = "Hierdie stadsbouer is nog nie geborg nie." });
 
-        if (photo == null || !FileUploadService.IsImage(photo))
+        if (builder.HandedOverAt != null)
+            return BadRequest(new { message = "Hierdie stadsbouer is reeds oorhandig." });
+
+        if (photo != null && !FileUploadService.IsImage(photo))
             return BadRequest(new { message = PhotoTypeError });
 
-        var redo = builder.HandedOverAt != null;
-        var extension = FileUploadService.GetImageExtension(photo.ContentType);
-        var oldPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.HandoverPhotoPath);
-        var keepName = oldPath != null && oldPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
-        var fileName = keepName ? Path.GetFileName(oldPath)! : $"oorhandig-{Guid.NewGuid():N}{extension}";
-        var newPath = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(_env), fileName);
-
-        // Written beside the target and moved over it, so a failed upload never leaves half a photo behind the sent URL.
-        var tempPath = newPath + ".tmp";
-        await using (var stream = new FileStream(tempPath, FileMode.Create))
+        string? relativeUrl = null;
+        string? newPath = null;
+        if (photo != null)
         {
-            await photo.CopyToAsync(stream, cancellationToken);
+            var fileName = $"oorhandig-{Guid.NewGuid():N}{FileUploadService.GetImageExtension(photo.ContentType)}";
+            newPath = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(_env), fileName);
+            await using (var stream = new FileStream(newPath, FileMode.Create))
+            {
+                await photo.CopyToAsync(stream, cancellationToken);
+            }
+            builder.HandoverPhotoPath = $"stadsbouers/{fileName}";
+            relativeUrl = "/api/stadsbouers/oorhandig/" + fileName;
         }
-        System.IO.File.Move(tempPath, newPath, overwrite: true);
 
-        builder.HandoverPhotoPath = $"stadsbouers/{fileName}";
-        builder.HandedOverAt ??= DateTime.UtcNow;
+        builder.HandedOverAt = DateTime.UtcNow;
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch
         {
-            // Nothing points at a new file yet, so do not leave it behind.
-            if (!keepName)
+            // Nothing points at the new file yet, so do not leave it behind.
+            if (newPath != null)
                 System.IO.File.Delete(newPath);
             throw;
         }
 
-        if (!keepName && oldPath != null && System.IO.File.Exists(oldPath))
-            System.IO.File.Delete(oldPath);
-
-        var relativeUrl = "/api/stadsbouers/oorhandig/" + fileName;
         string? emailedTo = null;
-        if (_sponsorships != null && !redo)
+        if (_sponsorships != null)
         {
             try
             {
                 emailedTo = await _sponsorships.SendHandedOverAsync(
-                    builder, AppPublicUrl.Resolve(_config).TrimEnd('/') + relativeUrl, cancellationToken);
+                    builder, relativeUrl == null ? null : AppPublicUrl.Resolve(_config).TrimEnd('/') + relativeUrl, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -1167,16 +1161,13 @@ public class AdminController : ControllerBase
             }
         }
 
-        await _audit.LogAsync(User, "HandOverStadsbouer",
-            $"Stadsbouer #{builder.Id} ({(redo ? "foto vervang" : emailedTo ?? "geen borg-e-pos")})");
+        await _audit.LogAsync(User, "HandOverStadsbouer", $"Stadsbouer #{builder.Id} ({emailedTo ?? "geen borg-e-pos"})");
 
         return Ok(new
         {
-            message = redo
-                ? "Foto vervang. Die borg is nie weer ge-e-pos nie."
-                : emailedTo != null
-                    ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
-                    : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
+            message = emailedTo != null
+                ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
+                : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
             handedOverAt = builder.HandedOverAt,
             handoverPhotoUrl = relativeUrl
         });

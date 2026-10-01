@@ -240,10 +240,10 @@ export class AdminService {
     return this.http.get<CertificateSummary>(`/api/admin/stadsbouers/${id}/certificate-summary`);
   }
 
-  handOverStadsbouer(id: number, photo: Blob) {
+  handOverStadsbouer(id: number, photo: Blob | null) {
     const body = new FormData();
-    body.append('photo', photo, 'oorhandig.jpg');
-    return this.http.post<{ message: string; handedOverAt: string; handoverPhotoUrl: string }>(
+    if (photo) body.append('photo', photo, 'oorhandig.jpg');
+    return this.http.post<{ message: string; handedOverAt: string; handoverPhotoUrl: string | null }>(
       `/api/admin/stadsbouers/${id}/oorhandig`, body);
   }
 

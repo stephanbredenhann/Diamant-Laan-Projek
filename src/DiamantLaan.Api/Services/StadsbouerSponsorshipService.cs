@@ -209,8 +209,8 @@ public class StadsbouerSponsorshipService
         }
     }
 
-    /// <summary>Queues the handover email with the photo. Returns the address used, or null if no sponsor email exists.</summary>
-    public async Task<string?> SendHandedOverAsync(Stadsbouer builder, string photoUrl, CancellationToken cancellationToken = default)
+    /// <summary>Queues the handover email, with the photo when there is one. Returns the address used, or null if no sponsor email exists.</summary>
+    public async Task<string?> SendHandedOverAsync(Stadsbouer builder, string? photoUrl, CancellationToken cancellationToken = default)
     {
         var sponsor = await FindSponsorAsync(builder.Id, cancellationToken);
         if (sponsor == null)

@@ -204,7 +204,7 @@ public class AdminStadsbouerEmailTests : IDisposable
     }
 
     [Fact]
-    public async Task Oorhandig_StoresPhotoAndQueuesEmail_AndRedoOverwritesInPlaceWithoutEmailing()
+    public async Task Oorhandig_StoresPhotoAndQueuesEmail_AndCannotHappenTwice()
     {
         _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com", FirstName = "Piet" });
         _db.Squares.Add(new Square { Id = 5 });
@@ -215,31 +215,32 @@ public class AdminStadsbouerEmailTests : IDisposable
 
         var controller = CreateController(true, out _);
         var first = Assert.IsType<OkObjectResult>(await controller.HandOverStadsbouer(builder.Id, ImageFile(), CancellationToken.None));
-        var url1 = (string)first.Value!.GetType().GetProperty("handoverPhotoUrl")!.GetValue(first.Value)!;
-        var fileName1 = url1.Substring("/api/stadsbouers/oorhandig/".Length);
-        var path1 = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(CreateEnv()), fileName1);
+        var url = (string)first.Value!.GetType().GetProperty("handoverPhotoUrl")!.GetValue(first.Value)!;
+        var fileName = url.Substring("/api/stadsbouers/oorhandig/".Length);
+        var path = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(CreateEnv()), fileName);
 
         try
         {
             var saved = await _db.Stadsbouers.SingleAsync();
             Assert.NotNull(saved.HandedOverAt);
-            Assert.Equal("stadsbouers/" + fileName1, saved.HandoverPhotoPath);
-            Assert.True(File.Exists(path1));
+            Assert.Equal("stadsbouers/" + fileName, saved.HandoverPhotoPath);
+            Assert.True(File.Exists(path));
             var email = Assert.Single(_db.PendingEmails);
             Assert.Equal("Orania-pad: Borg oorhandig!", email.Subject);
             Assert.Equal("koper@test.com", email.To);
-            Assert.Contains(AppPublicUrl.LiveSite + url1, email.HtmlBody);
+            Assert.Contains(AppPublicUrl.LiveSite + url, email.HtmlBody);
 
             var handedOverAt = saved.HandedOverAt;
-            var second = Assert.IsType<OkObjectResult>(await controller.HandOverStadsbouer(builder.Id, ImageFile(), CancellationToken.None));
-            var url2 = (string)second.Value!.GetType().GetProperty("handoverPhotoUrl")!.GetValue(second.Value)!;
-            Assert.Equal(url1, url2);
-            Assert.True(File.Exists(path1));
+            Assert.IsType<BadRequestObjectResult>(await controller.HandOverStadsbouer(builder.Id, ImageFile(), CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await controller.HandOverStadsbouer(builder.Id, null, CancellationToken.None));
             Assert.Single(_db.PendingEmails);
-            Assert.Equal(handedOverAt, (await _db.Stadsbouers.SingleAsync()).HandedOverAt);
+            Assert.Single(Directory.GetFiles(Path.GetDirectoryName(path)!, "oorhandig-*"));
+            var after = await _db.Stadsbouers.AsNoTracking().SingleAsync();
+            Assert.Equal(handedOverAt, after.HandedOverAt);
+            Assert.Equal("stadsbouers/" + fileName, after.HandoverPhotoPath);
 
             var publicController = new StadsbouersController(_db, new SiteSettingsService(_db), CreateEnv());
-            Assert.IsType<PhysicalFileResult>(await publicController.GetHandoverPhoto(fileName1, CancellationToken.None));
+            Assert.IsType<PhysicalFileResult>(await publicController.GetHandoverPhoto(fileName, CancellationToken.None));
         }
         finally
         {
@@ -247,6 +248,27 @@ public class AdminStadsbouerEmailTests : IDisposable
             foreach (var f in Directory.GetFiles(dir, "oorhandig-*"))
                 File.Delete(f);
         }
+    }
+
+    [Fact]
+    public async Task Oorhandig_WithoutPhoto_EmailsWithoutImage()
+    {
+        _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com", FirstName = "Piet" });
+        _db.Squares.Add(new Square { Id = 5 });
+        var builder = new Stadsbouer { Name = "Kobus Nel" };
+        _db.Stadsbouers.Add(builder);
+        _db.SaveChanges();
+        SeedSponsorship(builder.Id, 5);
+
+        var controller = CreateController(true, out _);
+        var result = Assert.IsType<OkObjectResult>(await controller.HandOverStadsbouer(builder.Id, null, CancellationToken.None));
+
+        Assert.Null(result.Value!.GetType().GetProperty("handoverPhotoUrl")!.GetValue(result.Value));
+        var saved = await _db.Stadsbouers.SingleAsync();
+        Assert.NotNull(saved.HandedOverAt);
+        Assert.Null(saved.HandoverPhotoPath);
+        Assert.DoesNotContain("<img src=\"" + AppPublicUrl.LiveSite, Assert.Single(_db.PendingEmails).HtmlBody);
+
     }
 
     [Fact]
