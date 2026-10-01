@@ -41,6 +41,11 @@ const LEE_VORM: Vorm = {
         <h3>Stadsbouers ({{ filtered.length }})</h3>
         <div class="table-actions">
           <input [(ngModel)]="search" (input)="applyFilter()" placeholder="Soek naam of e-pos" name="search">
+          @if (bouers.length) {
+            <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="stelAlmalAktief(!almalAktief)">
+              {{ almalAktief ? 'Deaktiveer almal' : 'Aktiveer almal' }}
+            </button>
+          }
           <button type="button" class="btn btn-primary btn-sm" (click)="openNew()">Nuwe stadsbouer</button>
         </div>
       </div>
@@ -460,6 +465,27 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
         this.busy = false;
         this.confirmDeleteId = null;
         this.setMessage(err.error?.message ?? 'Kon nie verwyder nie.', 'error');
+      }
+    });
+  }
+
+  get almalAktief() {
+    return this.bouers.every(b => b.isActive);
+  }
+
+  stelAlmalAktief(enabled: boolean) {
+    if (this.busy) return;
+    this.busy = true;
+
+    this.admin.setAllStadsbouersActive(enabled).subscribe({
+      next: (res) => {
+        this.busy = false;
+        this.setMessage(res.message, 'success');
+        this.load();
+      },
+      error: (err) => {
+        this.busy = false;
+        this.setMessage(err.error?.message ?? 'Kon nie stoor nie.', 'error');
       }
     });
   }
