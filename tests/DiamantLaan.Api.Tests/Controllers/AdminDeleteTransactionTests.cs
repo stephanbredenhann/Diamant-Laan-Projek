@@ -110,6 +110,25 @@ public class AdminDeleteTransactionTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteTransaction_ConfirmedSponsorship_ReleasesTheBuildersBlock()
+    {
+        var purchase = SeedPurchase(PaymentStatus.Confirmed, 1);
+        var bouer = new User { UserName = "bou@test.com", Email = "bou@test.com" };
+        Assert.True((await _userManager.CreateAsync(bouer)).Succeeded);
+        var builder = new Stadsbouer { Name = "Kobus Nel", Email = "bou@test.com" };
+        _db.Stadsbouers.Add(builder);
+        await _db.SaveChangesAsync();
+        purchase.PurchaseSquares.Single().StadsbouerId = builder.Id;
+        (await _db.Squares.FirstAsync(s => s.Id == 1)).OwnerId = bouer.Id;
+        await _db.SaveChangesAsync();
+
+        var result = await CreateController().DeleteTransaction(purchase.Id, new DeleteTransactionDto { Password = AdminPassword });
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Null((await _db.Squares.FirstAsync(s => s.Id == 1)).OwnerId);
+    }
+
+    [Fact]
     public async Task DeleteTransaction_UnknownId_ReturnsNotFound()
     {
         var controller = CreateController();

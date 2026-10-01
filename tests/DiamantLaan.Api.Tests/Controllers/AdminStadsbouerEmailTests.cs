@@ -88,6 +88,56 @@ public class AdminStadsbouerEmailTests : IDisposable
     }
 
     [Fact]
+    public async Task Update_CorrectedEmail_MovesBlockOffTheMistypedAccount()
+    {
+        _db.Roles.Add(new IdentityRole { Id = "buyer-role", Name = "Buyer", NormalizedName = "BUYER" });
+        _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com" });
+        _db.Squares.Add(new Square { Id = 5, OwnerId = "koper" });
+        var builder = new Stadsbouer { Name = "Kobus Nel", Email = "kobus@tikfout.test" };
+        _db.Stadsbouers.Add(builder);
+        _db.SaveChanges();
+        var purchase = new Purchase { UserId = "koper", Amount = 500m, PaymentStatus = PaymentStatus.Confirmed, ConfirmedAt = DateTime.UtcNow };
+        purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = 5, StadsbouerId = builder.Id });
+        _db.Purchases.Add(purchase);
+        _db.SaveChanges();
+
+        var controller = CreateController(withSponsorships: true, out var sponsorships);
+        await sponsorships!.AssignAsync(purchase);
+        var wrong = await _db.Users.SingleAsync(u => u.Email == "kobus@tikfout.test");
+        Assert.Equal(wrong.Id, (await _db.Squares.SingleAsync(s => s.Id == 5)).OwnerId);
+
+        var result = await controller.UpdateStadsbouer(builder.Id, new StadsbouerUploadDto { Name = "Kobus Nel", Email = "kobus@bou.test" }, null);
+
+        Assert.IsType<OkObjectResult>(result);
+        var right = await _db.Users.SingleAsync(u => u.Email == "kobus@bou.test");
+        Assert.Equal(right.Id, (await _db.Squares.SingleAsync(s => s.Id == 5)).OwnerId);
+        Assert.Single(_db.PendingEmails.Where(e => e.To == "kobus@bou.test"));
+    }
+
+    [Fact]
+    public async Task AdminPhoto_ServesAnInactiveBuildersPhoto()
+    {
+        var builder = new Stadsbouer { Name = "Kobus Nel", IsActive = false };
+        _db.Stadsbouers.Add(builder);
+        _db.SaveChanges();
+        var dir = FileUploadService.GetStadsbouerUploadsPath(CreateEnv());
+        var file = Path.Combine(dir, $"{builder.Id}.jpg");
+        await File.WriteAllBytesAsync(file, new byte[] { 0xFF, 0xD8, 0xFF });
+        builder.PhotoPath = $"stadsbouers/{builder.Id}.jpg";
+        _db.SaveChanges();
+
+        try
+        {
+            var result = await CreateController(false, out _).GetStadsbouerPhoto(builder.Id, CancellationToken.None);
+            Assert.Equal("image/jpeg", Assert.IsType<PhysicalFileResult>(result).ContentType);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
     public async Task SponsoredCertificates_ListsBuilderBlocksTheBuyerNoLongerOwns()
     {
         _db.Users.Add(new User { Id = "koper", UserName = "koper@test.com", Email = "koper@test.com" });
@@ -118,9 +168,7 @@ public class AdminStadsbouerEmailTests : IDisposable
 
     private AdminController CreateController(bool withSponsorships, out StadsbouerSponsorshipService? sponsorships)
     {
-        var env = new Mock<IWebHostEnvironment>();
-        env.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
-        env.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
+        var env = Mock.Get(CreateEnv());
 
         var config = new ConfigurationBuilder().Build();
         var blockNotifications = new BlockNotificationService(
@@ -162,5 +210,13 @@ public class AdminStadsbouerEmailTests : IDisposable
                 }
             }
         };
+    }
+
+    private static IWebHostEnvironment CreateEnv()
+    {
+        var env = new Mock<IWebHostEnvironment>();
+        env.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
+        env.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
+        return env.Object;
     }
 }

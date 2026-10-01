@@ -456,9 +456,7 @@ public class PurchaseController : ControllerBase
         if (found != stadsbouerIds.Count)
             return (null, BadRequest(new { message = "Sommige stadsbouers is nie beskikbaar nie." }));
 
-        // ponytail: last-write-wins on a tie. Two sponsors picking the same builder in the same
-        // instant both pass here; the builder simply ends up with two blocks. Needs a unique index
-        // that excludes cancelled purchases if that ever matters.
+        // Race-free: ReserveSquaresAsync's transaction is BEGIN IMMEDIATE on SQLite, so a second sponsor waits and then sees this one.
         var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db);
         if (stadsbouerIds.Any(taken.IsTaken))
             return (null, BadRequest(new { message = "Sommige stadsbouers is reeds geborg. Herlaai die bladsy." }));

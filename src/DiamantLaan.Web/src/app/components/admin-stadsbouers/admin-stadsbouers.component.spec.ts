@@ -70,4 +70,18 @@ describe('AdminStadsbouersComponent', () => {
     request.flush({ id: 1, message: 'Stadsbouer gestoor.' });
     http.expectOne('/api/admin/stadsbouers').flush(bouers);
   });
+
+  it('loads thumbnails through the admin endpoint, inactive builders included', () => {
+    const component = fixture.componentInstance;
+    component.openEdit(bouers[0]);
+    component.save();
+    http.expectOne('/api/admin/stadsbouers/1').flush({ id: 1, message: 'Stadsbouer gestoor.' });
+    http.expectOne('/api/admin/stadsbouers').flush([{ ...bouers[0], hasPhoto: true, isActive: false }]);
+
+    http.expectOne('/api/admin/stadsbouers/1/foto').flush(new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' }));
+    fixture.detectChanges();
+
+    const img: HTMLImageElement = fixture.nativeElement.querySelector('img.duim');
+    expect(img.src).toMatch(/^blob:/);
+  });
 });
