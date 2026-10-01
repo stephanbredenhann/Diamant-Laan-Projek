@@ -128,6 +128,44 @@ public static class EmailTemplates
             T(en, "Groete uit Orania!", "Greetings from Orania!"));
     }
 
+    /// <summary>Thanks the sponsor once their payment for a stadsbouer is confirmed. Afrikaans only.</summary>
+    public static string StadsbouerThanks(string sponsorFirstName, string builderName)
+    {
+        var person = WebUtility.HtmlEncode(builderName);
+        return Shell(
+            "Dankie!",
+            sponsorFirstName,
+            $"""
+              <p style="margin:0 0 16px;">Baie dankie dat jy vir <strong>{person}</strong> geborg het!</p>
+              <p style="margin:0 0 16px;">Met jou hulp kry ons hierdie nuwe pad sommer vinnig geteer. Ons gaan {person} se sertifikaat aan hom/haar oorhandig. Ons laat weet jou wanneer hulle dit in ontvangs neem.</p>
+              <p style="margin:0;">Dankie vir jou spanwerk!</p>
+            """,
+            false,
+            null,
+            "Groete,",
+            "Stadsboufonds-span");
+    }
+
+    /// <summary>Tells the sponsor the certificate was handed over, with the photo. Afrikaans only.</summary>
+    public static string StadsbouerHandedOver(string sponsorFirstName, string builderName, string photoUrl)
+    {
+        var person = WebUtility.HtmlEncode(builderName);
+        var url = WebUtility.HtmlEncode(photoUrl);
+        return Shell(
+            "Borg oorhandig!",
+            sponsorFirstName,
+            $"""
+              <p style="margin:0 0 16px;"><strong>{person}</strong> het hulle sertifikaat in ontvangs geneem!</p>
+              <p style="margin:0 0 16px;">Ons het dit pas oorhandig. Baie dankie dat jy aan hierdie projek deelgeneem het. Jy bring meer as net jou kant, jy is 'n staatmaak Stadsbouer!</p>
+              <p style="margin:0 0 16px;">Ons sien daarna uit om jou vir nog baie projekte deel van span te hê!</p>
+              <img src="{url}" width="488" style="display:block;max-width:100%;height:auto;border-radius:4px;" alt="{person} met hulle sertifikaat">
+            """,
+            false,
+            null,
+            "Orania-groete,",
+            "Stadsboufonds-span");
+    }
+
     /// <summary>
     /// Sent once to a guest who paid without an account and left us an email address. The link
     /// carries a claim token, so following it can still turn the purchase into an account later.
@@ -384,7 +422,7 @@ public static class EmailTemplates
     /// Table-based and inline-styled throughout, in px rather than rem: Outlook renders
     /// through Word, which drops flex and grid outright and resolves rem unpredictably.
     /// </summary>
-    private static string Shell(string heading, string firstName, string body, bool en, string? switchUrl, string? signOff = null)
+    private static string Shell(string heading, string firstName, string body, bool en, string? switchUrl, string? signOff = null, string? team = null)
     {
         var name = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(firstName) ? "Stadsbouer" : firstName);
         return $"""
@@ -407,7 +445,7 @@ public static class EmailTemplates
                     </tr>
                     <tr>
                       <td style="padding:22px 36px 32px; border-top:1px solid {BorderSoft}; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
-                        <p style="margin:0;">{signOff ?? T(en, "Orania groete,", "Orania regards,")}<br>{T(en, "Die Orania Beweging-span", "The Orania Movement team")}</p>
+                        <p style="margin:0;">{signOff ?? T(en, "Orania groete,", "Orania regards,")}<br>{team ?? T(en, "Die Orania Beweging-span", "The Orania Movement team")}</p>
                         <p style="margin:12px 0 0; font-size:14px; color:{Muted};">inligting&#64;orania.co.za &middot; 053 207 0062</p>
                         {SwitchToEnglishLine(en, switchUrl)}
                       </td>

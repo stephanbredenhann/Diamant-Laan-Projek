@@ -1036,7 +1036,11 @@ public class AdminController : ControllerBase
                 Email = s.Email,
                 IsActive = s.IsActive,
                 CreatedAt = s.CreatedAt,
-                HasPhoto = s.PhotoPath != null
+                HasPhoto = s.PhotoPath != null,
+                HandedOverAt = s.HandedOverAt,
+                HandoverPhotoUrl = s.HandoverPhotoPath == null
+                    ? null
+                    : "/api/stadsbouers/oorhandig/" + s.HandoverPhotoPath.Substring("stadsbouers/".Length)
             })
             .ToListAsync(cancellationToken);
 
@@ -1047,6 +1051,105 @@ public class AdminController : ControllerBase
         }
 
         return Ok(builders);
+    }
+
+    /// <summary>One builder's certificate summary, in the shape of the sponsored-certificates list.</summary>
+    [HttpGet("stadsbouers/{id}/certificate-summary")]
+    public async Task<IActionResult> GetStadsbouerCertificateSummary(int id)
+    {
+        var rows = await _db.PurchaseSquares
+            .Where(ps => ps.StadsbouerId == id && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
+            .Select(ps => new
+            {
+                BuilderName = ps.Stadsbouer!.Name,
+                ps.SquareId,
+                ps.Purchase.PurchaseDate,
+                SquareName = _db.Squares.Where(s => s.Id == ps.SquareId).Select(s => s.CertificateName).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        if (rows.Count == 0)
+            return NotFound();
+
+        var ownerName = rows[0].BuilderName;
+        return Ok(new
+        {
+            OwnerName = ownerName,
+            SameForAll = true,
+            Squares = rows.OrderBy(r => r.SquareId).Select(r => new
+            {
+                Id = r.SquareId,
+                PurchaseDate = (DateTime?)r.PurchaseDate,
+                OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? ownerName : r.SquareName
+            }).ToList()
+        });
+    }
+
+    /// <summary>Records the certificate handover: stores the photo and emails the sponsor. Redoing it replaces the photo.</summary>
+    [HttpPost("stadsbouers/{id}/oorhandig")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> HandOverStadsbouer(int id, IFormFile? photo, CancellationToken cancellationToken)
+    {
+        var builder = await _db.Stadsbouers.FindAsync(new object[] { id }, cancellationToken);
+        if (builder == null)
+            return NotFound();
+
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db, cancellationToken);
+        if (!taken.Sponsored.Contains(id))
+            return BadRequest(new { message = "Hierdie stadsbouer is nog nie geborg nie." });
+
+        if (photo == null || !FileUploadService.IsImage(photo))
+            return BadRequest(new { message = PhotoTypeError });
+
+        var oldPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.HandoverPhotoPath);
+        var fileName = $"oorhandig-{Guid.NewGuid():N}{FileUploadService.GetImageExtension(photo.ContentType)}";
+        var newPath = Path.Combine(FileUploadService.GetStadsbouerUploadsPath(_env), fileName);
+        await using (var stream = new FileStream(newPath, FileMode.Create))
+        {
+            await photo.CopyToAsync(stream, cancellationToken);
+        }
+
+        builder.HandoverPhotoPath = $"stadsbouers/{fileName}";
+        builder.HandedOverAt = DateTime.UtcNow;
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // Nothing points at the new file yet, so do not leave it behind.
+            System.IO.File.Delete(newPath);
+            throw;
+        }
+
+        if (oldPath != null && System.IO.File.Exists(oldPath))
+            System.IO.File.Delete(oldPath);
+
+        var relativeUrl = "/api/stadsbouers/oorhandig/" + fileName;
+        string? emailedTo = null;
+        if (_sponsorships != null)
+        {
+            try
+            {
+                emailedTo = await _sponsorships.SendHandedOverAsync(
+                    builder, AppPublicUrl.Resolve(_config).TrimEnd('/') + relativeUrl, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Could not send handover email for stadsbouer {StadsbouerId}", builder.Id);
+            }
+        }
+
+        await _audit.LogAsync(User, "HandOverStadsbouer", $"Stadsbouer #{builder.Id} ({emailedTo ?? "geen borg-e-pos"})");
+
+        return Ok(new
+        {
+            message = emailedTo != null
+                ? $"Oorhandig. Die borg is ge-e-pos by {emailedTo}."
+                : "Oorhandig, maar geen borg-e-posadres is gevind nie, so geen e-pos is gestuur nie.",
+            handedOverAt = builder.HandedOverAt,
+            handoverPhotoUrl = relativeUrl
+        });
     }
 
     [HttpPost("stadsbouers")]

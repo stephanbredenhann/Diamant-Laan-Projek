@@ -211,6 +211,84 @@ public class StadsbouerPurchaseTests : IDisposable
         Assert.Null((await _db.PurchaseSquares.SingleAsync()).StadsbouerId);
     }
 
+#if DEBUG
+    [Fact]
+    public async Task Itn_AccountSponsor_GetsOneDankieAndNoGenericConfirmation()
+    {
+        var purchase = SeedPendingSponsorship(guest: false);
+
+        var controller = CreatePaymentController(out var emails);
+        await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
+        await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
+
+        var sent = await _db.PendingEmails.ToListAsync();
+        var thanks = Assert.Single(sent);
+        Assert.Equal("Orania-pad: Dankie!", thanks.Subject);
+        Assert.Equal("koper@test.com", thanks.To);
+        Assert.Contains("Kobus Nel", thanks.HtmlBody);
+        Assert.Contains("Stadsboufonds-span", thanks.HtmlBody);
+    }
+
+    [Fact]
+    public async Task Itn_GuestSponsor_GetsClaimEmailPlusDankie_AndRepeatSendsNothingMore()
+    {
+        var purchase = SeedPendingSponsorship(guest: true);
+
+        var controller = CreatePaymentController(out _);
+        await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
+        var afterFirst = await _db.PendingEmails.ToListAsync();
+
+        Assert.Equal(2, afterFirst.Count);
+        Assert.Single(afterFirst, e => e.Subject == "Orania-pad: Dankie!" && e.To == "gas@sponsor.test");
+        Assert.Single(afterFirst, e => e.Subject != "Orania-pad: Dankie!" && e.To == "gas@sponsor.test");
+
+        await controller.SimulateItn(new SimulateItnDto { PurchaseId = purchase.Id });
+        Assert.Equal(2, await _db.PendingEmails.CountAsync());
+    }
+
+    private Purchase SeedPendingSponsorship(bool guest)
+    {
+        _db.Roles.Add(new IdentityRole { Id = "buyer-role", Name = "Buyer", NormalizedName = "BUYER" });
+        var user = _db.Users.Single(u => u.Id == "koper");
+        user.FirstName = "Piet";
+        SeedSquares(200);
+        var builder = new Stadsbouer { Name = "Kobus Nel" };
+        _db.Stadsbouers.Add(builder);
+        _db.SaveChanges();
+
+        var purchase = new Purchase { UserId = "koper", Amount = 500m, PaymentStatus = PaymentStatus.Pending };
+        if (guest)
+        {
+            purchase.GuestTokenHash = "hash";
+            purchase.GuestEmail = "gas@sponsor.test";
+        }
+        purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = 200, StadsbouerId = builder.Id });
+        _db.Purchases.Add(purchase);
+        _db.SaveChanges();
+        return purchase;
+    }
+
+    private PaymentController CreatePaymentController(out EmailOutboxService emails)
+    {
+        var env = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        env.Setup(e => e.EnvironmentName).Returns("Development");
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        emails = new EmailOutboxService(_db, Mock.Of<IEmailService>(), Mock.Of<ILogger<EmailOutboxService>>());
+        var sponsorships = new StadsbouerSponsorshipService(
+            _db, _userManager, emails, config, Mock.Of<ILogger<StadsbouerSponsorshipService>>());
+        return new PaymentController(
+            _db,
+            Mock.Of<IPayFastService>(),
+            Mock.Of<ILogger<PaymentController>>(),
+            env.Object,
+            new GuestPurchaseService(_db, _userManager, Mock.Of<ILogger<GuestPurchaseService>>()),
+            emails,
+            config,
+            null,
+            sponsorships);
+    }
+#endif
+
     private void SwitchStadsbouersOff()
     {
         var settings = _db.SiteSettings.SingleOrDefault();

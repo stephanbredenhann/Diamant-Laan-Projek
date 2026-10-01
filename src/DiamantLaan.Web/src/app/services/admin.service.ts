@@ -82,6 +82,8 @@ export interface AdminStadsbouer {
   isSponsored: boolean;
   isPending: boolean;
   createdAt: string;
+  handedOverAt: string | null;
+  handoverPhotoUrl: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -232,6 +234,17 @@ export class AdminService {
 
   getStadsbouerFoto(id: number) {
     return this.http.get(`/api/admin/stadsbouers/${id}/foto`, { responseType: 'blob' });
+  }
+
+  getStadsbouerCertificate(id: number) {
+    return this.http.get<CertificateSummary>(`/api/admin/stadsbouers/${id}/certificate-summary`);
+  }
+
+  handOverStadsbouer(id: number, photo: Blob) {
+    const body = new FormData();
+    body.append('photo', photo, 'oorhandig.jpg');
+    return this.http.post<{ message: string; handedOverAt: string; handoverPhotoUrl: string }>(
+      `/api/admin/stadsbouers/${id}/oorhandig`, body);
   }
 
   deleteStadsbouer(id: number) {

@@ -109,6 +109,7 @@ public class PaymentController : ControllerBase
         }
 
         await HandOverSponsoredBlocksAsync(purchase, justConfirmed);
+        await SendStadsbouerThanksAsync(purchase, justConfirmed);
         await SendConfirmationEmailAsync(purchase, justConfirmed);
 
         return Ok("OK");
@@ -144,6 +145,7 @@ public class PaymentController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Kon nie aankoop bevestig nie." });
 
         await HandOverSponsoredBlocksAsync(purchase, justConfirmed);
+        await SendStadsbouerThanksAsync(purchase, justConfirmed);
         await SendConfirmationEmailAsync(purchase, justConfirmed);
 
         return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
@@ -170,6 +172,15 @@ public class PaymentController : ControllerBase
         }
     }
 
+    /// <summary>The sponsor's "Dankie!" email. Gated on justConfirmed like the handover, so a retried ITN sends nothing.</summary>
+    private async Task SendStadsbouerThanksAsync(Purchase purchase, bool justConfirmed)
+    {
+        if (!justConfirmed || _sponsorships == null || purchase.PaymentStatus != PaymentStatus.Confirmed)
+            return;
+
+        await _sponsorships.SendThanksAsync(purchase);
+    }
+
     /// <summary>
     /// Every confirmed purchase gets exactly one confirmation email: a guest gets the version with a
     /// claim link, a registered buyer gets the version that just points at their account.
@@ -183,6 +194,10 @@ public class PaymentController : ControllerBase
         }
 
         if (!justConfirmed || purchase.PaymentStatus != PaymentStatus.Confirmed)
+            return;
+
+        // The "Dankie!" email already covers an account sponsor whose purchase is only stadsbouer blocks.
+        if (_sponsorships != null && purchase.PurchaseSquares.Count > 0 && purchase.PurchaseSquares.All(ps => ps.StadsbouerId != null))
             return;
 
         try
