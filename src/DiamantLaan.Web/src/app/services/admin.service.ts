@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AdminProgressImage, SquareStatus } from '../models/square';
 
 export type PaymentMethod = 'EFT' | 'Cash' | 'Card' | 'Bitcoin' | 'PayPal';
@@ -186,11 +186,7 @@ export class AdminService {
   }
 
   checkImageConflicts(squareIds: number[], status: SquareStatus) {
-    let params = new HttpParams().set('status', String(status));
-    for (const id of squareIds) {
-      params = params.append('squareIds', String(id));
-    }
-    return this.http.get<ImageConflictResult>('/api/admin/squares/images/conflicts', { params });
+    return this.http.post<ImageConflictResult>('/api/admin/squares/images/conflicts', { squareIds, status });
   }
 
   getProgressImages() {
