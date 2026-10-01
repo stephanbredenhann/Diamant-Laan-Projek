@@ -89,8 +89,10 @@ public class StadsbouerSponsorshipService
     /// <summary>
     /// Retries the handover for a builder: moves blocks still with the holding account or the payer to
     /// the builder (or the holder if there is still no email). Idempotent: with nothing left to move it does nothing.
+    /// Pass <paramref name="previousEmail"/> when the admin corrected the address, so blocks already handed to
+    /// the wrong account follow the builder to the right one.
     /// </summary>
-    public async Task ReleaseHeldAsync(int stadsbouerId, CancellationToken cancellationToken = default)
+    public async Task ReleaseHeldAsync(int stadsbouerId, string? previousEmail = null, CancellationToken cancellationToken = default)
     {
         var builder = await _db.Stadsbouers.FindAsync(new object[] { stadsbouerId }, cancellationToken);
         if (builder == null)
@@ -98,12 +100,15 @@ public class StadsbouerSponsorshipService
 
         var holder = await _userManager.FindByEmailAsync(HoldingEmail);
         var holderId = holder?.Id;
+        var previousId = string.IsNullOrWhiteSpace(previousEmail) ? null : (await _userManager.FindByEmailAsync(previousEmail))?.Id;
 
-        // Blocks still with the holder, or still with the payer because an earlier handover failed.
+        // Blocks still with the holder, with the payer because an earlier handover failed, or with the old address.
         var ids = await _db.PurchaseSquares
             .Where(ps => ps.StadsbouerId == stadsbouerId
                 && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed
-                && (ps.Square.OwnerId == ps.Purchase.UserId || (holderId != null && ps.Square.OwnerId == holderId)))
+                && (ps.Square.OwnerId == ps.Purchase.UserId
+                    || (holderId != null && ps.Square.OwnerId == holderId)
+                    || (previousId != null && ps.Square.OwnerId == previousId)))
             .Select(ps => ps.SquareId)
             .ToListAsync(cancellationToken);
 

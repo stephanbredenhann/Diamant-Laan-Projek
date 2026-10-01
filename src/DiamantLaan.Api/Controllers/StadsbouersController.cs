@@ -62,8 +62,12 @@ public class StadsbouersController : ControllerBase
     [HttpGet("{id}/foto")]
     public async Task<IActionResult> GetPhoto(int id, CancellationToken cancellationToken)
     {
+        // Same rule as the gallery: a hidden builder's photo is hidden too. Admins use AdminController's copy.
+        if (!await _siteSettings.GetStadsbouersEnabledAsync(cancellationToken))
+            return NotFound();
+
         var storedPath = await _db.Stadsbouers
-            .Where(s => s.Id == id)
+            .Where(s => s.Id == id && s.IsActive)
             .Select(s => s.PhotoPath)
             .FirstOrDefaultAsync(cancellationToken);
 

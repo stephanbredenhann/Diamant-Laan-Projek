@@ -402,7 +402,7 @@ public class AdminController : ControllerBase
         }
 
         var purchase = await _db.Purchases
-            .Include(p => p.PurchaseSquares)
+            .Include(p => p.PurchaseSquares).ThenInclude(ps => ps.Stadsbouer)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (purchase == null)
@@ -411,6 +411,18 @@ public class AdminController : ControllerBase
         var squareIds = purchase.PurchaseSquares.Select(ps => ps.SquareId).ToList();
         var details = $"Purchase #{purchase.Id}, {squareIds.Count} blokke, R{purchase.Amount:0}, {purchase.PaymentStatus}";
 
+        // A confirmed sponsorship handed its blocks to the builder or the holding account, so those owners count as this buyer.
+        var handedTo = new Dictionary<int, HashSet<string>>();
+        if (purchase.PaymentStatus == PaymentStatus.Confirmed)
+        {
+            var holderId = (await _userManager.FindByEmailAsync(StadsbouerSponsorshipService.HoldingEmail))?.Id;
+            foreach (var ps in purchase.PurchaseSquares.Where(ps => ps.Stadsbouer != null))
+            {
+                var builderId = ps.Stadsbouer!.Email == null ? null : (await _userManager.FindByEmailAsync(ps.Stadsbouer.Email))?.Id;
+                handedTo[ps.SquareId] = new[] { holderId, builderId }.OfType<string>().ToHashSet();
+            }
+        }
+
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -418,7 +430,9 @@ public class AdminController : ControllerBase
             foreach (var square in squares)
             {
                 // Only release what this buyer still owns: the block may since have been resold.
-                if (square.OwnerId != purchase.UserId)
+                var ownedByPurchase = square.OwnerId == purchase.UserId
+                    || (square.OwnerId != null && handedTo.TryGetValue(square.Id, out var owners) && owners.Contains(square.OwnerId));
+                if (!ownedByPurchase)
                     continue;
 
                 square.OwnerId = null;
@@ -995,6 +1009,18 @@ public class AdminController : ControllerBase
         return Ok(new { enabled });
     }
 
+    /// <summary>Every builder's photo, inactive ones included, which the public endpoint no longer serves.</summary>
+    [HttpGet("stadsbouers/{id}/foto")]
+    public async Task<IActionResult> GetStadsbouerPhoto(int id, CancellationToken cancellationToken)
+    {
+        var storedPath = await _db.Stadsbouers.Where(s => s.Id == id).Select(s => s.PhotoPath).FirstOrDefaultAsync(cancellationToken);
+        var filePath = FileUploadService.ResolveStadsbouerFilePath(_env, storedPath);
+        if (filePath == null || !System.IO.File.Exists(filePath))
+            return NotFound();
+
+        return PhysicalFile(filePath, FileUploadService.GetContentTypeFromExtension(Path.GetExtension(filePath)));
+    }
+
     [HttpGet("stadsbouers")]
     public async Task<IActionResult> GetStadsbouers(CancellationToken cancellationToken)
     {
@@ -1070,6 +1096,7 @@ public class AdminController : ControllerBase
         if (builder == null)
             return NotFound();
 
+        var previousEmail = string.Equals(builder.Email, email, StringComparison.OrdinalIgnoreCase) ? null : builder.Email;
         builder.Name = dto.Name.Trim();
         builder.Title = Trimmed(dto.Title);
         builder.About = Trimmed(dto.About);
@@ -1085,7 +1112,7 @@ public class AdminController : ControllerBase
         {
             try
             {
-                await _sponsorships.ReleaseHeldAsync(builder.Id);
+                await _sponsorships.ReleaseHeldAsync(builder.Id, previousEmail);
             }
             catch (Exception ex)
             {

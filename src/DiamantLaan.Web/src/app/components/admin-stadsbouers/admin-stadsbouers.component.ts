@@ -1,8 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, AdminStadsbouer } from '../../services/admin.service';
-import { StadsbouerService } from '../../services/stadsbouer.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.component';
 
@@ -60,7 +59,7 @@ const LEE_VORM: Vorm = {
                 <tr [class.inaktief]="!b.isActive">
                   <td>
                     @if (b.hasPhoto) {
-                      <img class="duim" [src]="fotoUrl(b.id)" [alt]="b.name">
+                      <img class="duim" [src]="fotos[b.id]" [alt]="b.name">
                     } @else {
                       <span class="duim geen">—</span>
                     }
@@ -275,9 +274,8 @@ const LEE_VORM: Vorm = {
     }
   `]
 })
-export class AdminStadsbouersComponent implements OnInit {
+export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   private admin = inject(AdminService);
-  private stadsbouers = inject(StadsbouerService);
 
   bouers: AdminStadsbouer[] = [];
   filtered: AdminStadsbouer[] = [];
@@ -298,11 +296,12 @@ export class AdminStadsbouersComponent implements OnInit {
     this.load();
   }
 
-  /** Cache-busted: a replaced photo keeps the same URL, so the browser would show the old one. */
-  fotoUrl(id: number) {
-    return `${this.stadsbouers.fotoUrl(id)}?v=${this.fotoWaarmerk}`;
+  ngOnDestroy() {
+    this.loslaatFotos();
   }
-  private fotoWaarmerk = Date.now();
+
+  /** Object URLs, because the admin photo endpoint needs the bearer token an <img> cannot send. */
+  fotos: Record<number, string> = {};
 
   hasPhoto(id: number) {
     return this.bouers.find(b => b.id === id)?.hasPhoto ?? false;
@@ -375,7 +374,6 @@ export class AdminStadsbouersComponent implements OnInit {
       next: (res) => {
         this.saving = false;
         this.vorm = null;
-        this.fotoWaarmerk = Date.now();
         this.setMessage(res.message, 'success');
         this.load();
       },
@@ -412,12 +410,28 @@ export class AdminStadsbouersComponent implements OnInit {
         this.bouers = bouers;
         this.applyFilter();
         this.loading = false;
+        this.laaiFotos();
       },
       error: () => {
         this.loading = false;
         this.setMessage('Kon nie die stadsbouers laai nie.', 'error');
       }
     });
+  }
+
+  private laaiFotos() {
+    this.loslaatFotos();
+    for (const b of this.bouers.filter(b => b.hasPhoto)) {
+      this.admin.getStadsbouerFoto(b.id).subscribe({
+        next: (blob) => this.fotos[b.id] = URL.createObjectURL(blob),
+        error: () => {}
+      });
+    }
+  }
+
+  private loslaatFotos() {
+    Object.values(this.fotos).forEach(url => URL.revokeObjectURL(url));
+    this.fotos = {};
   }
 
   private setMessage(text: string, type: 'success' | 'error' | 'info') {
