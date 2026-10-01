@@ -25,7 +25,7 @@ const MAKS_PER_TRANSAKSIE = 50;
       <p class="eyebrow page-eyebrow">{{ 'Stap 2 van 4 · Kies jou stadsbouer' | t }}</p>
       <div class="visually-hidden" aria-live="polite">{{ aankondiging() }}</div>
       <h1 class="page-title">{{ 'Vir wie gaan jy ’n blokkie borg?' | t }}</h1>
-      <p class="page-lead">{{ 'Hierdie is die mense wat die pad met hul eie hande bou. Kies een of meer, en die blokkie word op hulle naam geregistreer met hul eie sertifikaat.' | t }}</p>
+      <p class="page-lead">{{ 'Borg ’n blokkie vir die mense wat met hul eie hande betrokke is. Lees hulle storie. Kies een persoon of meer en borg hul blokkie.' | t }}</p>
 
       <app-bou-step-bar [active]="2" />
 
@@ -54,11 +54,19 @@ const MAKS_PER_TRANSAKSIE = 50;
                     (mouseenter)="plaasDetail($event)"
                     (focus)="plaasDetail($event)"
                   >
-                    @if (b.hasPhoto) {
-                      <img class="foto" [src]="fotoUrl(b.id)" [alt]="b.name" loading="lazy">
-                    } @else {
-                      <span class="foto geen-foto" aria-hidden="true">{{ letters(b.name) }}</span>
-                    }
+                    <span class="foto-raam">
+                      @if (b.hasPhoto) {
+                        <img class="foto" [src]="fotoUrl(b.id)" [alt]="b.name" loading="lazy">
+                      } @else {
+                        <span class="foto geen-foto" aria-hidden="true">{{ letters(b.name) }}</span>
+                      }
+                      @if (b.isSponsored) {
+                        <span class="geborg-seel" aria-hidden="true">
+                          <span class="geborg-tiek">&check;</span>
+                          <span class="geborg-teks">{{ 'Reeds geborg' | t }}</span>
+                        </span>
+                      }
+                    </span>
                     <span class="naam">{{ b.name }}</span>
                     <!-- Touch screens cannot hover, so they get the details inline instead. -->
                     <span class="inlyn">
@@ -69,8 +77,8 @@ const MAKS_PER_TRANSAKSIE = 50;
                         <span class="oor">{{ b.about }}</span>
                       }
                     </span>
-                    @if (!kiesbaar(b)) {
-                      <span class="merkie">{{ (b.isSponsored ? 'Reeds geborg' : 'Word tans geborg') | t }}</span>
+                    @if (b.isPending && !b.isSponsored) {
+                      <span class="merkie">{{ 'Word tans geborg' | t }}</span>
                     }
                     @if (isGekies(b.id)) {
                       <span class="tiek" aria-hidden="true">&check;</span>
@@ -295,6 +303,42 @@ const MAKS_PER_TRANSAKSIE = 50;
       opacity: 0.7;
     }
     .bouer.geborg .foto { filter: grayscale(1); }
+
+    /* Bigger than the selected tick so a sponsored builder reads as done, not chosen. */
+    .foto-raam { position: relative; display: block; width: 100%; }
+    .geborg-seel {
+      position: absolute;
+      inset: 0 0 0.35rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .geborg-tiek {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 50%;
+      background: var(--done);
+      border: 3px solid #FFFFFF;
+      color: #FFFFFF;
+      font-size: 2.75rem;
+      line-height: 1;
+    }
+    .geborg-teks {
+      padding: 0.3rem 0.7rem;
+      background: var(--done);
+      color: #FFFFFF;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--fs-sm);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
     .keuse-kaart {
       background: var(--tar);

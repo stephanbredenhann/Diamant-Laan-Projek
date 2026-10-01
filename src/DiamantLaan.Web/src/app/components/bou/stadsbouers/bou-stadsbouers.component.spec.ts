@@ -51,6 +51,8 @@ describe('BouStadsbouersComponent', () => {
     expect(kaart('Piet Geborg').disabled).toBe(true);
     expect(kaart('Piet Geborg').classList).toContain('geborg');
     expect(kaart('Sarel Hangend').disabled).toBe(true);
+    expect(kaart('Piet Geborg').querySelector('.geborg-seel')?.textContent).toContain('Reeds geborg');
+    expect(kaart('Sarel Hangend').querySelector('.geborg-seel')).toBeNull();
   });
 
   it('shows the tick on a chosen builder and takes it away again', () => {

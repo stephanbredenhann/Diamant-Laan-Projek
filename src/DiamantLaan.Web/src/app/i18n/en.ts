@@ -667,8 +667,8 @@ export const EN: Record<string, string> = {
   'Kies stadsbouers →': 'Choose road builders →',
   'Stap 2 van 4 · Kies jou stadsbouer': 'Step 2 of 4 · Choose your road builder',
   'Vir wie gaan jy ’n blokkie borg?': 'Who are you sponsoring a block for?',
-  'Hierdie is die mense wat die pad met hul eie hande bou. Kies een of meer, en die blokkie word op hulle naam geregistreer met hul eie sertifikaat.':
-    'These are the people building the road with their own hands. Choose one or more, and the block is registered in their name with their own certificate.',
+  'Borg ’n blokkie vir die mense wat met hul eie hande betrokke is. Lees hulle storie. Kies een persoon of meer en borg hul blokkie.':
+    'Sponsor a block for the people who are involved with their own hands. Read their story. Choose one person or more and sponsor their block.',
   'Besig om die stadsbouers te laai...': 'Loading the road builders...',
   'Daar is nog nie stadsbouers om te borg nie. Kyk gerus later weer.':
     'There are no road builders to sponsor yet. Please check back later.',
