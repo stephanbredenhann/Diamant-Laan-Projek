@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 const PENDING_IDS_KEY = 'pendingSquareIds';
 const GUEST_PURCHASE_KEY = 'guestPurchase';
 const BOU_AANTAL_KEY = 'bouAantal';
+const STADSBOUER_IDS_KEY = 'stadsbouerIds';
 
 export interface PayFastForm {
   actionUrl: string;
@@ -116,6 +117,24 @@ export class PurchaseService {
   }
 
   /**
+   * The road builders this purchase is being made for, in the same order as
+   * `pendingSquareIds`, or empty for an ordinary purchase.
+   */
+  get stadsbouerIds(): number[] {
+    const raw = sessionStorage.getItem(STADSBOUER_IDS_KEY);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+
+  set stadsbouerIds(ids: number[]) {
+    if (ids.length === 0) {
+      sessionStorage.removeItem(STADSBOUER_IDS_KEY);
+    } else {
+      sessionStorage.setItem(STADSBOUER_IDS_KEY, JSON.stringify(ids));
+    }
+  }
+
+  /**
    * Wipes every trace of an in-flight build. Call this at each terminal point of
    * the flow — paid, claimed, cancelled, abandoned. Without it the wizard state
    * outlives the purchase and the map keeps claiming to be "Stap 2 van 4".
@@ -124,10 +143,11 @@ export class PurchaseService {
     this.pendingSquareIds = [];
     this.guestPurchase = null;
     this.bouAantal = null;
+    this.stadsbouerIds = [];
   }
 
-  createPurchase(squareIds: number[]) {
-    const body = { squareIds };
+  createPurchase(squareIds: number[], stadsbouerIds: number[] = []) {
+    const body = stadsbouerIds.length > 0 ? { squareIds, stadsbouerIds } : { squareIds };
     return this.http.post<{ purchaseId: number; amount: number; squareCount: number; paymentStatus: string }>(
       '/api/purchase', body
     );
@@ -145,9 +165,10 @@ export class PurchaseService {
     return this.http.get<{ id: number; amount: number; purchaseDate: string; paymentStatus: string; squares: number[] }>(`/api/purchase/${id}`);
   }
 
-  createGuestPurchase(squareIds: number[], email: string) {
+  createGuestPurchase(squareIds: number[], email: string, stadsbouerIds: number[] = []) {
+    const body = stadsbouerIds.length > 0 ? { squareIds, email, stadsbouerIds } : { squareIds, email };
     return this.http.post<{ purchaseId: number; token: string; amount: number; squareCount: number; paymentStatus: string }>(
-      '/api/purchase/guest', { squareIds, email }
+      '/api/purchase/guest', body
     );
   }
 

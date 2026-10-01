@@ -76,6 +76,59 @@ public static class EmailTemplates
     }
 
     /// <summary>
+    /// Sent to a road builder someone sponsored a block for. The password panel only appears when
+    /// the account was created by this sponsorship; a builder sponsored a second time already has one.
+    /// </summary>
+    public static string StadsbouerSponsorship(
+        string firstName,
+        string email,
+        string? tempPassword,
+        IReadOnlyCollection<int> blockIds,
+        string siteUrl,
+        bool en,
+        string? switchUrl = null)
+    {
+        var encodedEmail = WebUtility.HtmlEncode(email);
+        var url = LoginUrl(siteUrl);
+        var blocks = Blocks(blockIds.Count, en);
+        var numbers = string.Join(", ", blockIds.OrderBy(id => id).Select(id => $"#{id}"));
+
+        var account = tempPassword == null
+            ? $"""
+              <p style="margin:0 0 16px;">{T(en,
+                $"Die {blocks} is by jou bestaande rekening ({encodedEmail}) gevoeg.",
+                $"The {blocks} have been added to your existing account ({encodedEmail}).")}</p>
+              """
+            : $"""
+              <p style="margin:0 0 16px;">{T(en,
+                $"Ons het 'n rekening vir jou geskep met die e-posadres <strong>{encodedEmail}</strong>.",
+                $"We have created an account for you using the email address <strong>{encodedEmail}</strong>.")}</p>
+              <p style="margin:0 0 12px;">{T(en, "Jou tydelike wagwoord:", "Your temporary password:")}</p>
+              {CodePanel(WebUtility.HtmlEncode(tempPassword), mono: true)}
+              <p style="margin:16px 0 0;">{T(en,
+                "Jy sal gevra word om jou wagwoord te verander wanneer jy die eerste keer aanmeld.",
+                "You will be asked to change your password when you log in for the first time.")}</p>
+              """;
+
+        return Shell(
+            T(en, "Iemand het 'n blokkie vir jou geborg!", "Someone sponsored a block for you!"),
+            firstName,
+            $"""
+              <p style="margin:0 0 16px;">{T(en,
+                $"Dankie dat jy aan die Oewerpad bou. Iemand het <strong>{blockIds.Count}</strong> {blocks} van die pad in jou naam geborg: <strong>{numbers}</strong>.",
+                $"Thank you for building the Oewerpad. Someone sponsored <strong>{blockIds.Count}</strong> {blocks} of the road in your name: <strong>{numbers}</strong>.")}</p>
+              {account}
+              <p style="margin:16px 0 0;">{T(en,
+                $"Meld aan by <a href=\"{url}\" style=\"color:#034EA2;\">{url}</a> om jou {blocks} en sertifikaat te sien.",
+                $"Log in at <a href=\"{url}\" style=\"color:#034EA2;\">{url}</a> to see your {blocks} and certificate.")}</p>
+              {Button(url, T(en, "Meld aan", "Log in"))}
+            """,
+            en,
+            switchUrl,
+            T(en, "Groete uit Orania!", "Greetings from Orania!"));
+    }
+
+    /// <summary>
     /// Sent once to a guest who paid without an account and left us an email address. The link
     /// carries a claim token, so following it can still turn the purchase into an account later.
     /// </summary>

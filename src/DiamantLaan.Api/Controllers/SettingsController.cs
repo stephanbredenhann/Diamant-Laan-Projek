@@ -22,6 +22,13 @@ public class SettingsController : ControllerBase
         return Ok(await _siteSettings.GetHomeStatsSettingsAsync());
     }
 
+    /// <summary>Read before the /bou wizard offers the option, so it can hide it.</summary>
+    [HttpGet("stadsbouers")]
+    public async Task<IActionResult> GetStadsbouersEnabled(CancellationToken cancellationToken)
+    {
+        return Ok(new { enabled = await _siteSettings.GetStadsbouersEnabledAsync(cancellationToken) });
+    }
+
     [HttpGet("/api/health")]
     public IActionResult Health()
     {

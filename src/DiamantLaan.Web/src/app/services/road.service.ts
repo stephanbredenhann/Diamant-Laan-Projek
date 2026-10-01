@@ -1,4 +1,4 @@
-import { Injectable, isDevMode } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Square } from '../models/square';
@@ -20,11 +20,9 @@ export interface RoadStats {
   };
 }
 
-const API_BASE = isDevMode() ? 'http://localhost:5000' : '';
-
 @Injectable({ providedIn: 'root' })
 export class RoadService {
-  private base = `${API_BASE}/api/road`;
+  private base = '/api/road';
 
   constructor(private http: HttpClient) {}
 

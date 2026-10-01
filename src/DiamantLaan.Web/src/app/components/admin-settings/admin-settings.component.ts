@@ -37,6 +37,26 @@ import { HomeStatsSettings } from '../../models/site-settings';
         </div>
       }
 
+      <h3 class="tweede">Borg-opsies</h3>
+
+      @if (loading) {
+        <p class="muted">Laai instellings...</p>
+      } @else {
+        <div class="settings-card">
+          <label class="toggle-row" [class.disabled]="savingStadsbouers">
+            <input
+              type="checkbox"
+              [ngModel]="stadsbouersEnabled"
+              (ngModelChange)="onStadsbouersEnabledChange($event)"
+              [disabled]="savingStadsbouers" />
+            <span>Wys “Koop vir ’n Stadsbouer” op die hoeveelheid-bladsy</span>
+          </label>
+          <p class="toggle-hint">
+            Af beteken die opsie verdwyn heeltemal en enige borgskap wat nog probeer deurkom, word geweier.
+          </p>
+        </div>
+      }
+
       @if (message) {
         <div class="msg" [class.error]="isError">{{ message }}</div>
       }
@@ -51,6 +71,12 @@ import { HomeStatsSettings } from '../../models/site-settings';
       color: var(--color-text);
     }
     .muted { color: var(--color-muted); }
+    h3.tweede { margin-top: 2rem; }
+    .toggle-hint {
+      margin: 0.75rem 0 0;
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
     .settings-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -93,12 +119,21 @@ export class AdminSettingsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   settings: HomeStatsSettings = { showStatsSection: true, showTotalRaised: true };
+  stadsbouersEnabled = true;
   loading = true;
   saving = false;
+  savingStadsbouers = false;
   message = '';
   isError = false;
 
   ngOnInit() {
+    this.settingsService.getStadsbouersEnabled()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => this.stadsbouersEnabled = res.enabled,
+        error: () => this.showError('Kon nie die stadsbouer-instelling laai nie.')
+      });
+
     this.settingsService.getHomeStatsSettings()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -128,6 +163,32 @@ export class AdminSettingsComponent implements OnInit, OnDestroy {
     const previousSettings = { ...this.settings };
     this.settings = { ...this.settings, showTotalRaised: value };
     this.save(previousSettings);
+  }
+
+  /** Its own endpoint, so a failure here cannot roll back the home-page toggles beside it. */
+  onStadsbouersEnabledChange(value: boolean) {
+    if (this.savingStadsbouers) return;
+
+    const previous = this.stadsbouersEnabled;
+    this.stadsbouersEnabled = value;
+    this.savingStadsbouers = true;
+    this.message = '';
+    this.isError = false;
+
+    this.settingsService.setStadsbouersEnabled(value)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.stadsbouersEnabled = res.enabled;
+          this.savingStadsbouers = false;
+          this.message = 'Instellings gestoor.';
+        },
+        error: () => {
+          this.stadsbouersEnabled = previous;
+          this.savingStadsbouers = false;
+          this.showError('Kon nie die stadsbouer-instelling stoor nie.');
+        }
+      });
   }
 
   save(previousSettings?: HomeStatsSettings) {

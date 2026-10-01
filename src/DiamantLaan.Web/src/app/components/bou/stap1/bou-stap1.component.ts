@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PurchaseService } from '../../../services/purchase.service';
+import { SettingsService } from '../../../services/settings.service';
 import { randBedrag } from '../../../utils/afrikaans.util';
 import { BouStepBarComponent } from '../../shared/bou-step-bar/bou-step-bar.component';
 import { TPipe } from '../../../i18n/t.pipe';
@@ -53,6 +54,13 @@ const MAKS_PER_TRANSAKSIE = 50;
               <span class="choice-eie-label">{{ 'Eie hoeveelheid' | t }}</span>
               <span class="choice-caption">{{ 'Besluit self hoeveel blokkies jy wil borg' | t }}</span>
             </button>
+            @if (stadsbouersAan()) {
+            <a routerLink="/bou/stadsbouers" class="choice-btn choice-stadsbouer">
+              <span class="choice-eie-label">{{ 'Koop vir ’n Stadsbouer' | t }}</span>
+              <span class="choice-caption">{{ 'Borg ’n blokkie vir iemand wat die pad self bou.' | t }}</span>
+              <span class="choice-price">{{ 'Kies stadsbouers →' | t }}</span>
+            </a>
+            }
           </div>
 
           @if (eieModus()) {
@@ -166,6 +174,14 @@ const MAKS_PER_TRANSAKSIE = 50;
       color: var(--ink);
       margin-top: auto;
     }
+    /* Its own row: the count comes from how many builders get picked, not from this screen. */
+    .choice-stadsbouer {
+      grid-column: 1 / -1;
+      text-decoration: none;
+      border-color: var(--action-strong);
+      background: color-mix(in srgb, var(--action-strong) 6%, white);
+    }
+    .choice-stadsbouer .choice-price { color: var(--action-strong); }
     .choice-eie-label {
       font-family: var(--font-display);
       font-size: 2.5rem;
@@ -298,6 +314,7 @@ export class BouStap1Component implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private purchase = inject(PurchaseService);
+  private settings = inject(SettingsService);
 
   readonly presets = [1, 2, 5] as const;
   readonly presetOnderskrif: Record<number, string> = {
@@ -312,9 +329,16 @@ export class BouStap1Component implements OnInit {
   eieModus = signal(false);
   eieWaarde = signal<number | null>(null);
   eieFout = signal<string | null>(null);
+  /** Hidden until the setting says otherwise, so the card never flashes in and out on load. */
+  stadsbouersAan = signal(false);
   stepAnnouncement = 'Stap 1 van 4: Hoeveel blokkies m² gaan jy borg?';
 
   ngOnInit() {
+    this.settings.getStadsbouersEnabled().subscribe({
+      next: (res) => this.stadsbouersAan.set(res.enabled),
+      error: () => this.stadsbouersAan.set(false),
+    });
+
     const raw = this.route.snapshot.queryParamMap.get('aantal');
     if (!raw) return;
 

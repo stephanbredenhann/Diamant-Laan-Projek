@@ -23,6 +23,8 @@ public class EmailValidatorTests
     [InlineData("two@at@signs.com")]
     [InlineData("no-dot-in-domain@example")]
     [InlineData("has spaces@example.com")]
+    [InlineData("stadsbouer-bewaring@diamantlaan.invalid")]
+    [InlineData("x@Sys.INVALID")]
     public void IsValid_RejectsMalformedEmails(string? email)
     {
         Assert.False(EmailValidator.IsValid(email, out var error));

@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { PaymentComponent } from './payment.component';
 import { AuthService } from '../../services/auth.service';
 import { PurchaseService } from '../../services/purchase.service';
+import { StadsbouerService } from '../../services/stadsbouer.service';
 import { AuthResponse } from '../../models/user';
 
 describe('PaymentComponent', () => {
@@ -37,7 +38,8 @@ describe('PaymentComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authService },
-        { provide: PurchaseService, useValue: { pendingSquareIds: [10, 11] } }
+        { provide: PurchaseService, useValue: { pendingSquareIds: [10, 11], stadsbouerIds: [] } },
+        { provide: StadsbouerService, useValue: { list: () => of([]) } }
       ]
     }).compileComponents();
 

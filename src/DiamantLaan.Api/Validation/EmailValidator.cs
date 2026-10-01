@@ -24,6 +24,13 @@ public static partial class EmailValidator
             return false;
         }
 
+        // .invalid is reserved for system accounts such as the stadsbouer holding user.
+        if (trimmed.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
+        {
+            error = "Voer ’n geldige e-posadres in.";
+            return false;
+        }
+
         return true;
     }
 

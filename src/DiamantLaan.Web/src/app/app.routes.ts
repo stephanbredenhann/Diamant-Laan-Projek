@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'kaart', loadComponent: () => import('./components/map/map.component').then(m => m.MapComponent) },
   { path: 'bou', loadComponent: () => import('./components/bou/stap1/bou-stap1.component').then(m => m.BouStap1Component) },
   { path: 'bou/kies', loadComponent: () => import('./components/bou/stap2/bou-stap2.component').then(m => m.BouStap2Component) },
+  { path: 'bou/stadsbouers', loadComponent: () => import('./components/bou/stadsbouers/bou-stadsbouers.component').then(m => m.BouStadsbouersComponent) },
   { path: 'bou/kaart', loadComponent: () => import('./components/bou/kaart/bou-kaart.component').then(m => m.BouKaartComponent) },
   { path: 'registreer', loadComponent: () => import('./components/register/register.component').then(m => m.RegisterComponent) },
   { path: 'meld-aan', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
@@ -41,6 +42,7 @@ export const routes: Routes = [
       { path: 'reserveer', loadComponent: () => import('./components/admin-reserveer/admin-reserveer.component').then(m => m.AdminReserveerComponent) },
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
       { path: 'verwyder-transaksie', loadComponent: () => import('./components/admin-delete-transaction/admin-delete-transaction.component').then(m => m.AdminDeleteTransactionComponent) },
+      { path: 'stadsbouers', loadComponent: () => import('./components/admin-stadsbouers/admin-stadsbouers.component').then(m => m.AdminStadsbouersComponent) },
       { path: 'kies-offset', loadComponent: () => import('./components/admin-kies-offset/admin-kies-offset.component').then(m => m.AdminKiesOffsetComponent) },
     ]
   },

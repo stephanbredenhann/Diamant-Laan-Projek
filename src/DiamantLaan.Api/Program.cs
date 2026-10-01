@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -104,6 +105,7 @@ builder.Services.AddScoped<BlockNotificationService>();
 builder.Services.AddScoped<AdminSaveUndoService>();
 builder.Services.AddScoped<EmailOutboxService>();
 builder.Services.AddScoped<GuestPurchaseService>();
+builder.Services.AddScoped<StadsbouerSponsorshipService>();
 builder.Services.AddSingleton<LanguageLinkService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddSingleton<ShareOgImageService>();
@@ -285,6 +287,21 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<User>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var db = services.GetRequiredService<AppDbContext>();
+    if ((await db.Database.GetPendingMigrationsAsync()).Any())
+    {
+        // Not named diamantlaan-*.db, so the nightly prune never deletes it. A failure here stops startup on purpose.
+        var dbConnection = db.Database.GetConnectionString()!;
+        var dbPath = new SqliteConnectionStringBuilder(dbConnection).DataSource;
+        if (!Path.IsPathRooted(dbPath))
+            dbPath = Path.Combine(AppContext.BaseDirectory, dbPath);
+        if (File.Exists(dbPath))
+        {
+            var backupDir = Path.Combine(Path.GetDirectoryName(dbPath)!, "backups");
+            Directory.CreateDirectory(backupDir);
+            await SqliteBackupBackgroundService.BackupToAsync(
+                dbConnection, Path.Combine(backupDir, $"pre-migration-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db"));
+        }
+    }
     await db.Database.MigrateAsync();
     await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     // Roles are seeded unconditionally: AddToRoleAsync throws rather than returning a failed

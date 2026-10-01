@@ -7,6 +7,10 @@ public class GuestPurchaseRequestDto
     [Required, MinLength(1), MaxLength(100)]
     public List<int> SquareIds { get; set; } = new();
 
+    /// <summary>One road builder per entry in <see cref="SquareIds"/>, paired by index.</summary>
+    [MaxLength(100)]
+    public List<int>? StadsbouerIds { get; set; }
+
     /// <summary>
     /// Where the confirmation and the "create an account later" link are sent. Required, because
     /// it is the only way back to a purchase that was made without an account.

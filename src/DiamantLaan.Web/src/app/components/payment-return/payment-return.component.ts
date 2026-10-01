@@ -36,6 +36,18 @@ import { TPipe } from '../../i18n/t.pipe';
             <p class="summary">{{ 'Dankie, jou borg is bevestig. Jou m² is nou aan jou toegeken.' | t }}</p>
             <a routerLink="/my-blokke" class="btn btn-primary btn-wide">{{ 'Gaan na my blokke' | t }}</a>
           }
+          @case ('stadsbouer') {
+            <div class="success-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <p class="eyebrow">{{ 'Betaling' | t }}</p>
+            <h2 class="display auth-title">{{ 'Dankie vir jou borgskap' | t }}</h2>
+            <p class="summary">{{ 'Jou betaling is bevestig. Die blokkies is op die stadsbouers se name geregistreer en hulle het ’n e-pos ontvang met hul eie bloknommer en sertifikaat.' | t }}</p>
+            <div class="actions">
+              <a routerLink="/" class="btn btn-outline">{{ 'Terug na tuisblad' | t }}</a>
+              <a routerLink="/bou" class="btn btn-primary">{{ 'Borg nog ’n blokkie' | t }}</a>
+            </div>
+          }
           @case ('timeout') {
             <p class="eyebrow">{{ 'Betaling' | t }}</p>
             <h2 class="display auth-title">{{ 'Bevestiging neem langer' | t }}</h2>
@@ -119,7 +131,7 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private purchase = inject(PurchaseService);
 
-  state: 'pending' | 'success' | 'failed' | 'timeout' = 'pending';
+  state: 'pending' | 'success' | 'stadsbouer' | 'failed' | 'timeout' = 'pending';
   attempts = 0;
   maxAttempts = 30;
   simulating = false;
@@ -128,6 +140,8 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
   private sub?: Subscription;
   private purchaseId = 0;
   private guestRef?: GuestPurchaseRef;
+  /** Read up front: the blocks belong to the builders, so neither certificate step applies. */
+  private isStadsbouerVloei = false;
 
   ngOnInit() {
     this.purchaseId = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
@@ -135,6 +149,8 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
       return;
     }
+
+    this.isStadsbouerVloei = this.purchase.stadsbouerIds.length > 0;
 
     const storedGuest = this.purchase.guestPurchase;
     if (storedGuest && storedGuest.purchaseId === this.purchaseId) {
@@ -173,10 +189,16 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
       next: (p) => {
         this.consecutiveErrors = 0;
         if (p.paymentStatus === 'Confirmed') {
+          this.sub?.unsubscribe();
+          if (this.isStadsbouerVloei) {
+            // Nothing to name and nothing to claim: the certificates are the builders'.
+            this.state = 'stadsbouer';
+            this.purchase.clearBouVloei();
+            return;
+          }
           this.state = 'success';
           this.purchase.bouAantal = null;
           this.purchase.pendingSquareIds = [];
-          this.sub?.unsubscribe();
           if (this.guestRef) {
             // Guests carry on to the "create an account?" step first.
             this.router.navigate(['/betalings/klaar']);

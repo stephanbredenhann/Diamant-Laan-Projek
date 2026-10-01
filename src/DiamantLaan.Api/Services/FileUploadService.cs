@@ -89,6 +89,30 @@ public static class FileUploadService
         return path;
     }
 
+    public static string GetStadsbouerUploadsPath(IWebHostEnvironment env)
+    {
+        var path = Path.Combine(GetUploadsRoot(env), "stadsbouers");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    public static string? ResolveStadsbouerFilePath(IWebHostEnvironment env, string? storedPath)
+    {
+        if (string.IsNullOrWhiteSpace(storedPath))
+            return null;
+
+        if (!storedPath.StartsWith("stadsbouers/", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var uploadsRoot = Path.GetFullPath(GetStadsbouerUploadsPath(env));
+        var fileName = Path.GetFileName(storedPath);
+        var full = Path.GetFullPath(Path.Combine(uploadsRoot, fileName));
+        if (!full.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return full;
+    }
+
     public static string? ResolveProofFilePath(IWebHostEnvironment env, string? storedPath)
     {
         if (string.IsNullOrWhiteSpace(storedPath))

@@ -29,6 +29,8 @@ public class AdminController : ControllerBase
     // Optional so a test can build the mailer without a signing key: without it the emails simply
     // go out without the switch-to-English footer link. Always supplied by DI in production.
     private readonly LanguageLinkService? _languageLinks;
+    private readonly StadsbouerSponsorshipService? _sponsorships;
+    private readonly ILogger<AdminController>? _logger;
 
     public AdminController(
         AppDbContext db,
@@ -40,7 +42,9 @@ public class AdminController : ControllerBase
         AdminSaveUndoService saveUndo,
         EmailOutboxService emailOutbox,
         IConfiguration config,
-        LanguageLinkService? languageLinks = null)
+        LanguageLinkService? languageLinks = null,
+        StadsbouerSponsorshipService? sponsorships = null,
+        ILogger<AdminController>? logger = null)
     {
         _db = db;
         _userManager = userManager;
@@ -52,6 +56,8 @@ public class AdminController : ControllerBase
         _emailOutbox = emailOutbox;
         _config = config;
         _languageLinks = languageLinks;
+        _sponsorships = sponsorships;
+        _logger = logger;
     }
 
     [HttpPut("settings/home-stats")]
@@ -282,6 +288,44 @@ public class AdminController : ControllerBase
         });
     }
 
+    /// <summary>Certificate summaries, one per stadsbouer, for blocks this buyer sponsored and no longer owns.</summary>
+    [HttpGet("users/{userId}/sponsored-certificates")]
+    public async Task<IActionResult> GetSponsoredCertificates(string userId)
+    {
+        var rows = await _db.PurchaseSquares
+            .Where(ps => ps.Purchase.UserId == userId
+                && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed
+                && ps.StadsbouerId != null
+                && _db.Squares.Any(s => s.Id == ps.SquareId && s.OwnerId != userId))
+            .Select(ps => new
+            {
+                BuilderId = ps.StadsbouerId!.Value,
+                BuilderName = ps.Stadsbouer!.Name,
+                ps.SquareId,
+                ps.Purchase.PurchaseDate,
+                SquareName = _db.Squares.Where(s => s.Id == ps.SquareId).Select(s => s.CertificateName).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var result = rows
+            .GroupBy(r => new { r.BuilderId, r.BuilderName })
+            .OrderBy(g => g.Key.BuilderName).ThenBy(g => g.Key.BuilderId)
+            .Select(g => new
+            {
+                OwnerName = g.Key.BuilderName,
+                SameForAll = true,
+                Squares = g.OrderBy(r => r.SquareId).Select(r => new
+                {
+                    Id = r.SquareId,
+                    PurchaseDate = (DateTime?)r.PurchaseDate,
+                    OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? g.Key.BuilderName : r.SquareName
+                }).ToList()
+            })
+            .ToList();
+
+        return Ok(result);
+    }
+
     /// <summary>
     /// Fills in the certificate names for a buyer who never left one — a guest checkout, usually.
     /// No 15-minute window here: the point of this is that the buyer's own window is long gone and
@@ -483,7 +527,8 @@ public class AdminController : ControllerBase
             .ToListAsync();
 
         var users = await _db.Users
-            .Where(u => !u.IsAnonymized && !u.IsGuest && !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id))
+            .Where(u => !u.IsAnonymized && !u.IsGuest && !usersWithPurchases.Contains(u.Id) && !adminUserIds.Contains(u.Id)
+                && u.Email != StadsbouerSponsorshipService.HoldingEmail)
             .OrderBy(u => u.Email)
             .ToListAsync();
 
@@ -930,6 +975,179 @@ public class AdminController : ControllerBase
         await _audit.LogAsync(User, "DeleteProgressImage", $"Deleted image #{id}");
 
         return Ok(new { message = "Foto verwyder." });
+    }
+
+    // ------------------------------------------------------------------
+    // Stadsbouers: the road builders visitors can sponsor a block for.
+    // ------------------------------------------------------------------
+
+    [HttpPut("settings/stadsbouers")]
+    public async Task<IActionResult> SetStadsbouersEnabled([FromBody] StadsbouersEnabledDto dto)
+    {
+        if (dto == null)
+            return BadRequest(new { message = "Instellings mag nie leeg wees nie." });
+
+        var enabled = await _siteSettings.SetStadsbouersEnabledAsync(dto.Enabled);
+
+        await _audit.LogAsync(User, "SetStadsbouersEnabled", $"StadsbouersEnabled={enabled}");
+
+        return Ok(new { enabled });
+    }
+
+    [HttpGet("stadsbouers")]
+    public async Task<IActionResult> GetStadsbouers(CancellationToken cancellationToken)
+    {
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db, cancellationToken);
+
+        var builders = await _db.Stadsbouers
+            .OrderBy(s => s.Id)
+            .Select(s => new AdminStadsbouerDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Title = s.Title,
+                About = s.About,
+                Email = s.Email,
+                IsActive = s.IsActive,
+                CreatedAt = s.CreatedAt,
+                HasPhoto = s.PhotoPath != null
+            })
+            .ToListAsync(cancellationToken);
+
+        foreach (var builder in builders)
+        {
+            builder.IsSponsored = taken.Sponsored.Contains(builder.Id);
+            builder.IsPending = taken.Pending.Contains(builder.Id);
+        }
+
+        return Ok(builders);
+    }
+
+    [HttpPost("stadsbouers")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> CreateStadsbouer([FromForm] StadsbouerUploadDto dto, IFormFile? photo)
+    {
+        var email = Trimmed(dto.Email);
+        if (email != null && !EmailValidator.IsValid(email, out var emailError))
+            return BadRequest(new { message = emailError });
+
+        if (photo != null && !FileUploadService.IsImage(photo))
+            return BadRequest(new { message = PhotoTypeError });
+
+        var builder = new Stadsbouer
+        {
+            Name = dto.Name.Trim(),
+            Title = Trimmed(dto.Title),
+            About = Trimmed(dto.About),
+            Email = email,
+            IsActive = dto.IsActive
+        };
+
+        _db.Stadsbouers.Add(builder);
+        await _db.SaveChangesAsync(); // The row id names the photo file.
+
+        if (photo != null)
+            await SaveStadsbouerPhotoAsync(builder, photo);
+
+        await _audit.LogAsync(User, "CreateStadsbouer", $"Stadsbouer #{builder.Id} ({builder.Email ?? "geen e-pos"})");
+
+        return Ok(new { id = builder.Id, message = "Stadsbouer bygevoeg." });
+    }
+
+    [HttpPut("stadsbouers/{id}")]
+    [RequestSizeLimit(8 * 1024 * 1024)]
+    public async Task<IActionResult> UpdateStadsbouer(int id, [FromForm] StadsbouerUploadDto dto, IFormFile? photo)
+    {
+        var email = Trimmed(dto.Email);
+        if (email != null && !EmailValidator.IsValid(email, out var emailError))
+            return BadRequest(new { message = emailError });
+
+        if (photo != null && !FileUploadService.IsImage(photo))
+            return BadRequest(new { message = PhotoTypeError });
+
+        var builder = await _db.Stadsbouers.FindAsync(id);
+        if (builder == null)
+            return NotFound();
+
+        builder.Name = dto.Name.Trim();
+        builder.Title = Trimmed(dto.Title);
+        builder.About = Trimmed(dto.About);
+        builder.Email = email;
+        builder.IsActive = dto.IsActive;
+
+        if (photo != null)
+            await SaveStadsbouerPhotoAsync(builder, photo);
+        else
+            await _db.SaveChangesAsync();
+
+        if (_sponsorships != null)
+        {
+            try
+            {
+                await _sponsorships.ReleaseHeldAsync(builder.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Could not hand over blocks for stadsbouer {StadsbouerId}", builder.Id);
+            }
+        }
+
+        await _audit.LogAsync(User, "UpdateStadsbouer", $"Stadsbouer #{builder.Id} ({builder.Email ?? "geen e-pos"})");
+
+        return Ok(new { id = builder.Id, message = "Stadsbouer gestoor." });
+    }
+
+    [HttpDelete("stadsbouers/{id}")]
+    public async Task<IActionResult> DeleteStadsbouer(int id, CancellationToken cancellationToken)
+    {
+        var builder = await _db.Stadsbouers.FindAsync(id);
+        if (builder == null)
+            return NotFound();
+
+        // A sponsored builder owns a paid-for block. Deactivate instead, which takes them off the
+        // gallery without touching the purchase behind it.
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db, cancellationToken);
+        if (taken.IsTaken(id))
+        {
+            return BadRequest(new
+            {
+                message = "Hierdie stadsbouer is reeds geborg. Merk hulle eerder as onaktief."
+            });
+        }
+
+        var photoPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.PhotoPath);
+        _db.Stadsbouers.Remove(builder);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        if (photoPath != null && System.IO.File.Exists(photoPath))
+            System.IO.File.Delete(photoPath);
+
+        await _audit.LogAsync(User, "DeleteStadsbouer", $"Stadsbouer #{id} ({builder.Email ?? "geen e-pos"})");
+
+        return Ok(new { message = "Stadsbouer verwyder." });
+    }
+
+    private const string PhotoTypeError = "Foto moet \u2019n geldige JPEG, PNG of WebP wees.";
+
+    private static string? Trimmed(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>Writes the photo as {id}{ext} and drops whatever extension was there before.</summary>
+    private async Task SaveStadsbouerPhotoAsync(Stadsbouer builder, IFormFile photo)
+    {
+        var oldPath = FileUploadService.ResolveStadsbouerFilePath(_env, builder.PhotoPath);
+        if (oldPath != null && System.IO.File.Exists(oldPath))
+            System.IO.File.Delete(oldPath);
+
+        var uploadsDir = FileUploadService.GetStadsbouerUploadsPath(_env);
+        var fileName = $"{builder.Id}{FileUploadService.GetImageExtension(photo.ContentType)}";
+        await using (var stream = new FileStream(Path.Combine(uploadsDir, fileName), FileMode.Create))
+        {
+            await photo.CopyToAsync(stream);
+        }
+
+        builder.PhotoPath = $"stadsbouers/{fileName}";
+        await _db.SaveChangesAsync();
     }
 
     private static (string? PhoneNumber, string PhoneCountryCode, string? PhoneDisplay) FormatPhoneFields(User user)

@@ -75,16 +75,7 @@ public class SqliteBackupBackgroundService : BackgroundService
 
         var backupPath = Path.Combine(backupDir, $"diamantlaan-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db");
 
-        // SQLite's online backup API, not File.Copy. A plain file copy of a live database can catch
-        // it mid-write and produce a backup that will not open, which is the one thing a backup must
-        // never do. BackupDatabase takes a consistent snapshot while writers carry on.
-        using (var source = new SqliteConnection(connectionString))
-        using (var destination = new SqliteConnection($"Data Source={backupPath}"))
-        {
-            await source.OpenAsync(cancellationToken);
-            await destination.OpenAsync(cancellationToken);
-            source.BackupDatabase(destination);
-        }
+        await BackupToAsync(connectionString, backupPath, cancellationToken);
         _logger.LogInformation("SQLite backup created at {BackupPath}", backupPath);
 
         // Ordered by filename, which carries a UTC timestamp. File creation time is unreliable on the
@@ -105,5 +96,18 @@ public class SqliteBackupBackgroundService : BackgroundService
                 _logger.LogWarning(ex, "Failed to delete old SQLite backup {Path}", old);
             }
         }
+    }
+
+    /// <summary>Consistent online snapshot of the database at <paramref name="connectionString"/> into <paramref name="backupPath"/>.</summary>
+    public static async Task BackupToAsync(string connectionString, string backupPath, CancellationToken cancellationToken = default)
+    {
+        // SQLite's online backup API, not File.Copy. A plain file copy of a live database can catch
+        // it mid-write and produce a backup that will not open, which is the one thing a backup must
+        // never do. BackupDatabase takes a consistent snapshot while writers carry on.
+        using var source = new SqliteConnection(connectionString);
+        using var destination = new SqliteConnection($"Data Source={backupPath}");
+        await source.OpenAsync(cancellationToken);
+        await destination.OpenAsync(cancellationToken);
+        source.BackupDatabase(destination);
     }
 }

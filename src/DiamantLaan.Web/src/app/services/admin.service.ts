@@ -70,6 +70,20 @@ export interface CertificateSummary {
   squares: { id: number; purchaseDate?: string | null; ownerName: string }[];
 }
 
+/** A road builder people can sponsor a block for. Only the admin side sees the email. */
+export interface AdminStadsbouer {
+  id: number;
+  name: string;
+  title: string | null;
+  about: string | null;
+  email: string | null;
+  hasPhoto: boolean;
+  isActive: boolean;
+  isSponsored: boolean;
+  isPending: boolean;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
@@ -102,6 +116,11 @@ export class AdminService {
   getCertificateSummary(userId: string) {
     return this.http.get<CertificateSummary>(
       `/api/admin/users/${encodeURIComponent(userId)}/certificate-summary`);
+  }
+
+  getSponsoredCertificates(userId: string) {
+    return this.http.get<CertificateSummary[]>(
+      `/api/admin/users/${encodeURIComponent(userId)}/sponsored-certificates`);
   }
 
   /** Admin override for a buyer who never named their own certificates (guest checkout). */
@@ -196,5 +215,22 @@ export class AdminService {
 
   deleteProgressImage(id: number) {
     return this.http.delete<any>(`/api/admin/squares/images/${id}`);
+  }
+
+  getStadsbouers() {
+    return this.http.get<AdminStadsbouer[]>('/api/admin/stadsbouers');
+  }
+
+  /** Photo is optional on both calls: leaving it out keeps whatever is already there. */
+  createStadsbouer(formData: FormData) {
+    return this.http.post<{ id: number; message: string }>('/api/admin/stadsbouers', formData);
+  }
+
+  updateStadsbouer(id: number, formData: FormData) {
+    return this.http.put<{ id: number; message: string }>(`/api/admin/stadsbouers/${id}`, formData);
+  }
+
+  deleteStadsbouer(id: number) {
+    return this.http.delete<{ message: string }>(`/api/admin/stadsbouers/${id}`);
   }
 }

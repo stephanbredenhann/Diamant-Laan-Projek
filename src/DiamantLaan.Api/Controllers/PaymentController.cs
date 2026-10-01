@@ -28,6 +28,7 @@ public class PaymentController : ControllerBase
     // Optional so a test can build the mailer without a signing key: without it the emails simply
     // go out without the switch-to-English footer link. Always supplied by DI in production.
     private readonly LanguageLinkService? _languageLinks;
+    private readonly StadsbouerSponsorshipService? _sponsorships;
 
     public PaymentController(
         AppDbContext db,
@@ -37,7 +38,8 @@ public class PaymentController : ControllerBase
         GuestPurchaseService guests,
         EmailOutboxService emails,
         IConfiguration config,
-        LanguageLinkService? languageLinks = null)
+        LanguageLinkService? languageLinks = null,
+        StadsbouerSponsorshipService? sponsorships = null)
     {
         _db = db;
         _payFastService = payFastService;
@@ -49,6 +51,7 @@ public class PaymentController : ControllerBase
         _emails = emails;
         _config = config;
         _languageLinks = languageLinks;
+        _sponsorships = sponsorships;
     }
 
     [AllowAnonymous]
@@ -105,6 +108,7 @@ public class PaymentController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "Confirmation failed");
         }
 
+        await HandOverSponsoredBlocksAsync(purchase, justConfirmed);
         await SendConfirmationEmailAsync(purchase, justConfirmed);
 
         return Ok("OK");
@@ -139,11 +143,32 @@ public class PaymentController : ControllerBase
         if (!ok)
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Kon nie aankoop bevestig nie." });
 
+        await HandOverSponsoredBlocksAsync(purchase, justConfirmed);
         await SendConfirmationEmailAsync(purchase, justConfirmed);
 
         return Ok(new { purchaseId = purchase.Id, paymentStatus = purchase.PaymentStatus.ToString() });
     }
 #endif
+
+    /// <summary>
+    /// Moves the blocks of a sponsorship onto the road builders they were bought for, once the
+    /// money is in. Never throws: the payment is already taken, so a failure here must not make
+    /// PayFast retry the ITN. The blocks stay on the payer's account until someone re-runs it.
+    /// </summary>
+    private async Task HandOverSponsoredBlocksAsync(Purchase purchase, bool justConfirmed)
+    {
+        if (!justConfirmed || _sponsorships == null || purchase.PaymentStatus != PaymentStatus.Confirmed)
+            return;
+
+        try
+        {
+            await _sponsorships.AssignAsync(purchase);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not hand sponsored blocks over for purchase {PurchaseId}", purchase.Id);
+        }
+    }
 
     /// <summary>
     /// Every confirmed purchase gets exactly one confirmation email: a guest gets the version with a

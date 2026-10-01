@@ -259,7 +259,7 @@ public class AdminReserveTests : IDisposable
             httpContext.User = Principal(userId);
 
         var guests = new GuestPurchaseService(_db, _userManager, Mock.Of<ILogger<GuestPurchaseService>>());
-        return new PurchaseController(_db, Mock.Of<IPayFastService>(), guests)
+        return new PurchaseController(_db, Mock.Of<IPayFastService>(), guests, new SiteSettingsService(_db))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };

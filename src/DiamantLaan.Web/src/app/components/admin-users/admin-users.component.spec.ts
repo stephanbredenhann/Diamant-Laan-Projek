@@ -54,6 +54,24 @@ describe('AdminUsersComponent — certificate names', () => {
     expect(component.promptBlockNames).toEqual({ 12: 'Jan Koper', 13: 'Anna Koper' });
   });
 
+  it('offers the stadsbouer certificates when the buyer sponsored their blocks', async () => {
+    const component = fixture.componentInstance;
+    const done = component.downloadCertificate(component.buyers[0]);
+
+    http.expectOne('/api/admin/users/u1/certificate-summary').flush({ ownerName: 'Jan Koper', sameForAll: true, squares: [] });
+    await Promise.resolve();
+    await Promise.resolve();
+    http.expectOne('/api/admin/users/u1/sponsored-certificates').flush([
+      { ownerName: 'Kobus Nel', sameForAll: true, squares: [{ id: 5, purchaseDate: null, ownerName: 'Kobus Nel' }] },
+    ]);
+    await done;
+    fixture.detectChanges();
+
+    expect(component.certError).toBe('');
+    expect(fixture.nativeElement.textContent).toContain('geborg aan stadsbouers');
+    expect(fixture.nativeElement.querySelector('.info-msg .link-btn')).not.toBeNull();
+  });
+
   it('keeps the "own name per block" checkbox checkbox-sized', async () => {
     const component = fixture.componentInstance;
     component.namePrompt = { buyer: component.buyers[0], squares: [12, 13], download: false };

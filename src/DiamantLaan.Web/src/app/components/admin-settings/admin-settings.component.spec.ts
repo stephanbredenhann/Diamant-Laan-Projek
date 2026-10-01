@@ -18,8 +18,58 @@ describe('AdminSettingsComponent', () => {
   });
 
   afterEach(() => {
+    // Every test renders the page, so the stadsbouer toggle loads too. The tests that care
+    // about it answer it themselves; the rest just let it settle here.
+    http.match('/api/settings/stadsbouers').forEach(req => req.flush({ enabled: true }));
     fixture.destroy();
     http.verify();
+  });
+
+  /** Renders the page with both settings loaded, which is where the toggle tests start. */
+  function rendered(stadsbouersEnabled = true) {
+    fixture.detectChanges();
+    http.expectOne('/api/settings/stadsbouers').flush({ enabled: stadsbouersEnabled });
+    http.expectOne('/api/settings/home-stats').flush({ showStatsSection: true, showTotalRaised: true });
+    fixture.detectChanges();
+    return fixture.nativeElement.querySelectorAll('input[type="checkbox"]')[2] as HTMLInputElement;
+  }
+
+  it('shows the stadsbouer option as an admin left it', () => {
+    const toggle = rendered(false);
+    expect(toggle.checked).toBeFalse();
+    expect(fixture.componentInstance.stadsbouersEnabled).toBeFalse();
+  });
+
+  it('saves the stadsbouer toggle on its own endpoint', () => {
+    const toggle = rendered(true);
+
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const req = http.expectOne('/api/admin/settings/stadsbouers');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ enabled: false });
+    req.flush({ enabled: false });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.stadsbouersEnabled).toBeFalse();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Instellings gestoor.');
+  });
+
+  it('puts the stadsbouer toggle back when the save fails', () => {
+    const toggle = rendered(true);
+
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    http.expectOne('/api/admin/settings/stadsbouers').flush({}, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.stadsbouersEnabled).toBeTrue();
+    expect((fixture.nativeElement as HTMLElement).textContent)
+      .toContain('Kon nie die stadsbouer-instelling stoor nie.');
   });
 
   it('shows loading state then renders settings', () => {

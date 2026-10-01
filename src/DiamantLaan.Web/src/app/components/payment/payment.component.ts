@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { PurchaseService, PayFastForm, GuestPurchaseRef } from '../../services/purchase.service';
 import { AuthService } from '../../services/auth.service';
+import { StadsbouerService } from '../../services/stadsbouer.service';
 import { meterFrase, randBedrag } from '../../utils/afrikaans.util';
 import { validateEmail } from '../../utils/validation.util';
 import { BouStepBarComponent } from '../shared/bou-step-bar/bou-step-bar.component';
@@ -81,7 +82,7 @@ import { TPipe } from '../../i18n/t.pipe';
           </svg>
           {{ 'Indien jy graag deur middel van BTC, EFT, Paypal, of kontant wil betaal, klik hier' | t }}
         </a>
-        <a routerLink="/bou/kies" class="btn btn-outline btn-xl btn-full terug-btn">
+        <a [routerLink]="terugSkakel" class="btn btn-outline btn-xl btn-full terug-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
@@ -98,6 +99,15 @@ import { TPipe } from '../../i18n/t.pipe';
         <p class="teller-etiket">{{ meterFrase(squareIds.length) }} {{ 'pad' | t }}</p>
         <p class="totaal">{{ randBedrag(totalAmount) }}</p>
         <p class="totaal-nota">{{ 'R500 per blokkie' | t }}</p>
+
+        @if (stadsbouerNames.length > 0) {
+          <p class="blokke-kop">{{ 'Jy borg vir' | t }}</p>
+          <ul class="gekose-bouers">
+            @for (naam of stadsbouerNames; track naam) {
+              <li>{{ naam }}</li>
+            }
+          </ul>
+        }
 
         <p class="blokke-kop">{{ 'Jou bloknommers' | t }}</p>
         <ul class="gekose-blokke">
@@ -248,6 +258,17 @@ import { TPipe } from '../../i18n/t.pipe';
       line-height: 1;
       font-variant-numeric: tabular-nums;
     }
+    .gekose-bouers {
+      list-style: none;
+      margin: 0.5rem 0 1rem;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--fs-lg);
+    }
     .kontroleer {
       color: rgba(255,255,255,0.75);
       font-size: var(--fs-base);
@@ -361,8 +382,12 @@ export class PaymentComponent implements OnInit {
   private router = inject(Router);
   private purchase = inject(PurchaseService);
   private auth = inject(AuthService);
+  private stadsbouers = inject(StadsbouerService);
 
   squareIds: number[] = [];
+  /** Non-empty when this is a "Koop vir 'n Stadsbouer" purchase; paired with squareIds by index. */
+  stadsbouerIds: number[] = [];
+  stadsbouerNames: string[] = [];
   totalAmount = 0;
   loading = false;
   error = '';
@@ -383,6 +408,10 @@ export class PaymentComponent implements OnInit {
     return !this.auth.currentUser();
   }
 
+  get terugSkakel() {
+    return this.stadsbouerIds.length > 0 ? '/bou/stadsbouers' : '/bou/kies';
+  }
+
   get otherPayMailto(): string {
     const subject = 'Ander betaalmetode — Oewerpad';
     const blocks = this.squareIds.length
@@ -399,9 +428,24 @@ export class PaymentComponent implements OnInit {
     if (ids && Array.isArray(ids) && ids.length > 0) {
       this.squareIds = ids;
       this.totalAmount = this.squareIds.length * 500;
+      this.stadsbouerIds = this.purchase.stadsbouerIds ?? [];
+      this.laaiStadsbouerName();
     } else {
       this.router.navigate(['/bou']);
     }
+  }
+
+  /** Only the names, and only to show who is being sponsored on the last screen before paying. */
+  private laaiStadsbouerName() {
+    if (this.stadsbouerIds.length === 0) return;
+
+    this.stadsbouers.list().subscribe({
+      next: (bouers) => {
+        const byId = new Map(bouers.map(b => [b.id, b.name]));
+        this.stadsbouerNames = this.stadsbouerIds.map(id => byId.get(id) ?? '').filter(Boolean);
+      },
+      error: () => { /* The block numbers below still say what is being bought. */ }
+    });
   }
 
   submitPayment() {
@@ -421,7 +465,7 @@ export class PaymentComponent implements OnInit {
       return;
     }
 
-    this.purchase.createPurchase(this.squareIds).subscribe({
+    this.purchase.createPurchase(this.squareIds, this.stadsbouerIds).subscribe({
       next: (res) => {
         this.createdPurchaseId = res.purchaseId;
         this.requestPayFastForm(res.purchaseId);
@@ -483,7 +527,7 @@ export class PaymentComponent implements OnInit {
       return;
     }
 
-    this.purchase.createGuestPurchase(this.squareIds, email).subscribe({
+    this.purchase.createGuestPurchase(this.squareIds, email, this.stadsbouerIds).subscribe({
       next: (res) => {
         this.guestRef = { purchaseId: res.purchaseId, token: res.token };
         this.purchase.guestPurchase = this.guestRef;

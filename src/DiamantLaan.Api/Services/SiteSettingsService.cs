@@ -31,6 +31,31 @@ public class SiteSettingsService
     }
 
     /// <summary>
+    /// Whether the "Koop vir 'n Stadsbouer" path is open. Missing settings row means yes, the
+    /// same way the home-page toggles above default to on.
+    /// </summary>
+    public async Task<bool> GetStadsbouersEnabledAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await _db.SiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+        return settings?.StadsbouersEnabled ?? true;
+    }
+
+    public async Task<bool> SetStadsbouersEnabledAsync(bool enabled)
+    {
+        var settings = await _db.SiteSettings.FirstOrDefaultAsync();
+        if (settings == null)
+        {
+            settings = new SiteSettings { Id = 1 };
+            _db.SiteSettings.Add(settings);
+        }
+
+        settings.StadsbouersEnabled = enabled;
+        await _db.SaveChangesAsync();
+
+        return settings.StadsbouersEnabled;
+    }
+
+    /// <summary>
     /// Where "Kies vir my" should start handing out blocks. Inclusive, 0 means off.
     /// </summary>
     public async Task<KiesVirMyOffsetDto> GetKiesVirMyOffsetAsync()

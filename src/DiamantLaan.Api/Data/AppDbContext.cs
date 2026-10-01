@@ -23,6 +23,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<PendingBlockNotification> PendingBlockNotifications => Set<PendingBlockNotification>();
     public DbSet<PendingEmail> PendingEmails => Set<PendingEmail>();
     public DbSet<AdminSaveSnapshot> AdminSaveSnapshots => Set<AdminSaveSnapshot>();
+    public DbSet<Stadsbouer> Stadsbouers => Set<Stadsbouer>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -33,6 +34,7 @@ public class AppDbContext : IdentityDbContext<User>
             Id = 1,
             ShowStatsSection = true,
             ShowTotalRaised = true,
+            StadsbouersEnabled = true,
             KiesVirMyOffset = 0
         });
 
@@ -48,6 +50,16 @@ public class AppDbContext : IdentityDbContext<User>
             .HasOne(ps => ps.Square)
             .WithMany(s => s.PurchaseSquares)
             .HasForeignKey(ps => ps.SquareId);
+
+        // Restrict, not cascade: deleting a builder must never take a paid purchase row with it.
+        builder.Entity<PurchaseSquare>()
+            .HasOne(ps => ps.Stadsbouer)
+            .WithMany(sb => sb.PurchaseSquares)
+            .HasForeignKey(ps => ps.StadsbouerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<PurchaseSquare>()
+            .HasIndex(ps => ps.StadsbouerId);
 
         builder.Entity<ProgressImageSquare>()
             .HasKey(pis => new { pis.ProgressImageId, pis.SquareId });

@@ -113,6 +113,9 @@ interface Buyer {
         @if (certError) {
           <p class="error-msg">{{ certError }}</p>
         }
+        @if (sponsored) {
+          <p class="info-msg">Blokkie(s) was geborg aan stadsbouers. <button type="button" class="link-btn" (click)="downloadSponsored()">Klik hier</button> om hul sertifikate af te laai.</p>
+        }
       </div>
 
       <!-- Make Admin Form -->
@@ -197,6 +200,9 @@ interface Buyer {
           @if (certError) {
             <p class="error-msg">{{ certError }}</p>
           }
+          @if (sponsored) {
+            <p class="info-msg">Blokkie(s) was geborg aan stadsbouers. <button type="button" class="link-btn" (click)="downloadSponsored()">Klik hier</button> om hul sertifikate af te laai.</p>
+          }
 
           <button
             type="button"
@@ -254,6 +260,9 @@ interface Buyer {
           @if (certError) {
             <p class="error-msg">{{ certError }}</p>
           }
+          @if (sponsored) {
+            <p class="info-msg">Blokkie(s) was geborg aan stadsbouers. <button type="button" class="link-btn" (click)="downloadSponsored()">Klik hier</button> om hul sertifikate af te laai.</p>
+          }
 
           <button type="button" class="btn btn-outline btn-sm btn-wide" (click)="closeChooser()">
             Maak toe
@@ -273,6 +282,25 @@ interface Buyer {
       background: #fdf0f0;
       border: 1px solid #f0c0c0;
       border-radius: var(--radius-sm);
+    }
+
+    .info-msg {
+      color: var(--color-text);
+      font-size: 0.8125rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+    .link-btn {
+      background: none;
+      border: 0;
+      padding: 0;
+      font: inherit;
+      color: var(--color-primary, #1a5fb4);
+      text-decoration: underline;
+      cursor: pointer;
     }
 
     /* Table card — same style as Statistieke */
@@ -480,6 +508,8 @@ export class AdminUsersComponent implements OnInit {
   certOwnerName = '';
   certSquares: CertificateSquare[] = [];
   certError = '';
+  /** Set when the buyer's blocks were sponsored to stadsbouers; holds their certificate summaries. */
+  sponsored: { buyer: Buyer; summaries: CertificateSummary[] } | null = null;
   /** Non-empty while the chooser is open; the off-screen card must stay loaded until it closes. */
   sheetChoices: SheetChoice[] = [];
   /** Which sheet is rendering: a target, 'all' for the zip, or null when idle. */
@@ -572,16 +602,22 @@ export class AdminUsersComponent implements OnInit {
 
     this.downloadingUserId = buyer.userId;
     this.certError = '';
+    this.sponsored = null;
 
     try {
       const summary = await firstValueFrom(this.admin.getCertificateSummary(buyer.userId));
+
+      if ((summary.squares ?? []).length === 0) {
+        await this.noBlocks(buyer);
+        return;
+      }
 
       // A guest who checked out without an account often left no name at all, and a blank
       // certificate is worse than no certificate. Ask before anything renders.
       if (!summary.ownerName.trim()) {
         const squares = (summary.squares ?? []).map(s => s.id);
         if (squares.length === 0) {
-          this.certError = `${buyer.name} besit geen blokke nie.`;
+          await this.noBlocks(buyer);
           return;
         }
         this.namePrompt = { buyer, squares, download: true };
@@ -609,12 +645,13 @@ export class AdminUsersComponent implements OnInit {
 
     this.namingUserId = buyer.userId;
     this.certError = '';
+    this.sponsored = null;
 
     try {
       const summary = await firstValueFrom(this.admin.getCertificateSummary(buyer.userId));
       const squares = (summary.squares ?? []).map(s => s.id);
       if (squares.length === 0) {
-        this.certError = `${buyer.name} besit geen blokke nie.`;
+        await this.noBlocks(buyer);
         return;
       }
 
@@ -642,6 +679,7 @@ export class AdminUsersComponent implements OnInit {
 
     this.promptSaving = true;
     this.certError = '';
+    this.sponsored = null;
     try {
       const individual = this.promptIndividual && prompt.squares.length > 1;
       const summary = await firstValueFrom(this.admin.saveCertificateNames(prompt.buyer.userId, {
@@ -666,6 +704,30 @@ export class AdminUsersComponent implements OnInit {
     if (this.promptSaving) return;
     this.namePrompt = null;
     this.certError = '';
+    this.sponsored = null;
+  }
+
+  /** Shows the sponsored-to-stadsbouers notice when the buyer sponsored blocks, else the plain error. */
+  private async noBlocks(buyer: Buyer) {
+    const summaries = await firstValueFrom(this.admin.getSponsoredCertificates(buyer.userId));
+    if (summaries.length > 0) this.sponsored = { buyer, summaries };
+    else this.certError = `${buyer.name} besit geen blokke nie.`;
+  }
+
+  async downloadSponsored() {
+    const sponsored = this.sponsored;
+    if (!sponsored || this.busyUserId) return;
+
+    this.downloadingUserId = sponsored.buyer.userId;
+    try {
+      for (const summary of sponsored.summaries) {
+        await this.renderSummary(summary, { ...sponsored.buyer, name: summary.ownerName });
+      }
+    } catch {
+      this.certError = 'Kon nie die sertifikate genereer nie. Probeer asseblief weer.';
+    } finally {
+      this.downloadingUserId = null;
+    }
   }
 
   /** Renders the off-screen card, then either downloads the one sheet or opens the chooser. */
@@ -706,6 +768,7 @@ export class AdminUsersComponent implements OnInit {
 
     this.sheetBusy = target;
     this.certError = '';
+    this.sponsored = null;
     try {
       await this.saveSheet(target);
     } catch {
@@ -726,6 +789,7 @@ export class AdminUsersComponent implements OnInit {
 
     this.sheetBusy = 'all';
     this.certError = '';
+    this.sponsored = null;
     this.zipProgress = `(0/${this.sheetChoices.length})`;
 
     try {

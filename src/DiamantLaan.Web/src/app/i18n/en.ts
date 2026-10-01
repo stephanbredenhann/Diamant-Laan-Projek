@@ -660,5 +660,26 @@ export const EN: Record<string, string> = {
   'Kon nie e-pos verander nie.': 'Could not change the email address.',
   'Kon nie rekening verwyder nie.': 'Could not close the account.',
 
+  // --- Koop vir 'n Stadsbouer ---
+  'Koop vir ’n Stadsbouer': 'Sponsor a Road Builder',
+  'Borg ’n blokkie vir iemand wat die pad self bou.':
+    'Sponsor a block for someone building the road themselves.',
+  'Kies stadsbouers →': 'Choose road builders →',
+  'Stap 2 van 4 · Kies jou stadsbouer': 'Step 2 of 4 · Choose your road builder',
+  'Vir wie gaan jy ’n blokkie borg?': 'Who are you sponsoring a block for?',
+  'Hierdie is die mense wat die pad met hul eie hande bou. Kies een of meer, en die blokkie word op hulle naam geregistreer met hul eie sertifikaat.':
+    'These are the people building the road with their own hands. Choose one or more, and the block is registered in their name with their own certificate.',
+  'Besig om die stadsbouers te laai...': 'Loading the road builders...',
+  'Daar is nog nie stadsbouers om te borg nie. Kyk gerus later weer.':
+    'There are no road builders to sponsor yet. Please check back later.',
+  'stadsbouers gekies': 'road builders selected',
+  'Kies ten minste een stadsbouer.': 'Choose at least one road builder.',
+  'Word tans geborg': 'Being sponsored',
+  'Jy borg vir': 'You are sponsoring',
+  'Dankie vir jou borgskap': 'Thank you for your sponsorship',
+  'Jou betaling is bevestig. Die blokkies is op die stadsbouers se name geregistreer en hulle het ’n e-pos ontvang met hul eie bloknommer en sertifikaat.':
+    'Your payment is confirmed. The blocks are registered in the road builders’ names, and they have been emailed their block number and certificate.',
+  'Borg nog ’n blokkie': 'Sponsor another block',
+
   // --- Password field ---
 };

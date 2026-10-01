@@ -580,7 +580,7 @@ public class GuestPurchaseTests : IDisposable
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("203.0.113.7");
 
-        return new PurchaseController(_db, Mock.Of<IPayFastService>(), _guests)
+        return new PurchaseController(_db, Mock.Of<IPayFastService>(), _guests, new SiteSettingsService(_db))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };

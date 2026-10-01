@@ -24,12 +24,18 @@ public class PurchaseController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IPayFastService _payFastService;
     private readonly GuestPurchaseService _guests;
+    private readonly SiteSettingsService _siteSettings;
 
-    public PurchaseController(AppDbContext db, IPayFastService payFastService, GuestPurchaseService guests)
+    public PurchaseController(
+        AppDbContext db,
+        IPayFastService payFastService,
+        GuestPurchaseService guests,
+        SiteSettingsService siteSettings)
     {
         _db = db;
         _payFastService = payFastService;
         _guests = guests;
+        _siteSettings = siteSettings;
     }
 
     [HttpPost]
@@ -48,7 +54,7 @@ public class PurchaseController : ControllerBase
             });
         }
 
-        var (purchase, error) = await ReserveSquaresAsync(userId, dto.SquareIds);
+        var (purchase, error) = await ReserveSquaresAsync(userId, dto.SquareIds, dto.StadsbouerIds);
         if (error != null)
             return error;
 
@@ -167,7 +173,7 @@ public class PurchaseController : ControllerBase
 
         var shadowUser = await _guests.CreateShadowUserAsync();
 
-        var (purchase, error) = await ReserveSquaresAsync(shadowUser.Id, dto.SquareIds);
+        var (purchase, error) = await ReserveSquaresAsync(shadowUser.Id, dto.SquareIds, dto.StadsbouerIds);
         if (error != null)
         {
             _db.Users.Remove(shadowUser);
@@ -362,9 +368,11 @@ public class PurchaseController : ControllerBase
 
     /// <summary>
     /// Reserves squares for a user and opens a pending purchase. Shared by the signed-in and
-    /// guest flows so the two cannot drift apart.
+    /// guest flows so the two cannot drift apart. <paramref name="stadsbouerIds"/> pairs one road
+    /// builder to each block by index, for a purchase made on their behalf.
     /// </summary>
-    private async Task<(Purchase? purchase, IActionResult? error)> ReserveSquaresAsync(string userId, List<int> squareIds)
+    private async Task<(Purchase? purchase, IActionResult? error)> ReserveSquaresAsync(
+        string userId, List<int> squareIds, List<int>? stadsbouerIds = null)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -387,6 +395,10 @@ public class PurchaseController : ControllerBase
             if (squares.Any(s => s.Id < 1 || s.Id > MaxSaleableSquareId))
                 return (null, BadRequest(new { message = "Ongeldige blokke gekies." }));
 
+            var (pairing, pairingError) = await PairStadsbouersAsync(squareIds, stadsbouerIds);
+            if (pairingError != null)
+                return (null, pairingError);
+
             var purchase = new Purchase
             {
                 UserId = userId,
@@ -397,7 +409,13 @@ public class PurchaseController : ControllerBase
             foreach (var square in squares)
             {
                 square.OwnerId = userId;
-                purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = square.Id });
+                purchase.PurchaseSquares.Add(new PurchaseSquare
+                {
+                    SquareId = square.Id,
+                    StadsbouerId = pairing != null && pairing.TryGetValue(square.Id, out var stadsbouerId)
+                        ? stadsbouerId
+                        : null
+                });
             }
 
             _db.Purchases.Add(purchase);
@@ -411,6 +429,41 @@ public class PurchaseController : ControllerBase
             await transaction.RollbackAsync();
             return (null, Conflict(new { message = "Sommige blokke is intussen deur iemand anders gekoop. Probeer weer." }));
         }
+    }
+
+    /// <summary>
+    /// Validates the builders a sponsor picked and pairs them to blocks by index. Returns null for
+    /// an ordinary purchase, which carries no builders at all.
+    /// </summary>
+    private async Task<(Dictionary<int, int>? Pairing, IActionResult? Error)> PairStadsbouersAsync(
+        List<int> squareIds, List<int>? stadsbouerIds)
+    {
+        if (stadsbouerIds is not { Count: > 0 })
+            return (null, null);
+
+        // Hiding the option on the front end is not the control: this is.
+        if (!await _siteSettings.GetStadsbouersEnabledAsync())
+            return (null, BadRequest(new { message = "Borgskap vir stadsbouers is tans nie beskikbaar nie." }));
+
+        if (stadsbouerIds.Count != squareIds.Count)
+            return (null, BadRequest(new { message = "Kies presies een blok per stadsbouer." }));
+
+        if (stadsbouerIds.Distinct().Count() != stadsbouerIds.Count)
+            return (null, BadRequest(new { message = "\u2019n Stadsbouer kan net een keer gekies word." }));
+
+        var found = await _db.Stadsbouers
+            .CountAsync(sb => stadsbouerIds.Contains(sb.Id) && sb.IsActive);
+        if (found != stadsbouerIds.Count)
+            return (null, BadRequest(new { message = "Sommige stadsbouers is nie beskikbaar nie." }));
+
+        // ponytail: last-write-wins on a tie. Two sponsors picking the same builder in the same
+        // instant both pass here; the builder simply ends up with two blocks. Needs a unique index
+        // that excludes cancelled purchases if that ever matters.
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db);
+        if (stadsbouerIds.Any(taken.IsTaken))
+            return (null, BadRequest(new { message = "Sommige stadsbouers is reeds geborg. Herlaai die bladsy." }));
+
+        return (squareIds.Zip(stadsbouerIds).ToDictionary(pair => pair.First, pair => pair.Second), null);
     }
 
     private async Task<IActionResult> ReleaseReservationAsync(Purchase purchase)
