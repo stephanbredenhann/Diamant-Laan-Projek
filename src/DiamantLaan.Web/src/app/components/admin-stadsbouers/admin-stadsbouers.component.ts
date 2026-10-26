@@ -2,8 +2,12 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, inject } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { AdminService, AdminStadsbouer } from '../../services/admin.service';
+import { AdminService, AdminStadsbouer, PROOF_METHODS, PaymentMethod } from '../../services/admin.service';
+import { RoadService } from '../../services/road.service';
+import { normalizePhoneLocal, validatePhone } from '../../utils/validation.util';
 import { AlertComponent } from '../shared/alert/alert.component';
+import { BlockPickerModalComponent } from '../shared/block-picker-modal/block-picker-modal.component';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 import {
   CertificateCardComponent,
   CertificateSquare,
@@ -25,6 +29,21 @@ const LEE_VORM: Vorm = {
   id: null, name: '', title: '', about: '', email: '', isActive: true, photo: null
 };
 
+/** A telefoniese aankoop for one builder: the payer's details, and the one block it buys. */
+interface Koop {
+  bouer: AdminStadsbouer;
+  blok: number | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  phoneCountryCode: string;
+  isOraniaResident: boolean;
+  isOraniaBewegingMember: boolean;
+  paymentMethod: PaymentMethod;
+  proof: File | null;
+}
+
 /**
  * The road builders visitors can sponsor a block for. The email is the one an account gets
  * created under when a sponsorship is paid, so it is edited here and never shown publicly.
@@ -32,7 +51,10 @@ const LEE_VORM: Vorm = {
 @Component({
   selector: 'app-admin-stadsbouers',
   standalone: true,
-  imports: [CommonModule, FormsModule, AlertComponent, PaginatorComponent, CertificateCardComponent],
+  imports: [
+    CommonModule, FormsModule, AlertComponent, PaginatorComponent, CertificateCardComponent,
+    PhoneInputComponent, BlockPickerModalComponent
+  ],
   template: `
     <app-alert [message]="message" [type]="messageType" />
 
@@ -107,6 +129,9 @@ const LEE_VORM: Vorm = {
                       <button type="button" class="btn btn-outline btn-sm danger" [disabled]="busy" (click)="remove(b)">Ja, verwyder</button>
                       <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="confirmDeleteId = null">Nee</button>
                     } @else {
+                      @if (!b.isSponsored && !b.isPending) {
+                        <button type="button" class="btn btn-outline btn-sm" [disabled]="busy" (click)="openKoop(b)">Koop</button>
+                      }
                       @if (b.isSponsored) {
                         <button type="button" class="btn btn-outline btn-sm" [disabled]="busy || certBusy" (click)="downloadCertificate(b)">Sertifikaat</button>
                         @if (!b.handedOverAt) {
@@ -161,6 +186,93 @@ const LEE_VORM: Vorm = {
           <button type="button" class="btn btn-outline btn-sm btn-wide" [disabled]="saving" (click)="closeHandover()">Kanselleer</button>
         </div>
       </div>
+    }
+
+    @if (koop) {
+      <div class="modal-backdrop" (click)="closeKoop()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="koop-title" (click)="$event.stopPropagation()">
+          <h3 id="koop-title">Koop ’n blok vir {{ koop.bouer.name }}</h3>
+          <p class="hint">Vir ’n telefoniese bestelling. Die blok gaan na die stadsbouer, en die borg kry net die dankie-e-pos.</p>
+
+          <div class="field">
+            <label>Blok</label>
+            <div class="blok-ry">
+              <span class="blok">{{ koop.blok ? 'Blok #' + koop.blok : (blokBesig ? 'Besig...' : 'Geen blok nie') }}</span>
+              <button type="button" class="btn btn-outline btn-sm" [disabled]="saving" (click)="pickerOpen = true">Kies op kaart</button>
+            </div>
+            <p class="sub-hint">Toegeken soos “kies vir my”. Totaal R500.</p>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label for="koop-voornaam">Voornaam <span aria-hidden="true">*</span></label>
+              <input id="koop-voornaam" [(ngModel)]="koop.firstName" name="firstName" maxlength="100">
+            </div>
+            <div class="field">
+              <label for="koop-van">Van <span aria-hidden="true">*</span></label>
+              <input id="koop-van" [(ngModel)]="koop.lastName" name="lastName" maxlength="100">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="koop-epos">E-pos <span aria-hidden="true">*</span></label>
+            <input id="koop-epos" type="email" [(ngModel)]="koop.email" name="email" maxlength="256">
+          </div>
+
+          <div class="field">
+            <label>Foonnommer</label>
+            <app-phone-input [(countryCode)]="koop.phoneCountryCode" [(phoneNumber)]="koop.phoneNumber" />
+          </div>
+
+          <div class="field checkbox">
+            <label>
+              <input type="checkbox" [(ngModel)]="koop.isOraniaResident" name="isOraniaResident">
+              Inwoner van Orania?
+            </label>
+          </div>
+          <div class="field checkbox">
+            <label>
+              <input type="checkbox" [(ngModel)]="koop.isOraniaBewegingMember" name="isOraniaBewegingMember">
+              Lid van Orania Beweging?
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="koop-metode">Betaalmetode</label>
+            <select id="koop-metode" [(ngModel)]="koop.paymentMethod" name="paymentMethod" (ngModelChange)="koop.proof = laatBewysToe($event) ? koop.proof : null">
+              <option value="EFT">EFT</option>
+              <option value="Cash">Kontant</option>
+              <option value="Card">Kaart</option>
+              <option value="Bitcoin">Bitcoin</option>
+              <option value="PayPal">PayPal</option>
+            </select>
+          </div>
+
+          @if (laatBewysToe(koop.paymentMethod)) {
+            <div class="field">
+              <label for="koop-bewys">Bewys van betaling (PDF, opsioneel)</label>
+              <input id="koop-bewys" type="file" accept="application/pdf" (change)="kiesBewys($event)">
+            </div>
+          }
+
+          @if (formError) {
+            <p class="error-msg">{{ formError }}</p>
+          }
+
+          <button type="button" class="btn btn-primary btn-sm btn-wide" [disabled]="saving || !kanKoop()" (click)="stuurKoop()">
+            {{ saving ? 'Besig...' : 'Voltooi aankoop' }}
+          </button>
+          <button type="button" class="btn btn-outline btn-sm btn-wide" [disabled]="saving" (click)="closeKoop()">Kanselleer</button>
+        </div>
+      </div>
+    }
+
+    @if (koop && pickerOpen) {
+      <app-block-picker-modal
+        [initialIds]="koop.blok ? [koop.blok] : []"
+        (confirmed)="kiesBlok($event)"
+        (cancelled)="pickerOpen = false"
+      />
     }
 
     @if (vorm) {
@@ -326,6 +438,18 @@ const LEE_VORM: Vorm = {
       font-family: inherit;
     }
     .field.checkbox label { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; }
+    .field select {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-family: inherit;
+      background: var(--color-surface);
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.75rem; }
+    .blok-ry { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    .blok { font-weight: 600; color: var(--color-text); }
     .sub-hint { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.375rem; }
     .error-msg { font-size: 0.8125rem; color: #DC2626; margin-bottom: 0.75rem; }
     .btn-wide { width: 100%; }
@@ -341,6 +465,7 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   @ViewChild('certCard') certCard!: CertificateCardComponent;
 
   private admin = inject(AdminService);
+  private road = inject(RoadService);
   private cdr = inject(ChangeDetectorRef);
 
   bouers: AdminStadsbouer[] = [];
@@ -362,6 +487,9 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
   certSquares: CertificateSquare[] = [];
   handover: { id: number; name: string; photo: File | null } | null = null;
   handoverPreview = '';
+  koop: Koop | null = null;
+  blokBesig = false;
+  pickerOpen = false;
 
   ngOnInit() {
     this.load();
@@ -573,6 +701,100 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
       this.saving = false;
       this.formError = err?.error?.message ?? 'Kon nie die oorhandiging stuur nie. Probeer weer.';
     }
+  }
+
+  /** Opens the purchase form with a block already drawn, the same way the public /bou flow draws one. */
+  openKoop(b: AdminStadsbouer) {
+    this.formError = '';
+    this.pickerOpen = false;
+    const koop: Koop = {
+      bouer: b, blok: null, firstName: '', lastName: '', email: '', phoneNumber: '', phoneCountryCode: '+27',
+      isOraniaResident: false, isOraniaBewegingMember: false, paymentMethod: 'EFT', proof: null
+    };
+    this.koop = koop;
+    this.blokBesig = true;
+    this.road.pickSquares(1).subscribe({
+      next: (res) => {
+        this.blokBesig = false;
+        // The admin may have picked one on the map while this was in flight.
+        if (koop.blok == null) koop.blok = res?.squareIds?.[0] ?? null;
+      },
+      error: (err) => {
+        this.blokBesig = false;
+        this.formError = err.error?.message ?? 'Kon nie ’n blok toeken nie. Kies een op die kaart.';
+      }
+    });
+  }
+
+  closeKoop() {
+    if (this.saving) return;
+    this.koop = null;
+    this.pickerOpen = false;
+  }
+
+  kiesBlok(ids: number[]) {
+    if (!this.koop) return;
+    if (ids.length !== 1) {
+      this.formError = 'Kies presies een blok.';
+      return;
+    }
+    this.koop.blok = ids[0];
+    this.formError = '';
+    this.pickerOpen = false;
+  }
+
+  laatBewysToe(method: PaymentMethod) {
+    return PROOF_METHODS.includes(method);
+  }
+
+  kiesBewys(event: Event) {
+    if (this.koop) this.koop.proof = (event.target as HTMLInputElement).files?.[0] ?? null;
+  }
+
+  kanKoop() {
+    const k = this.koop;
+    return !!k && k.blok != null && !!k.firstName.trim() && !!k.lastName.trim() && k.email.includes('@');
+  }
+
+  stuurKoop() {
+    const k = this.koop;
+    if (!k || this.saving || !this.kanKoop()) return;
+
+    const phoneError = validatePhone(k.phoneNumber, k.phoneCountryCode);
+    if (phoneError) {
+      this.formError = phoneError;
+      return;
+    }
+
+    const body = new FormData();
+    body.append('firstName', k.firstName.trim());
+    body.append('lastName', k.lastName.trim());
+    body.append('email', k.email.trim());
+    body.append('phoneNumber', normalizePhoneLocal(k.phoneNumber, k.phoneCountryCode));
+    body.append('phoneCountryCode', k.phoneCountryCode);
+    body.append('isOraniaResident', String(k.isOraniaResident));
+    body.append('isOraniaBewegingMember', String(k.isOraniaBewegingMember));
+    body.append('squareIds', String(k.blok));
+    body.append('stadsbouerIds', String(k.bouer.id));
+    body.append('paymentMethod', k.paymentMethod);
+    if (k.proof && this.laatBewysToe(k.paymentMethod)) {
+      body.append('proofOfPayment', k.proof);
+    }
+
+    this.saving = true;
+    this.formError = '';
+    this.admin.manualPurchase(body).subscribe({
+      next: (res) => {
+        this.saving = false;
+        this.koop = null;
+        this.setMessage(`Aankoop #${res.purchaseId} voltooi: blok #${k.blok} vir ${k.bouer.name}.`, 'success');
+        this.load();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.formError = err.error?.message ?? 'Kon nie die aankoop voltooi nie. Probeer weer.';
+      }
+    });
   }
 
   private vryHandoverVoorskou() {

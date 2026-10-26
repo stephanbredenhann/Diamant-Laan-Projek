@@ -100,6 +100,53 @@ describe('AdminStadsbouersComponent', () => {
     await done.catch(() => {});
   });
 
+  it('shows Koop only for builders nobody has sponsored or is paying for', () => {
+    const component = fixture.componentInstance;
+    const koopKnoppies = () => [...fixture.nativeElement.querySelectorAll('button')].filter((b: HTMLElement) => b.textContent?.trim() === 'Koop');
+    component.bouers = [
+      { ...bouers[0], id: 1 },
+      { ...bouers[0], id: 2, isActive: false },
+      { ...bouers[0], id: 3, isSponsored: true },
+      { ...bouers[0], id: 4, isPending: true },
+    ];
+    component.applyFilter();
+    fixture.detectChanges();
+
+    expect(koopKnoppies().length).toBe(2);
+  });
+
+  it('buys the drawn block for the builder through the telefoniese aankoop endpoint', () => {
+    const component = fixture.componentInstance;
+    component.openKoop(bouers[0]);
+    http.expectOne(r => r.url === '/api/road/pick-squares').flush({ squareIds: [42] });
+    expect(component.koop!.blok).toBe(42);
+
+    Object.assign(component.koop!, { firstName: 'Piet', lastName: 'Pompies', email: 'borg@test.com', paymentMethod: 'Cash' });
+    expect(component.kanKoop()).toBe(true);
+    component.stuurKoop();
+
+    const request = http.expectOne('/api/admin/manual-purchase');
+    const body = velde(request.request.body as FormData);
+    expect(body['squareIds']).toBe('42');
+    expect(body['stadsbouerIds']).toBe('1');
+    expect(body['paymentMethod']).toBe('Cash');
+    request.flush({ purchaseId: 9, amount: 500, squareCount: 1, welcomeEmailSent: true, stadsbouer: true });
+
+    http.expectOne('/api/admin/stadsbouers').flush([{ ...bouers[0], isSponsored: true }]);
+    expect(component.koop).toBeNull();
+    expect(component.message).toContain('blok #42 vir Jan van der Merwe');
+  });
+
+  it('keeps a block picked on the map and refuses more than one', () => {
+    const component = fixture.componentInstance;
+    component.openKoop(bouers[0]);
+    component.kiesBlok([7, 8]);
+    expect(component.formError).toBe('Kies presies een blok.');
+    component.kiesBlok([7]);
+    http.expectOne(r => r.url === '/api/road/pick-squares').flush({ squareIds: [42] });
+    expect(component.koop!.blok).toBe(7);
+  });
+
   it('hands over through the service, reloads, and shows the badge', async () => {
     const component = fixture.componentInstance;
     const sponsored = { ...bouers[0], isSponsored: true };

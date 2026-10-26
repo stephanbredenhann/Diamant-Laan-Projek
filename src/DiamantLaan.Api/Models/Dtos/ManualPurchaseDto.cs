@@ -48,4 +48,11 @@ public class ManualPurchaseDto
     /// falls back to <see cref="CertificateName"/>.
     /// </summary>
     public Dictionary<int, string> CertificateNames { get; set; } = new();
+
+    /// <summary>
+    /// When present, one road builder per entry in <see cref="SquareIds"/>, paired by index, the
+    /// same contract as the public purchase. Those blocks are handed to the builder, not the payer.
+    /// </summary>
+    [MaxLength(100)]
+    public List<int>? StadsbouerIds { get; set; }
 }

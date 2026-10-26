@@ -610,6 +610,11 @@ public class AdminController : ControllerBase
             if (squares.Any(s => s.Id < 1 || s.Id > 4000))
                 return BadRequest(new { message = "Ongeldige blokke gekies." });
 
+            var (pairing, pairingError) = await PairStadsbouersAsync(dto.SquareIds, dto.StadsbouerIds);
+            if (pairingError != null)
+                return pairingError;
+            var forBuilders = pairing != null;
+
             var amount = squares.Count * 500m;
 
             if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var e164, out var phoneError))
@@ -664,10 +669,18 @@ public class AdminController : ControllerBase
             foreach (var square in squares)
             {
                 square.OwnerId = user.Id;
-                purchase.PurchaseSquares.Add(new PurchaseSquare { SquareId = square.Id });
+                purchase.PurchaseSquares.Add(new PurchaseSquare
+                {
+                    SquareId = square.Id,
+                    StadsbouerId = pairing != null && pairing.TryGetValue(square.Id, out var stadsbouerId)
+                        ? stadsbouerId
+                        : null
+                });
             }
 
-            ApplyCertificateNames(dto, user, squares);
+            // The handover names a builder's block after them, so the payer's choices do not apply.
+            if (!forBuilders)
+                ApplyCertificateNames(dto, user, squares);
 
             _db.Purchases.Add(purchase);
             await _db.SaveChangesAsync();
@@ -684,7 +697,41 @@ public class AdminController : ControllerBase
             }
 
             await transaction.CommitAsync();
-            await _audit.LogAsync(User, "ManualPurchase", $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
+            await _audit.LogAsync(User, "ManualPurchase", forBuilders
+                ? $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares for stadsbouers {string.Join(", ", dto.StadsbouerIds!)}"
+                : $"Purchase #{purchase.Id} for {dto.Email}, {squares.Count} squares");
+
+            if (forBuilders)
+            {
+                // The same two steps a confirming ITN runs, and like there the sponsor gets only the
+                // "Dankie!" email: they own nothing, so a welcome or confirmation would mislead.
+                if (_sponsorships != null)
+                {
+                    try
+                    {
+                        await _sponsorships.AssignAsync(purchase);
+                    }
+                    catch (Exception ex)
+                    {
+                        // The purchase stands; saving the builder again retries the handover.
+                        _logger?.LogError(ex, "Could not hand sponsored blocks over for purchase {PurchaseId}", purchase.Id);
+                    }
+
+                    await _sponsorships.SendThanksAsync(purchase);
+                }
+
+                return Ok(new
+                {
+                    purchaseId = purchase.Id,
+                    amount = purchase.Amount,
+                    squareCount = squares.Count,
+                    userId = user.Id,
+                    paymentStatus = purchase.PaymentStatus.ToString(),
+                    hasProof = purchase.ProofOfPaymentPath != null,
+                    welcomeEmailSent = true,
+                    stadsbouer = true
+                });
+            }
 
             var welcomeEmailSent = false;
             if (!string.IsNullOrWhiteSpace(user.Email))
@@ -719,6 +766,35 @@ public class AdminController : ControllerBase
             await transaction.RollbackAsync();
             return Conflict(new { message = "Sommige blokke is intussen deur iemand anders gekoop." });
         }
+    }
+
+    /// <summary>
+    /// Pairs the builders an admin is buying for to blocks by index. Unlike the public purchase it
+    /// accepts a hidden builder and ignores the site-wide switch: the admin is recording a sale
+    /// that already happened. A builder already paid for or held by a reservation is still refused.
+    /// </summary>
+    private async Task<(Dictionary<int, int>? Pairing, IActionResult? Error)> PairStadsbouersAsync(
+        List<int> squareIds, List<int>? stadsbouerIds)
+    {
+        if (stadsbouerIds is not { Count: > 0 })
+            return (null, null);
+
+        if (stadsbouerIds.Count != squareIds.Count)
+            return (null, BadRequest(new { message = "Kies presies een blok per stadsbouer." }));
+
+        if (stadsbouerIds.Distinct().Count() != stadsbouerIds.Count)
+            return (null, BadRequest(new { message = "\u2019n Stadsbouer kan net een keer gekies word." }));
+
+        var found = await _db.Stadsbouers.CountAsync(sb => stadsbouerIds.Contains(sb.Id));
+        if (found != stadsbouerIds.Count)
+            return (null, BadRequest(new { message = "Sommige stadsbouers bestaan nie." }));
+
+        // Race-free for the same reason as the public flow: the caller's transaction is BEGIN IMMEDIATE on SQLite.
+        var taken = await StadsbouerSponsorshipService.GetAvailabilityAsync(_db);
+        if (stadsbouerIds.Any(taken.IsTaken))
+            return (null, BadRequest(new { message = "Sommige stadsbouers is reeds geborg. Herlaai die bladsy." }));
+
+        return (squareIds.Zip(stadsbouerIds).ToDictionary(pair => pair.First, pair => pair.Second), null);
     }
 
     /// <summary>
