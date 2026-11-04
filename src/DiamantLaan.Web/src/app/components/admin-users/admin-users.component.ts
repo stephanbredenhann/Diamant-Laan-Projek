@@ -6,6 +6,7 @@ import { AdminService, CertificateSummary } from '../../services/admin.service';
 import { AlertComponent } from '../shared/alert/alert.component';
 import {
   CertificateCardComponent,
+  CertificateSheetTarget,
   CertificateSquare,
   sanitizeFilename,
 } from '../shared/certificate-card/certificate-card.component';
@@ -13,7 +14,7 @@ import { PaginatorComponent, PAGE_SIZE } from '../shared/paginator/paginator.com
 
 /** One row in the "which certificate?" chooser: a sheet the buyer's blocks add up to. */
 interface SheetChoice {
-  target: 'summary' | number;
+  target: CertificateSheetTarget;
   label: string;
 }
 
@@ -513,7 +514,7 @@ export class AdminUsersComponent implements OnInit {
   /** Non-empty while the chooser is open; the off-screen card must stay loaded until it closes. */
   sheetChoices: SheetChoice[] = [];
   /** Which sheet is rendering: a target, 'all' for the zip, or null when idle. */
-  sheetBusy: 'summary' | number | 'all' | null = null;
+  sheetBusy: CertificateSheetTarget | 'all' | null = null;
   zipProgress = '';
 
   /**
@@ -737,6 +738,7 @@ export class AdminUsersComponent implements OnInit {
       id: s.id,
       purchaseDate: s.purchaseDate ?? undefined,
       ownerName: s.ownerName,
+      isPioneer: s.isPioneer,
     }));
     this.cdr.detectChanges();
 
@@ -763,7 +765,7 @@ export class AdminUsersComponent implements OnInit {
     }));
   }
 
-  async downloadSheet(target: 'summary' | number) {
+  async downloadSheet(target: CertificateSheetTarget) {
     if (this.sheetBusy !== null) return;
 
     this.sheetBusy = target;
@@ -818,7 +820,7 @@ export class AdminUsersComponent implements OnInit {
     this.clearCert();
   }
 
-  private async saveSheet(target: 'summary' | number) {
+  private async saveSheet(target: CertificateSheetTarget) {
     const sheet = await this.certCard.sheetPdf(target);
     this.saveBlob(sheet.blob, sheet.filename);
   }

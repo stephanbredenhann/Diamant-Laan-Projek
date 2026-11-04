@@ -39,6 +39,7 @@ export const routes: Routes = [
       { path: 'gebruikers', loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent) },
       { path: 'transaksies', loadComponent: () => import('./components/admin-transactions/admin-transactions.component').then(m => m.AdminTransactionsComponent) },
       { path: 'telefoon-aankoop', loadComponent: () => import('./components/admin-manual-purchase/admin-manual-purchase.component').then(m => m.AdminManualPurchaseComponent) },
+      { path: 'groot-skenking', loadComponent: () => import('./components/admin-groot-skenking/admin-groot-skenking.component').then(m => m.AdminGrootSkenkingComponent) },
       { path: 'reserveer', loadComponent: () => import('./components/admin-reserveer/admin-reserveer.component').then(m => m.AdminReserveerComponent) },
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
       { path: 'verwyder-transaksie', loadComponent: () => import('./components/admin-delete-transaction/admin-delete-transaction.component').then(m => m.AdminDeleteTransactionComponent) },

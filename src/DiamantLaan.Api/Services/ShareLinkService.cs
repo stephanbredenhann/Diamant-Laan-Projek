@@ -123,6 +123,10 @@ public class ShareLinkService
             ? $"{user.FirstName} {user.LastName}".Trim()
             : user.CertificateName!;
 
+        // The blocks bought before the first million print on the pioneer plate. Per block: a
+        // sponsor who bought on both sides of the line shows a pioneer sheet and a standard one.
+        var pioneer = await PioneerBlocks.AmongAsync(_db, squares.Select(s => s.Id), ct: ct);
+
         if (blockId is int id)
         {
             var block = squares.FirstOrDefault(s => s.Id == id);
@@ -134,7 +138,9 @@ public class ShareLinkService
                     ? summaryName
                     : block.CertificateName!;
                 var blockDate = await BlockDateAsync(user.Id, id, ct);
-                return new PublicCertificate(blockName, FirstWord(blockName), [id], blockDate);
+                return new PublicCertificate(
+                    blockName, FirstWord(blockName), [id], blockDate,
+                    pioneer.Contains(id) ? [id] : [], pioneer.Contains(id) ? blockDate : null);
             }
         }
 
@@ -144,11 +150,32 @@ public class ShareLinkService
             .Select(p => (DateTime?)p.PurchaseDate)
             .FirstOrDefaultAsync(ct);
 
+        // A pioneer summary is dated from the pioneer blocks alone: the latest paid purchase that
+        // put one of them in this account's hands.
+        DateTime? pioneerDate = null;
+        if (pioneer.Count > 0)
+        {
+            var pioneerPurchases = await PioneerBlocks.PurchaseIdsAsync(_db, ct: ct);
+            var pioneerIds = pioneer.ToList();
+            var candidates = await _db.PurchaseSquares.AsNoTracking()
+                .Where(ps => pioneerIds.Contains(ps.SquareId)
+                    && ps.Purchase.UserId == user.Id
+                    && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
+                .Select(ps => new { ps.PurchaseId, ps.Purchase.PurchaseDate })
+                .ToListAsync(ct);
+            pioneerDate = candidates
+                .Where(c => pioneerPurchases.Contains(c.PurchaseId))
+                .Select(c => (DateTime?)c.PurchaseDate)
+                .Max() ?? date;
+        }
+
         // The summary sheet prints the account's own name and nothing else, even when the blocks
         // carry several different names: a certificate is signed artwork, not a roll of sponsors,
         // and "& 2 ander" reads as a typo on it. Someone wanting a particular person's name on the
         // sheet shares that block instead, which the picker offers.
-        return new PublicCertificate(summaryName, ShareCopy.DisplayName(user.FirstName), squares.Select(s => s.Id).ToList(), date);
+        return new PublicCertificate(
+            summaryName, ShareCopy.DisplayName(user.FirstName), squares.Select(s => s.Id).ToList(), date,
+            squares.Where(s => pioneer.Contains(s.Id)).Select(s => s.Id).ToList(), pioneerDate);
     }
 
     /// <summary>The day one block was bought, for the sheet's date row.</summary>
@@ -170,5 +197,13 @@ public class ShareLinkService
 
     public readonly record struct PublicShare(string FirstName, int MeterCount, string Token);
 
-    public record PublicCertificate(string Name, string FirstName, IReadOnlyList<int> Blocks, DateTime? PurchaseDate);
+    /// <param name="PioneerBlockIds">The blocks among <paramref name="Blocks"/> that print on the pioneer plate.</param>
+    /// <param name="PioneerPurchaseDate">The date a pioneer summary sheet carries, when there is one.</param>
+    public record PublicCertificate(
+        string Name,
+        string FirstName,
+        IReadOnlyList<int> Blocks,
+        DateTime? PurchaseDate,
+        IReadOnlyList<int> PioneerBlockIds,
+        DateTime? PioneerPurchaseDate);
 }

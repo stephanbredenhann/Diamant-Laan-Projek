@@ -55,6 +55,38 @@ const MAX_BODY_HEIGHT = 150;
 const MIN_BODY_FIT = 0.55;
 const BODY_LINE_HEIGHT = 1.4;
 
+/** Where the standard plate's own artwork resumes under the fill-in band: the signature row. */
+const SIGNATURE_ROW = 889;
+
+/**
+ * The pioneer plate ("Padbou pionier", for every block bought while the fund stood at or under
+ * its first million) is the same artwork with the layout pulled up to make room for a gold seal
+ * between the fill-in band and the signatures. Its geometry was measured off the export rather
+ * than read from Canva, by scanning the plate for rows of ink and scaling them to the 1171.64
+ * sheet (the export is 1355x2000, the same aspect as the standard one):
+ *
+ *   "Hiermee word bevestig dat"   standard y 611.1-630.0   pioneer y 441.1-459.3
+ *   the seal                      —                        pioneer y 684.8-865.3
+ *   signature row                 standard y 906.3         pioneer y 906.3
+ *
+ * The line every field hangs from moved up by 170, so the name and the block sentence keep their
+ * exact distance below it. Only the date has to move independently: its standard slot is where
+ * the seal now sits, so it is tucked in just above the seal instead.
+ */
+const PIONEER_SHIFT = 170;
+const PIONEER_NAME_BOX = { ...NAME_BOX, top: NAME_BOX.top - PIONEER_SHIFT };
+const PIONEER_BODY_BOX = { ...BODY_BOX, top: BODY_BOX.top - PIONEER_SHIFT };
+const PIONEER_DATE_BOX = { ...DATE_BOX, top: 640 };
+/** The seal's top edge, the first artwork under the pioneer plate's fill-in band. */
+const SEAL_TOP = 684.8;
+/**
+ * The band between the block sentence's top (523.51) and the date (640) is much shorter than the
+ * standard plate's, so the body's ceiling is too: it stops 12 short of the date's line box, and a
+ * long list shrinks further than on the standard sheet before it gives up.
+ */
+const PIONEER_MAX_BODY_HEIGHT = 104;
+const PIONEER_MIN_BODY_FIT = 0.4;
+
 /** Runs this short read better spelled out ("5, 6, 7") than collapsed into a range ("5-7"). */
 const MAX_RUN_AS_LIST = 3;
 
@@ -73,9 +105,42 @@ const MAANDE = [
  */
 const PRINT_PLATE_URL = 'sertifikaat-plaat-druk.jpg';
 
+/**
+ * The pioneer plate's print copy. The only source so far is a 1355px-wide export, so this is that
+ * export as-is (about 165dpi across the 210mm page), not upscaled: upscaling adds bytes, not
+ * detail. When a full-resolution export arrives (2480px across, like the standard plate), drop it
+ * in over this one file; nothing else changes, since every position here is a fraction of the sheet.
+ */
+const PIONEER_PRINT_PLATE_URL = 'sertifikaat-pionier-druk.jpg';
+
 /** The export sheet's fixed pixel box, mirrored from `.cert-sheet--export` in the styles below. */
 const EXPORT_W = 794;
 const EXPORT_H = 1172;
+
+type Box = { left: number; top: number; width: number; fontSize: number };
+
+/** Which plate a sheet prints on. Chosen per block, from the flag the API sends with each one. */
+export type CertificateDesign = 'standaard' | 'pionier';
+
+/** Everything that differs between the two plates. The text, fonts and colours do not. */
+export interface CertificateGeometry {
+  /** The on-screen plate, sized for the browser. */
+  plate: string;
+  /** The plate the PDF embeds, byte for byte. */
+  printPlate: string;
+  nameBox: Box & { lineHeight: number };
+  bodyBox: Box;
+  dateBox: Box;
+  maxBodyHeight: number;
+  minBodyFit: number;
+  /** The first of the plate's own artwork below the fill-in band, which the band must stay above. */
+  floor: number;
+  /** The text strip, as fractions of the sheet. */
+  band: { top: number; height: number };
+  /** The strip in export pixels. Both the crop and its PDF placement read these, so they agree. */
+  bandTopPx: number;
+  bandHPx: number;
+}
 
 /**
  * Only the strip holding the three live fields is kept from the capture. Cropping is what keeps
@@ -83,20 +148,46 @@ const EXPORT_H = 1172;
  * and a full sheet at this scale is 8M of them against the strip's 1.6M. The bounds are derived
  * from the field boxes, not typed in, so re-deriving the geometry moves the strip with it: half a
  * name line of headroom above for Callstories' ascenders, and the lower of the two fields' floors
- * below. It has to stay clear of the signature row at y 889, which the spec checks.
+ * below. It has to stay clear of the plate's artwork below the band (the signature row at y 889,
+ * or the pioneer seal), which the spec checks.
  */
-const TEXT_BAND_TOP = NAME_BOX.top - NAME_BOX.lineHeight / 2;
-const TEXT_BAND_BOTTOM = Math.max(BODY_BOX.top + MAX_BODY_HEIGHT, DATE_BOX.top + DATE_BOX.fontSize * 2);
+function geometry(g: Omit<CertificateGeometry, 'band' | 'bandTopPx' | 'bandHPx'>): CertificateGeometry {
+  const top = g.nameBox.top - g.nameBox.lineHeight / 2;
+  const bottom = Math.max(g.bodyBox.top + g.maxBodyHeight, g.dateBox.top + g.dateBox.fontSize * 2);
+  const band = { top: top / SHEET_H, height: (bottom - top) / SHEET_H };
+  return {
+    ...g,
+    band,
+    bandTopPx: Math.round(band.top * EXPORT_H),
+    bandHPx: Math.round(band.height * EXPORT_H),
+  };
+}
 
-/** Held as fractions of the sheet, the same units the fields are positioned in. */
-export const TEXT_BAND = {
-  top: TEXT_BAND_TOP / SHEET_H,
-  height: (TEXT_BAND_BOTTOM - TEXT_BAND_TOP) / SHEET_H,
+export const CERTIFICATE_DESIGNS: Record<CertificateDesign, CertificateGeometry> = {
+  standaard: geometry({
+    plate: 'sertifikaat-agtergrond.jpg',
+    printPlate: PRINT_PLATE_URL,
+    nameBox: NAME_BOX,
+    bodyBox: BODY_BOX,
+    dateBox: DATE_BOX,
+    maxBodyHeight: MAX_BODY_HEIGHT,
+    minBodyFit: MIN_BODY_FIT,
+    floor: SIGNATURE_ROW,
+  }),
+  pionier: geometry({
+    plate: 'sertifikaat-pionier.jpg',
+    printPlate: PIONEER_PRINT_PLATE_URL,
+    nameBox: PIONEER_NAME_BOX,
+    bodyBox: PIONEER_BODY_BOX,
+    dateBox: PIONEER_DATE_BOX,
+    maxBodyHeight: PIONEER_MAX_BODY_HEIGHT,
+    minBodyFit: PIONEER_MIN_BODY_FIT,
+    floor: SEAL_TOP,
+  }),
 };
 
-/** The strip in export pixels. Both the crop and its PDF placement read these, so they agree. */
-const BAND_TOP_PX = Math.round(TEXT_BAND.top * EXPORT_H);
-const BAND_H_PX = Math.round(TEXT_BAND.height * EXPORT_H);
+/** The standard plate's strip, held as fractions of the sheet. */
+export const TEXT_BAND = CERTIFICATE_DESIGNS.standaard.band;
 
 /**
  * 3 puts the text on the page at 288dpi, alongside the plate's 300. Higher is pointless in print
@@ -118,6 +209,19 @@ const pctH = (v: number) => `${(v / SHEET_H) * 100}%`;
 /** Sizes that scale with the sheet are expressed against its rendered width. */
 const sheetUnits = (v: number) => `calc(var(--sheet-w, 100%) * ${v / SHEET_W})`;
 
+type FieldStyle = { left: string; top: string; width: string };
+type SheetLayout = { name: FieldStyle; body: FieldStyle; date: FieldStyle };
+
+const fieldStyle = (box: Box): FieldStyle => ({
+  left: pctW(box.left),
+  top: pctH(box.top),
+  width: pctW(box.width),
+});
+
+function layoutFor(g: CertificateGeometry): SheetLayout {
+  return { name: fieldStyle(g.nameBox), body: fieldStyle(g.bodyBox), date: fieldStyle(g.dateBox) };
+}
+
 export interface CertificateSquare {
   id: number;
   status?: number;
@@ -125,13 +229,29 @@ export interface CertificateSquare {
   purchaseDate?: string;
   /** Name for this block's own sheet. Absent means it prints the summary name. */
   ownerName?: string;
+  /**
+   * Bought before the fund's first million, so its sheets print on the pioneer plate. Decided per
+   * block by the API (PioneerBlocks.cs); absent means the standard plate.
+   */
+  isPioneer?: boolean;
 }
 
+/**
+ * One sheet: a block number, or a summary. A set whose blocks are all on one plate has the one
+ * 'summary'. A set holding both kinds is split, since a sheet has one plate: 'summary-pionier'
+ * carries the pioneer blocks and 'summary' the rest.
+ */
+export type CertificateSheetTarget = 'summary' | 'summary-pionier' | number;
+
 /** What a single sheet shows. Both the per-block and the summary certificate reduce to this. */
-interface SheetView {
+export interface SheetView {
   blocks: string;
   count: number;
   date?: string;
+  /** The plate it prints on. Absent reads as the standard one. */
+  design?: CertificateDesign;
+  /** Which sheet this is, for its filename and its fitted body size. */
+  target?: CertificateSheetTarget;
 }
 
 /**
@@ -171,10 +291,13 @@ export function sanitizeFilename(name: string): string {
  * 1.5MB of artwork, so fetching it per sheet would re-download it a dozen times over. Handed to
  * jsPDF as JPEG bytes, which it stores without decoding or re-encoding them.
  */
-let platePromise: Promise<string> | undefined;
+const platePromises = new Map<string, Promise<string>>();
 
-function printPlate(): Promise<string> {
-  platePromise ??= fetch(PRINT_PLATE_URL)
+function printPlate(url: string): Promise<string> {
+  let promise = platePromises.get(url);
+  if (promise) return promise;
+
+  promise = fetch(url)
     .then(res => {
       if (!res.ok) throw new Error(`Kon nie die sertifikaat-plaat laai nie (${res.status}).`);
       return res.blob();
@@ -187,11 +310,12 @@ function printPlate(): Promise<string> {
     }))
     // A failed fetch must not be cached, or the retry the download button offers can never succeed.
     .catch(err => {
-      platePromise = undefined;
+      platePromises.delete(url);
       throw err;
     });
 
-  return platePromise;
+  platePromises.set(url, promise);
+  return promise;
 }
 
 /** One finished sheet: the PDF bytes and the filename it should be saved or zipped under. */
@@ -225,18 +349,30 @@ export interface CertificateSheetPdf {
       }
 
       <div class="cert-sheet" #previewSheet>
-        <img class="cert-bg" src="sertifikaat-agtergrond.jpg" alt="" #bgImage />
+        <img class="cert-bg" [src]="geometryOf(previewView).plate" alt="" #bgImage />
         @if (bladNaam && previewView; as view) {
-          <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-               [style.width]="nameStyle.width">{{ bladNaam }}</div>
-          <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
-               [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
+          @let lay = layoutOf(view);
+          <div class="cert-name" [style.left]="lay.name.left" [style.top]="lay.name.top"
+               [style.width]="lay.name.width">{{ bladNaam }}</div>
+          <div class="cert-body" [style.left]="lay.body.left" [style.top]="lay.body.top"
+               [style.width]="lay.body.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
           @if (dateText(view); as datum) {
-            <div class="cert-date" [style.left]="dateStyle.left" [style.top]="dateStyle.top"
-                 [style.width]="dateStyle.width">{{ datum }}</div>
+            <div class="cert-date" [style.left]="lay.date.left" [style.top]="lay.date.top"
+                 [style.width]="lay.date.width">{{ datum }}</div>
           }
         }
       </div>
+
+      <!-- Blocks bought on both sides of the first million get two summaries, one per plate. -->
+      @if (mode === 'summary' && summaryTargets().length > 1) {
+        <div class="sheet-nav">
+          <button type="button" class="nav-btn" [disabled]="summaryIndex === 0"
+                  (click)="stepPreview(-1)" [attr.aria-label]="'Vorige sertifikaat' | t">‹</button>
+          <span class="nav-label">@if (previewTarget === 'summary-pionier') {<span>{{ 'Pionier-opsomming' | t }}</span>} @else {<span>{{ 'Opsomming' | t }}</span>}, {{ summaryIndex + 1 }} {{ 'van' | t }} {{ summaryTargets().length }}</span>
+          <button type="button" class="nav-btn" [disabled]="summaryIndex === summaryTargets().length - 1"
+                  (click)="stepPreview(1)" [attr.aria-label]="'Volgende sertifikaat' | t">›</button>
+        </div>
+      }
 
       @if (mode === 'block' && squares.length > 1) {
         <div class="sheet-nav">
@@ -279,13 +415,14 @@ export interface CertificateSheetPdf {
     -->
     <div class="cert-sheet cert-sheet--export" #exportSheet aria-hidden="true">
       @if (exportView; as view) {
-        <div class="cert-name" [style.left]="nameStyle.left" [style.top]="nameStyle.top"
-             [style.width]="nameStyle.width">{{ exportName }}</div>
-        <div class="cert-body" [style.left]="bodyStyle.left" [style.top]="bodyStyle.top"
-             [style.width]="bodyStyle.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
+        @let lay = layoutOf(view);
+        <div class="cert-name" [style.left]="lay.name.left" [style.top]="lay.name.top"
+             [style.width]="lay.name.width">{{ exportName }}</div>
+        <div class="cert-body" [style.left]="lay.body.left" [style.top]="lay.body.top"
+             [style.width]="lay.body.width" [style.fontSize]="bodyFontSize(view)">{{ bodyText(view) }}</div>
         @if (dateText(view); as datum) {
-          <div class="cert-date" [style.left]="dateStyle.left" [style.top]="dateStyle.top"
-               [style.width]="dateStyle.width">{{ datum }}</div>
+          <div class="cert-date" [style.left]="lay.date.left" [style.top]="lay.date.top"
+               [style.width]="lay.date.width">{{ datum }}</div>
         }
       }
     </div>
@@ -448,37 +585,44 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   downloading = false;
   downloadError = '';
   previewIndex = 0;
+  /** Which summary is on screen, when the set is split across both plates. */
+  summaryIndex = 0;
   exportView?: SheetView;
   /** The name on the sheet currently being exported, which need not be the one on screen. */
   exportName = '';
 
-  private summaryBodyFit = 1;
+  /** Each summary's fitted body size, keyed by its target. Per-block sheets never shrink. */
+  private summaryBodyFits = new Map<CertificateSheetTarget, number>();
   private viewReady = false;
 
-  readonly nameStyle = {
-    left: pctW(NAME_BOX.left),
-    top: pctH(NAME_BOX.top),
-    width: pctW(NAME_BOX.width),
+  /** The three fields' positions on each plate, as percentages of the sheet. */
+  readonly layouts: Record<CertificateDesign, SheetLayout> = {
+    standaard: layoutFor(CERTIFICATE_DESIGNS.standaard),
+    pionier: layoutFor(CERTIFICATE_DESIGNS.pionier),
   };
 
-  readonly bodyStyle = {
-    left: pctW(BODY_BOX.left),
-    top: pctH(BODY_BOX.top),
-    width: pctW(BODY_BOX.width),
-  };
+  layoutOf(view?: SheetView): SheetLayout {
+    return this.layouts[view?.design ?? 'standaard'];
+  }
 
-  readonly dateStyle = {
-    left: pctW(DATE_BOX.left),
-    top: pctH(DATE_BOX.top),
-    width: pctW(DATE_BOX.width),
-  };
+  geometryOf(view?: SheetView): CertificateGeometry {
+    return CERTIFICATE_DESIGNS[view?.design ?? 'standaard'];
+  }
 
   get previewSquare(): CertificateSquare | undefined {
     return this.squares[this.previewIndex];
   }
 
+  /** The sheet on screen, as a target sheetPdf() would take. */
+  get previewTarget(): CertificateSheetTarget | undefined {
+    if (this.mode === 'block') return this.previewSquare?.id;
+    const targets = this.summaryTargets();
+    return targets[Math.min(this.summaryIndex, targets.length - 1)];
+  }
+
   get previewView(): SheetView | undefined {
-    return this.mode === 'summary' ? this.summaryView() : this.blockView(this.previewSquare);
+    if (this.mode === 'block') return this.blockView(this.previewSquare);
+    return this.summaryView(this.previewTarget === 'summary-pionier' ? 'summary-pionier' : 'summary');
   }
 
   /**
@@ -517,7 +661,10 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['squares'] || changes['lockedMode']) {
-      if (changes['squares']) this.previewIndex = 0;
+      if (changes['squares']) {
+        this.previewIndex = 0;
+        this.summaryIndex = 0;
+      }
       // A lone block has nothing to summarise, so there is no choice to offer.
       this.mode = this.lockedMode ?? (this.squares.length > 1 ? 'summary' : 'block');
     }
@@ -531,7 +678,14 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     this.resizeObserver?.disconnect();
   }
 
+  /** Pages through whatever is on screen: the blocks, or a split set's two summaries. */
   stepPreview(delta: number) {
+    if (this.mode === 'summary') {
+      const next = this.summaryIndex + delta;
+      if (next >= 0 && next < this.summaryTargets().length) this.summaryIndex = next;
+      return;
+    }
+
     const next = this.previewIndex + delta;
     if (next >= 0 && next < this.squares.length) {
       this.previewIndex = next;
@@ -551,10 +705,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     return `${nommer} ${view.blocks} ter ondersteuning van die bou van die Oewerpad in Orania geborg het.`;
   }
 
-  /** Only the summary can outgrow the design's sentence, so only it is ever scaled down. */
+  /** Only a summary can outgrow the design's sentence, so only it is ever scaled down. */
   bodyFontSize(view: SheetView): string {
-    const fit = view.count > 1 ? this.summaryBodyFit : 1;
-    return sheetUnits(BODY_BOX.fontSize * fit);
+    const isSummary = view.target === 'summary' || view.target === 'summary-pionier';
+    const fit = isSummary && view.count > 1 ? (this.summaryBodyFits.get(view.target!) ?? 1) : 1;
+    return sheetUnits(this.geometryOf(view).bodyBox.fontSize * fit);
   }
 
   /**
@@ -576,41 +731,79 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
 
   private blockView(square?: CertificateSquare): SheetView | undefined {
     if (!square) return undefined;
-    return { blocks: String(square.id), count: 1, date: square.purchaseDate };
+    return {
+      blocks: String(square.id),
+      count: 1,
+      date: square.purchaseDate,
+      design: square.isPioneer ? 'pionier' : 'standaard',
+      target: square.id,
+    };
   }
 
-  /** The summary carries every block and, as agreed, the date of the most recent purchase. */
-  private summaryView(): SheetView {
-    const dates = this.squares
+  /** The blocks that print on the pioneer plate, and the rest. */
+  private split(): { pioneer: CertificateSquare[]; standard: CertificateSquare[] } {
+    return {
+      pioneer: this.squares.filter(s => s.isPioneer),
+      standard: this.squares.filter(s => !s.isPioneer),
+    };
+  }
+
+  /**
+   * The summary sheets this set has. One, normally, on whichever plate its blocks share. A set
+   * with blocks on both sides of the first million gets two, since a sheet has one plate: the
+   * pioneer blocks' summary first, as the older purchase, then the rest.
+   */
+  summaryTargets(): ('summary' | 'summary-pionier')[] {
+    const { pioneer, standard } = this.split();
+    return pioneer.length > 0 && standard.length > 0 ? ['summary-pionier', 'summary'] : ['summary'];
+  }
+
+  /**
+   * A summary carries its blocks and, as agreed, the date of the most recent purchase among them.
+   * Unsplit, 'summary' is every block, on the plate they share. Split, 'summary-pionier' is the
+   * pioneer blocks and 'summary' the others, each dated from its own blocks.
+   */
+  private summaryView(target: 'summary' | 'summary-pionier'): SheetView {
+    const { pioneer, standard } = this.split();
+    const isSplit = pioneer.length > 0 && standard.length > 0;
+
+    let squares = this.squares;
+    if (isSplit) squares = target === 'summary-pionier' ? pioneer : standard;
+    const allPioneer = squares.length > 0 && squares.every(s => s.isPioneer);
+
+    const dates = squares
       .map(s => s.purchaseDate)
       .filter((d): d is string => !!d)
       .sort();
 
     return {
-      blocks: formatBlockRanges(this.squares.map(s => s.id)),
-      count: this.squares.length,
+      blocks: formatBlockRanges(squares.map(s => s.id)),
+      count: squares.length,
       date: dates[dates.length - 1],
+      design: allPioneer ? 'pionier' : 'standaard',
+      target: isSplit ? target : 'summary',
     };
   }
 
   /**
-   * Long block lists have to be shrunk to stay clear of the signatures. Wrapping is counted here
-   * rather than measured off the DOM so the answer is the same on both sheets; the count is
+   * Long block lists have to be shrunk to stay clear of the plate's artwork below them (the
+   * signatures, or the pioneer seal), so the ceiling is the active plate's. Wrapping is counted
+   * here rather than measured off the DOM so the answer is the same on both sheets; the count is
    * conservative, since the browser can also break after the hyphen in a range and we do not.
    */
-  private computeBodyFit(text: string): number {
+  private computeBodyFit(text: string, g: CertificateGeometry): number {
     const ctx = document.createElement('canvas').getContext('2d');
     if (!ctx) return 1;
 
-    for (let fit = 1; fit >= MIN_BODY_FIT; fit -= 0.04) {
-      const size = BODY_BOX.fontSize * fit;
+    for (let fit = 1; fit >= g.minBodyFit; fit -= 0.04) {
+      const size = g.bodyBox.fontSize * fit;
       ctx.font = `400 ${size}px ${BODY_FONT}`;
 
       let lines = 1;
       let current = '';
       for (const word of text.split(' ')) {
         const candidate = current ? `${current} ${word}` : word;
-        if (current && ctx.measureText(candidate).width > BODY_BOX.width) {
+        if (current && ctx.measureText(candidate).width > g.bodyBox.width) {
           lines++;
           current = word;
         } else {
@@ -618,10 +811,10 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
         }
       }
 
-      if (lines * size * BODY_LINE_HEIGHT <= MAX_BODY_HEIGHT) return fit;
+      if (lines * size * BODY_LINE_HEIGHT <= g.maxBodyHeight) return fit;
     }
 
-    return MIN_BODY_FIT;
+    return g.minBodyFit;
   }
 
   /**
@@ -637,7 +830,11 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     ]).catch(() => undefined);
     await document.fonts.ready;
 
-    this.summaryBodyFit = this.computeBodyFit(this.bodyText(this.summaryView()));
+    this.summaryBodyFits.clear();
+    for (const target of this.summaryTargets()) {
+      const view = this.summaryView(target);
+      this.summaryBodyFits.set(target, this.computeBodyFit(this.bodyText(view), this.geometryOf(view)));
+    }
     this.fitName(this.bladNaam);
 
     if (this.viewReady) {
@@ -673,7 +870,7 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
     this.downloadError = '';
 
     try {
-      const pdf = await this.pdfFrom(await this.renderTextLayer(view, this.bladNaam));
+      const pdf = await this.pdfFrom(await this.renderTextLayer(view, this.bladNaam), view);
       pdf.save(this.filenameFor(view, this.bladNaam));
     } catch {
       this.downloadError = 'Kon nie PDF genereer nie. Probeer asseblief weer.';
@@ -683,17 +880,17 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   /**
-   * One sheet as PDF bytes, for a caller taking several at once. `target` is a block number, or
-   * 'summary' for the one sheet carrying every block. The preview is left as it was, so this can
-   * be called in a loop against an off-screen card without the page flickering through the sheets.
+   * One sheet as PDF bytes, for a caller taking several at once. `target` is a block number, or a
+   * summary (see sheetTargets). The preview is left as it was, so this can be called in a loop
+   * against an off-screen card without the page flickering through the sheets.
    */
-  async sheetPdf(target: 'summary' | number): Promise<CertificateSheetPdf> {
+  async sheetPdf(target: CertificateSheetTarget): Promise<CertificateSheetPdf> {
     const view = this.viewFor(target);
     if (!view) throw new Error(`Geen sertifikaat vir ${target}.`);
 
     const name = this.nameFor(target);
     try {
-      const pdf = await this.pdfFrom(await this.renderTextLayer(view, name));
+      const pdf = await this.pdfFrom(await this.renderTextLayer(view, name), view);
       return { filename: this.filenameFor(view, name), blob: pdf.output('blob') };
     } finally {
       this.fitName(this.bladNaam);
@@ -701,28 +898,29 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   /**
-   * Every sheet this account would get: the summary first, then one per block. A lone block has
-   * nothing to summarise, so it is the only sheet there is.
+   * Every sheet this account would get: the summary first (two, for a set split across both
+   * plates), then one per block. A lone block has nothing to summarise, so it is the only sheet.
    */
-  sheetTargets(): ('summary' | number)[] {
+  sheetTargets(): CertificateSheetTarget[] {
     const blocks = this.squares.map(s => s.id);
-    return blocks.length > 1 ? ['summary', ...blocks] : blocks;
+    return blocks.length > 1 ? [...this.summaryTargets(), ...blocks] : blocks;
   }
 
   /** What one target's sheet would be called, for a chooser that lists them before rendering. */
-  sheetLabel(target: 'summary' | number): string {
+  sheetLabel(target: CertificateSheetTarget): string {
+    if (target === 'summary-pionier') return 'Opsomming (pionier)';
     return target === 'summary' ? 'Opsomming' : `Blok ${target}`;
   }
 
-  private viewFor(target: 'summary' | number): SheetView | undefined {
-    return target === 'summary'
-      ? this.summaryView()
-      : this.blockView(this.squares.find(s => s.id === target));
+  viewFor(target: CertificateSheetTarget): SheetView | undefined {
+    return typeof target === 'number'
+      ? this.blockView(this.squares.find(s => s.id === target))
+      : this.summaryView(target);
   }
 
   /** A block may carry its own name; the summary sheet always prints the one shared name. */
-  private nameFor(target: 'summary' | number): string {
-    if (target === 'summary') return this.ownerName;
+  private nameFor(target: CertificateSheetTarget): string {
+    if (typeof target !== 'number') return this.ownerName;
     return this.squares.find(s => s.id === target)?.ownerName?.trim() || this.ownerName;
   }
 
@@ -748,35 +946,42 @@ export class CertificateCardComponent implements AfterViewInit, OnChanges, OnDes
       backgroundColor: null,
     });
 
+    const { bandTopPx, bandHPx } = this.geometryOf(view);
     const band = document.createElement('canvas');
     band.width = sheet.width;
-    band.height = BAND_H_PX * TEXT_LAYER_SCALE;
-    band.getContext('2d')?.drawImage(sheet, 0, -BAND_TOP_PX * TEXT_LAYER_SCALE);
+    band.height = bandHPx * TEXT_LAYER_SCALE;
+    band.getContext('2d')?.drawImage(sheet, 0, -bandTopPx * TEXT_LAYER_SCALE);
 
     return band.toDataURL('image/png');
   }
 
   /** The plate, then the text strip over it at the same fraction of the page it was cropped from. */
-  private async pdfFrom(textLayer: string) {
-    const [{ jsPDF }, plate] = await Promise.all([import('jspdf'), printPlate()]);
+  private async pdfFrom(textLayer: string, view: SheetView) {
+    const g = this.geometryOf(view);
+    const [{ jsPDF }, plate] = await Promise.all([import('jspdf'), printPlate(g.printPlate)]);
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [PDF_WIDTH_MM, PDF_HEIGHT_MM] });
 
-    pdf.addImage(plate, 'JPEG', 0, 0, PDF_WIDTH_MM, PDF_HEIGHT_MM, 'plaat');
+    pdf.addImage(plate, 'JPEG', 0, 0, PDF_WIDTH_MM, PDF_HEIGHT_MM, `plaat-${view.design ?? 'standaard'}`);
     pdf.addImage(
       textLayer,
       'PNG',
       0,
-      (BAND_TOP_PX / EXPORT_H) * PDF_HEIGHT_MM,
+      (g.bandTopPx / EXPORT_H) * PDF_HEIGHT_MM,
       PDF_WIDTH_MM,
-      (BAND_H_PX / EXPORT_H) * PDF_HEIGHT_MM,
+      (g.bandHPx / EXPORT_H) * PDF_HEIGHT_MM,
     );
 
     return pdf;
   }
 
-  private filenameFor(view: SheetView, sheetName: string): string {
+  /**
+   * The summary keeps its old name, so an unsplit set saves exactly as it always has; only the
+   * pioneer half of a split set needs a name of its own.
+   */
+  filenameFor(view: SheetView, sheetName: string): string {
     const owner = this.sanitizeFilename(sheetName);
-    return view.count > 1
+    if (view.target === 'summary-pionier') return `sertifikaat-${owner}-opsomming-pionier.pdf`;
+    return view.target === 'summary' || (view.target === undefined && view.count > 1)
       ? `sertifikaat-${owner}-opsomming.pdf`
       : `sertifikaat-${owner}-blok-${view.blocks}.pdf`;
   }

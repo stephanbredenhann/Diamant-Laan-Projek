@@ -51,6 +51,13 @@ public class Purchase
     /// <summary>Set once the claim email has been queued, so it is never sent twice.</summary>
     public DateTime? ClaimEmailSentAt { get; set; }
 
+    /// <summary>
+    /// Key the admin's browser generates for a large donation, so a double click or a retried
+    /// request finds this purchase again instead of selling another thousand blocks. Null for
+    /// every other purchase; unique otherwise.
+    /// </summary>
+    public Guid? IdempotencyKey { get; set; }
+
     [Timestamp]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 

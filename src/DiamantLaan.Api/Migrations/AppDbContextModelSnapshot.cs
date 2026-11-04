@@ -286,6 +286,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<string>("GuestTokenHash")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("IdempotencyKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PayFastPaymentId")
                         .HasColumnType("TEXT");
 
@@ -320,6 +323,9 @@ namespace DiamantLaan.Api.Migrations
                     b.HasIndex("ClaimTokenHash");
 
                     b.HasIndex("GuestTokenHash");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 

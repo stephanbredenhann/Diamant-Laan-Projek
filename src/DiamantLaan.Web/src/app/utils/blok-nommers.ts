@@ -23,8 +23,14 @@ export interface BlokNommersUitslag {
  * Reads "1-199, 250, 300 - 310" into a sorted, deduped list of block numbers.
  *
  * Commas, spaces and newlines all separate. A hyphen inside a piece makes it a range.
+ * `maksBlokke` defaults to the Reserveer page's cap; the Groot skenking page passes its own,
+ * since one donation can cover thousands of blocks.
  */
-export function ontleedBlokNommers(teks: string, maxId: number): BlokNommersUitslag {
+export function ontleedBlokNommers(
+  teks: string,
+  maxId: number,
+  maksBlokke = MAX_BLOKKE_PER_SLAG
+): BlokNommersUitslag {
   // Collapse spaces around a hyphen first, so "300 - 302" stays one range.
   const stukke = teks.replace(/\s*-\s*/g, '-').split(/[\s,]+/).filter(s => s.length > 0);
   if (stukke.length === 0) return { ids: [], fout: 'Voer eers bloknommers in.' };
@@ -45,11 +51,11 @@ export function ontleedBlokNommers(teks: string, maxId: number): BlokNommersUits
     if (van > tot) {
       return { ids: [], fout: `"${stuk}" loop agteruit. Skryf die kleiner nommer eerste.` };
     }
-    if (tot - van + 1 > MAX_BLOKKE_PER_SLAG) return teVeel();
+    if (tot - van + 1 > maksBlokke) return teVeel(maksBlokke);
 
     for (let id = van; id <= tot; id++) {
       gevind.add(id);
-      if (gevind.size > MAX_BLOKKE_PER_SLAG) return teVeel();
+      if (gevind.size > maksBlokke) return teVeel(maksBlokke);
     }
   }
 
@@ -83,6 +89,6 @@ function fout(stuk: string): BlokNommersUitslag {
   return { ids: [], fout: `"${stuk}" is nie ’n geldige bloknommer of reeks nie.` };
 }
 
-function teVeel(): BlokNommersUitslag {
-  return { ids: [], fout: `Hoogstens ${MAX_BLOKKE_PER_SLAG} blokke op ’n slag. Deel dit op in kleiner stukke.` };
+function teVeel(maks: number): BlokNommersUitslag {
+  return { ids: [], fout: `Hoogstens ${maks} blokke op ’n slag. Deel dit op in kleiner stukke.` };
 }

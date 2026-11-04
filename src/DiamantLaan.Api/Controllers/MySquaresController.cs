@@ -30,7 +30,7 @@ public class MySquaresController : ControllerBase
         var squares = await _db.Squares
             .Where(s => s.OwnerId == userId)
             .OrderBy(s => s.Id)
-            .Select(s => new SquareDto
+            .Select(s => new MySquareDto
             {
                 Id = s.Id,
                 Status = s.Status,
@@ -38,6 +38,12 @@ public class MySquaresController : ControllerBase
                 ImageCount = _db.ProgressImageSquares.Count(pis => pis.SquareId == s.Id)
             })
             .ToListAsync();
+
+        // Which certificate plate each block prints on: the pioneer one for blocks bought before
+        // the first million, the standard one for the rest. Decided per block, see PioneerBlocks.
+        var pioneer = await PioneerBlocks.AmongAsync(_db, squares.Select(s => s.Id));
+        foreach (var square in squares)
+            square.IsPioneer = pioneer.Contains(square.Id);
 
         return Ok(squares);
     }

@@ -9,6 +9,9 @@ interface PublicCertificate {
   firstName: string;
   blocks: number[];
   purchaseDate?: string;
+  /** The blocks that print on the pioneer plate, and the date their own summary carries. */
+  pioneerBlocks?: number[];
+  pioneerPurchaseDate?: string;
 }
 
 /**
@@ -94,7 +97,11 @@ export class DeelComponent implements OnInit {
       next: cert => {
         this.cert = cert;
         // The server has already resolved the name and the blocks, so the sheet is one shared date.
-        this.squares = cert.blocks.map(id => ({ id, purchaseDate: cert.purchaseDate }));
+        // Blocks bought before the first million carry their own, for their own pioneer summary.
+        const pioneer = new Set(cert.pioneerBlocks ?? []);
+        this.squares = cert.blocks.map(id => pioneer.has(id)
+          ? { id, isPioneer: true, purchaseDate: cert.pioneerPurchaseDate ?? cert.purchaseDate }
+          : { id, purchaseDate: cert.purchaseDate });
         this.laai = false;
       },
       error: () => { this.laai = false; }

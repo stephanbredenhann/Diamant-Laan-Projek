@@ -570,7 +570,7 @@ export class PaymentCompleteComponent implements OnInit {
     this.amount = p.amount;
     this.hasEmail = !!p.email;
     this.squareCount = p.squares.length;
-    this.certificateSquares = p.squares.map(id => ({ id, purchaseDate: p.purchaseDate }));
+    this.certificateSquares = p.squares.map(id => ({ id, purchaseDate: p.purchaseDate, isPioneer: p.isPioneer }));
     this.certificateName = p.certificateName ?? '';
     // Prefilled from the server so someone returning through the follow-up email sees the choice
     // they already made rather than an empty form.
