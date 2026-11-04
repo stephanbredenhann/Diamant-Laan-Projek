@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using DiamantLaan.Api.Data;
 using DiamantLaan.Api.Models;
+using DiamantLaan.Api.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiamantLaan.Api.Services;
@@ -138,7 +139,7 @@ public class ShareLinkService
         }
 
         var date = await _db.Purchases.AsNoTracking()
-            .Where(p => p.UserId == user.Id)
+            .Where(p => p.UserId == user.Id && p.PaymentStatus == PaymentStatus.Confirmed)
             .OrderByDescending(p => p.PurchaseDate)
             .Select(p => (DateTime?)p.PurchaseDate)
             .FirstOrDefaultAsync(ct);
@@ -153,7 +154,9 @@ public class ShareLinkService
     /// <summary>The day one block was bought, for the sheet's date row.</summary>
     private Task<DateTime?> BlockDateAsync(string userId, int squareId, CancellationToken ct) =>
         _db.PurchaseSquares.AsNoTracking()
-            .Where(ps => ps.SquareId == squareId && ps.Purchase.UserId == userId)
+            .Where(ps => ps.SquareId == squareId
+                && ps.Purchase.UserId == userId
+                && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
             .OrderBy(ps => ps.Purchase.PurchaseDate)
             .Select(ps => (DateTime?)ps.Purchase.PurchaseDate)
             .FirstOrDefaultAsync(ct);

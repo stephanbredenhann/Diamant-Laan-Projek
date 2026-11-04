@@ -83,6 +83,29 @@ public class AdminCertificateSummaryTests
     }
 
     [Fact]
+    public async Task GetCertificateSummary_IgnoresAnEarlierCheckoutThatWasNeverPaid()
+    {
+        await using var db = CreateDb();
+        var buyer = new User { Id = "u1", UserName = "buyer@test.com", Email = "buyer@test.com", FirstName = "Jan", LastName = "Steyn" };
+        db.Users.Add(buyer);
+        db.Squares.Add(new Square { Id = 1305, OwnerId = buyer.Id });
+
+        // Someone held the block in a checkout two days earlier and never paid; the admin then sold
+        // it by hand. The certificate carries the day of the sale, not the day of the lapsed hold.
+        var abandoned = new Purchase { UserId = "someone-else", Amount = 500m, PaymentStatus = PaymentStatus.Cancelled, PurchaseDate = new DateTime(2026, 11, 1, 9, 0, 0, DateTimeKind.Utc) };
+        abandoned.PurchaseSquares.Add(new PurchaseSquare { SquareId = 1305 });
+        var manual = new Purchase { UserId = buyer.Id, Amount = 500m, PaymentStatus = PaymentStatus.Confirmed, PurchaseDate = new DateTime(2026, 11, 3, 9, 0, 0, DateTimeKind.Utc) };
+        manual.PurchaseSquares.Add(new PurchaseSquare { SquareId = 1305 });
+        db.Purchases.AddRange(abandoned, manual);
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await CreateController(db).GetCertificateSummary(buyer.Id));
+        var square = Json(ok).GetProperty("Squares").EnumerateArray().Single();
+
+        Assert.Equal(new DateTime(2026, 11, 3, 9, 0, 0, DateTimeKind.Utc), square.GetProperty("PurchaseDate").GetDateTime());
+    }
+
+    [Fact]
     public async Task GetCertificateSummary_NoCertificateName_FallsBackToAccountName()
     {
         await using var db = CreateDb();

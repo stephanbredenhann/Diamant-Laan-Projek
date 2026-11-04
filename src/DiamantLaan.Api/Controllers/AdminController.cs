@@ -257,8 +257,10 @@ public class AdminController : ControllerBase
         var blockNames = owned.ToDictionary(s => s.Id, s => s.CertificateName);
         var ownedIds = owned.Select(s => s.Id).ToList();
 
+        // Only paid purchases count: an abandoned checkout that once held the block is older than
+        // the sale that actually went through, and would otherwise win the earliest-date race.
         var boughtOn = await _db.PurchaseSquares
-            .Where(ps => ownedIds.Contains(ps.SquareId))
+            .Where(ps => ownedIds.Contains(ps.SquareId) && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
             .Select(ps => new { ps.SquareId, ps.Purchase.PurchaseDate })
             .ToListAsync();
 
@@ -386,6 +388,26 @@ public class AdminController : ControllerBase
 
         return Ok(transactions);
     }
+
+    /// <summary>Every purchase ever made, oldest first, as a CSV download for the books.</summary>
+    [HttpGet("transactions/export")]
+    public async Task<IActionResult> ExportTransactions()
+    {
+        var purchases = await _db.Purchases
+            .AsNoTracking()
+            .Include(p => p.User)
+            .Include(p => p.PurchaseSquares)
+                .ThenInclude(ps => ps.Stadsbouer)
+            .OrderBy(p => p.PurchaseDate)
+            .ThenBy(p => p.Id)
+            .ToListAsync();
+
+        await _audit.LogAsync(User, "ExportTransactions", $"{purchases.Count} transactions");
+
+        var fileName = $"transaksies-{DateTime.UtcNow.AddHours(2):yyyy-MM-dd}.csv";
+        return File(TransactionCsvExporter.Build(purchases), "text/csv; charset=utf-8", fileName);
+    }
+
     /// <summary>
     /// Permanently deletes a transaction, including a confirmed telefoniese aankoop, and hands its
     /// blocks back to the public pool. The admin re-enters their own password because there is no undo.

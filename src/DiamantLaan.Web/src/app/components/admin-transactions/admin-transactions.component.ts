@@ -24,6 +24,13 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
               type="text"
               [(ngModel)]="search"
               placeholder="Soek naam, e-pos, aankoop # of blok #...">
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              [disabled]="exporting"
+              (click)="exportCsv()">
+              {{ exporting ? 'Besig...' : 'Laai CSV af' }}
+            </button>
           </div>
         </div>
 
@@ -167,6 +174,7 @@ type SortKey = 'purchaseDate' | 'id' | 'userName' | 'squareCount' | 'amountPerBl
       color: var(--color-text);
       margin: 0;
     }
+    .table-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .table-actions input {
       width: 260px;
       padding: 0.5rem 0.75rem;
@@ -249,6 +257,7 @@ export class AdminTransactionsComponent implements OnInit {
   loadError = '';
   downloadError = '';
   downloadingId: number | null = null;
+  exporting = false;
   receiptData: ReceiptData | null = null;
   search = '';
   page = 0;
@@ -337,6 +346,28 @@ paymentStatusLabel(status: string): string {
   sortIcon(key: SortKey): string {
     if (this.sortKey !== key) return '↕';
     return this.sortDir === 'asc' ? '↑' : '↓';
+  }
+
+  exportCsv() {
+    if (this.exporting) return;
+    this.exporting = true;
+    this.downloadError = '';
+
+    this.admin.exportTransactionsCsv().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `transaksies-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.exporting = false;
+      },
+      error: () => {
+        this.downloadError = 'Kon nie CSV aflaai nie. Probeer asseblief weer.';
+        this.exporting = false;
+      }
+    });
   }
 
   async downloadReceipt(tx: AdminTransaction) {
