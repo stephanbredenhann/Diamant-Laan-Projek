@@ -386,6 +386,26 @@ public class AdminController : ControllerBase
 
         return Ok(transactions);
     }
+
+    /// <summary>Every purchase ever made, oldest first, as a CSV download for the books.</summary>
+    [HttpGet("transactions/export")]
+    public async Task<IActionResult> ExportTransactions()
+    {
+        var purchases = await _db.Purchases
+            .AsNoTracking()
+            .Include(p => p.User)
+            .Include(p => p.PurchaseSquares)
+                .ThenInclude(ps => ps.Stadsbouer)
+            .OrderBy(p => p.PurchaseDate)
+            .ThenBy(p => p.Id)
+            .ToListAsync();
+
+        await _audit.LogAsync(User, "ExportTransactions", $"{purchases.Count} transactions");
+
+        var fileName = $"transaksies-{DateTime.UtcNow.AddHours(2):yyyy-MM-dd}.csv";
+        return File(TransactionCsvExporter.Build(purchases), "text/csv; charset=utf-8", fileName);
+    }
+
     /// <summary>
     /// Permanently deletes a transaction, including a confirmed telefoniese aankoop, and hands its
     /// blocks back to the public pool. The admin re-enters their own password because there is no undo.

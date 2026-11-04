@@ -144,6 +144,11 @@ export class AdminService {
     });
   }
 
+  /** Every purchase ever made as a CSV file, built server-side so it carries more than the table shows. */
+  exportTransactionsCsv() {
+    return this.http.get(`/api/admin/transactions/export?_=${Date.now()}`, { responseType: 'blob' });
+  }
+
   /** Permanent: releases the blocks too. The admin's own password is re-checked server-side. */
   deleteTransaction(id: number, password: string) {
     return this.http.post(`/api/admin/transactions/${id}/delete`, { password });
