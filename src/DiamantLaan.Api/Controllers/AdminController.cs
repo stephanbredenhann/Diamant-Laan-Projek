@@ -257,8 +257,10 @@ public class AdminController : ControllerBase
         var blockNames = owned.ToDictionary(s => s.Id, s => s.CertificateName);
         var ownedIds = owned.Select(s => s.Id).ToList();
 
+        // Only paid purchases count: an abandoned checkout that once held the block is older than
+        // the sale that actually went through, and would otherwise win the earliest-date race.
         var boughtOn = await _db.PurchaseSquares
-            .Where(ps => ownedIds.Contains(ps.SquareId))
+            .Where(ps => ownedIds.Contains(ps.SquareId) && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
             .Select(ps => new { ps.SquareId, ps.Purchase.PurchaseDate })
             .ToListAsync();
 

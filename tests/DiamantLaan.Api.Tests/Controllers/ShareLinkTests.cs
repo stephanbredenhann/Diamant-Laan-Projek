@@ -184,7 +184,9 @@ public class ShareLinkTests
         var user = await SeedUserWithSquares(db, squares: 3);
         user.ShareToken = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
         user.CertificateName = "Jan van der Merwe";
-        db.Purchases.Add(new Purchase { UserId = user.Id, Amount = 1500, PurchaseDate = new DateTime(2026, 3, 4, 22, 30, 0, DateTimeKind.Utc) });
+        db.Purchases.Add(new Purchase { UserId = user.Id, Amount = 1500, PaymentStatus = PaymentStatus.Confirmed, PurchaseDate = new DateTime(2026, 3, 4, 22, 30, 0, DateTimeKind.Utc) });
+        // A later checkout that was never paid must not move the date.
+        db.Purchases.Add(new Purchase { UserId = user.Id, Amount = 500, PaymentStatus = PaymentStatus.Cancelled, PurchaseDate = new DateTime(2026, 3, 9, 8, 0, 0, DateTimeKind.Utc) });
         await db.SaveChangesAsync();
 
         var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken));
@@ -193,6 +195,25 @@ public class ShareLinkTests
         Assert.Contains("\"name\":\"Jan van der Merwe\"", json);
         Assert.Contains("\"blocks\":[1,2,3]", json);
         Assert.Contains("\"purchaseDate\":\"2026-03-04\"", json);
+    }
+
+    [Fact]
+    public async Task Certificate_WithBlok_IgnoresAnEarlierCheckoutThatWasNeverPaid()
+    {
+        await using var db = CreateDb();
+        var user = await SeedUserWithSquares(db, squares: 1);
+        user.ShareToken = "33333333333333333333333333333333";
+        var abandoned = new Purchase { UserId = user.Id, Amount = 500, PaymentStatus = PaymentStatus.Pending, PurchaseDate = new DateTime(2026, 11, 1, 9, 0, 0, DateTimeKind.Utc) };
+        abandoned.PurchaseSquares.Add(new PurchaseSquare { SquareId = 1 });
+        var paid = new Purchase { UserId = user.Id, Amount = 500, PaymentStatus = PaymentStatus.Confirmed, PurchaseDate = new DateTime(2026, 11, 3, 9, 0, 0, DateTimeKind.Utc) };
+        paid.PurchaseSquares.Add(new PurchaseSquare { SquareId = 1 });
+        db.Purchases.AddRange(abandoned, paid);
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await SharePage(db).Certificate(user.ShareToken, blok: 1));
+        var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+
+        Assert.Contains("\"purchaseDate\":\"2026-11-03\"", json);
     }
 
     [Fact]
