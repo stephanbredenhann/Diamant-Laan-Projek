@@ -569,6 +569,8 @@ export const EN: Record<string, string> = {
   'Elke bloknommer op sy eie sertifikaat': 'Each block number on its own certificate',
   'Vorige sertifikaat': 'Previous certificate',
   'Volgende sertifikaat': 'Next certificate',
+  'Opsomming': 'Summary',
+  'Pionier-opsomming': 'Pioneer summary',
   'Besig om PDF te genereer...': 'Generating the PDF...',
   'Laai PDF af': 'Download PDF',
   'Laai opsomming af': 'Download the summary',

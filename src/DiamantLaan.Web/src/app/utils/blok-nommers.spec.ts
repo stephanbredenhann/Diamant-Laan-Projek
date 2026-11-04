@@ -49,6 +49,12 @@ describe('ontleedBlokNommers', () => {
     // Also across several pieces, not just one oversized range.
     expect(ontleedBlokNommers(`1-400, 1000-1200`, MAX).fout).toBeTruthy();
   });
+
+  it('takes a higher cap when the caller passes one', () => {
+    expect(ontleedBlokNommers('1001-2400', MAX, MAX).ids.length).toBe(1400);
+    expect(ontleedBlokNommers('1-4000', MAX, MAX).ids.length).toBe(4000);
+    expect(ontleedBlokNommers('1-1400', MAX, 1000).fout).toContain('1000');
+  });
 });
 
 describe('nommersNaReekse', () => {

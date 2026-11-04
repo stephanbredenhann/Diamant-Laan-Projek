@@ -23,6 +23,8 @@ export interface GuestPurchase {
   purchaseDate: string;
   paymentStatus: string;
   squares: number[];
+  /** Paid before the fund's first million, so its certificates print on the pioneer plate. */
+  isPioneer?: boolean;
   certificateName: string | null;
   /** False when this purchase's blocks each carry their own name. */
   sameForAll: boolean;
@@ -216,7 +218,8 @@ export class PurchaseService {
   }
 
   getMySquares() {
-    return this.http.get<{ id: number; status: number; imageCount?: number }[]>('/api/my-squares');
+    // `isPioneer`: bought before the fund's first million, so it prints on the pioneer plate.
+    return this.http.get<{ id: number; status: number; imageCount?: number; isPioneer?: boolean }[]>('/api/my-squares');
   }
 
   getMySummary() {

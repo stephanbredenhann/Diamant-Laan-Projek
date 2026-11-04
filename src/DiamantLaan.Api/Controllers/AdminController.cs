@@ -24,13 +24,10 @@ public class AdminController : ControllerBase
     private readonly SiteSettingsService _siteSettings;
     private readonly BlockNotificationService _blockNotifications;
     private readonly AdminSaveUndoService _saveUndo;
-    private readonly EmailOutboxService _emailOutbox;
     private readonly IConfiguration _config;
-    // Optional so a test can build the mailer without a signing key: without it the emails simply
-    // go out without the switch-to-English footer link. Always supplied by DI in production.
-    private readonly LanguageLinkService? _languageLinks;
     private readonly StadsbouerSponsorshipService? _sponsorships;
     private readonly ILogger<AdminController>? _logger;
+    private readonly ManualSaleService _manualSales;
 
     public AdminController(
         AppDbContext db,
@@ -44,7 +41,8 @@ public class AdminController : ControllerBase
         IConfiguration config,
         LanguageLinkService? languageLinks = null,
         StadsbouerSponsorshipService? sponsorships = null,
-        ILogger<AdminController>? logger = null)
+        ILogger<AdminController>? logger = null,
+        ManualSaleService? manualSales = null)
     {
         _db = db;
         _userManager = userManager;
@@ -53,11 +51,11 @@ public class AdminController : ControllerBase
         _siteSettings = siteSettings;
         _blockNotifications = blockNotifications;
         _saveUndo = saveUndo;
-        _emailOutbox = emailOutbox;
         _config = config;
-        _languageLinks = languageLinks;
         _sponsorships = sponsorships;
         _logger = logger;
+        // Built from what the controller already holds when a test does not supply one.
+        _manualSales = manualSales ?? new ManualSaleService(db, userManager, env, emailOutbox, config, languageLinks);
     }
 
     [HttpPut("settings/home-stats")]
@@ -261,12 +259,20 @@ public class AdminController : ControllerBase
         // the sale that actually went through, and would otherwise win the earliest-date race.
         var boughtOn = await _db.PurchaseSquares
             .Where(ps => ownedIds.Contains(ps.SquareId) && ps.Purchase.PaymentStatus == PaymentStatus.Confirmed)
-            .Select(ps => new { ps.SquareId, ps.Purchase.PurchaseDate })
+            .Select(ps => new { ps.SquareId, ps.PurchaseId, ps.Purchase.PurchaseDate })
             .ToListAsync();
 
         var earliest = boughtOn
             .GroupBy(r => r.SquareId)
             .ToDictionary(g => g.Key, g => g.Min(r => r.PurchaseDate));
+
+        // Per block, not per buyer: blocks from a purchase made before the first million print on
+        // the pioneer plate, and the same buyer's later blocks keep the standard one.
+        var pioneerPurchases = await PioneerBlocks.PurchaseIdsAsync(_db);
+        var pioneer = boughtOn
+            .Where(r => pioneerPurchases.Contains(r.PurchaseId))
+            .Select(r => r.SquareId)
+            .ToHashSet();
 
         var squares = ownedIds
             .OrderBy(id => id)
@@ -278,7 +284,8 @@ public class AdminController : ControllerBase
                     : null,
                 OwnerName = blockNames.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name)
                     ? name
-                    : ownerName
+                    : ownerName,
+                IsPioneer = pioneer.Contains(id)
             })
             .ToList();
 
@@ -304,10 +311,13 @@ public class AdminController : ControllerBase
                 BuilderId = ps.StadsbouerId!.Value,
                 BuilderName = ps.Stadsbouer!.Name,
                 ps.SquareId,
+                ps.PurchaseId,
                 ps.Purchase.PurchaseDate,
                 SquareName = _db.Squares.Where(s => s.Id == ps.SquareId).Select(s => s.CertificateName).FirstOrDefault()
             })
             .ToListAsync();
+
+        var pioneerPurchases = await PioneerBlocks.PurchaseIdsAsync(_db);
 
         var result = rows
             .GroupBy(r => new { r.BuilderId, r.BuilderName })
@@ -320,7 +330,8 @@ public class AdminController : ControllerBase
                 {
                     Id = r.SquareId,
                     PurchaseDate = (DateTime?)r.PurchaseDate,
-                    OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? g.Key.BuilderName : r.SquareName
+                    OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? g.Key.BuilderName : r.SquareName,
+                    IsPioneer = pioneerPurchases.Contains(r.PurchaseId)
                 }).ToList()
             })
             .ToList();
@@ -639,45 +650,12 @@ public class AdminController : ControllerBase
 
             var amount = squares.Count * 500m;
 
-            if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var e164, out var phoneError))
-                return BadRequest(new { message = phoneError });
-
-            var phoneCountryCode = string.IsNullOrWhiteSpace(dto.PhoneCountryCode) ? "+27" : dto.PhoneCountryCode.Trim();
-            var user = await _userManager.FindByEmailAsync(dto.Email);
-            string? welcomeTempPassword = null;
-            var isNewUser = user == null;
-            if (user == null)
-            {
-                welcomeTempPassword = TemporaryPasswordGenerator.Generate();
-                user = new User
-                {
-                    UserName = dto.Email,
-                    Email = dto.Email,
-                    FirstName = dto.FirstName.Trim(),
-                    LastName = dto.LastName.Trim(),
-                    PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164,
-                    PhoneCountryCode = phoneCountryCode,
-                    IsOraniaResident = dto.IsOraniaResident,
-                    IsOraniaBewegingMember = dto.IsOraniaBewegingMember,
-                    EmailConfirmed = true,
-                    MustChangePassword = true,
-                    ReceiveBlockProgressEmails = true
-                };
-                var createResult = await _userManager.CreateAsync(user, welcomeTempPassword);
-                if (!createResult.Succeeded)
-                    return BadRequest(new { message = "Kon nie gebruiker skep nie." });
-                await _userManager.AddToRoleAsync(user, "Buyer");
-            }
-            else
-            {
-                user.FirstName = dto.FirstName.Trim();
-                user.LastName = dto.LastName.Trim();
-                user.PhoneNumber = string.IsNullOrEmpty(e164) ? null : e164;
-                user.PhoneCountryCode = phoneCountryCode;
-                user.IsOraniaResident = dto.IsOraniaResident;
-                user.IsOraniaBewegingMember = dto.IsOraniaBewegingMember;
-                await _userManager.UpdateAsync(user);
-            }
+            var buyer = await _manualSales.UpsertBuyerAsync(new ManualBuyer(
+                dto.Email, dto.FirstName, dto.LastName, dto.PhoneNumber, dto.PhoneCountryCode,
+                dto.IsOraniaResident, dto.IsOraniaBewegingMember));
+            if (buyer.Error != null)
+                return BadRequest(new { message = buyer.Error });
+            var user = buyer.User!;
 
             var purchase = new Purchase
             {
@@ -702,21 +680,14 @@ public class AdminController : ControllerBase
 
             // The handover names a builder's block after them, so the payer's choices do not apply.
             if (!forBuilders)
-                ApplyCertificateNames(dto, user, squares);
+                ManualSaleService.ApplyCertificateNames(
+                    user, squares, dto.CertificateName, dto.CertificateIndividual, dto.CertificateNames);
 
             _db.Purchases.Add(purchase);
             await _db.SaveChangesAsync();
 
             if (proofOfPayment != null)
-            {
-                var uploadsDir = FileUploadService.GetPrivateUploadsPath(_env);
-                var fileName = $"{purchase.Id}.pdf";
-                var filePath = Path.Combine(uploadsDir, fileName);
-                await using var stream = new FileStream(filePath, FileMode.Create);
-                await proofOfPayment.CopyToAsync(stream);
-                purchase.ProofOfPaymentPath = $"proofs/{fileName}";
-                await _db.SaveChangesAsync();
-            }
+                await _manualSales.SaveProofAsync(purchase, proofOfPayment);
 
             await transaction.CommitAsync();
             await _audit.LogAsync(User, "ManualPurchase", forBuilders
@@ -755,22 +726,8 @@ public class AdminController : ControllerBase
                 });
             }
 
-            var welcomeEmailSent = false;
-            if (!string.IsNullOrWhiteSpace(user.Email))
-            {
-                var siteUrl = AppPublicUrl.Resolve(_config);
-                // A brand new user needs the temporary password; an existing one just needs the
-                // same confirmation a PayFast buyer gets.
-                var en = user.Language == "en";
-                var switchUrl = _languageLinks?.BuildUrl(user.Id, "en");
-                var html = isNewUser && welcomeTempPassword != null
-                    ? EmailTemplates.ManualPurchaseWelcome(user.FirstName, user.Email, welcomeTempPassword, siteUrl, en, switchUrl)
-                    : EmailTemplates.AccountPurchaseConfirmation(user.FirstName, squares.Count, purchase.Amount, siteUrl, en, switchUrl);
-                welcomeEmailSent = await _emailOutbox.QueueAsync(
-                    user.Email,
-                    EmailTemplates.SubjectPrefix + EmailTemplates.T(en, "Jou borgskap is voltooi!", "Your sponsorship is complete!"),
-                    html);
-            }
+            var welcomeEmailSent = await _manualSales.QueuePurchaseEmailAsync(
+                user, buyer.TempPassword, squares.Count, purchase.Amount);
 
             return Ok(new
             {
@@ -819,38 +776,12 @@ public class AdminController : ControllerBase
         return (squareIds.Zip(stadsbouerIds).ToDictionary(pair => pair.First, pair => pair.Second), null);
     }
 
-    /// <summary>
-    /// Writes the certificate names the admin took down over the phone. The buyer would otherwise
-    /// have to sign in inside the 15-minute window to set them, which nobody phoning an order does.
-    /// Only the blocks on this order are touched: ones bought earlier keep the names they were
-    /// issued under. The summary name and the individual/summary choice live on the account, so a
-    /// returning buyer's answer on this call is the one that stands, exactly as on their own page.
-    /// </summary>
-    private static void ApplyCertificateNames(ManualPurchaseDto dto, User user, List<Square> squares)
-    {
-        var summaryName = string.IsNullOrWhiteSpace(dto.CertificateName)
-            ? $"{user.FirstName} {user.LastName}".Trim()
-            : dto.CertificateName.Trim();
-
-        user.CertificateName = summaryName;
-        user.CertificateIndividual = dto.CertificateIndividual;
-
-        if (!dto.CertificateIndividual)
-            return;
-
-        foreach (var square in squares)
-        {
-            var name = dto.CertificateNames.TryGetValue(square.Id, out var typed) ? typed.Trim() : string.Empty;
-            square.CertificateName = name.Length >= 2 ? name : summaryName;
-        }
-    }
-
     private const long MaxProofOfPaymentBytes = 10 * 1024 * 1024;
 
-    private const string ProofMethodError = "Bewys van betaling geld net vir EFT-, Bitcoin- of PayPal-aankope.";
+    private const string ProofMethodError = ManualSaleService.ProofMethodError;
 
     private static bool AllowsProofOfPayment(string? paymentMethod) =>
-        paymentMethod is "EFT" or "Bitcoin" or "PayPal";
+        ManualSaleService.AllowsProofOfPayment(paymentMethod);
 
     [HttpGet("purchases/{id}/proof")]
     public async Task<IActionResult> GetProofOfPayment(int id)
@@ -1177,6 +1108,7 @@ public class AdminController : ControllerBase
             {
                 BuilderName = ps.Stadsbouer!.Name,
                 ps.SquareId,
+                ps.PurchaseId,
                 ps.Purchase.PurchaseDate,
                 SquareName = _db.Squares.Where(s => s.Id == ps.SquareId).Select(s => s.CertificateName).FirstOrDefault()
             })
@@ -1186,6 +1118,7 @@ public class AdminController : ControllerBase
             return NotFound();
 
         var ownerName = rows[0].BuilderName;
+        var pioneerPurchases = await PioneerBlocks.PurchaseIdsAsync(_db);
         return Ok(new
         {
             OwnerName = ownerName,
@@ -1194,7 +1127,8 @@ public class AdminController : ControllerBase
             {
                 Id = r.SquareId,
                 PurchaseDate = (DateTime?)r.PurchaseDate,
-                OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? ownerName : r.SquareName
+                OwnerName = string.IsNullOrWhiteSpace(r.SquareName) ? ownerName : r.SquareName,
+                IsPioneer = pioneerPurchases.Contains(r.PurchaseId)
             }).ToList()
         });
     }

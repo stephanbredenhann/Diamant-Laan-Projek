@@ -216,11 +216,16 @@ public class PurchaseController : ControllerBase
             .OrderBy(b => b.SquareId)
             .ToListAsync();
 
+        // One purchase, so one plate: it either came in before the first million or it did not.
+        var isPioneer = purchase.PaymentStatus == PaymentStatus.Confirmed
+            && (await PioneerBlocks.PurchaseIdsAsync(_db)).Contains(purchase.Id);
+
         return Ok(new
         {
             purchase.Id,
             purchase.Amount,
             purchase.PurchaseDate,
+            isPioneer,
             paymentStatus = purchase.PaymentStatus.ToString(),
             squares = ids.OrderBy(squareId => squareId),
             certificateName = summaryName,

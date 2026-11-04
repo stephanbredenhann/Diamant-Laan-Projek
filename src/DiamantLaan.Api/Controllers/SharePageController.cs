@@ -88,7 +88,10 @@ public class SharePageController : ControllerBase
             name = cert.Name,
             firstName = cert.FirstName,
             blocks = cert.Blocks,
-            purchaseDate = cert.PurchaseDate?.ToString("yyyy-MM-dd")
+            purchaseDate = cert.PurchaseDate?.ToString("yyyy-MM-dd"),
+            // The blocks that print on the pioneer plate, and the date their own summary carries.
+            pioneerBlocks = cert.PioneerBlockIds,
+            pioneerPurchaseDate = cert.PioneerPurchaseDate?.ToString("yyyy-MM-dd")
         });
     }
 

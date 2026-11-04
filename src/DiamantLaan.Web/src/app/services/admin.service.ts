@@ -67,7 +67,8 @@ export interface CertificateSummary {
   ownerName: string;
   /** False when the buyer split their blocks, so each one prints its own name. */
   sameForAll: boolean;
-  squares: { id: number; purchaseDate?: string | null; ownerName: string }[];
+  /** `isPioneer`: bought before the fund's first million, so it prints on the pioneer plate. */
+  squares: { id: number; purchaseDate?: string | null; ownerName: string; isPioneer?: boolean }[];
 }
 
 /** A road builder people can sponsor a block for. Only the admin side sees the email. */
@@ -255,4 +256,50 @@ export class AdminService {
   deleteStadsbouer(id: number) {
     return this.http.delete<{ message: string }>(`/api/admin/stadsbouers/${id}`);
   }
+
+  /** Works out which blocks a large donation would get. Writes nothing. */
+  previewDonation(body: DonationPreviewRequest) {
+    return this.http.post<DonationPreview>('/api/admin/donation/preview', body);
+  }
+
+  /** Multipart for the proof of payment. Send the preview's own block list and one key per confirmation. */
+  commitDonation(formData: FormData) {
+    return this.http.post<DonationResult>('/api/admin/donation', formData);
+  }
+}
+
+export interface DonationPreviewRequest {
+  email: string;
+  amount: number;
+  mode: 'next' | 'ranges';
+  includeReserved: boolean;
+  squareIds?: number[];
+}
+
+export interface DonationPreview {
+  squareIds: number[];
+  ranges: string;
+  squareCount: number;
+  amount: number;
+  availableCount: number;
+  reservedCount: number;
+  includeReserved: boolean;
+  /** Null when no email was sent with the preview. */
+  existingDonor: boolean | null;
+}
+
+export interface DonationResult {
+  purchaseId: number;
+  amount: number;
+  squareCount: number;
+  ranges: string;
+  userId: string;
+  /** Null on a replay: the first request already answered it. */
+  newDonor: boolean | null;
+  paymentStatus: string;
+  hasProof: boolean;
+  emailQueued: boolean;
+  emailSent: boolean;
+  /** True when this key had already been used and the server returned the first result. */
+  replayed: boolean;
 }

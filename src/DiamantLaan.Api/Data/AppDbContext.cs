@@ -97,6 +97,11 @@ public class AppDbContext : IdentityDbContext<User>
         builder.Entity<Purchase>()
             .HasIndex(p => p.ClaimTokenHash);
 
+        // SQLite lets any number of NULLs through a unique index, so only donations are constrained.
+        builder.Entity<Purchase>()
+            .HasIndex(p => p.IdempotencyKey)
+            .IsUnique();
+
         builder.Entity<RefreshToken>()
             .HasOne(rt => rt.User)
             .WithMany()

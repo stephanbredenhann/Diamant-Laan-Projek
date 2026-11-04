@@ -630,7 +630,12 @@ export class AdminStadsbouersComponent implements OnInit, OnDestroy {
     try {
       const summary = await firstValueFrom(this.admin.getStadsbouerCertificate(b.id));
       this.certOwnerName = summary.ownerName;
-      this.certSquares = summary.squares.map(s => ({ id: s.id, purchaseDate: s.purchaseDate ?? undefined, ownerName: s.ownerName }));
+      this.certSquares = summary.squares.map(s => ({
+        id: s.id,
+        purchaseDate: s.purchaseDate ?? undefined,
+        ownerName: s.ownerName,
+        isPioneer: s.isPioneer,
+      }));
       this.cdr.detectChanges();
       // Let the certificate card apply lockedMode / sheet layout before capture.
       await new Promise<void>(resolve => setTimeout(resolve, 50));
