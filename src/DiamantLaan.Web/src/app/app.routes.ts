@@ -44,6 +44,7 @@ export const routes: Routes = [
       { path: 'instellings', loadComponent: () => import('./components/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
       { path: 'verwyder-transaksie', loadComponent: () => import('./components/admin-delete-transaction/admin-delete-transaction.component').then(m => m.AdminDeleteTransactionComponent) },
       { path: 'stadsbouers', loadComponent: () => import('./components/admin-stadsbouers/admin-stadsbouers.component').then(m => m.AdminStadsbouersComponent) },
+      { path: 'straatfees', loadComponent: () => import('./components/admin-straatfees/admin-straatfees.component').then(m => m.AdminStraatfeesComponent) },
       { path: 'kies-offset', loadComponent: () => import('./components/admin-kies-offset/admin-kies-offset.component').then(m => m.AdminKiesOffsetComponent) },
     ]
   },
@@ -53,6 +54,9 @@ export const routes: Routes = [
   // Public sponsor link. Crawlers never get here: SharePageController answers them with the
   // Open Graph shell and hands everyone else this app.
   { path: 'deel/:token', data: { kaal: true }, loadComponent: () => import('./components/deel/deel.component').then(m => m.DeelComponent) },
+  // Straatfees ticket sales. `tema` turns the shell blue; see AppComponent and styles.scss.
+  { path: 'straatfees', data: { tema: 'straatfees' }, loadComponent: () => import('./components/straatfees/straatfees.component').then(m => m.StraatfeesComponent) },
+  { path: 'straatfees/kaartjie/:kode', data: { tema: 'straatfees' }, loadComponent: () => import('./components/straatfees/straatfees-kaartjie.component').then(m => m.StraatfeesKaartjieComponent) },
   { path: 'privaatheid', loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent) },
   { path: '**', redirectTo: '' }
 ];

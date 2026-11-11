@@ -158,6 +158,55 @@ public class PayFastService : IPayFastService
 
     public PayFastPaymentRequestDto CreatePaymentRequest(Purchase purchase, User user, string baseUrl)
     {
+        return BuildPaymentRequest(
+            baseUrl,
+            purchase.Id.ToString(),
+            purchase.Amount,
+            $"Diamant Laan - Aankoop #{purchase.Id}",
+            $"betalings/terug?purchaseId={purchase.Id}",
+            $"betalings/kanselleer?purchaseId={purchase.Id}",
+            user.FirstName,
+            user.LastName,
+            user.Email);
+    }
+
+    /// <summary>
+    /// Same merchant, same ITN endpoint as a block purchase. The "SF-" m_payment_id is what tells
+    /// the ITN handler this is a ticket order, and the return URL lands straight on the ticket.
+    /// </summary>
+    public PayFastPaymentRequestDto CreateStraatfeesPaymentRequest(StraatfeesOrder order, string baseUrl)
+    {
+        var (firstName, lastName) = SplitName(order.Name);
+        return BuildPaymentRequest(
+            baseUrl,
+            order.MerchantPaymentId,
+            order.Amount,
+            $"Straatfees - {order.Quantity} kaartjie(s)",
+            $"straatfees/kaartjie/{Uri.EscapeDataString(order.TicketCode)}",
+            "straatfees?gekanselleer=1",
+            firstName,
+            lastName,
+            order.Email);
+    }
+
+    private static (string First, string? Last) SplitName(string name)
+    {
+        var trimmed = name.Trim();
+        var space = trimmed.IndexOf(' ');
+        return space < 0 ? (trimmed, null) : (trimmed[..space], trimmed[(space + 1)..].Trim());
+    }
+
+    private PayFastPaymentRequestDto BuildPaymentRequest(
+        string baseUrl,
+        string merchantPaymentId,
+        decimal amount,
+        string itemName,
+        string returnPath,
+        string cancelPath,
+        string? firstName,
+        string? lastName,
+        string? email)
+    {
         if (string.IsNullOrWhiteSpace(_settings.MerchantId) || string.IsNullOrWhiteSpace(_settings.MerchantKey))
             throw new InvalidOperationException("PayFast MerchantId and MerchantKey must be configured.");
 
@@ -166,8 +215,8 @@ public class PayFastService : IPayFastService
             ? _settings.FrontendBaseUrl.TrimEnd('/') + "/"
             : baseUrl);
 
-        var returnUrl = $"{frontendBaseUrl}betalings/terug?purchaseId={purchase.Id}";
-        var cancelUrl = $"{frontendBaseUrl}betalings/kanselleer?purchaseId={purchase.Id}";
+        var returnUrl = frontendBaseUrl + returnPath;
+        var cancelUrl = frontendBaseUrl + cancelPath;
         var notifyUrl = !string.IsNullOrWhiteSpace(_settings.NotifyUrl)
             ? _settings.NotifyUrl
             : $"{baseUrl}api/payment/itn";
@@ -181,14 +230,14 @@ public class PayFastService : IPayFastService
             ["return_url"] = returnUrl,
             ["cancel_url"] = cancelUrl,
             ["notify_url"] = notifyUrl,
-            ["m_payment_id"] = purchase.Id.ToString(),
-            ["amount"] = purchase.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
-            ["item_name"] = $"Diamant Laan - Aankoop #{purchase.Id}"
+            ["m_payment_id"] = merchantPaymentId,
+            ["amount"] = amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+            ["item_name"] = itemName
         };
 
-        AddOptionalField(fields, "name_first", user.FirstName);
-        AddOptionalField(fields, "name_last", user.LastName);
-        AddOptionalField(fields, "email_address", user.Email);
+        AddOptionalField(fields, "name_first", firstName);
+        AddOptionalField(fields, "name_last", lastName);
+        AddOptionalField(fields, "email_address", email);
 
         fields["signature"] = CreateSignature(fields);
 

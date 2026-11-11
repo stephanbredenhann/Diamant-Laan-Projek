@@ -24,6 +24,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           <a routerLink="/admin/instellings" routerLinkActive="active">Instellings</a>
           <a routerLink="/admin/verwyder-transaksie" routerLinkActive="active">Verwyder transaksie</a>
           <a routerLink="/admin/kies-offset" routerLinkActive="active">Kies vir my</a>
+          <a routerLink="/admin/straatfees" routerLinkActive="active">Straatfees</a>
         </nav>
         <router-outlet />
       </div>

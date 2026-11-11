@@ -15,4 +15,7 @@ public class SiteSettings
     /// Blocks below the offset are still used, but only once the range above runs dry.
     /// </summary>
     public int KiesVirMyOffset { get; set; }
+
+    /// <summary>Whether straatfees tickets are on sale. Off hides the navbar link and refuses new orders.</summary>
+    public bool StraatfeesEnabled { get; set; } = true;
 }

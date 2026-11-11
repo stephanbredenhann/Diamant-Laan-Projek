@@ -9,6 +9,8 @@ import { SiteFooterComponent } from './components/shared/site-footer/site-footer
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, NavbarComponent, SiteFooterComponent],
+  // The straatfees pages keep the same shell but swap the orange for the festival blue.
+  host: { '[class.tema-straatfees]': "tema() === 'straatfees'" },
   template: `
     @if (!kaal()) {
       <app-navbar></app-navbar>
@@ -34,5 +36,14 @@ export class AppComponent {
       map(() => !!this.route.firstChild?.snapshot.data['kaal'])
     ),
     { initialValue: false }
+  );
+
+  /** A route's `tema` data recolours the whole shell, navbar and footer included. */
+  tema = toSignal(
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(() => (this.route.firstChild?.snapshot.data['tema'] as string | undefined) ?? null)
+    ),
+    { initialValue: null }
   );
 }
