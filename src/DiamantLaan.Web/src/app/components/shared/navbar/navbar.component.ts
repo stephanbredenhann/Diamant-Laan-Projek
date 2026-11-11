@@ -1,6 +1,9 @@
 import { afterNextRender, afterRenderEffect, Component, DestroyRef, ElementRef, HostListener, inject, signal, viewChild } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../../services/auth.service';
+import { StraatfeesService } from '../../../services/straatfees.service';
 import { LangService } from '../../../i18n/lang.service';
 import { TPipe } from '../../../i18n/t.pipe';
 
@@ -15,7 +18,7 @@ import { TPipe } from '../../../i18n/t.pipe';
              in the footer on every size. -->
         <div class="nav-logos">
           <a routerLink="/" [attr.aria-label]="'Orania Stadsboufonds tuis' | t">
-            <img src="stadsboufonds-logo-wide.png" [alt]="'Orania Stadsboufonds' | t" />
+            <img [src]="opStraatfees() ? 'stadsboufonds-logo-wide-blou.png' : 'stadsboufonds-logo-wide.png'" [alt]="'Orania Stadsboufonds' | t" />
           </a>
         </div>
 
@@ -28,7 +31,9 @@ import { TPipe } from '../../../i18n/t.pipe';
         </button>
 
         <div class="navbar-links" [class.open]="menuOpen()">
+          <!-- The straatfees pages carry no site menu: the orange button is the way back to it. -->
           <div class="nav-cluster">
+            @if (!opStraatfees()) {
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="menuOpen.set(false)">{{ 'Tuis' | t }}</a>
             <a routerLink="/projek" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'Die projek' | t }}</a>
             <a routerLink="/" fragment="hoe-dit-werk" (click)="menuOpen.set(false)">{{ 'Hoe dit werk' | t }}</a>
@@ -43,19 +48,43 @@ import { TPipe } from '../../../i18n/t.pipe';
               <a routerLink="/my-profiel" routerLinkActive="active" (click)="menuOpen.set(false)">{{ 'My profiel' | t }}</a>
               <button class="btn-logout" (click)="logout()">{{ 'Meld af' | t }}</button>
             }
+            }
           </div>
 
           <div class="nav-end">
-            @if (!auth.currentUser()) {
+            @if (!auth.currentUser() && !opStraatfees()) {
               <a routerLink="/meld-aan" class="btn-nav-outline" (click)="menuOpen.set(false)">{{ 'Meld aan' | t }}</a>
             }
 
-            <a routerLink="/bou" class="btn-nav-cta" (click)="menuOpen.set(false)">
-              {{ 'Borg jou m²' | t }}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-              </svg>
-            </a>
+            <!-- On the straatfees pages this slot leads back home in the project's orange; everywhere
+                 else it is the way in, in the festival blue. -->
+            @if (opStraatfees()) {
+              <a routerLink="/" class="btn-nav-slot btn-nav-terug" (click)="menuOpen.set(false)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                {{ 'Terug na Diamantlaan-projek' | t }}
+              </a>
+            } @else if (straatfees.enabled()) {
+              <a routerLink="/straatfees" class="btn-nav-slot btn-nav-fees" (click)="menuOpen.set(false)">{{ 'Straatfees' | t }}</a>
+            }
+
+            @if (!opStraatfees()) {
+              <a routerLink="/bou" class="btn-nav-cta" (click)="menuOpen.set(false)">
+                {{ 'Borg jou m²' | t }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </a>
+            } @else if (straatfees.enabled()) {
+              <!-- ?koop=1 makes the straatfees page open its purchase dialog. -->
+              <a routerLink="/straatfees" [queryParams]="{ koop: 1 }" class="btn-nav-cta" (click)="menuOpen.set(false)">
+                {{ 'Koop kaartjies' | t }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </a>
+            }
 
             <button
               type="button"
@@ -175,7 +204,7 @@ import { TPipe } from '../../../i18n/t.pipe';
     }
     .navbar-links a:hover {
       color: var(--action);
-      background: rgba(245, 130, 32, 0.08);
+      background: color-mix(in srgb, var(--action) 8%, transparent);
       text-decoration: none;
     }
     .navbar-links a.active { color: var(--action); }
@@ -204,6 +233,21 @@ import { TPipe } from '../../../i18n/t.pipe';
       background: var(--action-strong-hover);
       color: var(--on-action);
     }
+
+    .nav-end > a.btn-nav-slot {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 0.55rem 1.15rem;
+      gap: 0.4rem;
+      margin-left: 0.35rem;
+      color: #fff;
+    }
+    .nav-end > a.btn-nav-fees { background: var(--fees-blue); }
+    .nav-end > a.btn-nav-fees:hover { background: var(--fees-blue-hover); color: #fff; }
+    /* Raw brand orange on purpose: the theme turns --action blue on these pages. */
+    .nav-end > a.btn-nav-terug { background: var(--ob-orange); }
+    .nav-end > a.btn-nav-terug:hover { background: #D96E10; color: #fff; }
 
     .btn-logout {
       font-family: var(--font-body);
@@ -296,6 +340,13 @@ import { TPipe } from '../../../i18n/t.pipe';
         border-bottom: 1px solid var(--border-soft);
       }
 
+      .nav-end > a.btn-nav-slot {
+        margin: var(--nav-row) 1.25rem 0;
+        justify-content: center;
+        border-bottom: none;
+        padding: var(--nav-row) 1.15rem;
+      }
+
       .nav-end > a.btn-nav-cta {
         margin: var(--nav-row) 1.25rem;
         text-align: center;
@@ -339,6 +390,16 @@ import { TPipe } from '../../../i18n/t.pipe';
 export class NavbarComponent {
   auth = inject(AuthService);
   lang = inject(LangService);
+  straatfees = inject(StraatfeesService);
+  private router = inject(Router);
+
+  opStraatfees = toSignal(
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(event => (event as NavigationEnd).urlAfterRedirects.startsWith('/straatfees'))
+    ),
+    { initialValue: false }
+  );
   menuOpen = signal(false);
   stacked = signal(false);
 
@@ -347,6 +408,9 @@ export class NavbarComponent {
   private destroyRef = inject(DestroyRef);
 
   constructor() {
+    // Only to learn whether the link should show; the admin toggle hides it.
+    this.straatfees.info().subscribe({ error: () => {} });
+
     afterNextRender(() => {
       const el = this.inner()?.nativeElement;
       if (!el) return;
@@ -359,6 +423,8 @@ export class NavbarComponent {
     afterRenderEffect(() => {
       this.auth.currentUser();
       this.lang.lang();
+      this.straatfees.enabled();
+      this.opStraatfees();
       this.measure();
     });
   }

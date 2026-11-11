@@ -29,6 +29,7 @@ public class PaymentController : ControllerBase
     // go out without the switch-to-English footer link. Always supplied by DI in production.
     private readonly LanguageLinkService? _languageLinks;
     private readonly StadsbouerSponsorshipService? _sponsorships;
+    private readonly StraatfeesService? _straatfees;
 
     public PaymentController(
         AppDbContext db,
@@ -39,7 +40,8 @@ public class PaymentController : ControllerBase
         EmailOutboxService emails,
         IConfiguration config,
         LanguageLinkService? languageLinks = null,
-        StadsbouerSponsorshipService? sponsorships = null)
+        StadsbouerSponsorshipService? sponsorships = null,
+        StraatfeesService? straatfees = null)
     {
         _db = db;
         _payFastService = payFastService;
@@ -52,6 +54,7 @@ public class PaymentController : ControllerBase
         _config = config;
         _languageLinks = languageLinks;
         _sponsorships = sponsorships;
+        _straatfees = straatfees;
     }
 
     [AllowAnonymous]
@@ -72,6 +75,14 @@ public class PaymentController : ControllerBase
         _logger.LogInformation(
             "PayFast ITN received for m_payment_id={MerchantPaymentId}, pf_payment_id={PfPaymentId}, payment_status={PaymentStatus}",
             merchantPaymentId, pfPaymentId, paymentStatus);
+
+        // Straatfees tickets share the merchant and this endpoint; their m_payment_id is "SF-<id>".
+        if (StraatfeesService.TryParseMerchantPaymentId(merchantPaymentId, out var straatfeesOrderId))
+        {
+            if (_straatfees == null || await _straatfees.HandleItnAsync(straatfeesOrderId, rawBody))
+                return Ok("OK");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Confirmation failed");
+        }
 
         if (string.IsNullOrEmpty(merchantPaymentId) || !int.TryParse(merchantPaymentId, out var purchaseId))
         {

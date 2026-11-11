@@ -684,4 +684,38 @@ export const EN: Record<string, string> = {
   'Borg nog ’n blokkie': 'Sponsor another block',
 
   // --- Password field ---
+
+  // --- Straatfees (POC: page copy is lorem ipsum, so only the working UI is here) ---
+  'Straatfees': 'Straatfees',
+  'Terug na Diamantlaan-projek': 'Back to the Diamantlaan project',
+  'Koop kaartjies': 'Buy tickets',
+  'per kaartjie': 'per ticket',
+  'kaartjie': 'ticket',
+  'Kaartjieverkope is tans gesluit.': 'Ticket sales are currently closed.',
+  'Jou betaling is gekanselleer. Geen geld is afgetrek nie.': 'Your payment was cancelled. No money was taken.',
+  'Maak toe': 'Close',
+  'Geen rekening nodig nie. Ons e-pos jou kaartjie sodra jy betaal het.': 'No account needed. We email your ticket as soon as you have paid.',
+  'Naam en van': 'Name and surname',
+  'Aantal kaartjies': 'Number of tickets',
+  'Een minder': 'One fewer',
+  'Een meer': 'One more',
+  'Betaal met PayFast': 'Pay with PayFast',
+  'Gaan na PayFast...': 'Going to PayFast...',
+  'Vul asseblief jou naam in.': 'Please fill in your name.',
+  'Laai jou kaartjie...': 'Loading your ticket...',
+  'Ons bevestig jou betaling...': 'Confirming your payment...',
+  'Dit neem gewoonlik net ’n paar sekondes. Jou kaartjie verskyn hier sodra PayFast bevestig.':
+    'This usually takes only a few seconds. Your ticket appears here as soon as PayFast confirms.',
+  'Ons wag nog vir PayFast': 'Still waiting for PayFast',
+  'Jou kaartjie word na jou e-pos gestuur sodra die betaling deurkom. Jy kan ook later hierdie bladsy herlaai.':
+    'Your ticket will be emailed to you as soon as the payment comes through. You can also reload this page later.',
+  'Kaartjie nie gevind nie': 'Ticket not found',
+  'Kontroleer die skakel in jou e-pos.': 'Check the link in your email.',
+  'Terug na die straatfees': 'Back to the Straatfees',
+  'Betaling ontvang': 'Payment received',
+  'Jou kaartjie is gereed!': 'Your ticket is ready!',
+  'Ons het dit ook na jou e-pos gestuur. Wys dit by die hek, op jou foon of gedruk.':
+    'We have also emailed it to you. Show it at the gate, on your phone or printed.',
+  'Laai kaartjie af (PDF)': 'Download ticket (PDF)',
+  'Berei PDF voor...': 'Preparing PDF...',
 };

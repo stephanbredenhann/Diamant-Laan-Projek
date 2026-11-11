@@ -107,6 +107,7 @@ builder.Services.AddScoped<EmailOutboxService>();
 builder.Services.AddScoped<GuestPurchaseService>();
 builder.Services.AddScoped<StadsbouerSponsorshipService>();
 builder.Services.AddScoped<ManualSaleService>();
+builder.Services.AddScoped<StraatfeesService>();
 builder.Services.AddSingleton<LanguageLinkService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddSingleton<ShareOgImageService>();

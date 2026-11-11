@@ -24,6 +24,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<PendingEmail> PendingEmails => Set<PendingEmail>();
     public DbSet<AdminSaveSnapshot> AdminSaveSnapshots => Set<AdminSaveSnapshot>();
     public DbSet<Stadsbouer> Stadsbouers => Set<Stadsbouer>();
+    public DbSet<StraatfeesOrder> StraatfeesOrders => Set<StraatfeesOrder>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -35,8 +36,13 @@ public class AppDbContext : IdentityDbContext<User>
             ShowStatsSection = true,
             ShowTotalRaised = true,
             StadsbouersEnabled = true,
-            KiesVirMyOffset = 0
+            KiesVirMyOffset = 0,
+            StraatfeesEnabled = true
         });
+
+        builder.Entity<StraatfeesOrder>()
+            .HasIndex(o => o.TicketCode)
+            .IsUnique();
 
         builder.Entity<PurchaseSquare>()
             .HasKey(ps => new { ps.PurchaseId, ps.SquareId });

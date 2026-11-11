@@ -127,6 +127,50 @@
   --shadow-lg:   0 8px 24px rgba(26, 26, 26, 0.12);
 }
 
+/*
+ * === Straatfees theme ===
+ * The straatfees pages wear the same shell in blue. POC placeholder blue, taken from the Delft
+ * tile artwork; the final colour is still to be chosen, and these three lines are all that change.
+ * Every orange-derived token is restated, because a var() defined on :root has already resolved
+ * there and does not follow an override further down the tree.
+ */
+:root {
+  --fees-blue:       #2B4C9B;
+  --fees-blue-hover: #1F3A7A;
+  --fees-blue-soft:  #EEF2FA;
+}
+.tema-straatfees {
+  display: block;
+  --action:               var(--fees-blue);
+  --action-hover:         var(--fees-blue-hover);
+  --action-strong:        var(--fees-blue);
+  --action-strong-hover:  var(--fees-blue-hover);
+  --accent:               var(--fees-blue);
+  --accent-hover:         var(--fees-blue-hover);
+  --route-blue:           var(--fees-blue);
+  --bg-warm:              #F5F7FC;
+  --color-primary:        var(--fees-blue);
+  --color-primary-hover:  var(--fees-blue-hover);
+  --color-orange:         var(--fees-blue);
+  --color-orange-dark:    var(--fees-blue-hover);
+  --color-terracotta:     var(--fees-blue);
+  --color-terracotta-dark: var(--fees-blue-hover);
+  --color-warm-clay:      var(--fees-blue-hover);
+  --color-accent:         var(--fees-blue);
+  --color-info:           var(--fees-blue);
+  --shadow-soft: 0 8px 30px rgba(43, 76, 155, 0.12);
+  --shadow-cta:  0 22px 48px rgba(43, 76, 155, 0.2);
+}
+/* Straatfees drops the site's drafting grid for a quieter, airier backdrop. */
+body:has(.tema-straatfees) {
+  background-color: #F7F8FC;
+  background-image:
+    radial-gradient(ellipse 60rem 40rem at 85% -10%, rgba(43, 76, 155, 0.09), transparent 70%),
+    radial-gradient(ellipse 50rem 35rem at -10% 30%, rgba(43, 76, 155, 0.05), transparent 70%);
+  background-size: auto;
+  background-repeat: no-repeat;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

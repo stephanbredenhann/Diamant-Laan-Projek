@@ -229,6 +229,61 @@ public static class EmailTemplates
     }
 
     /// <summary>
+    /// Straatfees ticket. POC: the ticket design is still to come, so this is the ticket code in a
+    /// box plus a link to the ticket page, where the PDF is downloaded. Blue, not orange: the
+    /// straatfees has its own colour. Mandrill sends no attachments through our outbox, hence the link.
+    /// </summary>
+    public static string StraatfeesTicket(string name, int quantity, decimal amount, string ticketCode, string ticketUrl)
+    {
+        const string FeesBlue = "#2B4C9B";
+        var url = WebUtility.HtmlEncode(ticketUrl);
+        var who = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(name) ? "Feesganger" : name);
+        var code = WebUtility.HtmlEncode(ticketCode);
+        var count = quantity == 1 ? "1 kaartjie" : $"{quantity} kaartjies";
+        return $"""
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2F5FB; margin:0; padding:24px 12px;">
+              <tr>
+                <td align="center">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="width:560px; max-width:560px; background:#FFFFFF; border:1px solid #C9D3EA; border-radius:4px;">
+                    <tr>
+                      <td style="padding:36px 36px 0;">
+                        <p style="margin:0 0 10px; font-family:{FontDisplay}; font-size:14px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:{FeesBlue};">Orania Straatfees</p>
+                        <h1 style="margin:0; font-family:{FontDisplay}; font-size:34px; line-height:1.1; font-weight:700; color:{Tar};">Jou kaartjies is gereed!</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:22px 36px 30px; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
+                        <p style="margin:0 0 16px;">Beste {who},</p>
+                        <p style="margin:0 0 16px;">Ons het jou betaling van <strong>{Rand(amount)}</strong> vir <strong>{count}</strong> ontvang. Wys hierdie kode of jou afgelaaide kaartjie by die hek:</p>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 20px;">
+                          <tr>
+                            <td style="border:2px dashed {FeesBlue}; border-radius:4px; padding:14px 24px; font-family:'Courier New',monospace; font-size:26px; font-weight:700; letter-spacing:0.18em; color:{FeesBlue};">{code}</td>
+                          </tr>
+                        </table>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+                          <tr>
+                            <td style="background:{FeesBlue}; border-radius:4px;">
+                              <a href="{url}" style="display:inline-block; padding:14px 28px; font-family:{FontDisplay}; font-size:17px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#FFFFFF; text-decoration:none;">Laai jou kaartjie af</a>
+                            </td>
+                          </tr>
+                        </table>
+                        {Fine("Hou hierdie e-pos: die skakel bly werk, so jy kan jou kaartjie enige tyd weer aflaai.")}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:22px 36px 32px; border-top:1px solid #C9D3EA; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
+                        <p style="margin:0;">Sien jou by die straatfees!<br>Die Orania Beweging-span</p>
+                        <p style="margin:12px 0 0; font-size:14px; color:{Muted};">inligting&#64;orania.co.za &middot; 053 207 0062</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            """;
+    }
+
+    /// <summary>
     /// One email per status a batch of the owner's blocks moved into. Returns null for
     /// <see cref="SquareStatus.NogNieBeginNie"/>, which is not worth telling anyone about.
     /// </summary>

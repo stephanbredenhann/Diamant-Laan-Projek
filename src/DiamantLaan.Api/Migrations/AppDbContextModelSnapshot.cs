@@ -400,6 +400,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<bool>("StadsbouersEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("StraatfeesEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.ToTable("SiteSettings");
@@ -411,7 +414,8 @@ namespace DiamantLaan.Api.Migrations
                             KiesVirMyOffset = 0,
                             ShowStatsSection = true,
                             ShowTotalRaised = true,
-                            StadsbouersEnabled = true
+                            StadsbouersEnabled = true,
+                            StraatfeesEnabled = true
                         });
                 });
 
@@ -490,6 +494,59 @@ namespace DiamantLaan.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Stadsbouers");
+                });
+
+            modelBuilder.Entity("DiamantLaan.Api.Models.StraatfeesOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayFastPaymentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayFastPaymentStatus")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TicketCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TicketEmailSentAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketCode")
+                        .IsUnique();
+
+                    b.ToTable("StraatfeesOrders");
                 });
 
             modelBuilder.Entity("DiamantLaan.Api.Models.User", b =>
