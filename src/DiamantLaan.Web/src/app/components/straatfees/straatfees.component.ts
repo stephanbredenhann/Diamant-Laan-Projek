@@ -1,31 +1,25 @@
-import { Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { StraatfeesInfo, StraatfeesService, postToPayFast } from '../../services/straatfees.service';
+import { StraatfeesInfo, StraatfeesService } from '../../services/straatfees.service';
 import { randBedrag } from '../../utils/afrikaans.util';
-import { validateEmail } from '../../utils/validation.util';
 import { TPipe } from '../../i18n/t.pipe';
+import { FeesKoopDialogComponent } from './fees-koop-dialog.component';
+import { FeesLintComponent } from './fees-lint.component';
+import { FeesTeelComponent } from './fees-teel.component';
 
 /**
  * Straatfees landing page. POC: the hero carries the Delft-blue poster artwork and lines;
  * the rest is lorem ipsum with "(foto hier)" slots until the real content arrives. The only live part is the ticket purchase:
- * one button, one dialog (name, email, count), then PayFast.
+ * one button, one dialog (FeesKoopDialogComponent), then PayFast.
  */
 @Component({
   selector: 'app-straatfees',
   standalone: true,
-  imports: [FormsModule, TPipe],
+  imports: [TPipe, FeesTeelComponent, FeesLintComponent, FeesKoopDialogComponent],
   template: `
     <section class="fees-hero">
-      <div class="teel">
-        <span class="raam" aria-hidden="true"></span>
-        @for (h of hoeke; track h) {
-          <span class="hoek" [class]="'hoek hoek--' + h" aria-hidden="true"><img src="straatfees/hoek.png" alt="" /></span>
-        }
-        <img class="blom blom--bo" src="straatfees/blom.png" alt="" aria-hidden="true" />
-        <img class="blom blom--l" src="straatfees/blom.png" alt="" aria-hidden="true" />
-        <img class="blom blom--r" src="straatfees/blom.png" alt="" aria-hidden="true" />
+      <app-fees-teel [blomme]="true">
 
         <div class="teel__binne">
           <div class="teel__teks">
@@ -37,7 +31,7 @@ import { TPipe } from '../../i18n/t.pipe';
               }
             </div>
 
-            <div class="lint"><span>27-11-26</span></div>
+            <app-fees-lint class="lint-plek">27-11-26</app-fees-lint>
 
             @if (gekanselleer()) {
               <p class="fees-alert" role="status">{{ 'Jou betaling is gekanselleer. Geen geld is afgetrek nie.' | t }}</p>
@@ -72,7 +66,7 @@ import { TPipe } from '../../i18n/t.pipe';
             </div>
           </div>
         </div>
-      </div>
+      </app-fees-teel>
     </section>
 
     <section class="fees-band verskyn">
@@ -117,60 +111,19 @@ import { TPipe } from '../../i18n/t.pipe';
     </section>
 
     <section class="fees-slot verskyn">
-      <div class="teel teel--klein">
-        <span class="raam" aria-hidden="true"></span>
-        @for (h of hoeke; track h) {
-          <span class="hoek" [class]="'hoek hoek--' + h" aria-hidden="true"><img src="straatfees/hoek.png" alt="" /></span>
-        }
+      <app-fees-teel [klein]="true">
         <div class="teel__slot">
           <h2>Lorem ipsum dolor sit amet?</h2>
           <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.</p>
-          <div class="lint lint--klein"><span>27-11-26</span></div>
+          <app-fees-lint class="lint-plek" [klein]="true">27-11-26</app-fees-lint>
           @if (info()?.enabled) {
             <button type="button" class="btn btn-primary btn-koop" (click)="openDialog()">{{ 'Koop kaartjies' | t }}</button>
           }
         </div>
-      </div>
+      </app-fees-teel>
     </section>
 
-    <dialog #dialog class="fees-dialog" (close)="fout.set(null)" [attr.aria-label]="'Koop kaartjies' | t">
-      <form (ngSubmit)="koop()" class="fees-form" novalidate>
-        <div class="fees-form__kop">
-          <h2>{{ 'Koop kaartjies' | t }}</h2>
-          <button type="button" class="sluit" (click)="dialog.close()" [attr.aria-label]="'Maak toe' | t">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <p class="fees-form__uitleg">{{ 'Geen rekening nodig nie. Ons e-pos jou kaartjie sodra jy betaal het.' | t }}</p>
-
-        <label for="fees-naam">{{ 'Naam en van' | t }}</label>
-        <input id="fees-naam" name="naam" type="text" autocomplete="name" [(ngModel)]="naam" required maxlength="120" />
-
-        <label for="fees-epos">{{ 'E-posadres' | t }}</label>
-        <input id="fees-epos" name="epos" type="email" autocomplete="email" [(ngModel)]="epos" required />
-
-        <label for="fees-aantal">{{ 'Aantal kaartjies' | t }}</label>
-        <div class="stepper">
-          <button type="button" (click)="stel(aantal() - 1)" [disabled]="aantal() <= 1" [attr.aria-label]="'Een minder' | t">−</button>
-          <input id="fees-aantal" name="aantal" type="number" inputmode="numeric" min="1" [max]="maks()"
-                 [ngModel]="aantal()" (ngModelChange)="stel($event)" />
-          <button type="button" (click)="stel(aantal() + 1)" [disabled]="aantal() >= maks()" [attr.aria-label]="'Een meer' | t">+</button>
-        </div>
-
-        <div class="totaal">
-          <span>{{ 'Totaal' | t }}</span>
-          <strong class="tabular">{{ totaal() }}</strong>
-        </div>
-
-        @if (fout(); as f) {
-          <p class="fees-fout" role="alert">{{ f | t }}</p>
-        }
-
-        <button type="submit" class="btn btn-primary btn-xl" [disabled]="besig()">
-          {{ (besig() ? 'Gaan na PayFast...' : 'Betaal met PayFast') | t }}
-        </button>
-      </form>
-    </dialog>
+    <app-fees-koop-dialog [info]="info()" />
   `,
   styles: [`
     :host { display: block; }
@@ -212,50 +165,7 @@ import { TPipe } from '../../i18n/t.pipe';
       --serif: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
       font-variant-numeric: lining-nums;
       --delft: #2F4F8F;
-      --hoek: clamp(4.5rem, 10vw, 8.5rem);
-      --raam-inset: clamp(0.9rem, 2vw, 1.6rem);
     }
-
-    /* ── Delft tile: the poster's frame. Thin rules, four ornamental corners, flowers on the rules. ── */
-    .teel {
-      position: relative;
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(20, 35, 75, 0.05), 0 30px 70px -20px rgba(20, 35, 75, 0.18);
-      isolation: isolate;
-    }
-    .raam { position: absolute; inset: var(--raam-inset); pointer-events: none; z-index: -1; }
-    .raam::before, .raam::after { content: ''; position: absolute; inset: 0; }
-    /* Top and bottom rules, faded out under the corner art; they draw outward from the middle. */
-    .raam::before {
-      border-block: 2px solid var(--delft);
-      -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--hoek) * 0.75), #000 calc(var(--hoek) * 0.95), #000 calc(100% - var(--hoek) * 0.95), transparent calc(100% - var(--hoek) * 0.75));
-      mask-image: linear-gradient(90deg, transparent calc(var(--hoek) * 0.75), #000 calc(var(--hoek) * 0.95), #000 calc(100% - var(--hoek) * 0.95), transparent calc(100% - var(--hoek) * 0.75));
-      animation: trek-x 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
-    }
-    .raam::after {
-      border-inline: 2px solid var(--delft);
-      -webkit-mask-image: linear-gradient(180deg, transparent calc(var(--hoek) * 0.75), #000 calc(var(--hoek) * 0.95), #000 calc(100% - var(--hoek) * 0.95), transparent calc(100% - var(--hoek) * 0.75));
-      mask-image: linear-gradient(180deg, transparent calc(var(--hoek) * 0.75), #000 calc(var(--hoek) * 0.95), #000 calc(100% - var(--hoek) * 0.95), transparent calc(100% - var(--hoek) * 0.75));
-      animation: trek-y 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
-    }
-
-    /* The span mirrors the art into its corner; the img inside does the moving, pivoting on the stem. */
-    .hoek { position: absolute; width: var(--hoek); aspect-ratio: 1; pointer-events: none; }
-    .hoek img { width: 100%; height: 100%; transform-origin: 10% 10%; animation: hoek-in 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) both, swaai 8s ease-in-out 1.6s infinite; }
-    .hoek--lb { top: calc(var(--raam-inset) * 0.4); left: calc(var(--raam-inset) * 0.4); }
-    .hoek--rb { top: calc(var(--raam-inset) * 0.4); right: calc(var(--raam-inset) * 0.4); transform: scaleX(-1); }
-    .hoek--lo { bottom: calc(var(--raam-inset) * 0.4); left: calc(var(--raam-inset) * 0.4); transform: scaleY(-1); }
-    .hoek--ro { bottom: calc(var(--raam-inset) * 0.4); right: calc(var(--raam-inset) * 0.4); transform: scale(-1); }
-    .hoek--rb img { animation-delay: 0.12s, 1.9s; }
-    .hoek--lo img { animation-delay: 0.24s, 2.2s; }
-    .hoek--ro img { animation-delay: 0.36s, 2.5s; }
-
-    /* Flowers sit on the rules; the white box behind each one breaks the line like on the poster. */
-    .blom { position: absolute; width: clamp(7rem, 12vw, 10rem); aspect-ratio: 461 / 308; object-fit: cover; pointer-events: none; }
-    .blom--bo { top: var(--raam-inset); left: 50%; translate: -50% -50%; height: 2.6rem; aspect-ratio: auto; background: #fff; padding-inline: 0.75rem; animation: blom-in 1s ease-out 0.9s both, bloei 6s ease-in-out 2s infinite; }
-    .blom--l, .blom--r { top: 50%; width: 7rem; height: 2.4rem; aspect-ratio: auto; background: #fff; padding-inline: 0.5rem; animation: blom-in 1s ease-out 1.1s both; }
-    .blom--l { left: var(--raam-inset); translate: -50% -50%; rotate: 90deg; }
-    .blom--r { right: var(--raam-inset); translate: 50% -50%; rotate: -90deg; }
 
     /* ── Hero ── */
     .fees-hero { padding: clamp(1.5rem, 4vw, 3.5rem) clamp(0.75rem, 3vw, 2.5rem) clamp(2rem, 5vw, 4rem); max-width: 1320px; margin: 0 auto; }
@@ -310,29 +220,7 @@ import { TPipe } from '../../i18n/t.pipe';
     }
     .slagspreuk.aktief { opacity: 1; translate: 0 0; }
 
-    /* Date ribbon from the poster, with a light sweep clipped to its shape. */
-    .lint {
-      position: relative;
-      display: grid;
-      place-items: center;
-      width: min(100%, 21rem);
-      aspect-ratio: 2177 / 406;
-      background: url('/straatfees/lint.png') center / 100% 100% no-repeat;
-      margin-bottom: 1.75rem;
-      filter: drop-shadow(0 8px 14px rgba(15, 80, 160, 0.22));
-      animation: op 0.9s ease-out 1s both;
-    }
-    .lint span { font-family: var(--serif); font-weight: 600; font-size: clamp(1.7rem, 3.4vw, 2.4rem); color: #fff; letter-spacing: 0.04em; text-shadow: 0 1px 3px rgba(0, 40, 90, 0.35); }
-    .lint::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%) 0 0 / 250% 100% no-repeat;
-      -webkit-mask: url('/straatfees/lint.png') center / 100% 100% no-repeat;
-      mask: url('/straatfees/lint.png') center / 100% 100% no-repeat;
-      animation: glans 5s ease-in-out 2s infinite;
-    }
-    .lint--klein { width: min(100%, 15rem); }
+    .lint-plek { margin-bottom: 1.75rem; }
 
     .fees-hero__actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
     .btn-koop { font-size: var(--fs-xl); padding: 0.9rem 2rem; min-height: var(--tap-large); box-shadow: 0 10px 24px -8px rgba(43, 76, 155, 0.55); transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.2s ease; }
@@ -401,57 +289,21 @@ import { TPipe } from '../../i18n/t.pipe';
 
     /* Closing tile, a smaller echo of the hero. */
     .fees-slot { padding: clamp(3.5rem, 8vw, 7rem) clamp(0.75rem, 3vw, 2.5rem); max-width: 900px; margin: 0 auto; }
-    .teel--klein { --hoek: clamp(4rem, 9vw, 6.5rem); }
     .teel__slot { text-align: center; display: flex; flex-direction: column; align-items: center; padding: clamp(3.5rem, 8vw, 5rem) clamp(2rem, 8vw, 5rem); }
     .teel__slot p { color: var(--text-muted); max-width: 30rem; margin-bottom: 1.5rem; }
 
     @keyframes op { from { opacity: 0; translate: 0 0.75rem; } to { opacity: 1; translate: 0 0; } }
     @keyframes lyn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    @keyframes trek-x { from { clip-path: inset(0 50%); } to { clip-path: inset(0 0); } }
-    @keyframes trek-y { from { clip-path: inset(50% 0); } to { clip-path: inset(0 0); } }
-    @keyframes hoek-in { from { opacity: 0; transform: rotate(-14deg) scale(0.8); } to { opacity: 1; transform: none; } }
-    @keyframes swaai { 0%, 100% { transform: none; } 50% { transform: rotate(2deg); } }
-    @keyframes blom-in { from { opacity: 0; scale: 0.7; } to { opacity: 1; scale: 1; } }
-    @keyframes bloei { 0%, 100% { scale: 1; } 50% { scale: 1.06; } }
-    @keyframes glans { 0% { background-position: 150% 0; } 45%, 100% { background-position: -60% 0; } }
     @keyframes dryf { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
 
     @media (prefers-reduced-motion: reduce) {
-      .raam::before, .raam::after, .hoek img, .blom, .titel, .titel::before, .titel::after, .lint, .lint::after, .beelde { animation: none !important; }
+      .titel, .titel::before, .titel::after, .beelde { animation: none !important; }
       .slagspreuk, .beelde img { transition: none; }
     }
-
-    .fees-dialog {
-      border: none;
-      border-radius: var(--radius-lg);
-      padding: 0;
-      width: min(28rem, calc(100vw - 2rem));
-      margin: auto;
-      box-shadow: 0 24px 60px rgba(20, 30, 60, 0.3);
-    }
-    .fees-dialog::backdrop { background: rgba(15, 25, 50, 0.55); }
-    .fees-form { display: flex; flex-direction: column; padding: 1.5rem; }
-    .fees-form__kop { display: flex; align-items: center; justify-content: space-between; border-top: 4px solid var(--fees-blue); margin: -1.5rem -1.5rem 0.75rem; padding: 1.25rem 1.5rem 0; }
-    .fees-form__kop h2 { font-size: var(--fs-2xl); }
-    .sluit { background: none; padding: 0.25rem; min-height: auto; color: var(--text-muted); }
-    .sluit:hover { color: var(--ink); }
-    .fees-form__uitleg { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 1.25rem; }
-    .fees-form label { font-weight: 600; margin-bottom: 0.35rem; }
-    .fees-form input { margin-bottom: 1rem; width: 100%; }
-    .stepper { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .stepper input { margin: 0; text-align: center; font-weight: 700; font-size: var(--fs-lg); -moz-appearance: textfield; }
-    .stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    .stepper button { background: var(--fees-blue-soft); color: var(--fees-blue); font-size: 1.5rem; padding: 0 1.1rem; flex-shrink: 0; }
-    .stepper button:hover:not(:disabled) { background: color-mix(in srgb, var(--fees-blue) 18%, white); }
-    .totaal { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--border-soft); padding: 0.85rem 0 1.1rem; font-size: var(--fs-lg); }
-    .totaal strong { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--fees-blue); }
-    .fees-fout { color: #B3261E; font-size: var(--fs-sm); margin-bottom: 0.85rem; }
 
     @media (max-width: 860px) {
       .teel__binne, .fees-split { grid-template-columns: 1fr; }
       .teel__binne { padding-inline: 1.75rem; }
-      .beelde { width: min(100%, 17rem); }
-      .blom--l, .blom--r { display: none; }
       .titel { font-size: clamp(2.2rem, 11.5vw, 2.9rem); }
       .beelde { width: min(100%, 14rem); }
       .fees-cards { grid-template-columns: 1fr; }
@@ -464,20 +316,12 @@ export class StraatfeesComponent implements OnInit {
   private service = inject(StraatfeesService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+  private koopDialog = viewChild.required(FeesKoopDialogComponent);
 
   info = signal<StraatfeesInfo | null>(null);
   gekanselleer = signal(false);
 
-  naam = '';
-  epos = '';
-  aantal = signal(1);
-  besig = signal(false);
-  fout = signal<string | null>(null);
-
-  maks = computed(() => this.info()?.maxPerOrder ?? 20);
   prys = computed(() => randBedrag(this.info()?.ticketPrice ?? 0));
-  totaal = computed(() => randBedrag((this.info()?.ticketPrice ?? 0) * this.aantal()));
 
   readonly kaarte = [
     { titel: 'Lorem ipsum', teks: 'Dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' },
@@ -485,7 +329,6 @@ export class StraatfeesComponent implements OnInit {
     { titel: 'Amet consectetur', teks: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.' },
   ];
   readonly galery = [1, 2, 3, 4, 5, 6, 7];
-  readonly hoeke = ['lb', 'rb', 'lo', 'ro'];
 
   /** The four posters: each line goes with its illustration. */
   readonly skyfies = [
@@ -537,29 +380,6 @@ export class StraatfeesComponent implements OnInit {
   }
 
   openDialog() {
-    this.fout.set(null);
-    const el = this.dialog().nativeElement;
-    if (!el.open) el.showModal();
-  }
-
-  stel(value: number | string) {
-    const n = Math.floor(Number(value));
-    this.aantal.set(Number.isFinite(n) ? Math.min(this.maks(), Math.max(1, n)) : 1);
-  }
-
-  koop() {
-    if (this.naam.trim().length < 2) return this.fout.set('Vul asseblief jou naam in.');
-    const eposFout = validateEmail(this.epos);
-    if (eposFout) return this.fout.set(eposFout);
-
-    this.fout.set(null);
-    this.besig.set(true);
-    this.service.order(this.naam.trim(), this.epos.trim(), this.aantal()).subscribe({
-      next: form => postToPayFast(form),
-      error: err => {
-        this.besig.set(false);
-        this.fout.set(err.error?.message || 'Kon nie PayFast betaling voorberei nie.');
-      }
-    });
+    this.koopDialog().open();
   }
 }
