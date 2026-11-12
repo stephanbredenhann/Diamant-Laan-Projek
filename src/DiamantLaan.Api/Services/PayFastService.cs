@@ -181,7 +181,7 @@ public class PayFastService : IPayFastService
             baseUrl,
             order.MerchantPaymentId,
             order.Amount,
-            $"Straatfees - {order.Quantity} kaartjie(s)",
+            $"Straatfees - {order.Adults} volwassene(s), {order.Children} kind(ers)",
             $"straatfees/kaartjie/{Uri.EscapeDataString(order.TicketCode)}",
             "straatfees?gekanselleer=1",
             firstName,

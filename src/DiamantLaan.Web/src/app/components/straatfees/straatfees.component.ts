@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StraatfeesInfo, StraatfeesService } from '../../services/straatfees.service';
@@ -9,9 +9,9 @@ import { FeesLintComponent } from './fees-lint.component';
 import { FeesTeelComponent } from './fees-teel.component';
 
 /**
- * Straatfees landing page. POC: the hero carries the Delft-blue poster artwork and lines;
- * the rest is lorem ipsum with "(foto hier)" slots until the real content arrives. The only live part is the ticket purchase:
- * one button, one dialog (FeesKoopDialogComponent), then PayFast.
+ * Straatfees landing page. The hero carries the Delft-blue poster artwork and lines; the rest is
+ * the organisers' copy and photos from a previous straatfees. The only live part is the ticket
+ * purchase: one button, one dialog (FeesKoopDialogComponent), then PayFast.
  */
 @Component({
   selector: 'app-straatfees',
@@ -44,7 +44,7 @@ import { FeesTeelComponent } from './fees-teel.component';
                     {{ 'Koop kaartjies' | t }}
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                   </button>
-                  <span class="prys">{{ prys() }} {{ 'per kaartjie' | t }}</span>
+                  <span class="prys">{{ prys(i.adultPrice) }} {{ 'per volwassene' | t }} &middot; {{ prys(i.childPrice) }} {{ 'per kind' | t }}</span>
                 } @else {
                   <p class="fees-alert">{{ 'Kaartjieverkope is tans gesluit.' | t }}</p>
                 }
@@ -71,16 +71,14 @@ import { FeesTeelComponent } from './fees-teel.component';
 
     <section class="fees-band verskyn">
       <div class="container fees-split">
-        <div class="foto foto--staan" role="img" aria-label="Plekhouer vir foto">(foto hier)</div>
+        <img class="foto foto--staan" [src]="foto('kransie', 1600)" [srcset]="srcset('kransie')" sizes="(max-width: 860px) 100vw, 40vw"
+             alt="Feesganger in wit met ’n blommekransie" loading="lazy" style="object-position: 57% 30%" />
         <div>
-          <h2>Ut enim ad minim veniam, quis nostrud.</h2>
+          <h2>Tuin-tot-Tafel</h2>
           <p>
-            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-          </p>
-          <p>
-            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium,
-            totam rem aperiam, eaque ipsa quae ab illo inventore veritatis.
+            Die Tuin-tot-Tafel Straatfees is gebaseer op die gedagte dat die gemeenskap hul oeste met mekaar deel.
+            Dis ’n kuierfees, so bring ’n dankbaarheidsgees! Hierdie jaar vier ons ook die nuwe pad, wat die
+            Orania-gemeenskap saam bou. Wat ’n voorreg om saam die pad na vryheid te kan bou!
           </p>
         </div>
       </div>
@@ -88,11 +86,12 @@ import { FeesTeelComponent } from './fees-teel.component';
 
     <section class="container fees-section verskyn">
       <img class="skeier" src="straatfees/blom.png" alt="" aria-hidden="true" />
-      <h2>Lorem ipsum dolor sit amet</h2>
+      <h2>Waar, wanneer en wat bring ek?</h2>
       <div class="fees-cards">
         @for (kaart of kaarte; track kaart.titel) {
           <article class="fees-card">
-            <div class="foto foto--kaart" role="img" aria-label="Plekhouer vir foto">(foto hier)</div>
+            <img class="foto foto--kaart" [src]="foto(kaart.foto, 800)" [srcset]="srcset(kaart.foto)" sizes="(max-width: 860px) 100vw, 33vw"
+                 [alt]="kaart.alt" loading="lazy" />
             <h3>{{ kaart.titel }}</h3>
             <p>{{ kaart.teks }}</p>
           </article>
@@ -100,12 +99,31 @@ import { FeesTeelComponent } from './fees-teel.component';
       </div>
     </section>
 
+    <section class="fees-band fees-band--prys verskyn">
+      <div class="container fees-split fees-split--om">
+        <div>
+          <h2>Wat kos dit en wat kry ek?</h2>
+          <div class="pryse">
+            <div><strong>R70</strong><span>vir volwassenes</span></div>
+            <div><strong>R10</strong><span>vir kinders</span></div>
+          </div>
+          <p>
+            Dit sluit ’n glasie vonkelwyn, ’n klein soetdingetjie, die mooiste dekor en ’n heerlike saamkuier in.
+            Bring <strong>kontant vir ’n bottel wyn</strong> (ten bate van die Padboufonds!).
+          </p>
+        </div>
+        <img class="foto foto--staan" [src]="foto('boog', 1600)" [srcset]="srcset('boog')" sizes="(max-width: 860px) 100vw, 40vw"
+             alt="Gaste in wit by die blommeboog" loading="lazy" style="object-position: 38% 50%" />
+      </div>
+    </section>
+
     <section class="container fees-section verskyn">
       <img class="skeier" src="straatfees/blom.png" alt="" aria-hidden="true" />
-      <h2>Neque porro quisquam est</h2>
       <div class="fees-galery">
-        @for (n of galery; track n) {
-          <div class="foto" [class]="'foto foto--g' + n" role="img" aria-label="Plekhouer vir foto">(foto hier)</div>
+        @for (g of galery; track g.foto) {
+          <img [class]="'foto ' + (g.vorm ? 'foto--' + g.vorm : '')" [src]="foto(g.foto, 800)" [srcset]="srcset(g.foto)"
+               [attr.sizes]="g.vorm === 'breed' ? '(max-width: 860px) 100vw, 50vw' : '(max-width: 860px) 50vw, 25vw'"
+               [alt]="g.alt" loading="lazy" />
         }
       </div>
     </section>
@@ -113,12 +131,13 @@ import { FeesTeelComponent } from './fees-teel.component';
     <section class="fees-slot verskyn">
       <app-fees-teel [klein]="true">
         <div class="teel__slot">
-          <h2>Lorem ipsum dolor sit amet?</h2>
-          <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.</p>
+          <h2>Straatfees</h2>
           <app-fees-lint class="lint-plek" [klein]="true">27-11-26</app-fees-lint>
+          <p>Kaartjies te koop by Orania Beweging (kontant) of by bou.orania.co.za.</p>
           @if (info()?.enabled) {
             <button type="button" class="btn btn-primary btn-koop" (click)="openDialog()">{{ 'Koop kaartjies' | t }}</button>
           }
+          <p class="navrae">Navrae: Orania Beweging (<a href="tel:+27532070062">053 2070 062</a>)</p>
         </div>
       </app-fees-teel>
     </section>
@@ -128,21 +147,8 @@ import { FeesTeelComponent } from './fees-teel.component';
   styles: [`
     :host { display: block; }
 
-    /* "(foto hier)" slots. Each has a fixed aspect ratio so the layout holds once real photos land. */
-    .foto {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(160deg, #E9EEF8 0%, #DCE4F3 100%);
-      box-shadow: inset 0 0 0 1px rgba(43, 76, 155, 0.08);
-      color: color-mix(in srgb, var(--fees-blue) 55%, white);
-      font-family: var(--font-body);
-      font-size: 0.95rem;
-      font-style: italic;
-      letter-spacing: 0.02em;
-      border-radius: 4px;
-      width: 100%;
-    }
+    /* Photos fill fixed-ratio frames, so the layout holds while they load. */
+    .foto { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 4px; background: #DCE4F3; }
 
     /* Sections ease in as they scroll into view. Browsers without scroll timelines just show them. */
     @supports (animation-timeline: view()) {
@@ -158,8 +164,8 @@ import { FeesTeelComponent } from './fees-teel.component';
       from { opacity: 0; transform: translateY(2rem); }
       to   { opacity: 1; transform: none; }
     }
-    .foto--staan { aspect-ratio: 4 / 5; }
-    .foto--kaart { aspect-ratio: 3 / 2; margin-bottom: 1rem; }
+    .foto--staan { aspect-ratio: 4 / 5; height: auto; }
+    .foto--kaart { aspect-ratio: 3 / 2; height: auto; margin-bottom: 1rem; }
 
     :host {
       --serif: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
@@ -264,6 +270,13 @@ import { FeesTeelComponent } from './fees-teel.component';
     .fees-split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
     .fees-split h2, .fees-section h2, .teel__slot h2 { font-family: var(--serif); font-weight: 500; color: var(--delft); text-transform: none; letter-spacing: 0; font-size: clamp(2.2rem, 4.5vw, 3.1rem); line-height: 1.1; margin-bottom: 1rem; }
     .fees-split p + p { margin-top: 1rem; }
+    .fees-split p { font-size: var(--fs-lg); line-height: 1.65; }
+    .fees-band--prys { background: transparent; }
+    .fees-split--om { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+    .pryse { display: flex; gap: clamp(1.5rem, 4vw, 3rem); margin: 0.5rem 0 1.5rem; }
+    .pryse div { display: flex; flex-direction: column; }
+    .pryse strong { font-family: var(--serif); font-weight: 600; font-size: clamp(2.6rem, 6vw, 3.6rem); line-height: 1; color: var(--delft); }
+    .pryse span { font-family: var(--serif); font-style: italic; font-size: var(--fs-lg); color: var(--text-muted); }
 
     .fees-section { padding-top: clamp(3.5rem, 8vw, 7rem); padding-bottom: 0; }
     .fees-section > h2 { text-align: center; }
@@ -274,23 +287,21 @@ import { FeesTeelComponent } from './fees-teel.component';
     .fees-card h3 { font-family: var(--serif); font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--delft); font-size: 1.65rem; margin-bottom: 0.3rem; }
     .fees-card p { color: var(--text-muted); font-size: var(--fs-sm); }
 
-    /* Mixed sizes on purpose: the real set will be a mix of landscape and portrait shots. */
     .fees-galery {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-auto-rows: clamp(9rem, 16vw, 13rem);
-      grid-auto-flow: dense;
+      grid-auto-rows: clamp(10rem, 19vw, 16rem);
       gap: 0.75rem;
       margin-top: 2.5rem;
     }
-    .foto--g1 { grid-column: span 2; grid-row: span 2; }
-    .foto--g4 { grid-row: span 2; }
-    .foto--g6 { grid-column: span 2; }
+    .foto--breed { grid-column: span 2; }
 
     /* Closing tile, a smaller echo of the hero. */
     .fees-slot { padding: clamp(3.5rem, 8vw, 7rem) clamp(0.75rem, 3vw, 2.5rem); max-width: 900px; margin: 0 auto; }
     .teel__slot { text-align: center; display: flex; flex-direction: column; align-items: center; padding: clamp(3.5rem, 8vw, 5rem) clamp(2rem, 8vw, 5rem); }
     .teel__slot p { color: var(--text-muted); max-width: 30rem; margin-bottom: 1.5rem; }
+    .teel__slot .navrae { margin: 1.5rem 0 0; font-size: var(--fs-sm); }
+    .navrae a { color: inherit; }
 
     @keyframes op { from { opacity: 0; translate: 0 0.75rem; } to { opacity: 1; translate: 0 0; } }
     @keyframes lyn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -302,13 +313,13 @@ import { FeesTeelComponent } from './fees-teel.component';
     }
 
     @media (max-width: 860px) {
-      .teel__binne, .fees-split { grid-template-columns: 1fr; }
+      .teel__binne, .fees-split, .fees-split--om { grid-template-columns: 1fr; }
+      .fees-split--om .foto { order: -1; }
       .teel__binne { padding-inline: 1.75rem; }
       .titel { font-size: clamp(2.2rem, 11.5vw, 2.9rem); }
       .beelde { width: min(100%, 14rem); }
       .fees-cards { grid-template-columns: 1fr; }
       .fees-galery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .foto--g1, .foto--g6 { grid-column: span 2; }
     }
   `]
 })
@@ -321,14 +332,39 @@ export class StraatfeesComponent implements OnInit {
   info = signal<StraatfeesInfo | null>(null);
   gekanselleer = signal(false);
 
-  prys = computed(() => randBedrag(this.info()?.ticketPrice ?? 0));
+  prys = randBedrag;
 
   readonly kaarte = [
-    { titel: 'Lorem ipsum', teks: 'Dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.' },
-    { titel: 'Dolor sit', teks: 'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.' },
-    { titel: 'Amet consectetur', teks: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.' },
+    {
+      titel: 'Waar en wanneer', foto: 'wit-straat', alt: 'Feesgangers in wit op Diamantlaan',
+      teks: '27-11-26, 18:30. Diamantlaan (by Heuwelsig). Parkeer by die Sportgronde.',
+    },
+    {
+      titel: 'Trek wit aan', foto: 'kransies', alt: 'Feesgangers vleg blommekransies',
+      teks: 'Trek wit klere aan en vleg ’n blommekransie vir jou kop.',
+    },
+    {
+      titel: 'Wat bring ek?', foto: 'bykos-tafel', alt: 'Die gemeenskaplike bykostafel',
+      teks: 'Bring die mooiste van jou oes of uit jou kombuis vir die gemeenskaplike bykostafel. '
+        + 'Bring ’n vleisgereg en eetgerei wat jy by jou tafel vir jou gesin hou.',
+    },
   ];
-  readonly galery = [1, 2, 3, 4, 5, 6, 7];
+
+  /**
+   * Daylight first, sparklers last: the gallery follows the evening from light to dark.
+   * breed spans two columns; two rows of four cells, so the grid closes on desktop and on phones.
+   */
+  readonly galery: { foto: string; alt: string; vorm?: 'breed' }[] = [
+    { foto: 'wit-gaste', alt: 'Gaste in wit kuier op straat', vorm: 'breed' },
+    { foto: 'bykos-skep', alt: 'Gaste skep by die bykostafel' },
+    { foto: 'wit-vlae', alt: 'Vlaggies oor die straat' },
+    { foto: 'bykos-skemer', alt: 'Die bykostafel teen skemer' },
+    { foto: 'skemer-ligte', alt: 'Liggies oor die straat teen skemer' },
+    { foto: 'sterretjies-1', alt: 'Sterretjies in die aand', vorm: 'breed' },
+  ];
+
+  foto = (naam: string, w: 800 | 1600) => `straatfees/fotos/${naam}-${w}.webp`;
+  srcset = (naam: string) => `straatfees/fotos/${naam}-800.webp 800w, straatfees/fotos/${naam}-1600.webp 1600w`;
 
   /** The four posters: each line goes with its illustration. */
   readonly skyfies = [

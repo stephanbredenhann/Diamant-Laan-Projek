@@ -229,51 +229,96 @@ public static class EmailTemplates
     }
 
     /// <summary>
-    /// Straatfees ticket. POC: the ticket design is still to come, so this is the ticket code in a
-    /// box plus a link to the ticket page, where the PDF is downloaded. Blue, not orange: the
-    /// straatfees has its own colour. Mandrill sends no attachments through our outbox, hence the link.
+    /// Straatfees ticket, drawn in the email itself so the inbox is the ticket: no PDF, no
+    /// download. Same parts as the ticket page (poster corners, title, date ribbon, name, who it
+    /// admits, code, arrangements), but stacked in one column of plain tables, since email has no
+    /// grid, no absolute positioning and no transforms. Blue, not orange: the straatfees has its
+    /// own colour. The ribbon is a background image. Outlook ignores it and falls back to the
+    /// bgcolor attribute (solid blue); everyone else gets white behind the ribbon's curved ends.
     /// </summary>
-    public static string StraatfeesTicket(string name, int quantity, decimal amount, string ticketCode, string ticketUrl)
+    public static string StraatfeesTicket(string name, int adults, int children, decimal amount, string ticketCode, string ticketUrl, string siteUrl)
     {
         const string FeesBlue = "#2B4C9B";
+        const string Delft = "#2F4F8F";
+        const string Serif = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
         var url = WebUtility.HtmlEncode(ticketUrl);
+        var art = WebUtility.HtmlEncode(Site(siteUrl) + "/straatfees/epos");
         var who = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(name) ? "Feesganger" : name);
         var code = WebUtility.HtmlEncode(ticketCode);
-        var count = quantity == 1 ? "1 kaartjie" : $"{quantity} kaartjies";
+        var admits = StraatfeesAdmits(adults, children);
+        var count = adults + children == 1 ? "1 kaartjie" : $"{adults + children} kaartjies";
+        var online = $"""Sien jy nie die kaartjie hierbo nie? <a href="{url}" style="color:{FeesBlue};">Maak dit aanlyn oop</a>.""";
+
+        string Label(string text) =>
+            $"""<p style="margin:0; font-family:{FontDisplay}; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:{Muted};">{text}</p>""";
+        string Item(string text) =>
+            $"""<tr><td valign="top" style="padding:0 10px 6px 0; color:{Delft}; font-weight:700; line-height:1.5;">&bull;</td><td valign="top" style="padding:0 0 6px; line-height:1.5;">{text}</td></tr>""";
+
         return $"""
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F2F5FB; margin:0; padding:24px 12px;">
               <tr>
                 <td align="center">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="width:560px; max-width:560px; background:#FFFFFF; border:1px solid #C9D3EA; border-radius:4px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="width:100%; max-width:560px;">
                     <tr>
-                      <td style="padding:36px 36px 0;">
-                        <p style="margin:0 0 10px; font-family:{FontDisplay}; font-size:14px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:{FeesBlue};">Orania Straatfees</p>
-                        <h1 style="margin:0; font-family:{FontDisplay}; font-size:34px; line-height:1.1; font-weight:700; color:{Tar};">Jou kaartjies is gereed!</h1>
+                      <td style="padding:8px 4px 20px; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
+                        <p style="margin:0 0 6px; font-family:{FontDisplay}; font-size:14px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:{FeesBlue};">Orania Straatfees</p>
+                        <h1 style="margin:0 0 14px; font-family:{FontDisplay}; font-size:32px; line-height:1.1; font-weight:700; color:{Tar};">Jou kaartjie is gereed!</h1>
+                        <p style="margin:0;">Beste {who}, ons het jou betaling van <strong>{Rand(amount)}</strong> vir <strong>{count}</strong> ontvang. Hier is jou kaartjie: wys dit by die hek, op jou foon of gedruk.</p>
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding:22px 36px 30px; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
-                        <p style="margin:0 0 16px;">Beste {who},</p>
-                        <p style="margin:0 0 16px;">Ons het jou betaling van <strong>{Rand(amount)}</strong> vir <strong>{count}</strong> ontvang. Wys hierdie kode of jou afgelaaide kaartjie by die hek:</p>
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 20px;">
+                      <td style="background:#FFFFFF; border:2px solid {Delft}; border-radius:6px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                           <tr>
-                            <td style="border:2px dashed {FeesBlue}; border-radius:4px; padding:14px 24px; font-family:'Courier New',monospace; font-size:26px; font-weight:700; letter-spacing:0.18em; color:{FeesBlue};">{code}</td>
+                            <td align="left" valign="top" style="padding:8px 8px 0; line-height:0; font-size:0;"><img src="{art}/hoek-bo.png" width="56" height="56" alt="" style="display:block; border:0;"></td>
+                            <td></td>
                           </tr>
-                        </table>
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
                           <tr>
-                            <td style="background:{FeesBlue}; border-radius:4px;">
-                              <a href="{url}" style="display:inline-block; padding:14px 28px; font-family:{FontDisplay}; font-size:17px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#FFFFFF; text-decoration:none;">Laai jou kaartjie af</a>
+                            <td colspan="2" align="center" style="padding:0 24px; text-align:center; color:{Delft};">
+                              <p style="margin:0; font-family:{Serif}; font-size:14px; font-weight:600; letter-spacing:0.35em;">ORANIA</p>
+                              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:6px auto 14px;">
+                                <tr><td style="border-top:2px solid {Delft}; border-bottom:2px solid {Delft}; padding:6px 4px; font-family:{Serif}; font-size:40px; font-weight:600; letter-spacing:0.04em; line-height:1; color:{Delft};">STRAATFEES</td></tr>
+                              </table>
+                              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+                                <tr><td width="200" height="38" align="center" bgcolor="{Delft}" background="{art}/lint.png" style="width:200px; height:38px; background:#FFFFFF url('{art}/lint.png') center / 100% 100% no-repeat; font-family:{Serif}; font-size:20px; font-weight:600; color:#FFFFFF; text-align:center;">27-11-26</td></tr>
+                              </table>
+                              <p style="margin:12px 0 0; font-family:{FontBody}; font-size:16px; line-height:1.5; color:{Delft};">18:30 &middot; Diamantlaan (by Heuwelsig)</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td></td>
+                            <td align="right" valign="bottom" style="padding:0 8px 8px; line-height:0; font-size:0;"><img src="{art}/hoek-onder.png" width="56" height="56" alt="" style="display:block; border:0; margin-left:auto;"></td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="border-top:2px dashed {Delft}; padding:20px 28px 8px; font-family:{FontBody}; color:{Ink};">
+                              {Label("Naam")}
+                              <p style="margin:0 0 12px; font-family:{FontDisplay}; font-size:24px; font-weight:700; line-height:1.2;">{who}</p>
+                              {Label("Toegang vir")}
+                              <p style="margin:0 0 12px; font-family:{FontDisplay}; font-size:24px; font-weight:700; line-height:1.2;">{admits}</p>
+                              {Label("Kode")}
+                              <p style="margin:0; font-family:'Courier New',monospace; font-size:28px; font-weight:700; letter-spacing:0.15em; color:{FeesBlue};">{code}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="padding:16px 28px 24px; font-family:{FontBody}; font-size:15px; line-height:1.5; color:{Ink};">
+                              <p style="margin:0 0 12px; color:{Delft};">Trek <strong>wit</strong> aan en vleg ’n blommekransie vir jou kop!</p>
+                              {Label("Reëlings")}
+                              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0; font-family:{FontBody}; font-size:15px; color:{Ink};">
+                                {Item("Bring ’n eenvoudige bykos uit jou kombuis / tuin vir die <strong>gemeenskaplike tafel.</strong>")}
+                                {Item("Bring <strong>vleis en eetgerei</strong> wat jy by jou tafel hou.")}
+                                {Item("Wyne te koop: fondse vir die Padboufonds. Ondersteun asb!")}
+                                {Item("<strong>Parkeer</strong> by die rugbyveld.")}
+                              </table>
+                              <p style="margin:10px 0 0; font-size:14px; color:{Muted};">Navrae: Orania Beweging 053 2070 062</p>
                             </td>
                           </tr>
                         </table>
-                        {Fine("Hou hierdie e-pos: die skakel bly werk, so jy kan jou kaartjie enige tyd weer aflaai.")}
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding:22px 36px 32px; border-top:1px solid #C9D3EA; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
+                      <td style="padding:20px 4px 0; font-family:{FontBody}; font-size:16px; line-height:1.6; color:{Ink};">
                         <p style="margin:0;">Sien jou by die straatfees!<br>Die Orania Beweging-span</p>
-                        <p style="margin:12px 0 0; font-size:14px; color:{Muted};">inligting&#64;orania.co.za &middot; 053 207 0062</p>
+                        {Fine(online)}
                       </td>
                     </tr>
                   </table>
@@ -281,6 +326,15 @@ public static class EmailTemplates
               </tr>
             </table>
             """;
+    }
+
+    /// <summary>"2 volwassenes en 1 kind": who a straatfees ticket lets in, leaving out a zero.</summary>
+    public static string StraatfeesAdmits(int adults, int children)
+    {
+        var parts = new List<string>();
+        if (adults > 0) parts.Add(adults == 1 ? "1 volwassene" : $"{adults} volwassenes");
+        if (children > 0) parts.Add(children == 1 ? "1 kind" : $"{children} kinders");
+        return string.Join(" en ", parts);
     }
 
     /// <summary>

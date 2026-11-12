@@ -5,13 +5,15 @@ import { PayFastForm } from './purchase.service';
 
 export interface StraatfeesInfo {
   enabled: boolean;
-  ticketPrice: number;
+  adultPrice: number;
+  childPrice: number;
   maxPerOrder: number;
 }
 
 export interface StraatfeesTicket {
   name: string;
-  quantity: number;
+  adults: number;
+  children: number;
   amount: number;
   ticketCode: string;
   status: 'Pending' | 'Confirmed' | 'Cancelled' | 'Failed';
@@ -22,7 +24,8 @@ export interface StraatfeesAdminOrder {
   id: number;
   name: string;
   email: string;
-  quantity: number;
+  adults: number;
+  children: number;
   amount: number;
   ticketCode: string;
   status: string;
@@ -34,7 +37,8 @@ export interface StraatfeesAdminOrder {
 
 export interface StraatfeesAdminList {
   enabled: boolean;
-  ticketPrice: number;
+  adultPrice: number;
+  childPrice: number;
   orders: StraatfeesAdminOrder[];
 }
 
@@ -49,8 +53,8 @@ export class StraatfeesService {
     return this.http.get<StraatfeesInfo>('/api/straatfees/info').pipe(tap(i => this.enabled.set(i.enabled)));
   }
 
-  order(name: string, email: string, quantity: number) {
-    return this.http.post<PayFastForm>('/api/straatfees/bestel', { name, email, quantity });
+  order(name: string, email: string, adults: number, children: number) {
+    return this.http.post<PayFastForm>('/api/straatfees/bestel', { name, email, adults, children });
   }
 
   ticket(code: string) {
@@ -65,6 +69,14 @@ export class StraatfeesService {
     return this.http.put<{ enabled: boolean }>('/api/admin/straatfees/aktief', { enabled })
       .pipe(tap(r => this.enabled.set(r.enabled)));
   }
+}
+
+/** "2 volwassenes en 1 kind": who a ticket lets in. Matches EmailTemplates.StraatfeesAdmits. */
+export function toegang(adults: number, children: number): string {
+  const dele: string[] = [];
+  if (adults > 0) dele.push(adults === 1 ? '1 volwassene' : `${adults} volwassenes`);
+  if (children > 0) dele.push(children === 1 ? '1 kind' : `${children} kinders`);
+  return dele.join(' en ');
 }
 
 /** Same hidden-form handoff the block checkout uses. */

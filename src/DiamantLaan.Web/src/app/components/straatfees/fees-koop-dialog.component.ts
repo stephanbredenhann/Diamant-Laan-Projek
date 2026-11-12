@@ -5,7 +5,7 @@ import { randBedrag } from '../../utils/afrikaans.util';
 import { validateEmail } from '../../utils/validation.util';
 import { TPipe } from '../../i18n/t.pipe';
 
-/** The ticket purchase dialog: name, email and ticket count, then off to PayFast. No account. */
+/** The ticket purchase dialog: name, email, adults and children, then off to PayFast. No account. */
 @Component({
   selector: 'app-fees-koop-dialog',
   standalone: true,
@@ -27,13 +27,20 @@ import { TPipe } from '../../i18n/t.pipe';
         <label for="fees-epos">{{ 'E-posadres' | t }}</label>
         <input id="fees-epos" name="epos" type="email" autocomplete="email" [(ngModel)]="epos" required />
 
-        <label for="fees-aantal">{{ 'Aantal kaartjies' | t }}</label>
-        <div class="stepper">
-          <button type="button" (click)="stel(aantal() - 1)" [disabled]="aantal() <= 1" [attr.aria-label]="'Een minder' | t">−</button>
-          <input id="fees-aantal" name="aantal" type="number" inputmode="numeric" min="1" [max]="maks()"
-                 [ngModel]="aantal()" (ngModelChange)="stel($event)" />
-          <button type="button" (click)="stel(aantal() + 1)" [disabled]="aantal() >= maks()" [attr.aria-label]="'Een meer' | t">+</button>
-        </div>
+        @for (r of rye; track r.id) {
+          <div class="ry">
+            <label [for]="'fees-' + r.id">
+              {{ r.etiket | t }}
+              <span class="ry__prys">{{ bedrag(r.prys()) }} {{ 'elk' | t }}</span>
+            </label>
+            <div class="stepper">
+              <button type="button" (click)="stel(r.id, r.aantal() - 1)" [disabled]="r.aantal() <= 0" [attr.aria-label]="'Een minder' | t">−</button>
+              <input [id]="'fees-' + r.id" [name]="r.id" type="number" inputmode="numeric" min="0" [max]="maks()"
+                     [ngModel]="r.aantal()" (ngModelChange)="stel(r.id, $event)" />
+              <button type="button" (click)="stel(r.id, r.aantal() + 1)" [disabled]="totaalAantal() >= maks()" [attr.aria-label]="'Een meer' | t">+</button>
+            </div>
+          </div>
+        }
 
         <div class="totaal">
           <span>{{ 'Totaal' | t }}</span>
@@ -68,6 +75,8 @@ import { TPipe } from '../../i18n/t.pipe';
     .fees-form__uitleg { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 1.25rem; }
     .fees-form label { font-weight: 600; margin-bottom: 0.35rem; }
     .fees-form input { margin-bottom: 1rem; width: 100%; }
+    .ry label { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .ry__prys { font-weight: 400; font-size: var(--fs-sm); color: var(--text-muted); }
     .stepper { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .stepper input { margin: 0; text-align: center; font-weight: 700; font-size: var(--fs-lg); -moz-appearance: textfield; }
     .stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -86,12 +95,21 @@ export class FeesKoopDialogComponent {
 
   naam = '';
   epos = '';
-  aantal = signal(1);
+  volwassenes = signal(1);
+  kinders = signal(0);
   besig = signal(false);
   fout = signal<string | null>(null);
 
   maks = computed(() => this.info()?.maxPerOrder ?? 20);
-  totaal = computed(() => randBedrag((this.info()?.ticketPrice ?? 0) * this.aantal()));
+  totaalAantal = computed(() => this.volwassenes() + this.kinders());
+  totaal = computed(() => randBedrag(
+    (this.info()?.adultPrice ?? 0) * this.volwassenes() + (this.info()?.childPrice ?? 0) * this.kinders()));
+
+  readonly rye = [
+    { id: 'volwassenes' as const, etiket: 'Volwassenes', aantal: this.volwassenes, prys: () => this.info()?.adultPrice ?? 0 },
+    { id: 'kinders' as const, etiket: 'Kinders', aantal: this.kinders, prys: () => this.info()?.childPrice ?? 0 },
+  ];
+  bedrag = randBedrag;
 
   open() {
     this.fout.set(null);
@@ -99,19 +117,23 @@ export class FeesKoopDialogComponent {
     if (!el.open) el.showModal();
   }
 
-  stel(value: number | string) {
+  /** Clamps one row so the order as a whole stays within maxPerOrder. */
+  stel(ry: 'volwassenes' | 'kinders', value: number | string) {
+    const self = ry === 'volwassenes' ? this.volwassenes : this.kinders;
+    const ander = ry === 'volwassenes' ? this.kinders() : this.volwassenes();
     const n = Math.floor(Number(value));
-    this.aantal.set(Number.isFinite(n) ? Math.min(this.maks(), Math.max(1, n)) : 1);
+    self.set(Number.isFinite(n) ? Math.min(this.maks() - ander, Math.max(0, n)) : 0);
   }
 
   koop() {
     if (this.naam.trim().length < 2) return this.fout.set('Vul asseblief jou naam in.');
     const eposFout = validateEmail(this.epos);
     if (eposFout) return this.fout.set(eposFout);
+    if (this.totaalAantal() < 1) return this.fout.set('Kies ten minste een kaartjie.');
 
     this.fout.set(null);
     this.besig.set(true);
-    this.service.order(this.naam.trim(), this.epos.trim(), this.aantal()).subscribe({
+    this.service.order(this.naam.trim(), this.epos.trim(), this.volwassenes(), this.kinders()).subscribe({
       next: form => postToPayFast(form),
       error: err => {
         this.besig.set(false);

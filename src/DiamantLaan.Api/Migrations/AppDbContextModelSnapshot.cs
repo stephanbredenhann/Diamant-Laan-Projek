@@ -502,8 +502,20 @@ namespace DiamantLaan.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("AdultUnitPrice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Adults")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ChildUnitPrice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Children")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("ConfirmedAt")
                         .HasColumnType("TEXT");
@@ -528,17 +540,11 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("TicketCode")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("TicketEmailSentAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("UnitPrice")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

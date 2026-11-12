@@ -43,7 +43,8 @@ public class StraatfeesController : ControllerBase
     public async Task<IActionResult> Info(CancellationToken cancellationToken) => Ok(new StraatfeesInfoDto
     {
         Enabled = await _straatfees.IsEnabledAsync(cancellationToken),
-        TicketPrice = _straatfees.TicketPrice,
+        AdultPrice = _straatfees.AdultPrice,
+        ChildPrice = _straatfees.ChildPrice,
         MaxPerOrder = StraatfeesService.MaxPerOrder
     });
 
@@ -85,7 +86,8 @@ public class StraatfeesController : ControllerBase
         return Ok(new StraatfeesTicketDto
         {
             Name = order.Name,
-            Quantity = order.Quantity,
+            Adults = order.Adults,
+            Children = order.Children,
             Amount = order.Amount,
             TicketCode = order.TicketCode,
             Status = order.PaymentStatus.ToString(),
@@ -131,7 +133,8 @@ public class AdminStraatfeesController : ControllerBase
     public async Task<IActionResult> List() => Ok(new
     {
         enabled = await _straatfees.IsEnabledAsync(),
-        ticketPrice = _straatfees.TicketPrice,
+        adultPrice = _straatfees.AdultPrice,
+        childPrice = _straatfees.ChildPrice,
         orders = await _straatfees.ListAsync()
     });
 

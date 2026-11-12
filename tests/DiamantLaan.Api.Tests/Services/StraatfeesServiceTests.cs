@@ -31,7 +31,7 @@ public class StraatfeesServiceTests : IDisposable
             .ReturnsAsync(true);
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["Straatfees:TicketPrice"] = "150" })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Straatfees:AdultPrice"] = "150" })
             .Build();
 
         var outbox = new EmailOutboxService(_db, _email.Object, Mock.Of<ILogger<EmailOutboxService>>());
@@ -46,26 +46,42 @@ public class StraatfeesServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateOrder_PricesFromConfigAndIssuesCode()
+    public async Task CreateOrder_PricesAdultsAndChildrenAndIssuesCode()
     {
-        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan Steyn", Email = "jan@test.com", Quantity = 3 });
+        // Adults from config (150), children at the R10 default.
+        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan Steyn", Email = "jan@test.com", Adults = 2, Children = 3 });
 
         Assert.Null(error);
         Assert.NotNull(order);
-        Assert.Equal(450m, order!.Amount);
+        Assert.Equal(330m, order!.Amount);
+        Assert.Equal(150m, order.AdultUnitPrice);
+        Assert.Equal(10m, order.ChildUnitPrice);
+        Assert.Equal(5, order.Quantity);
         Assert.Equal(10, order.TicketCode.Length);
         Assert.Equal(PaymentStatus.Pending, order.PaymentStatus);
         Assert.Equal("SF-" + order.Id, order.MerchantPaymentId);
     }
 
-    [Theory]
-    [InlineData("", "jan@test.com", 1)]
-    [InlineData("Jan", "nie-n-epos", 1)]
-    [InlineData("Jan", "jan@test.com", 0)]
-    [InlineData("Jan", "jan@test.com", 21)]
-    public async Task CreateOrder_RejectsBadInput(string name, string email, int quantity)
+    [Fact]
+    public async Task CreateOrder_DefaultsToR70AndR10()
     {
-        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = name, Email = email, Quantity = quantity });
+        var service = new StraatfeesService(_db, _payFast.Object, new EmailOutboxService(_db, _email.Object, Mock.Of<ILogger<EmailOutboxService>>()),
+            new ConfigurationBuilder().Build(), Mock.Of<ILogger<StraatfeesService>>());
+
+        var (order, _) = await service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Adults = 2, Children = 1 });
+
+        Assert.Equal(150m, order!.Amount);
+    }
+
+    [Theory]
+    [InlineData("", "jan@test.com", 1, 0)]
+    [InlineData("Jan", "nie-n-epos", 1, 0)]
+    [InlineData("Jan", "jan@test.com", 0, 0)]
+    [InlineData("Jan", "jan@test.com", 15, 6)]
+    [InlineData("Jan", "jan@test.com", -1, 3)]
+    public async Task CreateOrder_RejectsBadInput(string name, string email, int adults, int children)
+    {
+        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = name, Email = email, Adults = adults, Children = children });
 
         Assert.Null(order);
         Assert.NotNull(error);
@@ -73,11 +89,20 @@ public class StraatfeesServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateOrder_AllowsChildrenOnly()
+    {
+        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Children = 2 });
+
+        Assert.Null(error);
+        Assert.Equal(20m, order!.Amount);
+    }
+
+    [Fact]
     public async Task ValidItn_ConfirmsAndEmailsOnce_EvenWhenRepeated()
     {
-        var (order, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Quantity = 2 });
-        _payFast.Setup(p => p.VerifyItnAsync(It.IsAny<string>(), 300m))
-            .ReturnsAsync(new ItnVerificationResult(true, "COMPLETE", "pf-1", order!.MerchantPaymentId, 300m, null));
+        var (order, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Adults = 2, Children = 1 });
+        _payFast.Setup(p => p.VerifyItnAsync(It.IsAny<string>(), 310m))
+            .ReturnsAsync(new ItnVerificationResult(true, "COMPLETE", "pf-1", order!.MerchantPaymentId, 310m, null));
 
         Assert.True(await _service.HandleItnAsync(order.Id, "raw"));
         Assert.True(await _service.HandleItnAsync(order.Id, "raw"));
@@ -86,13 +111,13 @@ public class StraatfeesServiceTests : IDisposable
         Assert.Equal(PaymentStatus.Confirmed, saved.PaymentStatus);
         Assert.Equal("pf-1", saved.PayFastPaymentId);
         Assert.NotNull(saved.TicketEmailSentAt);
-        _email.Verify(e => e.SendAsync("jan@test.com", It.IsAny<string>(), It.Is<string>(h => h.Contains(order.TicketCode)), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        _email.Verify(e => e.SendAsync("jan@test.com", It.IsAny<string>(), It.Is<string>(h => h.Contains(order.TicketCode) && h.Contains("2 volwassenes en 1 kind") && h.Contains("STRAATFEES")), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task InvalidItn_LeavesOrderPending()
     {
-        var (order, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Quantity = 1 });
+        var (order, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", Adults = 1 });
         _payFast.Setup(p => p.VerifyItnAsync(It.IsAny<string>(), It.IsAny<decimal>()))
             .ReturnsAsync(new ItnVerificationResult(false, null, null, null, null, "Signature mismatch"));
 
@@ -100,6 +125,28 @@ public class StraatfeesServiceTests : IDisposable
 
         Assert.Equal(PaymentStatus.Pending, (await _db.StraatfeesOrders.AsNoTracking().SingleAsync()).PaymentStatus);
         _email.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(1, 0, "1 volwassene")]
+    [InlineData(2, 0, "2 volwassenes")]
+    [InlineData(0, 1, "1 kind")]
+    [InlineData(3, 4, "3 volwassenes en 4 kinders")]
+    public void Admits_NamesAdultsAndChildren(int adults, int children, string expected) =>
+        Assert.Equal(expected, EmailTemplates.StraatfeesAdmits(adults, children));
+
+    [Fact]
+    public void TicketEmail_IsTheTicketItself_AndEncodesTheName()
+    {
+        var html = EmailTemplates.StraatfeesTicket("<Jan>", 1, 2, 90m, "ABCDEFGH23", "https://bou.orania.co.za/straatfees/kaartjie/ABCDEFGH23", "https://bou.orania.co.za");
+
+        Assert.Contains("&lt;Jan&gt;", html);
+        Assert.DoesNotContain("<Jan>", html);
+        Assert.Contains("1 volwassene en 2 kinders", html);
+        Assert.Contains("R90", html);
+        Assert.Contains("https://bou.orania.co.za/straatfees/epos/hoek-bo.png", html);
+        Assert.Contains("Diamantlaan (by Heuwelsig)", html);
+        Assert.DoesNotContain("PDF", html);
     }
 
     [Theory]

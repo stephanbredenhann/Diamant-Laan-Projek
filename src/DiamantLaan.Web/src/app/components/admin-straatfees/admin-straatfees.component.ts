@@ -32,10 +32,11 @@ const STATUS: Record<string, string> = {
       }
 
       <div class="opsomming">
-        <div><span>Kaartjies verkoop</span><strong>{{ nommer(kaartjies()) }}</strong></div>
+        <div><span>Volwassenes</span><strong>{{ nommer(volwassenes()) }}</strong></div>
+        <div><span>Kinders</span><strong>{{ nommer(kinders()) }}</strong></div>
         <div><span>Betaalde bestellings</span><strong>{{ nommer(betaal().length) }}</strong></div>
         <div><span>Ingesamel</span><strong>{{ rand(ingesamel()) }}</strong></div>
-        <div><span>Prys per kaartjie</span><strong>{{ rand(prys()) }}</strong></div>
+        <div><span>Pryse</span><strong>{{ rand(prys().volwasse) }} / {{ rand(prys().kind) }}</strong></div>
       </div>
 
       <div class="filter">
@@ -55,7 +56,8 @@ const STATUS: Record<string, string> = {
                 <th>Datum</th>
                 <th>Naam</th>
                 <th>E-pos</th>
-                <th class="getal">Kaartjies</th>
+                <th class="getal">Volw.</th>
+                <th class="getal">Kinders</th>
                 <th class="getal">Bedrag</th>
                 <th>Kode</th>
                 <th>Status</th>
@@ -69,7 +71,8 @@ const STATUS: Record<string, string> = {
                   <td class="nowrap">{{ utc(o.createdAt) | date: 'yyyy-MM-dd HH:mm' }}</td>
                   <td>{{ o.name }}</td>
                   <td><a [href]="'mailto:' + o.email">{{ o.email }}</a></td>
-                  <td class="getal">{{ o.quantity }}</td>
+                  <td class="getal">{{ o.adults }}</td>
+                  <td class="getal">{{ o.children }}</td>
                   <td class="getal nowrap">{{ rand(o.amount) }}</td>
                   <td><a class="kode" [href]="'/straatfees/kaartjie/' + o.ticketCode" target="_blank" rel="noopener">{{ o.ticketCode }}</a></td>
                   <td><span class="status" [class]="'status status--' + o.status">{{ status(o.status) }}</span></td>
@@ -126,12 +129,13 @@ export class AdminStraatfeesComponent implements OnInit {
   stoor = signal(false);
   fout = signal<string | null>(null);
   aktief = signal(false);
-  prys = signal(0);
+  prys = signal({ volwasse: 0, kind: 0 });
   bestellings = signal<StraatfeesAdminOrder[]>([]);
   netBetaal = signal(false);
 
   betaal = computed(() => this.bestellings().filter(o => o.status === 'Confirmed'));
-  kaartjies = computed(() => this.betaal().reduce((sum, o) => sum + o.quantity, 0));
+  volwassenes = computed(() => this.betaal().reduce((sum, o) => sum + o.adults, 0));
+  kinders = computed(() => this.betaal().reduce((sum, o) => sum + o.children, 0));
   ingesamel = computed(() => this.betaal().reduce((sum, o) => sum + o.amount, 0));
   sigbaar = computed(() => this.netBetaal() ? this.betaal() : this.bestellings());
 
@@ -145,7 +149,7 @@ export class AdminStraatfeesComponent implements OnInit {
     this.service.adminList().subscribe({
       next: res => {
         this.aktief.set(res.enabled);
-        this.prys.set(res.ticketPrice);
+        this.prys.set({ volwasse: res.adultPrice, kind: res.childPrice });
         this.bestellings.set(res.orders);
         this.laai.set(false);
       },

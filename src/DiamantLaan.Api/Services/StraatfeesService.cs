@@ -9,14 +9,15 @@ using Microsoft.EntityFrameworkCore;
 namespace DiamantLaan.Api.Services;
 
 /// <summary>
-/// Straatfees ticket sales: no account, one form (name, email, count), paid through the same
+/// Straatfees ticket sales: no account, one form (name, email, adults and children), paid through the same
 /// PayFast merchant and ITN endpoint as the blocks. A paid order gets its ticket by email and on
 /// a page keyed by the order's random ticket code.
 /// </summary>
 public class StraatfeesService
 {
     public const int MaxPerOrder = 20;
-    public const decimal DefaultTicketPrice = 100m;
+    public const decimal DefaultAdultPrice = 70m;
+    public const decimal DefaultChildPrice = 10m;
 
     private readonly AppDbContext _db;
     private readonly IPayFastService _payFast;
@@ -38,12 +39,17 @@ public class StraatfeesService
         _logger = logger;
     }
 
-    /// <summary>POC: the price lives in config (Straatfees:TicketPrice) until the real one is known.</summary>
-    public decimal TicketPrice =>
-        decimal.TryParse(_config["Straatfees:TicketPrice"], System.Globalization.NumberStyles.Number,
+    /// <summary>R70 per adult unless Straatfees:AdultPrice says otherwise.</summary>
+    public decimal AdultPrice => Price("Straatfees:AdultPrice", DefaultAdultPrice);
+
+    /// <summary>R10 per child unless Straatfees:ChildPrice says otherwise.</summary>
+    public decimal ChildPrice => Price("Straatfees:ChildPrice", DefaultChildPrice);
+
+    private decimal Price(string key, decimal fallback) =>
+        decimal.TryParse(_config[key], System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var price) && price > 0
             ? price
-            : DefaultTicketPrice;
+            : fallback;
 
     public async Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default)
     {
@@ -75,17 +81,20 @@ public class StraatfeesService
             return (null, "Vul asseblief jou naam in.");
         if (!EmailValidator.IsValid(email, out _))
             return (null, "Vul asseblief ’n geldige e-posadres in.");
-        if (dto.Quantity < 1 || dto.Quantity > MaxPerOrder)
+        if (dto.Adults < 0 || dto.Children < 0 || dto.Adults + dto.Children is < 1 or > MaxPerOrder)
             return (null, $"Kies tussen 1 en {MaxPerOrder} kaartjies.");
 
-        var price = TicketPrice;
+        var adultPrice = AdultPrice;
+        var childPrice = ChildPrice;
         var order = new StraatfeesOrder
         {
             Name = name,
             Email = email,
-            Quantity = dto.Quantity,
-            UnitPrice = price,
-            Amount = price * dto.Quantity,
+            Adults = dto.Adults,
+            Children = dto.Children,
+            AdultUnitPrice = adultPrice,
+            ChildUnitPrice = childPrice,
+            Amount = adultPrice * dto.Adults + childPrice * dto.Children,
             TicketCode = NewTicketCode(),
             CreatedAt = DateTime.UtcNow
         };
@@ -170,11 +179,12 @@ public class StraatfeesService
             order.TicketEmailSentAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            var ticketUrl = $"{AppPublicUrl.Resolve(_config).TrimEnd('/')}/straatfees/kaartjie/{Uri.EscapeDataString(order.TicketCode)}";
+            var site = AppPublicUrl.Resolve(_config).TrimEnd('/');
+            var ticketUrl = $"{site}/straatfees/kaartjie/{Uri.EscapeDataString(order.TicketCode)}";
             await _emails.QueueAsync(
                 order.Email,
-                "Straatfees: jou kaartjies",
-                EmailTemplates.StraatfeesTicket(order.Name, order.Quantity, order.Amount, order.TicketCode, ticketUrl));
+                "Straatfees: jou kaartjie",
+                EmailTemplates.StraatfeesTicket(order.Name, order.Adults, order.Children, order.Amount, order.TicketCode, ticketUrl, site));
         }
         catch (Exception ex)
         {
@@ -191,7 +201,8 @@ public class StraatfeesService
                 Id = o.Id,
                 Name = o.Name,
                 Email = o.Email,
-                Quantity = o.Quantity,
+                Adults = o.Adults,
+                Children = o.Children,
                 Amount = o.Amount,
                 TicketCode = o.TicketCode,
                 Status = o.PaymentStatus.ToString(),

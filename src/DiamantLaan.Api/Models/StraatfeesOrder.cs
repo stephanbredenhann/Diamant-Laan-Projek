@@ -4,7 +4,7 @@ namespace DiamantLaan.Api.Models;
 
 /// <summary>
 /// One ticket purchase for the straatfees. Deliberately not a <see cref="Purchase"/>: there is no
-/// account, no block and no certificate behind it, only a name, an email and a ticket count.
+/// account, no block and no certificate behind it, only a name, an email and a count of adults and children.
 /// </summary>
 public class StraatfeesOrder
 {
@@ -14,9 +14,16 @@ public class StraatfeesOrder
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public int Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
+    public int Adults { get; set; }
+    public int Children { get; set; }
+
+    /// <summary>Prices at the time of the order, so a later price change does not rewrite old tickets.</summary>
+    public decimal AdultUnitPrice { get; set; }
+    public decimal ChildUnitPrice { get; set; }
     public decimal Amount { get; set; }
+
+    /// <summary>Everyone the ticket admits.</summary>
+    public int Quantity => Adults + Children;
 
     /// <summary>
     /// Random and unguessable. It is printed on the ticket and is the only key to the ticket page,

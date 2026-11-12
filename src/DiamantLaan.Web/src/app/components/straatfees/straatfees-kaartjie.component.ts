@@ -1,6 +1,6 @@
 import { Component, DestroyRef, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { StraatfeesService, StraatfeesTicket } from '../../services/straatfees.service';
+import { StraatfeesService, StraatfeesTicket, toegang } from '../../services/straatfees.service';
 import { randBedrag } from '../../utils/afrikaans.util';
 import { TPipe } from '../../i18n/t.pipe';
 
@@ -10,7 +10,7 @@ const POLL_TRIES = 40;
 
 /**
  * Where PayFast returns the buyer, and where the emailed link points. The ticket code in the URL
- * is the only key. POC: the ticket itself is a placeholder layout until the design is final.
+ * is the only key. The ticket carries the same arrangements as the emailed one.
  */
 @Component({
   selector: 'app-straatfees-kaartjie',
@@ -54,15 +54,26 @@ const POLL_TRIES = 40;
                 <span class="kaartjie__merk">ORANIA</span>
                 <span class="kaartjie__titel">STRAATFEES</span>
                 <span class="kaartjie__lint"><img src="straatfees/lint.png" alt="" /><span>27-11-26</span></span>
+                <span class="kaartjie__waar">18:30 &middot; Diamantlaan (by Heuwelsig)</span>
               </div>
               <div class="kaartjie__inhoud">
                 <span class="etiket">Naam</span>
                 <span class="waarde">{{ k.name }}</span>
                 <span class="etiket">Toegang vir</span>
-                <span class="waarde">{{ k.quantity }} {{ k.quantity === 1 ? 'persoon' : 'persone' }}</span>
+                <span class="waarde">{{ toegang(k.adults, k.children) }}</span>
                 <span class="etiket">Kode</span>
                 <span class="kode">{{ k.ticketCode }}</span>
-                <span class="kaartjie__voet">Lorem ipsum dolor sit amet &middot; bou.orania.co.za</span>
+              </div>
+              <div class="kaartjie__reels">
+                <p class="kaartjie__wit">Trek <strong>wit</strong> aan en vleg ’n blommekransie vir jou kop!</p>
+                <span class="etiket">Reëlings</span>
+                <ul>
+                  <li>Bring ’n eenvoudige bykos uit jou kombuis / tuin vir die <strong>gemeenskaplike tafel.</strong></li>
+                  <li>Bring <strong>vleis en eetgerei</strong> wat jy by jou tafel hou.</li>
+                  <li>Wyne te koop: fondse vir die Padboufonds. Ondersteun asb!</li>
+                  <li><strong>Parkeer</strong> by die rugbyveld.</li>
+                </ul>
+                <span class="kaartjie__voet">Navrae: Orania Beweging 053 2070 062</span>
               </div>
             </div>
 
@@ -70,7 +81,7 @@ const POLL_TRIES = 40;
               <button type="button" class="btn btn-primary" (click)="laaiAf()" [disabled]="besig()">
                 {{ (besig() ? 'Berei PDF voor...' : 'Laai kaartjie af (PDF)') | t }}
               </button>
-              <span class="muted">{{ k.quantity }} × {{ 'kaartjie' | t }} &middot; {{ bedrag(k.amount) }}</span>
+              <span class="muted">{{ toegang(k.adults, k.children) }} &middot; {{ bedrag(k.amount) }}</span>
             </div>
           }
         }
@@ -139,7 +150,12 @@ const POLL_TRIES = 40;
     .etiket { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
     .waarde { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--ink); margin-bottom: 0.5rem; overflow-wrap: anywhere; }
     .kode { font-family: 'Courier New', monospace; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.15em; color: var(--fees-blue); }
-    .kaartjie__voet { margin-top: auto; padding-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted); }
+    .kaartjie__waar { margin-top: 0.6rem; font-size: 0.85rem; line-height: 1.3; }
+    .kaartjie__reels { grid-column: 1 / -1; border-top: 2px dashed #2F4F8F; padding: 1rem 1.5rem 1.1rem; font-size: 0.9rem; line-height: 1.45; }
+    .kaartjie__wit { color: #2F4F8F; margin-bottom: 0.6rem; }
+    .kaartjie__reels ul { margin: 0.25rem 0 0.6rem; padding-left: 1.1rem; }
+    .kaartjie__reels li + li { margin-top: 0.15rem; }
+    .kaartjie__voet { font-size: 0.8rem; color: var(--text-muted); }
 
     .aksies { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
 
@@ -164,6 +180,7 @@ export class StraatfeesKaartjieComponent implements OnInit {
   private timer?: ReturnType<typeof setTimeout>;
 
   bedrag = randBedrag;
+  toegang = toegang;
 
   ngOnInit() {
     this.kode = this.route.snapshot.paramMap.get('kode') ?? '';

@@ -685,18 +685,22 @@ export const EN: Record<string, string> = {
 
   // --- Password field ---
 
-  // --- Straatfees (POC: page copy is lorem ipsum, so only the working UI is here) ---
+  // --- Straatfees (the page copy is Afrikaans-only organiser text; only the working UI is here) ---
   'Straatfees': 'Straatfees',
   'Terug na Diamantlaan-projek': 'Back to the Diamantlaan project',
   'Koop kaartjies': 'Buy tickets',
-  'per kaartjie': 'per ticket',
+  'per volwassene': 'per adult',
+  'per kind': 'per child',
   'kaartjie': 'ticket',
   'Kaartjieverkope is tans gesluit.': 'Ticket sales are currently closed.',
   'Jou betaling is gekanselleer. Geen geld is afgetrek nie.': 'Your payment was cancelled. No money was taken.',
   'Maak toe': 'Close',
   'Geen rekening nodig nie. Ons e-pos jou kaartjie sodra jy betaal het.': 'No account needed. We email your ticket as soon as you have paid.',
   'Naam en van': 'Name and surname',
-  'Aantal kaartjies': 'Number of tickets',
+  'Volwassenes': 'Adults',
+  'Kinders': 'Children',
+  'elk': 'each',
+  'Kies ten minste een kaartjie.': 'Choose at least one ticket.',
   'Een minder': 'One fewer',
   'Een meer': 'One more',
   'Betaal met PayFast': 'Pay with PayFast',
