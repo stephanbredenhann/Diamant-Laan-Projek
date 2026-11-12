@@ -20,6 +20,22 @@ public static class AppPublicUrl
         return configured is not null && IsLocalhost(configured) ? configured : LiveSite;
     }
 
+    /// <summary>
+    /// Where email images are loaded from: the app that is sending the mail, not the live site.
+    /// Unlike a link, an image has to exist on whichever deployment built the email, and the live
+    /// domain may be serving an older build that does not have it yet. Azure sets WEBSITE_HOSTNAME
+    /// to the app's own azurewebsites.net name, which serves the same wwwroot. Only images use
+    /// this; every link a reader can click still goes through <see cref="Resolve"/>.
+    /// </summary>
+    public static string AssetHost(IConfiguration config)
+    {
+        var configured = Normalize(config["App:PublicUrl"]);
+        if (configured is not null && IsLocalhost(configured)) return configured;
+
+        var azureHost = config["WEBSITE_HOSTNAME"]?.Trim().TrimEnd('/');
+        return string.IsNullOrEmpty(azureHost) ? LiveSite : $"https://{azureHost}";
+    }
+
     private static string? Normalize(string? url) =>
         string.IsNullOrWhiteSpace(url) ? null : url.Trim().TrimEnd('/');
 

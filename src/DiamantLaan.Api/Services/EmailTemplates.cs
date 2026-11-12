@@ -235,14 +235,16 @@ public static class EmailTemplates
     /// grid, no absolute positioning and no transforms. Blue, not orange: the straatfees has its
     /// own colour. The ribbon is a background image. Outlook ignores it and falls back to the
     /// bgcolor attribute (solid blue); everyone else gets white behind the ribbon's curved ends.
+    /// The art comes from <paramref name="assetUrl"/>, the host that sent the mail (see
+    /// <see cref="AppPublicUrl.AssetHost"/>), so it loads wherever this build is deployed.
     /// </summary>
-    public static string StraatfeesTicket(string name, int adults, int children, decimal amount, string ticketCode, string ticketUrl, string siteUrl)
+    public static string StraatfeesTicket(string name, int adults, int children, decimal amount, string ticketCode, string ticketUrl, string assetUrl)
     {
         const string FeesBlue = "#2B4C9B";
         const string Delft = "#2F4F8F";
         const string Serif = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
         var url = WebUtility.HtmlEncode(ticketUrl);
-        var art = WebUtility.HtmlEncode(Site(siteUrl) + "/straatfees/epos");
+        var art = WebUtility.HtmlEncode(Site(assetUrl) + "/straatfees/epos");
         var who = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(name) ? "Feesganger" : name);
         var code = WebUtility.HtmlEncode(ticketCode);
         var admits = StraatfeesAdmits(adults, children);

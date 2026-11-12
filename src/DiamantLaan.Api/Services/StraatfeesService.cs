@@ -184,7 +184,7 @@ public class StraatfeesService
             await _emails.QueueAsync(
                 order.Email,
                 "Straatfees: jou kaartjie",
-                EmailTemplates.StraatfeesTicket(order.Name, order.Adults, order.Children, order.Amount, order.TicketCode, ticketUrl, site));
+                EmailTemplates.StraatfeesTicket(order.Name, order.Adults, order.Children, order.Amount, order.TicketCode, ticketUrl, AppPublicUrl.AssetHost(_config)));
         }
         catch (Exception ex)
         {

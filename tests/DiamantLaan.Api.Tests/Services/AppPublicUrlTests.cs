@@ -66,4 +66,26 @@ public class AppPublicUrlTests
     {
         Assert.Equal("http://localhost:4200", AppPublicUrl.Resolve(Config(app: "http://localhost:4200")));
     }
+
+    [Fact]
+    public void AssetHost_IsTheAppServingThisBuild()
+    {
+        Assert.Equal(
+            "https://diamantlaan-sb.azurewebsites.net",
+            AppPublicUrl.AssetHost(Config(app: "https://bou.orania.co.za", azureHost: "diamantlaan-sb.azurewebsites.net")));
+    }
+
+    [Fact]
+    public void AssetHost_KeepsLocalhostForLocalDevelopment()
+    {
+        Assert.Equal(
+            "http://localhost:4200",
+            AppPublicUrl.AssetHost(Config(app: "http://localhost:4200", azureHost: "diamantlaan-sb.azurewebsites.net")));
+    }
+
+    [Fact]
+    public void AssetHost_FallsBackToTheLiveSite()
+    {
+        Assert.Equal(AppPublicUrl.LiveSite, AppPublicUrl.AssetHost(Config()));
+    }
 }

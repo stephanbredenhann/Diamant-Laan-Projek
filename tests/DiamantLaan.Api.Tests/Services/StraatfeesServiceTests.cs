@@ -138,13 +138,14 @@ public class StraatfeesServiceTests : IDisposable
     [Fact]
     public void TicketEmail_IsTheTicketItself_AndEncodesTheName()
     {
-        var html = EmailTemplates.StraatfeesTicket("<Jan>", 1, 2, 90m, "ABCDEFGH23", "https://bou.orania.co.za/straatfees/kaartjie/ABCDEFGH23", "https://bou.orania.co.za");
+        var html = EmailTemplates.StraatfeesTicket("<Jan>", 1, 2, 90m, "ABCDEFGH23", "https://bou.orania.co.za/straatfees/kaartjie/ABCDEFGH23", "https://diamantlaan-sb.azurewebsites.net");
 
         Assert.Contains("&lt;Jan&gt;", html);
         Assert.DoesNotContain("<Jan>", html);
         Assert.Contains("1 volwassene en 2 kinders", html);
         Assert.Contains("R90", html);
-        Assert.Contains("https://bou.orania.co.za/straatfees/epos/hoek-bo.png", html);
+        Assert.Contains("https://diamantlaan-sb.azurewebsites.net/straatfees/epos/hoek-bo.png", html);
+        Assert.Contains("href=\"https://bou.orania.co.za/straatfees/kaartjie/ABCDEFGH23\"", html);
         Assert.Contains("Diamantlaan (by Heuwelsig)", html);
         Assert.DoesNotContain("PDF", html);
     }
