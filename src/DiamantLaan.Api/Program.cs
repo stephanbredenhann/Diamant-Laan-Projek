@@ -112,6 +112,11 @@ builder.Services.AddSingleton<LanguageLinkService>();
 builder.Services.AddSingleton<EmailHealthService>();
 builder.Services.AddSingleton<ShareOgImageService>();
 builder.Services.AddSingleton<SharePageRenderer>();
+builder.Services.AddSingleton(sp =>
+{
+    var env = sp.GetRequiredService<IWebHostEnvironment>();
+    return new SpaIndexHtml(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"));
+});
 builder.Services.AddScoped<ShareLinkService>();
 builder.Services.AddHostedService<PendingReservationCleanupService>();
 builder.Services.AddHostedService<BlockNotificationBackgroundService>();
@@ -268,7 +273,9 @@ var staticFileOptions = new StaticFileOptions
     }
 };
 
-app.UseDefaultFiles();
+// No UseDefaultFiles: it would rewrite "/" to /index.html for the static file middleware, which
+// trusts file metadata that App Service let go stale for index.html (see SpaIndexHtml). "/" falls
+// through to the SPA fallback below instead.
 app.UseStaticFiles(staticFileOptions);
 app.UseAuthentication();
 app.UseMiddleware<MustChangePasswordMiddleware>();
@@ -279,7 +286,17 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.Map("/api/{**catchall}", () => Results.NotFound(new { message = "API-endpunt nie gevind nie." }));
-app.MapFallbackToFile("index.html", staticFileOptions);
+static IResult SpaShell(HttpContext http, SpaIndexHtml index)
+{
+    var html = index.Read();
+    if (html is null) return Results.NotFound();
+    http.Response.Headers.CacheControl = "no-cache";
+    return Results.Content(html, "text/html; charset=utf-8");
+}
+// An explicit endpoint, so the static file middleware (which skips requests that matched one)
+// never serves index.html by its stale metadata either.
+app.MapGet("/index.html", SpaShell);
+app.MapFallback(SpaShell);
 
 app.Map("/error", () => Results.Json(new { message = "Interne bedienerfout." }, statusCode: 500));
 

@@ -11,15 +11,18 @@ public class SharePageController : ControllerBase
     private readonly ShareLinkService _shareLinks;
     private readonly ShareOgImageService _ogImages;
     private readonly SharePageRenderer _pages;
+    private readonly SpaIndexHtml _spaIndex;
 
     public SharePageController(
         ShareLinkService shareLinks,
         ShareOgImageService ogImages,
-        SharePageRenderer pages)
+        SharePageRenderer pages,
+        SpaIndexHtml spaIndex)
     {
         _shareLinks = shareLinks;
         _ogImages = ogImages;
         _pages = pages;
+        _spaIndex = spaIndex;
     }
 
     /// <summary>
@@ -38,7 +41,11 @@ public class SharePageController : ControllerBase
     [HttpGet("{token}")]
     public async Task<IActionResult> Page(string token, [FromQuery] int? blok = null)
     {
-        if (!IsPreviewBot()) return File("~/index.html", "text/html");
+        if (!IsPreviewBot())
+        {
+            var shell = _spaIndex.Read();
+            return shell is null ? NotFound() : Content(shell, "text/html; charset=utf-8");
+        }
 
         var origin = Origin();
         var share = await _shareLinks.FindPublicAsync(token, blok);

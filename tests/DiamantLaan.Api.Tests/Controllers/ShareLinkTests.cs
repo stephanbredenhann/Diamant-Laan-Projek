@@ -29,12 +29,23 @@ public class ShareLinkTests
             ["App:PublicUrl"] = "https://diamantlaan.example"
         }).Build();
 
+    private static readonly string SpaWebRoot = CreateSpaWebRoot();
+
+    private static string CreateSpaWebRoot()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "diamantlaan-spa-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "index.html"), "<!doctype html><app-root></app-root><script src=\"main.js\"></script>");
+        return dir;
+    }
+
     private static SharePageController SharePage(AppDbContext db, string? userAgent = null)
     {
         var controller = new SharePageController(
             new ShareLinkService(db, Config()),
             new ShareOgImageService(),
-            new SharePageRenderer());
+            new SharePageRenderer(),
+            new SpaIndexHtml(SpaWebRoot));
         var http = new DefaultHttpContext
         {
             Request =
@@ -173,8 +184,10 @@ public class ShareLinkTests
 
         var page = SharePage(db, "Mozilla/5.0 (Linux; Android 14) Chrome/126");
 
-        var file = Assert.IsType<VirtualFileResult>(await page.Page(user.ShareToken));
-        Assert.Equal("~/index.html", file.FileName);
+        var shell = Assert.IsType<ContentResult>(await page.Page(user.ShareToken));
+        Assert.Equal("text/html; charset=utf-8", shell.ContentType);
+        Assert.Contains("<app-root></app-root>", shell.Content);
+        Assert.Contains("main.js", shell.Content);
     }
 
     [Fact]
@@ -309,7 +322,8 @@ public class ShareLinkTests
         var page = new SharePageController(
             new ShareLinkService(db, Config()),
             new ShareOgImageService(),
-            new SharePageRenderer());
+            new SharePageRenderer(),
+            new SpaIndexHtml(SpaWebRoot));
 
         var result = await page.OgImage(user.ShareToken);
         var file = Assert.IsType<FileContentResult>(result);
@@ -335,7 +349,8 @@ public class ShareLinkTests
         var page = new SharePageController(
             new ShareLinkService(db, Config()),
             new ShareOgImageService(),
-            new SharePageRenderer());
+            new SharePageRenderer(),
+            new SpaIndexHtml(SpaWebRoot));
         var result = await page.OgImage(token);
         Assert.IsType<NotFoundResult>(result);
     }
