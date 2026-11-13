@@ -14,6 +14,9 @@ public class StraatfeesOrder
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+
+    /// <summary>Optional, in E.164 form (+27821234567), so the organisers can phone a buyer on the day.</summary>
+    public string? Phone { get; set; }
     public int Adults { get; set; }
     public int Children { get; set; }
 

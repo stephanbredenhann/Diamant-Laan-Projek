@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { AdminStraatfeesComponent } from './admin-straatfees.component';
+import { AdminStraatfeesComponent, foonVertoon } from './admin-straatfees.component';
 import { StraatfeesAdminOrder } from '../../services/straatfees.service';
 
 const order = (o: Partial<StraatfeesAdminOrder>): StraatfeesAdminOrder => ({
   id: 1,
   name: 'Jan Steyn',
   email: 'jan@test.com',
+  phone: null,
   adults: 2,
   children: 1,
   amount: 150,
@@ -37,26 +38,27 @@ describe('AdminStraatfeesComponent', () => {
 
   it('records a manual sale and puts it at the top of the list', () => {
     const { fixture, cmp, http } = setup([order({})]);
-    cmp.vorm = { name: ' Ouma Kontant ', email: '', adults: 1, children: 2, paymentMethod: 'Cash' };
+    cmp.vorm = { name: ' Ouma Kontant ', email: ' ouma@test.com ', phoneNumber: '082 123 4567 ', phoneCountryCode: '+27', adults: 1, children: 2, paymentMethod: 'Cash' };
     expect(cmp.vormTotaal()).toBe(90);
 
     cmp.voegBy();
     const req = http.expectOne('/api/admin/straatfees/bestellings');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Ouma Kontant', email: '', adults: 1, children: 2, paymentMethod: 'Cash' });
-    req.flush(order({ id: 2, name: 'Ouma Kontant', email: '', paymentMethod: 'Cash', payFastPaymentId: null, ticketEmailSent: false }));
+    expect(req.request.body).toEqual({ name: 'Ouma Kontant', email: 'ouma@test.com', phoneNumber: '082 123 4567', phoneCountryCode: '+27', adults: 1, children: 2, paymentMethod: 'Cash' });
+    req.flush(order({ id: 2, name: 'Ouma Kontant', email: 'ouma@test.com', phone: '+27821234567', paymentMethod: 'Cash', payFastPaymentId: null }));
     fixture.detectChanges();
 
     expect(cmp.bestellings().map(o => o.id)).toEqual([2, 1]);
     expect(cmp.vorm.name).toBe('');
     const firstRow = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
     expect(firstRow.textContent).toContain('Kontant');
-    expect(fixture.nativeElement.textContent).toContain('geen e-pos gestuur nie');
+    expect(firstRow.textContent).toContain('082 123 4567');
+    expect(fixture.nativeElement.textContent).toContain('kaartjie word na ouma@test.com gestuur');
   });
 
   it('shows the server message when a sale is refused', () => {
     const { cmp, http } = setup([]);
-    cmp.vorm = { name: 'Jan', email: 'sleg', adults: 1, children: 0, paymentMethod: 'EFT' };
+    cmp.vorm = { name: 'Jan', email: 'sleg', phoneNumber: '', phoneCountryCode: '+27', adults: 1, children: 0, paymentMethod: 'EFT' };
     cmp.voegBy();
     http.expectOne('/api/admin/straatfees/bestellings').flush({ message: 'Die e-posadres is ongeldig.' }, { status: 400, statusText: 'Bad Request' });
 
@@ -66,7 +68,7 @@ describe('AdminStraatfeesComponent', () => {
 
   it('exports the visible orders as CSV with SAST times and defused formulas', async () => {
     const { cmp } = setup([
-      order({ id: 2, name: '=HYPERLINK("x")', paymentMethod: 'EFT', status: 'Confirmed' }),
+      order({ id: 2, name: '=HYPERLINK("x")', phone: '+27821234567', paymentMethod: 'EFT', status: 'Confirmed' }),
       order({ id: 3, status: 'Pending' }),
     ]);
     cmp.netBetaal.set(true);
@@ -84,5 +86,25 @@ describe('AdminStraatfeesComponent', () => {
     expect(lines[1]).toContain('"2","2026-11-10 10:00"');
     expect(lines[1]).toContain(`"'=HYPERLINK(""x"")"`);
     expect(lines[1]).toContain('"EFT"');
+    expect(lines[0]).toContain('"E-pos","Foon","Volwassenes"');
+    expect(lines[1]).toContain('"jan@test.com","082 123 4567","2"');
+  });
+
+  it('checks the phone before posting', () => {
+    const { cmp, http } = setup([]);
+    cmp.vorm = { name: 'Jan', email: 'jan@test.com', phoneNumber: '123', phoneCountryCode: '+27', adults: 1, children: 0, paymentMethod: 'Cash' };
+    cmp.voegBy();
+
+    http.expectNone('/api/admin/straatfees/bestellings');
+    expect(cmp.byvoegFout()).toContain('Foonnommer');
+  });
+});
+
+describe('foonVertoon', () => {
+  it('shows South African numbers locally and others with 00 and a space', () => {
+    expect(foonVertoon('+27821234567')).toBe('082 123 4567');
+    expect(foonVertoon('+447911123456')).toBe('0044 7911123456');
+    expect(foonVertoon('+12025550123')).toBe('001 2025550123');
+    expect(foonVertoon(null)).toBe('');
   });
 });

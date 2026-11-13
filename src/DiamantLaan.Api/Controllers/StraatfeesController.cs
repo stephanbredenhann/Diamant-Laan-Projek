@@ -147,7 +147,7 @@ public class AdminStraatfeesController : ControllerBase
             return BadRequest(new { message = error });
 
         await _audit.LogAsync(User, "StraatfeesManualOrder",
-            $"Order #{order.Id} for {order.Name} ({(order.Email.Length > 0 ? order.Email : "geen e-pos")}), {order.Adults} adults, {order.Children} children, R{order.Amount}, {order.PaymentMethod}");
+            $"Order #{order.Id} for {order.Name} ({order.Email}), {order.Adults} adults, {order.Children} children, R{order.Amount}, {order.PaymentMethod}");
 
         return Ok(StraatfeesService.ToAdminDto(order));
     }

@@ -12,6 +12,9 @@ public class StraatfeesOrderRequestDto
 {
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    /// <summary>Optional local number; normalised with <see cref="PhoneCountryCode"/> to E.164.</summary>
+    public string? PhoneNumber { get; set; }
+    public string? PhoneCountryCode { get; set; }
     public int Adults { get; set; }
     public int Children { get; set; }
 }
@@ -32,6 +35,7 @@ public class StraatfeesAdminOrderDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
     public int Adults { get; set; }
     public int Children { get; set; }
     public decimal Amount { get; set; }
@@ -50,8 +54,10 @@ public class StraatfeesManualOrderDto
 {
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Optional: without one no ticket is emailed and the admin hands over the code.</summary>
-    public string? Email { get; set; }
+    public string Email { get; set; } = string.Empty;
+
+    public string? PhoneNumber { get; set; }
+    public string? PhoneCountryCode { get; set; }
 
     public int Adults { get; set; }
     public int Children { get; set; }

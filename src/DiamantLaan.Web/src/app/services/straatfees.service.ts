@@ -24,6 +24,8 @@ export interface StraatfeesAdminOrder {
   id: number;
   name: string;
   email: string;
+  /** E.164, e.g. +27821234567, or null when the buyer gave none. */
+  phone: string | null;
   adults: number;
   children: number;
   amount: number;
@@ -40,6 +42,8 @@ export interface StraatfeesAdminOrder {
 export interface StraatfeesManualOrder {
   name: string;
   email: string;
+  phoneNumber: string;
+  phoneCountryCode: string;
   adults: number;
   children: number;
   paymentMethod: 'Cash' | 'EFT' | 'Card';
@@ -63,8 +67,9 @@ export class StraatfeesService {
     return this.http.get<StraatfeesInfo>('/api/straatfees/info').pipe(tap(i => this.enabled.set(i.enabled)));
   }
 
-  order(name: string, email: string, adults: number, children: number) {
-    return this.http.post<PayFastForm>('/api/straatfees/bestel', { name, email, adults, children });
+  /** The phone is optional: send an empty number for none. */
+  order(name: string, email: string, phoneNumber: string, phoneCountryCode: string, adults: number, children: number) {
+    return this.http.post<PayFastForm>('/api/straatfees/bestel', { name, email, phoneNumber, phoneCountryCode, adults, children });
   }
 
   ticket(code: string) {
