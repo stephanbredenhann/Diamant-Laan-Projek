@@ -16,6 +16,11 @@ namespace DiamantLaan.Api.Services;
 public class StraatfeesService
 {
     public const int MaxPerOrder = 20;
+
+    /// <summary>An admin records group sales too, so the cap is higher than the public form's.</summary>
+    public const int MaxPerManualOrder = 200;
+
+    public static readonly string[] ManualPaymentMethods = ["Cash", "EFT", "Card"];
     public const decimal DefaultAdultPrice = 70m;
     public const decimal DefaultChildPrice = 10m;
 
@@ -81,27 +86,68 @@ public class StraatfeesService
             return (null, "Vul asseblief jou naam in.");
         if (!EmailValidator.IsValid(email, out _))
             return (null, "Vul asseblief ’n geldige e-posadres in.");
-        if (dto.Adults < 0 || dto.Children < 0 || dto.Adults + dto.Children is < 1 or > MaxPerOrder)
+        if (!ValidCount(dto.Adults, dto.Children, MaxPerOrder))
             return (null, $"Kies tussen 1 en {MaxPerOrder} kaartjies.");
 
-        var adultPrice = AdultPrice;
-        var childPrice = ChildPrice;
-        var order = new StraatfeesOrder
-        {
-            Name = name,
-            Email = email,
-            Adults = dto.Adults,
-            Children = dto.Children,
-            AdultUnitPrice = adultPrice,
-            ChildUnitPrice = childPrice,
-            Amount = adultPrice * dto.Adults + childPrice * dto.Children,
-            TicketCode = NewTicketCode(),
-            CreatedAt = DateTime.UtcNow
-        };
-
+        var order = NewOrder(name, email, dto.Adults, dto.Children);
         _db.StraatfeesOrders.Add(order);
         await _db.SaveChangesAsync();
         return (order, null);
+    }
+
+    /// <summary>
+    /// Records a sale that was paid outside PayFast. It is confirmed straight away and, when there
+    /// is an email address, the buyer gets the same ticket email as an online order. Ignores the
+    /// on/off switch: the admin is recording money that is already in.
+    /// </summary>
+    public async Task<(StraatfeesOrder? Order, string? Error)> CreateManualOrderAsync(StraatfeesManualOrderDto dto)
+    {
+        var name = dto.Name?.Trim() ?? "";
+        var email = dto.Email?.Trim() ?? "";
+        var method = ManualPaymentMethods.FirstOrDefault(m => string.Equals(m, dto.PaymentMethod?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (name.Length is < 2 or > 120)
+            return (null, "Vul die koper se naam in.");
+        if (email.Length > 0 && !EmailValidator.IsValid(email, out _))
+            return (null, "Die e-posadres is ongeldig. Los dit leeg as daar nie een is nie.");
+        if (!ValidCount(dto.Adults, dto.Children, MaxPerManualOrder))
+            return (null, $"Kies tussen 1 en {MaxPerManualOrder} kaartjies.");
+        if (method == null)
+            return (null, "Kies ’n geldige betaalmetode.");
+
+        var order = NewOrder(name, email, dto.Adults, dto.Children);
+        order.PaymentMethod = method;
+        order.PaymentStatus = PaymentStatus.Confirmed;
+        order.ConfirmedAt = order.CreatedAt;
+
+        _db.StraatfeesOrders.Add(order);
+        await _db.SaveChangesAsync();
+
+        if (email.Length > 0)
+            await SendTicketEmailAsync(order);
+
+        return (order, null);
+    }
+
+    private static bool ValidCount(int adults, int children, int max) =>
+        adults >= 0 && children >= 0 && adults + children >= 1 && adults + children <= max;
+
+    private StraatfeesOrder NewOrder(string name, string email, int adults, int children)
+    {
+        var adultPrice = AdultPrice;
+        var childPrice = ChildPrice;
+        return new StraatfeesOrder
+        {
+            Name = name,
+            Email = email,
+            Adults = adults,
+            Children = children,
+            AdultUnitPrice = adultPrice,
+            ChildUnitPrice = childPrice,
+            Amount = adultPrice * adults + childPrice * children,
+            TicketCode = NewTicketCode(),
+            CreatedAt = DateTime.UtcNow
+        };
     }
 
     public PayFastPaymentRequestDto PaymentFormFor(StraatfeesOrder order, string baseUrl) =>
@@ -169,7 +215,7 @@ public class StraatfeesService
 
     private async Task SendTicketEmailAsync(StraatfeesOrder order)
     {
-        if (order.PaymentStatus != PaymentStatus.Confirmed || order.TicketEmailSentAt != null)
+        if (order.PaymentStatus != PaymentStatus.Confirmed || order.TicketEmailSentAt != null || order.Email.Length == 0)
             return;
 
         try
@@ -196,22 +242,25 @@ public class StraatfeesService
     public async Task<List<StraatfeesAdminOrderDto>> ListAsync() =>
         (await _db.StraatfeesOrders.AsNoTracking().ToListAsync())
             .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new StraatfeesAdminOrderDto
-            {
-                Id = o.Id,
-                Name = o.Name,
-                Email = o.Email,
-                Adults = o.Adults,
-                Children = o.Children,
-                Amount = o.Amount,
-                TicketCode = o.TicketCode,
-                Status = o.PaymentStatus.ToString(),
-                PayFastPaymentId = o.PayFastPaymentId,
-                CreatedAt = o.CreatedAt,
-                ConfirmedAt = o.ConfirmedAt,
-                TicketEmailSent = o.TicketEmailSentAt != null
-            })
+            .Select(ToAdminDto)
             .ToList();
+
+    public static StraatfeesAdminOrderDto ToAdminDto(StraatfeesOrder o) => new()
+    {
+        Id = o.Id,
+        Name = o.Name,
+        Email = o.Email,
+        Adults = o.Adults,
+        Children = o.Children,
+        Amount = o.Amount,
+        TicketCode = o.TicketCode,
+        Status = o.PaymentStatus.ToString(),
+        PayFastPaymentId = o.PayFastPaymentId,
+        PaymentMethod = o.PaymentMethod,
+        CreatedAt = o.CreatedAt,
+        ConfirmedAt = o.ConfirmedAt,
+        TicketEmailSent = o.TicketEmailSentAt != null
+    };
 
     /// <summary>Ten characters from an alphabet with no 0/O or 1/I, so it reads off a phone at the gate.</summary>
     private static string NewTicketCode()

@@ -138,6 +138,20 @@ public class AdminStraatfeesController : ControllerBase
         orders = await _straatfees.ListAsync()
     });
 
+    /// <summary>Records a ticket sale paid outside PayFast (cash, EFT, card machine).</summary>
+    [HttpPost("bestellings")]
+    public async Task<IActionResult> CreateManual([FromBody] StraatfeesManualOrderDto dto)
+    {
+        var (order, error) = await _straatfees.CreateManualOrderAsync(dto);
+        if (order == null)
+            return BadRequest(new { message = error });
+
+        await _audit.LogAsync(User, "StraatfeesManualOrder",
+            $"Order #{order.Id} for {order.Name} ({(order.Email.Length > 0 ? order.Email : "geen e-pos")}), {order.Adults} adults, {order.Children} children, R{order.Amount}, {order.PaymentMethod}");
+
+        return Ok(StraatfeesService.ToAdminDto(order));
+    }
+
     [HttpPut("aktief")]
     public async Task<IActionResult> SetEnabled([FromBody] StraatfeesEnabledDto dto)
     {
