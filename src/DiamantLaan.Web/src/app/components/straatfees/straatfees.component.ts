@@ -50,7 +50,7 @@ import { FeesTeelComponent } from './fees-teel.component';
                 }
               }
             </div>
-            <p class="kontant">Ook kontant by Orania Beweging</p>
+            <p class="kontant">Kaartjies ook vir kontant by die Orania Beweging beskikbaar</p>
           </div>
 
           <div class="teel__beeld">
