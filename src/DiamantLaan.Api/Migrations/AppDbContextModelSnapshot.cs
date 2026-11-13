@@ -537,6 +537,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<string>("PayFastPaymentStatus")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("INTEGER");
 

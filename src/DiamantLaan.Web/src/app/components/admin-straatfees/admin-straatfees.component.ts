@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { StraatfeesAdminOrder, StraatfeesService } from '../../services/straatfees.service';
+import { FormsModule } from '@angular/forms';
+import { StraatfeesAdminOrder, StraatfeesManualOrder, StraatfeesService } from '../../services/straatfees.service';
 import { nommer, randBedrag } from '../../utils/afrikaans.util';
 
 const STATUS: Record<string, string> = {
@@ -10,11 +11,29 @@ const STATUS: Record<string, string> = {
   Failed: 'Misluk',
 };
 
-/** Straatfees: the on/off switch for ticket sales and every order, newest first. */
+const BETAALMETODE: Record<string, string> = {
+  Cash: 'Kontant',
+  EFT: 'EFT',
+  Card: 'Kaart',
+};
+
+type Vorm = Omit<StraatfeesManualOrder, 'adults' | 'children'> & { adults: number | null; children: number | null };
+const leeg = (): Vorm => ({ name: '', email: '', adults: 1, children: 0, paymentMethod: 'Cash' });
+
+/** CSV cell: quoted, and a leading = + - @ defused so Excel does not run a buyer's name as a formula. */
+const sel = (v: string | number) => {
+  const t = String(v);
+  return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`;
+};
+
+/**
+ * Straatfees: the on/off switch for ticket sales, a form for sales paid outside PayFast
+ * (cash at the gate, EFT), and every order, newest first, exportable as CSV.
+ */
 @Component({
   selector: 'app-admin-straatfees',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, FormsModule],
   template: `
     <div class="admin-content">
       <h3>Straatfees-kaartjies</h3>
@@ -39,8 +58,51 @@ const STATUS: Record<string, string> = {
         <div><span>Pryse</span><strong>{{ rand(prys().volwasse) }} / {{ rand(prys().kind) }}</strong></div>
       </div>
 
+      <form class="settings-card handmatig" (ngSubmit)="voegBy()" #f="ngForm">
+        <h4>Handmatige verkoping</h4>
+        <p class="toggle-hint">Vir kaartjies wat buite PayFast betaal is, bv. kontant by die hek of ’n EFT. Die bestelling word dadelik as betaal aangeteken; met ’n e-posadres kry die koper ook die kaartjie per e-pos.</p>
+        <div class="velde">
+          <label class="breed">Naam en van
+            <input name="naam" [(ngModel)]="vorm.name" required minlength="2" maxlength="120" />
+          </label>
+          <label class="breed"><span>E-pos <span class="muted">(opsioneel)</span></span>
+            <input name="epos" type="email" [(ngModel)]="vorm.email" email maxlength="256" />
+          </label>
+          <label>Volwassenes
+            <input name="volw" type="number" min="0" max="200" [(ngModel)]="vorm.adults" />
+          </label>
+          <label>Kinders
+            <input name="kinders" type="number" min="0" max="200" [(ngModel)]="vorm.children" />
+          </label>
+          <label>Betaalmetode
+            <select name="metode" [(ngModel)]="vorm.paymentMethod">
+              <option value="Cash">Kontant</option>
+              <option value="EFT">EFT</option>
+              <option value="Card">Kaart</option>
+            </select>
+          </label>
+        </div>
+        <div class="vorm-voet">
+          <span>Totaal: <strong>{{ rand(vormTotaal()) }}</strong></span>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="byvoeg() || f.invalid || vormTotaal() === 0">
+            {{ byvoeg() ? 'Besig...' : 'Teken verkoping aan' }}
+          </button>
+        </div>
+        @if (byvoegFout()) {
+          <div class="msg error">{{ byvoegFout() }}</div>
+        }
+        @if (bygevoeg(); as o) {
+          <div class="msg ok">
+            Bestelling #{{ o.id }} vir {{ o.name }} aangeteken. Kode:
+            <a class="kode" [href]="'/straatfees/kaartjie/' + o.ticketCode" target="_blank" rel="noopener">{{ o.ticketCode }}</a>
+            {{ o.ticketEmailSent ? '— kaartjie is per e-pos gestuur.' : '— geen e-pos gestuur nie.' }}
+          </div>
+        }
+      </form>
+
       <div class="filter">
         <label><input type="checkbox" [checked]="netBetaal()" (change)="netBetaal.set($any($event.target).checked)" /> Wys net betaalde bestellings</label>
+        <button type="button" class="btn btn-outline btn-sm" (click)="laaiCsvAf()" [disabled]="sigbaar().length === 0">Laai CSV af</button>
       </div>
 
       @if (laai()) {
@@ -61,6 +123,7 @@ const STATUS: Record<string, string> = {
                 <th class="getal">Bedrag</th>
                 <th>Kode</th>
                 <th>Status</th>
+                <th>Betaling</th>
                 <th>E-pos gestuur</th>
               </tr>
             </thead>
@@ -70,12 +133,13 @@ const STATUS: Record<string, string> = {
                   <td>{{ o.id }}</td>
                   <td class="nowrap">{{ utc(o.createdAt) | date: 'yyyy-MM-dd HH:mm' }}</td>
                   <td>{{ o.name }}</td>
-                  <td><a [href]="'mailto:' + o.email">{{ o.email }}</a></td>
+                  <td>@if (o.email) { <a [href]="'mailto:' + o.email">{{ o.email }}</a> } @else { — }</td>
                   <td class="getal">{{ o.adults }}</td>
                   <td class="getal">{{ o.children }}</td>
                   <td class="getal nowrap">{{ rand(o.amount) }}</td>
                   <td><a class="kode" [href]="'/straatfees/kaartjie/' + o.ticketCode" target="_blank" rel="noopener">{{ o.ticketCode }}</a></td>
                   <td><span class="status" [class]="'status status--' + o.status">{{ status(o.status) }}</span></td>
+                  <td>{{ metode(o.paymentMethod) }}</td>
                   <td>{{ o.ticketEmailSent ? 'Ja' : '—' }}</td>
                 </tr>
               }
@@ -99,6 +163,17 @@ const STATUS: Record<string, string> = {
     .toggle-row.disabled { opacity: 0.6; cursor: not-allowed; }
     .toggle-row input { width: 18px; height: 18px; accent-color: var(--fees-blue); cursor: pointer; }
     .toggle-hint { margin: 0.75rem 0 0; font-size: 0.8125rem; color: var(--color-muted); }
+    .msg.ok { margin-top: 1rem; font-size: 0.8125rem; padding: 0.625rem 1rem; background: #EEF3FB; color: #1F3A7A; }
+    .handmatig { margin-top: 1.5rem; max-width: 760px; }
+    .handmatig h4 { font-family: var(--font-heading); margin: 0; }
+    .handmatig .toggle-hint { margin: 0.25rem 0 1rem; }
+    .velde { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; }
+    .velde label { grid-column: span 2; }
+    .velde .breed { grid-column: span 3; }
+    @media (max-width: 600px) { .velde label, .velde .breed { grid-column: 1 / -1; } }
+    .velde label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8125rem; color: var(--color-muted); }
+    .velde input, .velde select { padding: 0.5rem; border: 1px solid var(--color-border); font: inherit; color: var(--color-text); background: var(--color-surface); }
+    .vorm-voet { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
     .msg.error { margin-top: 1rem; font-size: 0.8125rem; padding: 0.625rem 1rem; background: #FEF2F2; color: #DC2626; max-width: 600px; }
 
     .opsomming { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 1.5rem 0 1rem; }
@@ -106,7 +181,7 @@ const STATUS: Record<string, string> = {
     .opsomming span { font-size: 0.8125rem; color: var(--color-muted); }
     .opsomming strong { font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 
-    .filter { margin-bottom: 0.75rem; font-size: 0.875rem; }
+    .filter { margin: 1.5rem 0 0.75rem; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .filter label { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
 
     .tabel-hou { overflow-x: auto; border: 1px solid var(--color-border); background: var(--color-surface); }
@@ -133,6 +208,11 @@ export class AdminStraatfeesComponent implements OnInit {
   bestellings = signal<StraatfeesAdminOrder[]>([]);
   netBetaal = signal(false);
 
+  vorm: Vorm = leeg();
+  byvoeg = signal(false);
+  byvoegFout = signal<string | null>(null);
+  bygevoeg = signal<StraatfeesAdminOrder | null>(null);
+
   betaal = computed(() => this.bestellings().filter(o => o.status === 'Confirmed'));
   volwassenes = computed(() => this.betaal().reduce((sum, o) => sum + o.adults, 0));
   kinders = computed(() => this.betaal().reduce((sum, o) => sum + o.children, 0));
@@ -142,8 +222,13 @@ export class AdminStraatfeesComponent implements OnInit {
   rand = randBedrag;
   nommer = nommer;
   status = (s: string) => STATUS[s] ?? s;
+  metode = (m: string | null) => m ? BETAALMETODE[m] ?? m : 'PayFast';
   /** SQLite hands DateTimes back without a zone; they are stored as UTC. */
   utc = (s: string) => /Z|[+-]\d\d:\d\d$/.test(s) ? s : s + 'Z';
+
+  vormTotaal() {
+    return (this.vorm.adults ?? 0) * this.prys().volwasse + (this.vorm.children ?? 0) * this.prys().kind;
+  }
 
   ngOnInit() {
     this.service.adminList().subscribe({
@@ -176,5 +261,46 @@ export class AdminStraatfeesComponent implements OnInit {
         this.fout.set('Kon nie die instelling stoor nie.');
       }
     });
+  }
+
+  voegBy() {
+    this.byvoeg.set(true);
+    this.byvoegFout.set(null);
+    this.bygevoeg.set(null);
+    this.service.adminCreate({
+      ...this.vorm,
+      name: this.vorm.name.trim(),
+      email: this.vorm.email.trim(),
+      adults: this.vorm.adults ?? 0,
+      children: this.vorm.children ?? 0,
+    }).subscribe({
+      next: order => {
+        this.bestellings.update(list => [order, ...list]);
+        this.bygevoeg.set(order);
+        this.vorm = leeg();
+        this.byvoeg.set(false);
+      },
+      error: err => {
+        this.byvoegFout.set(err?.error?.message ?? 'Kon nie die verkoping aanteken nie.');
+        this.byvoeg.set(false);
+      }
+    });
+  }
+
+  /** The list as shown (so the "net betaal" filter applies), with SAST times for the bookkeeping. */
+  laaiCsvAf() {
+    const sast = (s: string | null) => s ? new Date(Date.parse(this.utc(s)) + 2 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') : '';
+    const kop = ['#', 'Datum (SAST)', 'Bevestig op (SAST)', 'Naam', 'E-pos', 'Volwassenes', 'Kinders', 'Bedrag', 'Kode', 'Status', 'Betaling', 'PayFast-betaling-ID', 'E-pos gestuur'];
+    const rye = this.sigbaar().map(o => [
+      o.id, sast(o.createdAt), sast(o.confirmedAt), o.name, o.email, o.adults, o.children, o.amount.toFixed(2),
+      o.ticketCode, this.status(o.status), this.metode(o.paymentMethod), o.payFastPaymentId ?? '', o.ticketEmailSent ? 'Ja' : 'Nee',
+    ]);
+    const csv = '\uFEFF' + [kop, ...rye].map(r => r.map(sel).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `straatfees-bestellings-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

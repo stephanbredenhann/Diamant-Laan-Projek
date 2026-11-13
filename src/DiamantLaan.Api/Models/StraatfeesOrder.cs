@@ -32,6 +32,14 @@ public class StraatfeesOrder
     public string TicketCode { get; set; } = string.Empty;
 
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+
+    /// <summary>
+    /// How an admin-recorded sale was paid (EFT, Cash, Card). Null for an online order, which is
+    /// always PayFast.
+    /// </summary>
+    public string? PaymentMethod { get; set; }
+
+    public bool IsManual => PaymentMethod != null;
     public string? PayFastPaymentId { get; set; }
     public string? PayFastPaymentStatus { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -127,6 +127,51 @@ public class StraatfeesServiceTests : IDisposable
         _email.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task ManualOrder_IsConfirmedAndEmailsTheTicket()
+    {
+        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Jan", Email = "jan@test.com", Adults = 2, Children = 1, PaymentMethod = "eft" });
+
+        Assert.Null(error);
+        var saved = await _db.StraatfeesOrders.AsNoTracking().SingleAsync();
+        Assert.Equal(PaymentStatus.Confirmed, saved.PaymentStatus);
+        Assert.Equal("EFT", saved.PaymentMethod);
+        Assert.Equal(310m, saved.Amount);
+        Assert.NotNull(saved.ConfirmedAt);
+        Assert.NotNull(saved.TicketEmailSentAt);
+        _email.Verify(e => e.SendAsync("jan@test.com", It.IsAny<string>(), It.Is<string>(h => h.Contains(order!.TicketCode)), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ManualOrder_WithoutEmail_SendsNothing_AndIgnoresTheSwitchAndPublicCap()
+    {
+        await _service.SetEnabledAsync(false);
+
+        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Skoolgroep", Email = "  ", Adults = 5, Children = 40, PaymentMethod = "Cash" });
+
+        Assert.Null(error);
+        Assert.Equal(PaymentStatus.Confirmed, order!.PaymentStatus);
+        Assert.Equal("", order.Email);
+        Assert.Null(order.TicketEmailSentAt);
+        _email.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData("", "jan@test.com", 1, 0, "Cash")]
+    [InlineData("Jan", "nie-n-epos", 1, 0, "Cash")]
+    [InlineData("Jan", "", 0, 0, "Cash")]
+    [InlineData("Jan", "", 150, 51, "Cash")]
+    [InlineData("Jan", "", 1, 0, "PayFast")]
+    [InlineData("Jan", "", 1, 0, "")]
+    public async Task ManualOrder_RejectsBadInput(string name, string email, int adults, int children, string method)
+    {
+        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = name, Email = email, Adults = adults, Children = children, PaymentMethod = method });
+
+        Assert.Null(order);
+        Assert.NotNull(error);
+        Assert.Empty(_db.StraatfeesOrders);
+    }
+
     [Theory]
     [InlineData(1, 0, "1 volwassene")]
     [InlineData(2, 0, "2 volwassenes")]

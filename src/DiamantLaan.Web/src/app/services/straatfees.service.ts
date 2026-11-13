@@ -30,9 +30,19 @@ export interface StraatfeesAdminOrder {
   ticketCode: string;
   status: string;
   payFastPaymentId: string | null;
+  /** Null for a PayFast order; Cash, EFT or Card for one an admin recorded. */
+  paymentMethod: string | null;
   createdAt: string;
   confirmedAt: string | null;
   ticketEmailSent: boolean;
+}
+
+export interface StraatfeesManualOrder {
+  name: string;
+  email: string;
+  adults: number;
+  children: number;
+  paymentMethod: 'Cash' | 'EFT' | 'Card';
 }
 
 export interface StraatfeesAdminList {
@@ -63,6 +73,11 @@ export class StraatfeesService {
 
   adminList() {
     return this.http.get<StraatfeesAdminList>('/api/admin/straatfees');
+  }
+
+  /** Records a sale paid outside PayFast; it comes back confirmed. */
+  adminCreate(order: StraatfeesManualOrder) {
+    return this.http.post<StraatfeesAdminOrder>('/api/admin/straatfees/bestellings', order);
   }
 
   setEnabled(enabled: boolean) {
