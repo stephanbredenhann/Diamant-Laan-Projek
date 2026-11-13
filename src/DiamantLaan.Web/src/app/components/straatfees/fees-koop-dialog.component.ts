@@ -2,14 +2,15 @@ import { Component, ElementRef, computed, inject, input, signal, viewChild } fro
 import { FormsModule } from '@angular/forms';
 import { StraatfeesInfo, StraatfeesService, postToPayFast } from '../../services/straatfees.service';
 import { randBedrag } from '../../utils/afrikaans.util';
-import { validateEmail } from '../../utils/validation.util';
+import { validateEmail, validatePhone } from '../../utils/validation.util';
 import { TPipe } from '../../i18n/t.pipe';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 
-/** The ticket purchase dialog: name, email, adults and children, then off to PayFast. No account. */
+/** The ticket purchase dialog: name, email, an optional phone, adults and children, then off to PayFast. No account. */
 @Component({
   selector: 'app-fees-koop-dialog',
   standalone: true,
-  imports: [FormsModule, TPipe],
+  imports: [FormsModule, TPipe, PhoneInputComponent],
   template: `
     <dialog #dialog class="fees-dialog" (close)="fout.set(null)" [attr.aria-label]="'Koop kaartjies' | t">
       <form (ngSubmit)="koop()" class="fees-form" novalidate>
@@ -19,13 +20,16 @@ import { TPipe } from '../../i18n/t.pipe';
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        <p class="fees-form__uitleg">{{ 'Geen rekening nodig nie. Ons e-pos jou kaartjie sodra jy betaal het.' | t }}</p>
+        <p class="fees-form__uitleg">{{ 'Ons e-pos jou kaartjie sodra jy betaal het.' | t }}</p>
 
         <label for="fees-naam">{{ 'Naam en van' | t }}</label>
         <input id="fees-naam" name="naam" type="text" autocomplete="name" [(ngModel)]="naam" required maxlength="120" />
 
         <label for="fees-epos">{{ 'E-posadres' | t }}</label>
         <input id="fees-epos" name="epos" type="email" autocomplete="email" [(ngModel)]="epos" required />
+
+        <label for="fees-foon">{{ 'Foonnommer' | t }} <span class="opsioneel">{{ '(opsioneel)' | t }}</span></label>
+        <app-phone-input class="foon" phoneName="fees-foon" [(countryCode)]="landkode" [(phoneNumber)]="foon" />
 
         @for (r of rye; track r.id) {
           <div class="ry">
@@ -75,6 +79,9 @@ import { TPipe } from '../../i18n/t.pipe';
     .fees-form__uitleg { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 1.25rem; }
     .fees-form label { font-weight: 600; margin-bottom: 0.35rem; }
     .fees-form input { margin-bottom: 1rem; width: 100%; }
+    .opsioneel { font-weight: 400; color: var(--text-muted); }
+    .foon { display: block; margin-bottom: 1rem; }
+    .foon ::ng-deep input { margin-bottom: 0; }
     .ry label { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
     .ry__prys { font-weight: 400; font-size: var(--fs-sm); color: var(--text-muted); }
     .stepper { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
@@ -95,6 +102,8 @@ export class FeesKoopDialogComponent {
 
   naam = '';
   epos = '';
+  foon = '';
+  landkode = '+27';
   volwassenes = signal(1);
   kinders = signal(0);
   besig = signal(false);
@@ -129,11 +138,13 @@ export class FeesKoopDialogComponent {
     if (this.naam.trim().length < 2) return this.fout.set('Vul asseblief jou naam in.');
     const eposFout = validateEmail(this.epos);
     if (eposFout) return this.fout.set(eposFout);
+    const foonFout = validatePhone(this.foon, this.landkode);
+    if (foonFout) return this.fout.set(foonFout);
     if (this.totaalAantal() < 1) return this.fout.set('Kies ten minste een kaartjie.');
 
     this.fout.set(null);
     this.besig.set(true);
-    this.service.order(this.naam.trim(), this.epos.trim(), this.volwassenes(), this.kinders()).subscribe({
+    this.service.order(this.naam.trim(), this.epos.trim(), this.foon.trim(), this.landkode, this.volwassenes(), this.kinders()).subscribe({
       next: form => postToPayFast(form),
       error: err => {
         this.besig.set(false);

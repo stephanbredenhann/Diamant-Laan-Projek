@@ -88,17 +88,19 @@ public class StraatfeesService
             return (null, "Vul asseblief ’n geldige e-posadres in.");
         if (!ValidCount(dto.Adults, dto.Children, MaxPerOrder))
             return (null, $"Kies tussen 1 en {MaxPerOrder} kaartjies.");
+        if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var phone, out var phoneError))
+            return (null, phoneError);
 
-        var order = NewOrder(name, email, dto.Adults, dto.Children);
+        var order = NewOrder(name, email, phone, dto.Adults, dto.Children);
         _db.StraatfeesOrders.Add(order);
         await _db.SaveChangesAsync();
         return (order, null);
     }
 
     /// <summary>
-    /// Records a sale that was paid outside PayFast. It is confirmed straight away and, when there
-    /// is an email address, the buyer gets the same ticket email as an online order. Ignores the
-    /// on/off switch: the admin is recording money that is already in.
+    /// Records a sale that was paid outside PayFast. It is confirmed straight away and the buyer gets
+    /// the same ticket email as an online order. Ignores the on/off switch: the admin is recording
+    /// money that is already in.
     /// </summary>
     public async Task<(StraatfeesOrder? Order, string? Error)> CreateManualOrderAsync(StraatfeesManualOrderDto dto)
     {
@@ -108,14 +110,16 @@ public class StraatfeesService
 
         if (name.Length is < 2 or > 120)
             return (null, "Vul die koper se naam in.");
-        if (email.Length > 0 && !EmailValidator.IsValid(email, out _))
-            return (null, "Die e-posadres is ongeldig. Los dit leeg as daar nie een is nie.");
+        if (!EmailValidator.IsValid(email, out _))
+            return (null, "Vul ’n geldige e-posadres vir die koper in.");
         if (!ValidCount(dto.Adults, dto.Children, MaxPerManualOrder))
             return (null, $"Kies tussen 1 en {MaxPerManualOrder} kaartjies.");
         if (method == null)
             return (null, "Kies ’n geldige betaalmetode.");
+        if (!PhoneValidator.TryNormalize(dto.PhoneNumber, dto.PhoneCountryCode, out var phone, out var phoneError))
+            return (null, phoneError);
 
-        var order = NewOrder(name, email, dto.Adults, dto.Children);
+        var order = NewOrder(name, email, phone, dto.Adults, dto.Children);
         order.PaymentMethod = method;
         order.PaymentStatus = PaymentStatus.Confirmed;
         order.ConfirmedAt = order.CreatedAt;
@@ -123,8 +127,7 @@ public class StraatfeesService
         _db.StraatfeesOrders.Add(order);
         await _db.SaveChangesAsync();
 
-        if (email.Length > 0)
-            await SendTicketEmailAsync(order);
+        await SendTicketEmailAsync(order);
 
         return (order, null);
     }
@@ -132,7 +135,8 @@ public class StraatfeesService
     private static bool ValidCount(int adults, int children, int max) =>
         adults >= 0 && children >= 0 && adults + children >= 1 && adults + children <= max;
 
-    private StraatfeesOrder NewOrder(string name, string email, int adults, int children)
+    /// <summary><paramref name="phone"/> is E.164 or empty, as <see cref="PhoneValidator.TryNormalize"/> hands it back.</summary>
+    private StraatfeesOrder NewOrder(string name, string email, string phone, int adults, int children)
     {
         var adultPrice = AdultPrice;
         var childPrice = ChildPrice;
@@ -140,6 +144,7 @@ public class StraatfeesService
         {
             Name = name,
             Email = email,
+            Phone = phone.Length > 0 ? phone : null,
             Adults = adults,
             Children = children,
             AdultUnitPrice = adultPrice,
@@ -215,7 +220,7 @@ public class StraatfeesService
 
     private async Task SendTicketEmailAsync(StraatfeesOrder order)
     {
-        if (order.PaymentStatus != PaymentStatus.Confirmed || order.TicketEmailSentAt != null || order.Email.Length == 0)
+        if (order.PaymentStatus != PaymentStatus.Confirmed || order.TicketEmailSentAt != null)
             return;
 
         try
@@ -250,6 +255,7 @@ public class StraatfeesService
         Id = o.Id,
         Name = o.Name,
         Email = o.Email,
+        Phone = o.Phone,
         Adults = o.Adults,
         Children = o.Children,
         Amount = o.Amount,

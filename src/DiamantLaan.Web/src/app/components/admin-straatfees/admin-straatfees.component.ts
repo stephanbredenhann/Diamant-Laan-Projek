@@ -3,6 +3,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StraatfeesAdminOrder, StraatfeesManualOrder, StraatfeesService } from '../../services/straatfees.service';
 import { nommer, randBedrag } from '../../utils/afrikaans.util';
+import { COUNTRY_CODES, validatePhone } from '../../utils/validation.util';
+import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
 
 const STATUS: Record<string, string> = {
   Pending: 'Hangend',
@@ -18,7 +20,19 @@ const BETAALMETODE: Record<string, string> = {
 };
 
 type Vorm = Omit<StraatfeesManualOrder, 'adults' | 'children'> & { adults: number | null; children: number | null };
-const leeg = (): Vorm => ({ name: '', email: '', adults: 1, children: 0, paymentMethod: 'Cash' });
+const leeg = (): Vorm => ({ name: '', email: '', phoneNumber: '', phoneCountryCode: '+27', adults: 1, children: 0, paymentMethod: 'Cash' });
+
+/**
+ * How a stored +E.164 number is shown and exported: "082 123 4567" for South Africa, else
+ * "00 44 7911123456". The spaces keep Excel from reading it as a number (dropping the 0) or a formula.
+ */
+export function foonVertoon(e164: string | null): string {
+  if (!e164) return '';
+  const sa = /^\+27(\d{2})(\d{3})(\d{4})$/.exec(e164);
+  if (sa) return `0${sa[1]} ${sa[2]} ${sa[3]}`;
+  const code = COUNTRY_CODES.map(c => c.code).filter(c => e164.startsWith(c)).sort((a, b) => b.length - a.length)[0];
+  return code ? `00${code.slice(1)} ${e164.slice(code.length)}` : `00${e164.slice(1)}`;
+}
 
 /** CSV cell: quoted, and a leading = + - @ defused so Excel does not run a buyer's name as a formula. */
 const sel = (v: string | number) => {
@@ -33,7 +47,7 @@ const sel = (v: string | number) => {
 @Component({
   selector: 'app-admin-straatfees',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, PhoneInputComponent],
   template: `
     <div class="admin-content">
       <h3>Straatfees-kaartjies</h3>
@@ -60,14 +74,17 @@ const sel = (v: string | number) => {
 
       <form class="settings-card handmatig" (ngSubmit)="voegBy()" #f="ngForm">
         <h4>Handmatige verkoping</h4>
-        <p class="toggle-hint">Vir kaartjies wat buite PayFast betaal is, bv. kontant by die hek of ’n EFT. Die bestelling word dadelik as betaal aangeteken; met ’n e-posadres kry die koper ook die kaartjie per e-pos.</p>
+        <p class="toggle-hint">Vir kaartjies wat buite PayFast betaal is, bv. kontant by die hek of ’n EFT. Die bestelling word dadelik as betaal aangeteken en die koper kry die kaartjie per e-pos.</p>
         <div class="velde">
-          <label class="breed">Naam en van
+          <label>Naam en van
             <input name="naam" [(ngModel)]="vorm.name" required minlength="2" maxlength="120" />
           </label>
-          <label class="breed"><span>E-pos <span class="muted">(opsioneel)</span></span>
-            <input name="epos" type="email" [(ngModel)]="vorm.email" email maxlength="256" />
+          <label>E-pos
+            <input name="epos" type="email" [(ngModel)]="vorm.email" required email maxlength="256" />
           </label>
+          <div class="veld"><span>Foon <span class="muted">(opsioneel)</span></span>
+            <app-phone-input phoneName="admin-fees-foon" [(countryCode)]="vorm.phoneCountryCode" [(phoneNumber)]="vorm.phoneNumber" />
+          </div>
           <label>Volwassenes
             <input name="volw" type="number" min="0" max="200" [(ngModel)]="vorm.adults" />
           </label>
@@ -95,7 +112,7 @@ const sel = (v: string | number) => {
           <div class="msg ok">
             Bestelling #{{ o.id }} vir {{ o.name }} aangeteken. Kode:
             <a class="kode" [href]="'/straatfees/kaartjie/' + o.ticketCode" target="_blank" rel="noopener">{{ o.ticketCode }}</a>
-            {{ o.ticketEmailSent ? '— kaartjie is per e-pos gestuur.' : '— geen e-pos gestuur nie.' }}
+            — kaartjie word na {{ o.email }} gestuur.
           </div>
         }
       </form>
@@ -117,7 +134,7 @@ const sel = (v: string | number) => {
                 <th>#</th>
                 <th>Datum</th>
                 <th>Naam</th>
-                <th>E-pos</th>
+                <th>Kontak</th>
                 <th class="getal">Volw.</th>
                 <th class="getal">Kinders</th>
                 <th class="getal">Bedrag</th>
@@ -133,7 +150,10 @@ const sel = (v: string | number) => {
                   <td>{{ o.id }}</td>
                   <td class="nowrap">{{ utc(o.createdAt) | date: 'yyyy-MM-dd HH:mm' }}</td>
                   <td>{{ o.name }}</td>
-                  <td>@if (o.email) { <a [href]="'mailto:' + o.email">{{ o.email }}</a> } @else { — }</td>
+                  <td>
+                    @if (o.email) { <a [href]="'mailto:' + o.email">{{ o.email }}</a> } @else { — }
+                    @if (o.phone) { <br /><a class="foon" [href]="'tel:' + o.phone">{{ foon(o.phone) }}</a> }
+                  </td>
                   <td class="getal">{{ o.adults }}</td>
                   <td class="getal">{{ o.children }}</td>
                   <td class="getal nowrap">{{ rand(o.amount) }}</td>
@@ -168,10 +188,10 @@ const sel = (v: string | number) => {
     .handmatig h4 { font-family: var(--font-heading); margin: 0; }
     .handmatig .toggle-hint { margin: 0.25rem 0 1rem; }
     .velde { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; }
-    .velde label { grid-column: span 2; }
-    .velde .breed { grid-column: span 3; }
-    @media (max-width: 600px) { .velde label, .velde .breed { grid-column: 1 / -1; } }
-    .velde label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8125rem; color: var(--color-muted); }
+    .velde label, .velde .veld { grid-column: span 2; }
+    @media (max-width: 600px) { .velde label, .velde .veld { grid-column: 1 / -1; } }
+    .foon { white-space: nowrap; color: var(--color-muted); }
+    .velde label, .velde .veld { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8125rem; color: var(--color-muted); }
     .velde input, .velde select { padding: 0.5rem; border: 1px solid var(--color-border); font: inherit; color: var(--color-text); background: var(--color-surface); }
     .vorm-voet { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
     .msg.error { margin-top: 1rem; font-size: 0.8125rem; padding: 0.625rem 1rem; background: #FEF2F2; color: #DC2626; max-width: 600px; }
@@ -222,6 +242,7 @@ export class AdminStraatfeesComponent implements OnInit {
   rand = randBedrag;
   nommer = nommer;
   status = (s: string) => STATUS[s] ?? s;
+  foon = foonVertoon;
   metode = (m: string | null) => m ? BETAALMETODE[m] ?? m : 'PayFast';
   /** SQLite hands DateTimes back without a zone; they are stored as UTC. */
   utc = (s: string) => /Z|[+-]\d\d:\d\d$/.test(s) ? s : s + 'Z';
@@ -267,10 +288,17 @@ export class AdminStraatfeesComponent implements OnInit {
     this.byvoeg.set(true);
     this.byvoegFout.set(null);
     this.bygevoeg.set(null);
+    const foonFout = validatePhone(this.vorm.phoneNumber, this.vorm.phoneCountryCode);
+    if (foonFout) {
+      this.byvoegFout.set(foonFout);
+      this.byvoeg.set(false);
+      return;
+    }
     this.service.adminCreate({
       ...this.vorm,
       name: this.vorm.name.trim(),
       email: this.vorm.email.trim(),
+      phoneNumber: this.vorm.phoneNumber.trim(),
       adults: this.vorm.adults ?? 0,
       children: this.vorm.children ?? 0,
     }).subscribe({
@@ -290,9 +318,9 @@ export class AdminStraatfeesComponent implements OnInit {
   /** The list as shown (so the "net betaal" filter applies), with SAST times for the bookkeeping. */
   laaiCsvAf() {
     const sast = (s: string | null) => s ? new Date(Date.parse(this.utc(s)) + 2 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') : '';
-    const kop = ['#', 'Datum (SAST)', 'Bevestig op (SAST)', 'Naam', 'E-pos', 'Volwassenes', 'Kinders', 'Bedrag', 'Kode', 'Status', 'Betaling', 'PayFast-betaling-ID', 'E-pos gestuur'];
+    const kop = ['#', 'Datum (SAST)', 'Bevestig op (SAST)', 'Naam', 'E-pos', 'Foon', 'Volwassenes', 'Kinders', 'Bedrag', 'Kode', 'Status', 'Betaling', 'PayFast-betaling-ID', 'E-pos gestuur'];
     const rye = this.sigbaar().map(o => [
-      o.id, sast(o.createdAt), sast(o.confirmedAt), o.name, o.email, o.adults, o.children, o.amount.toFixed(2),
+      o.id, sast(o.createdAt), sast(o.confirmedAt), o.name, o.email, foonVertoon(o.phone), o.adults, o.children, o.amount.toFixed(2),
       o.ticketCode, this.status(o.status), this.metode(o.paymentMethod), o.payFastPaymentId ?? '', o.ticketEmailSent ? 'Ja' : 'Nee',
     ]);
     const csv = '\uFEFF' + [kop, ...rye].map(r => r.map(sel).join(',')).join('\r\n');

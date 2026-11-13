@@ -128,6 +128,36 @@ public class StraatfeesServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateOrder_StoresAnOptionalPhoneAsE164()
+    {
+        var (withPhone, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", PhoneNumber = "082 123 4567", PhoneCountryCode = "+27", Adults = 1 });
+        var (without, _) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Piet", Email = "piet@test.com", PhoneNumber = "  ", Adults = 1 });
+
+        Assert.Equal("+27821234567", withPhone!.Phone);
+        Assert.Null(without!.Phone);
+        Assert.Equal("+27821234567", StraatfeesService.ToAdminDto(withPhone).Phone);
+    }
+
+    [Fact]
+    public async Task CreateOrder_RejectsABadPhone()
+    {
+        var (order, error) = await _service.CreateOrderAsync(new StraatfeesOrderRequestDto { Name = "Jan", Email = "jan@test.com", PhoneNumber = "12345", PhoneCountryCode = "+27", Adults = 1 });
+
+        Assert.Null(order);
+        Assert.StartsWith("Foonnommer", error);
+        Assert.Empty(_db.StraatfeesOrders);
+    }
+
+    [Fact]
+    public async Task ManualOrder_StoresThePhone()
+    {
+        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Jan", Email = "jan@test.com", PhoneNumber = "0821234567", Adults = 1, PaymentMethod = "Cash" });
+
+        Assert.Null(error);
+        Assert.Equal("+27821234567", order!.Phone);
+    }
+
+    [Fact]
     public async Task ManualOrder_IsConfirmedAndEmailsTheTicket()
     {
         var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Jan", Email = "jan@test.com", Adults = 2, Children = 1, PaymentMethod = "eft" });
@@ -143,26 +173,26 @@ public class StraatfeesServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ManualOrder_WithoutEmail_SendsNothing_AndIgnoresTheSwitchAndPublicCap()
+    public async Task ManualOrder_IgnoresTheSwitchAndPublicCap()
     {
         await _service.SetEnabledAsync(false);
 
-        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Skoolgroep", Email = "  ", Adults = 5, Children = 40, PaymentMethod = "Cash" });
+        var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = "Skoolgroep", Email = "skool@test.com", Adults = 5, Children = 40, PaymentMethod = "Cash" });
 
         Assert.Null(error);
         Assert.Equal(PaymentStatus.Confirmed, order!.PaymentStatus);
-        Assert.Equal("", order.Email);
-        Assert.Null(order.TicketEmailSentAt);
-        _email.VerifyNoOtherCalls();
+        Assert.Equal(45, order.Quantity);
     }
 
     [Theory]
     [InlineData("", "jan@test.com", 1, 0, "Cash")]
     [InlineData("Jan", "nie-n-epos", 1, 0, "Cash")]
-    [InlineData("Jan", "", 0, 0, "Cash")]
-    [InlineData("Jan", "", 150, 51, "Cash")]
-    [InlineData("Jan", "", 1, 0, "PayFast")]
-    [InlineData("Jan", "", 1, 0, "")]
+    [InlineData("Jan", "", 1, 0, "Cash")]
+    [InlineData("Jan", "  ", 1, 0, "Cash")]
+    [InlineData("Jan", "jan@test.com", 0, 0, "Cash")]
+    [InlineData("Jan", "jan@test.com", 150, 51, "Cash")]
+    [InlineData("Jan", "jan@test.com", 1, 0, "PayFast")]
+    [InlineData("Jan", "jan@test.com", 1, 0, "")]
     public async Task ManualOrder_RejectsBadInput(string name, string email, int adults, int children, string method)
     {
         var (order, error) = await _service.CreateManualOrderAsync(new StraatfeesManualOrderDto { Name = name, Email = email, Adults = adults, Children = children, PaymentMethod = method });

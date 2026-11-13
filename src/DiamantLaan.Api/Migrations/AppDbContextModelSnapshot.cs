@@ -543,6 +543,9 @@ namespace DiamantLaan.Api.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Phone")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TicketCode")
                         .IsRequired()
                         .HasColumnType("TEXT");
