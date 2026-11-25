@@ -53,7 +53,7 @@ const POLL_TRIES = 40;
                 <img class="kaartjie__hoek kaartjie__hoek--onder" src="straatfees/hoek.png" alt="" />
                 <span class="kaartjie__merk">ORANIA</span>
                 <span class="kaartjie__titel">STRAATFEES</span>
-                <span class="kaartjie__lint"><img src="straatfees/lint.png" alt="" /><span>27-11-26</span></span>
+                <span class="kaartjie__lint"><img src="straatfees/lint.png" alt="" /><span>26-11-26</span></span>
                 <span class="kaartjie__waar">18:30 &middot; Diamantlaan (by Heuwelsig)</span>
               </div>
               <div class="kaartjie__inhoud">

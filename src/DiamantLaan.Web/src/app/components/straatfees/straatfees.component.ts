@@ -31,7 +31,7 @@ import { FeesTeelComponent } from './fees-teel.component';
               }
             </div>
 
-            <app-fees-lint class="lint-plek">27-11-26</app-fees-lint>
+            <app-fees-lint class="lint-plek">26-11-26</app-fees-lint>
 
             @if (gekanselleer()) {
               <p class="fees-alert" role="status">{{ 'Jou betaling is gekanselleer. Geen geld is afgetrek nie.' | t }}</p>
@@ -132,7 +132,7 @@ import { FeesTeelComponent } from './fees-teel.component';
       <app-fees-teel [klein]="true">
         <div class="teel__slot">
           <h2>Straatfees</h2>
-          <app-fees-lint class="lint-plek" [klein]="true">27-11-26</app-fees-lint>
+          <app-fees-lint class="lint-plek" [klein]="true">26-11-26</app-fees-lint>
           <p>Kaartjies te koop by Orania Beweging (kontant) of by bou.orania.co.za.</p>
           @if (info()?.enabled) {
             <button type="button" class="btn btn-primary btn-koop" (click)="openDialog()">{{ 'Koop kaartjies' | t }}</button>
@@ -337,7 +337,7 @@ export class StraatfeesComponent implements OnInit {
   readonly kaarte = [
     {
       titel: 'Waar en wanneer', foto: 'wit-straat', alt: 'Feesgangers in wit op Diamantlaan',
-      teks: '27-11-26, 18:30. Diamantlaan (by Heuwelsig). Parkeer by die Sportgronde.',
+      teks: '26-11-26, 18:30. Diamantlaan (by Heuwelsig). Parkeer by die Sportgronde.',
     },
     {
       titel: 'Trek wit aan', foto: 'kransies', alt: 'Feesgangers vleg blommekransies',
