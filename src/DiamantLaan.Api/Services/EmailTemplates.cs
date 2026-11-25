@@ -282,7 +282,7 @@ public static class EmailTemplates
                                 <tr><td style="border-top:2px solid {Delft}; border-bottom:2px solid {Delft}; padding:6px 4px; font-family:{Serif}; font-size:40px; font-weight:600; letter-spacing:0.04em; line-height:1; color:{Delft};">STRAATFEES</td></tr>
                               </table>
                               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
-                                <tr><td width="200" height="38" align="center" bgcolor="{Delft}" background="{art}/lint.png" style="width:200px; height:38px; background:#FFFFFF url('{art}/lint.png') center / 100% 100% no-repeat; font-family:{Serif}; font-size:20px; font-weight:600; color:#FFFFFF; text-align:center;">27-11-26</td></tr>
+                                <tr><td width="200" height="38" align="center" bgcolor="{Delft}" background="{art}/lint.png" style="width:200px; height:38px; background:#FFFFFF url('{art}/lint.png') center / 100% 100% no-repeat; font-family:{Serif}; font-size:20px; font-weight:600; color:#FFFFFF; text-align:center;">26-11-26</td></tr>
                               </table>
                               <p style="margin:12px 0 0; font-family:{FontBody}; font-size:16px; line-height:1.5; color:{Delft};">18:30 &middot; Diamantlaan (by Heuwelsig)</p>
                             </td>
